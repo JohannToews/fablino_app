@@ -4,109 +4,108 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Baloo+2:wght@500;600;700&display=swap');
 
-/* LireMagie - Kindgerechtes Design System für sportlichen 8-jährigen Jungen */
-/* Themen: Fußball, Kunst, Tanz, Sport - dynamische, energetische Farben */
+/* LireMagie - Design für sportlichen 8-jährigen Jungen */
+/* Themen: Fußball, Kunst, Tanz, Sport - coole Blautöne */
 
 @layer base {
   :root {
-    /* Frische, sportliche Farben - kein Rosa/Lila */
-    --background: 45 60% 98%;
-    --foreground: 210 30% 18%;
+    /* Coole Blautöne - dynamisch und sportlich */
+    --background: 210 40% 98%;
+    --foreground: 215 30% 18%;
 
-    --card: 45 50% 97%;
-    --card-foreground: 210 30% 18%;
+    --card: 210 35% 97%;
+    --card-foreground: 215 30% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 30% 18%;
+    --popover-foreground: 215 30% 18%;
 
-    /* Energetisches Orange als Primärfarbe (Fußball, Dynamik) */
-    --primary: 28 100% 55%;
+    /* Kräftiges Blau als Primärfarbe (Sport, Dynamik) */
+    --primary: 215 90% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Frisches Grün (Spielfeld, Natur) */
-    --secondary: 142 60% 45%;
+    /* Frisches Türkis/Teal (Energie, Bewegung) */
+    --secondary: 175 70% 40%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Cooles Blau für Akzente (Sport, Bewegung) */
-    --accent: 205 85% 55%;
+    /* Helles Cyan für Akzente */
+    --accent: 195 85% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --muted: 45 20% 92%;
-    --muted-foreground: 210 15% 45%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 215 15% 45%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 30% 85%;
-    --input: 45 30% 92%;
-    --ring: 28 100% 50%;
+    --border: 210 25% 88%;
+    --input: 210 25% 92%;
+    --ring: 215 90% 45%;
 
     --radius: 1rem;
 
-    /* Custom colors for sporty kid UI */
-    --energy-orange: 28 100% 55%;
-    --energy-orange-light: 35 100% 85%;
-    --grass-green: 142 60% 45%;
-    --grass-green-light: 140 50% 85%;
-    --sky-blue: 205 85% 55%;
-    --sky-blue-light: 205 85% 88%;
-    --sunny-yellow: 45 100% 60%;
-    --sunny-yellow-light: 48 100% 88%;
-    --cool-teal: 175 60% 45%;
-    --warm-sand: 38 50% 90%;
+    /* Custom colors for sporty kid UI - blue focused */
+    --ocean-blue: 215 90% 50%;
+    --ocean-blue-light: 210 80% 90%;
+    --sky-cyan: 195 85% 50%;
+    --sky-cyan-light: 195 80% 90%;
+    --teal-energy: 175 70% 40%;
+    --teal-energy-light: 175 60% 88%;
+    --steel-blue: 205 60% 55%;
+    --ice-blue: 200 70% 95%;
+    --navy-dark: 220 50% 25%;
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(210 30% 18% / 0.1);
-    --shadow-card: 0 8px 30px -8px hsl(210 30% 18% / 0.15);
-    --shadow-glow: 0 0 40px hsl(28 100% 55% / 0.3);
+    --shadow-soft: 0 4px 20px -4px hsl(215 30% 18% / 0.1);
+    --shadow-card: 0 8px 30px -8px hsl(215 30% 18% / 0.15);
+    --shadow-glow: 0 0 40px hsl(215 90% 50% / 0.3);
 
-    --sidebar-background: 45 50% 97%;
-    --sidebar-foreground: 210 30% 18%;
-    --sidebar-primary: 28 100% 55%;
+    --sidebar-background: 210 35% 97%;
+    --sidebar-foreground: 215 30% 18%;
+    --sidebar-primary: 215 90% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 205 85% 55%;
+    --sidebar-accent: 195 85% 50%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 45 30% 85%;
-    --sidebar-ring: 28 100% 50%;
+    --sidebar-border: 210 25% 88%;
+    --sidebar-ring: 215 90% 45%;
   }
 
   .dark {
-    --background: 210 30% 10%;
-    --foreground: 45 50% 95%;
+    --background: 220 35% 10%;
+    --foreground: 210 50% 95%;
 
-    --card: 210 25% 15%;
-    --card-foreground: 45 50% 95%;
+    --card: 220 30% 14%;
+    --card-foreground: 210 50% 95%;
 
-    --popover: 210 25% 12%;
-    --popover-foreground: 45 50% 95%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 210 50% 95%;
 
-    --primary: 28 100% 55%;
+    --primary: 215 85% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 50% 35%;
+    --secondary: 175 60% 35%;
     --secondary-foreground: 0 0% 100%;
 
-    --accent: 205 70% 40%;
+    --accent: 195 70% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --muted: 210 20% 20%;
-    --muted-foreground: 45 30% 70%;
+    --muted: 220 20% 20%;
+    --muted-foreground: 210 30% 70%;
 
     --destructive: 0 60% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 25%;
-    --input: 210 20% 25%;
-    --ring: 28 100% 50%;
+    --border: 220 20% 22%;
+    --input: 220 20% 22%;
+    --ring: 215 85% 50%;
 
-    --sidebar-background: 210 25% 12%;
-    --sidebar-foreground: 45 50% 95%;
-    --sidebar-primary: 28 100% 55%;
+    --sidebar-background: 220 30% 12%;
+    --sidebar-foreground: 210 50% 95%;
+    --sidebar-primary: 215 85% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 205 70% 40%;
+    --sidebar-accent: 195 70% 45%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 20% 25%;
-    --sidebar-ring: 28 100% 50%;
+    --sidebar-border: 220 20% 22%;
+    --sidebar-ring: 215 85% 50%;
   }
 }
 
@@ -147,7 +146,7 @@
 
   .word-highlight {
     @apply cursor-pointer px-1 py-1 rounded-md transition-all duration-200 
-           hover:bg-energy-orange-light active:bg-energy-orange/40 
+           hover:bg-ocean-blue-light active:bg-primary/30 
            touch-manipulation select-none;
     -webkit-tap-highlight-color: transparent;
     min-height: 32px;
@@ -156,7 +155,7 @@
   }
 
   .word-marked {
-    @apply bg-sunny-yellow-light border-b-2 border-primary;
+    @apply bg-sky-cyan-light border-b-2 border-primary;
   }
 
   .phrase-marked {
@@ -164,7 +163,7 @@
   }
 
   .special-expression {
-    @apply bg-sky-blue-light border-b-2 border-dashed border-sky-blue;
+    @apply bg-teal-energy-light border-b-2 border-dashed border-teal-energy;
   }
 
   .reading-text {
@@ -182,7 +181,7 @@
   }
 
   .explanation-panel {
-    @apply bg-gradient-to-br from-sky-blue-light to-grass-green-light rounded-2xl p-6 shadow-card text-foreground;
+    @apply bg-gradient-to-br from-ocean-blue-light to-teal-energy-light rounded-2xl p-6 shadow-card text-foreground;
   }
 
   .explanation-panel h3 {
@@ -190,11 +189,11 @@
   }
 
   .gradient-hero {
-    @apply bg-gradient-to-br from-sunny-yellow-light via-energy-orange-light/50 to-sky-blue-light/50;
+    @apply bg-gradient-to-br from-ice-blue via-ocean-blue-light/60 to-sky-cyan-light/50;
   }
 
   .gradient-admin {
-    @apply bg-gradient-to-br from-grass-green-light/30 via-sky-blue-light/30 to-sunny-yellow-light/30;
+    @apply bg-gradient-to-br from-teal-energy-light/40 via-ocean-blue-light/40 to-sky-cyan-light/40;
   }
 }
 

@@ -51,25 +51,22 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Sporty kid-friendly custom colors
-        "energy-orange": {
-          DEFAULT: "hsl(var(--energy-orange))",
-          light: "hsl(var(--energy-orange-light))",
+        // Cool blue-focused sporty kid colors
+        "ocean-blue": {
+          DEFAULT: "hsl(var(--ocean-blue))",
+          light: "hsl(var(--ocean-blue-light))",
         },
-        "grass-green": {
-          DEFAULT: "hsl(var(--grass-green))",
-          light: "hsl(var(--grass-green-light))",
+        "sky-cyan": {
+          DEFAULT: "hsl(var(--sky-cyan))",
+          light: "hsl(var(--sky-cyan-light))",
         },
-        "sky-blue": {
-          DEFAULT: "hsl(var(--sky-blue))",
-          light: "hsl(var(--sky-blue-light))",
+        "teal-energy": {
+          DEFAULT: "hsl(var(--teal-energy))",
+          light: "hsl(var(--teal-energy-light))",
         },
-        "sunny-yellow": {
-          DEFAULT: "hsl(var(--sunny-yellow))",
-          light: "hsl(var(--sunny-yellow-light))",
-        },
-        "cool-teal": "hsl(var(--cool-teal))",
-        "warm-sand": "hsl(var(--warm-sand))",
+        "steel-blue": "hsl(var(--steel-blue))",
+        "ice-blue": "hsl(var(--ice-blue))",
+        "navy-dark": "hsl(var(--navy-dark))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
