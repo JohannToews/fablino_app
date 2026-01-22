@@ -155,15 +155,16 @@
   }
 
   .word-marked {
-    @apply bg-sky-cyan-light border-b-2 border-primary;
+    @apply bg-sky-cyan-light/50 border-b-2 border-primary text-foreground;
   }
 
   .phrase-marked {
-    @apply underline decoration-primary decoration-2 underline-offset-4;
+    @apply bg-ocean-blue-light/40 rounded px-0.5 text-foreground;
+    text-decoration: none;
   }
 
   .special-expression {
-    @apply bg-teal-energy-light border-b-2 border-dashed border-teal-energy;
+    @apply bg-teal-energy-light/50 border-b-2 border-dashed border-teal-energy text-foreground;
   }
 
   .reading-text {
