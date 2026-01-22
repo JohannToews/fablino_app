@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { Wand2, Loader2, Sparkles } from "lucide-react";
+import { Wand2, Loader2, Sparkles, Settings } from "lucide-react";
 
 interface GeneratedQuestion {
   question: string;
@@ -25,14 +26,70 @@ interface StoryGeneratorProps {
   onStoryGenerated: (story: GeneratedStory) => void;
 }
 
+const SYSTEM_PROMPT_KEY = "story_generation_system_prompt";
+
+const DEFAULT_SYSTEM_PROMPT = `Tu es un expert en littérature pour enfants francophones.
+Crée des histoires captivantes, éducatives et adaptées à l'âge de l'enfant.
+Utilise un vocabulaire riche mais accessible.
+Inclus des dialogues vivants avec les guillemets français « ».
+Assure-toi que l'histoire a un début, un milieu et une fin clairs.
+Les histoires doivent transmettre des valeurs positives comme l'amitié, le courage ou la curiosité.`;
+
 const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   const [length, setLength] = useState<string>("medium");
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [description, setDescription] = useState("");
   const [childAge, setChildAge] = useState<number>(8);
   const [schoolLevel, setSchoolLevel] = useState<string>("3e primaire (CE2)");
-  const [customSystemPrompt, setCustomSystemPrompt] = useState("");
+  const [customSystemPrompt, setCustomSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
+
+  // Load saved system prompt from database
+  useEffect(() => {
+    const loadSystemPrompt = async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", SYSTEM_PROMPT_KEY)
+        .single();
+
+      if (data && !error) {
+        setCustomSystemPrompt(data.value);
+      }
+      setIsLoadingPrompt(false);
+    };
+    loadSystemPrompt();
+  }, []);
+
+  // Save system prompt to database when it changes
+  const saveSystemPrompt = async (prompt: string) => {
+    const { data: existing } = await supabase
+      .from("app_settings")
+      .select("id")
+      .eq("key", SYSTEM_PROMPT_KEY)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from("app_settings")
+        .update({ value: prompt, updated_at: new Date().toISOString() })
+        .eq("key", SYSTEM_PROMPT_KEY);
+    } else {
+      await supabase
+        .from("app_settings")
+        .insert({ key: SYSTEM_PROMPT_KEY, value: prompt });
+    }
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCustomSystemPrompt(e.target.value);
+  };
+
+  const handlePromptBlur = () => {
+    saveSystemPrompt(customSystemPrompt);
+    toast.success("System-Prompt gespeichert");
+  };
 
   const handleGenerate = async () => {
     if (!description.trim()) {
@@ -41,7 +98,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
     }
 
     setIsGenerating(true);
-    toast.info("Geschichte wird generiert... 🪄 (inkl. Cover-Bild)");
+    toast.info("Geschichte wird generiert... ⚽🎨 (inkl. Cover-Bild)");
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-story", {
@@ -67,7 +124,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
       }
 
       if (data?.title && data?.content) {
-        toast.success("Geschichte erfolgreich generiert! ✨");
+        toast.success("Geschichte erfolgreich generiert! 🏆");
         onStoryGenerated(data);
       } else {
         toast.error("Ungültige Antwort vom Server");
@@ -175,22 +232,41 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
           />
         </div>
 
-        {/* Custom System Prompt */}
-        <div className="space-y-2">
-          <Label htmlFor="systemPrompt">
-            Zusätzlicher System-Prompt (optional)
-          </Label>
-          <Textarea
-            id="systemPrompt"
-            placeholder="z.B. Verwende viele Adjektive. Die Geschichte soll lehrreich über Freundschaft sein. Füge humorvolle Elemente hinzu..."
-            value={customSystemPrompt}
-            onChange={(e) => setCustomSystemPrompt(e.target.value)}
-            className="min-h-[100px] text-base"
-          />
-          <p className="text-xs text-muted-foreground">
-            Hier kannst du zusätzliche Anweisungen für die KI eingeben, die bei der Generierung berücksichtigt werden.
-          </p>
-        </div>
+        {/* Custom System Prompt in Accordion */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="system-prompt" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Settings className="h-4 w-4" />
+                System-Prompt anpassen (optional)
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2 pt-2">
+                {isLoadingPrompt ? (
+                  <div className="flex items-center gap-2 text-muted-foreground py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Lade gespeicherten Prompt...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Textarea
+                      id="systemPrompt"
+                      placeholder="Anweisungen für die KI..."
+                      value={customSystemPrompt}
+                      onChange={handlePromptChange}
+                      onBlur={handlePromptBlur}
+                      className="min-h-[150px] text-sm font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Dieser Prompt wird bei der Generierung an die KI übergeben. Änderungen werden automatisch gespeichert.
+                    </p>
+                  </>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Button
           onClick={handleGenerate}

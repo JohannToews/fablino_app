@@ -22,20 +22,39 @@ serve(async (req) => {
       );
     }
 
-    // Prompt für SEHR kurze Erklärung (< 10 Worte)
-    const prompt = `Tu es un dictionnaire pour enfants français.
+    // Improved prompt for better, child-friendly explanations
+    const prompt = `Tu es un dictionnaire vivant pour enfants français de 8 ans.
 
-Explique le mot ou l'expression "${word}" en MAXIMUM 8 mots simples.
-${context ? `Contexte: "${context}"` : ''}
+Le mot ou l'expression à expliquer: "${word}"
+${context ? `Contexte de la phrase: "${context}"` : ''}
 
-Règles STRICTES:
-- Maximum 8 mots
-- Pas de ponctuation finale
-- Français simple pour enfant de 7 ans
-- Juste la définition, rien d'autre
+MISSION: Donne une explication SIMPLE et CLAIRE en 8 mots maximum.
 
-Exemple: "content" -> "Être heureux et joyeux"
-Exemple: "maison" -> "L'endroit où on habite"`;
+RÈGLES STRICTES:
+1. Maximum 8 mots, pas plus
+2. Utilise des mots très simples qu'un enfant de 8 ans connaît
+3. Pas de ponctuation finale (ni point, ni virgule)
+4. Pas de répétition du mot à expliquer
+5. Si c'est un verbe, explique l'action
+6. Si c'est un nom, dis ce que c'est concrètement
+7. Si c'est un adjectif, donne un synonyme simple ou décris
+
+EXEMPLES PARFAITS:
+- "courageux" → "Quelqu'un qui n'a pas peur"
+- "dévorer" → "Manger très vite avec appétit"
+- "magnifique" → "Très très beau"
+- "s'élancer" → "Partir vite en courant"
+- "un terrier" → "La maison sous terre d'un animal"
+- "inquiet" → "Qui a un peu peur dans sa tête"
+- "bondir" → "Sauter très haut"
+- "murmurer" → "Parler très doucement"
+
+MAUVAIS EXEMPLES (à éviter):
+- Trop long: "C'est quand quelqu'un fait quelque chose de bien pour aider les autres"
+- Trop compliqué: "Manifestation d'un sentiment positif"
+- Répète le mot: "Courageux veut dire être courageux"
+
+Ta réponse (8 mots max, simple, clair):`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -45,8 +64,8 @@ Exemple: "maison" -> "L'endroit où on habite"`;
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 50,
+            temperature: 0.2,
+            maxOutputTokens: 60,
           },
         }),
       }
@@ -62,7 +81,18 @@ Exemple: "maison" -> "L'endroit où on habite"`;
     }
 
     const data = await response.json();
-    const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Pas d\'explication disponible.';
+    let explanation = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    // Clean up the response
+    if (!explanation) {
+      return new Response(
+        JSON.stringify({ explanation: null, error: 'No explanation generated' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Remove trailing punctuation and quotes
+    explanation = explanation.replace(/[.!?]$/, '').replace(/^["']|["']$/g, '').trim();
 
     return new Response(
       JSON.stringify({ explanation }),

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw } from "lucide-react";
 import ComprehensionQuiz from "@/components/ComprehensionQuiz";
 
 interface Story {
@@ -51,13 +51,12 @@ const ReadingPage = () => {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
+  const [explanationError, setExplanationError] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   // Session-only marked positions (visual highlighting only for current session)
-  // Single word positions: "pIndex-sIndex-wIndex"
   const [singleWordPositions, setSingleWordPositions] = useState<Set<string>>(new Set());
-  // Phrase positions: "pIndex-sIndex-wIndex" (all words in the phrase get added)
   const [phrasePositions, setPhrasePositions] = useState<Set<string>>(new Set());
-  // Map from position key to the word/phrase text for display
   const [markedTexts, setMarkedTexts] = useState<Map<string, string>>(new Map());
   // DB cached explanations (for avoiding re-fetching from LLM)
   const [cachedExplanations, setCachedExplanations] = useState<Map<string, string>>(new Map());
@@ -71,6 +70,8 @@ const ReadingPage = () => {
   // Show comprehension quiz after reading
   const [showQuiz, setShowQuiz] = useState(false);
   const [hasQuestions, setHasQuestions] = useState(false);
+  // Current word position for saving
+  const [currentPositionKey, setCurrentPositionKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -89,20 +90,20 @@ const ReadingPage = () => {
     setHasQuestions((count || 0) > 0);
   };
 
-  // Listen for selection changes
+  // Listen for selection changes - improved for tablet touch
   useEffect(() => {
     const handleSelectionChange = () => {
       const selection = window.getSelection();
       if (!selection || selection.isCollapsed) {
-        setCurrentSelection(null);
-        setSelectionPosition(null);
+        // Don't hide immediately - give time for button click
         return;
       }
 
       const selectedText = selection.toString().trim();
       
-      // Only show button for multi-word selections
-      if (!selectedText || selectedText.length < 4) {
+      // Only show button for selections with at least 2 words
+      const wordCount = selectedText.split(/\s+/).filter(w => w.length > 0).length;
+      if (!selectedText || wordCount < 2) {
         setCurrentSelection(null);
         setSelectionPosition(null);
         return;
@@ -115,19 +116,52 @@ const ReadingPage = () => {
         const containerRect = textContainerRef.current.getBoundingClientRect();
         
         // Check if selection is inside the container
-        if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom + 100) {
+        if (rect.top >= containerRect.top - 50 && rect.bottom <= containerRect.bottom + 100) {
           setCurrentSelection(selectedText);
           setSelectionRange(range.cloneRange());
+          // Position button above selection, centered
           setSelectionPosition({
             x: rect.left + rect.width / 2,
-            y: rect.top - 10
+            y: rect.top - 15
           });
         }
       }
     };
 
+    // Use both selectionchange and mouseup/touchend for better tablet support
     document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+    
+    const handleTouchEnd = () => {
+      setTimeout(handleSelectionChange, 100);
+    };
+    
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('mouseup', handleSelectionChange);
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mouseup', handleSelectionChange);
+    };
+  }, []);
+
+  // Clear selection button when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-selection-button]') && !window.getSelection()?.toString().trim()) {
+        setCurrentSelection(null);
+        setSelectionPosition(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const loadStory = async () => {
@@ -166,6 +200,28 @@ const ReadingPage = () => {
     }
   };
 
+  const fetchExplanation = async (text: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("explain-word", {
+        body: { word: text },
+      });
+
+      if (error) {
+        console.error("Error:", error);
+        return null;
+      }
+      
+      if (data?.explanation) {
+        return data.explanation;
+      }
+      
+      return null;
+    } catch (err) {
+      console.error("Error:", err);
+      return null;
+    }
+  };
+
   const handleExplainSelection = async () => {
     if (!currentSelection || !selectionRange) return;
 
@@ -200,6 +256,8 @@ const ReadingPage = () => {
     setSelectedWord(cleanText);
     setExplanation(null);
     setIsExplaining(true);
+    setExplanationError(false);
+    setIsSaved(false);
     
     // Mark all selected positions as phrase in current session
     setPhrasePositions(prev => {
@@ -210,6 +268,7 @@ const ReadingPage = () => {
     // Store the phrase text for the first position
     if (selectedPositions.length > 0) {
       setMarkedTexts(prev => new Map(prev.set(selectedPositions[0], cleanText)));
+      setCurrentPositionKey(selectedPositions[0]);
     }
 
     // Check if already cached
@@ -218,47 +277,20 @@ const ReadingPage = () => {
     if (existingExplanation) {
       setExplanation(existingExplanation);
       setIsExplaining(false);
+      setIsSaved(true); // Already in DB
       return;
     }
 
-    // Save to DB
-    await supabase.from("marked_words").insert({
-      story_id: id,
-      word: cleanText,
-    });
-    setTotalMarkedCount(prev => prev + 1);
-
-    // Get explanation from Gemini
-    try {
-      const { data, error } = await supabase.functions.invoke("explain-word", {
-        body: { word: cleanText },
-      });
-
-      if (error) {
-        console.error("Error:", error);
-        setExplanation("Pas d'explication disponible.");
-      } else if (data?.explanation) {
-        setExplanation(data.explanation);
-        
-        // Update DB with explanation
-        await supabase
-          .from("marked_words")
-          .update({ explanation: data.explanation })
-          .eq("story_id", id)
-          .eq("word", cleanText);
-
-        // Update cache
-        setCachedExplanations(prev => new Map(prev.set(cleanText, data.explanation)));
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      setExplanation("Erreur lors de la récupération.");
+    // Get explanation from LLM
+    const result = await fetchExplanation(cleanText);
+    
+    if (result) {
+      setExplanation(result);
+    } else {
+      setExplanationError(true);
     }
-
     setIsExplaining(false);
   };
-
-  // Old handleTextSelection removed - now using selectionchange listener with button
 
   const handleWordClick = async (word: string, event: React.MouseEvent) => {
     // Check if there's a text selection - if so, don't handle the click
@@ -278,6 +310,9 @@ const ReadingPage = () => {
     setSelectedWord(cleanWord);
     setExplanation(null);
     setIsExplaining(true);
+    setExplanationError(false);
+    setIsSaved(false);
+    setCurrentPositionKey(positionKey);
     
     // Mark position as single word in current session
     setSingleWordPositions(prev => new Set([...prev, positionKey]));
@@ -289,49 +324,64 @@ const ReadingPage = () => {
     if (existingExplanation) {
       setExplanation(existingExplanation);
       setIsExplaining(false);
+      setIsSaved(true); // Already in DB
       return;
     }
 
+    // Get explanation from LLM
+    const result = await fetchExplanation(cleanWord);
+    
+    if (result) {
+      setExplanation(result);
+    } else {
+      setExplanationError(true);
+    }
+    setIsExplaining(false);
+  };
+
+  const handleRetry = async () => {
+    if (!selectedWord) return;
+    
+    setIsExplaining(true);
+    setExplanationError(false);
+    
+    const result = await fetchExplanation(selectedWord);
+    
+    if (result) {
+      setExplanation(result);
+    } else {
+      setExplanationError(true);
+    }
+    setIsExplaining(false);
+  };
+
+  const handleSaveExplanation = async () => {
+    if (!selectedWord || !explanation || !id) return;
+
     // Save to DB
-    await supabase.from("marked_words").insert({
+    const { error } = await supabase.from("marked_words").insert({
       story_id: id,
-      word: cleanWord,
+      word: selectedWord,
+      explanation: explanation,
     });
-    setTotalMarkedCount(prev => prev + 1);
 
-    // Get explanation from Gemini
-    try {
-      const { data, error } = await supabase.functions.invoke("explain-word", {
-        body: { word: cleanWord },
-      });
-
-      if (error) {
-        console.error("Error:", error);
-        setExplanation("Pas d'explication disponible.");
-      } else if (data?.explanation) {
-        setExplanation(data.explanation);
-        
-        // Update DB with explanation
-        await supabase
-          .from("marked_words")
-          .update({ explanation: data.explanation })
-          .eq("story_id", id)
-          .eq("word", cleanWord);
-
-        // Update cache
-        setCachedExplanations(prev => new Map(prev.set(cleanWord, data.explanation)));
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      setExplanation("Erreur lors de la récupération.");
+    if (error) {
+      toast.error("Fehler beim Speichern");
+      return;
     }
 
-    setIsExplaining(false);
+    setTotalMarkedCount(prev => prev + 1);
+    setCachedExplanations(prev => new Map(prev.set(selectedWord.toLowerCase(), explanation)));
+    setIsSaved(true);
+    toast.success("Erklärung gespeichert! ⚽");
   };
 
   const closeExplanation = () => {
     setSelectedWord(null);
     setExplanation(null);
+    setExplanationError(false);
+    setIsSaved(false);
+    setCurrentPositionKey(null);
   };
 
   const renderFormattedText = () => {
@@ -471,12 +521,13 @@ const ReadingPage = () => {
             <div className="bg-card rounded-2xl p-6 md:p-10 shadow-card relative">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <Sparkles className="h-4 w-4" />
-                <span>Tippe auf ein Wort oder markiere einen Satzteil</span>
+                <span>Tippe auf ein Wort oder markiere mehrere Wörter</span>
               </div>
               
               {/* Floating button for phrase selection - optimized for touch */}
               {currentSelection && selectionPosition && (
                 <div 
+                  data-selection-button
                   className="fixed z-50 animate-in fade-in zoom-in-95"
                   style={{
                     left: `${Math.min(Math.max(selectionPosition.x, 80), window.innerWidth - 80)}px`,
@@ -488,9 +539,10 @@ const ReadingPage = () => {
                     onClick={handleExplainSelection}
                     onTouchEnd={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       handleExplainSelection();
                     }}
-                    className="btn-primary-kid shadow-lg flex items-center gap-2 text-base py-3 px-5 min-h-[48px] min-w-[120px] touch-manipulation"
+                    className="btn-primary-kid shadow-lg flex items-center gap-2 text-base py-3 px-5 min-h-[52px] min-w-[140px] touch-manipulation"
                   >
                     <MessageCircleQuestion className="h-5 w-5" />
                     Erklären
@@ -512,7 +564,7 @@ const ReadingPage = () => {
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      toast.success("Super! Du hast den Text fertig gelesen! 🎉");
+                      toast.success("Super! Du hast den Text fertig gelesen! 🏆");
                       navigate("/stories");
                     }
                   }}
@@ -521,7 +573,7 @@ const ReadingPage = () => {
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      toast.success("Super! Du hast den Text fertig gelesen! 🎉");
+                      toast.success("Super! Du hast den Text fertig gelesen! 🏆");
                       navigate("/stories");
                     }
                   }}
@@ -575,8 +627,39 @@ const ReadingPage = () => {
                       <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Je réfléchis...</span>
                     </div>
+                  ) : explanationError ? (
+                    <div className="space-y-4">
+                      <p className="text-destructive">Pas d'explication trouvée.</p>
+                      <Button
+                        onClick={handleRetry}
+                        variant="outline"
+                        className="w-full flex items-center gap-2"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Réessayer
+                      </Button>
+                    </div>
                   ) : (
-                    <p className="text-xl leading-relaxed">{explanation}</p>
+                    <div className="space-y-4">
+                      <p className="text-xl leading-relaxed">{explanation}</p>
+                      
+                      {!isSaved && explanation && (
+                        <Button
+                          onClick={handleSaveExplanation}
+                          className="w-full btn-secondary-kid flex items-center gap-2"
+                        >
+                          <Save className="h-5 w-5" />
+                          Speichern
+                        </Button>
+                      )}
+                      
+                      {isSaved && (
+                        <div className="flex items-center gap-2 text-secondary font-medium">
+                          <CheckCircle2 className="h-5 w-5" />
+                          Gespeichert!
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (
