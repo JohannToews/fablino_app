@@ -309,7 +309,11 @@ const ReadingPage = () => {
               >
                 {words.map((word, wIndex) => {
                   const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
-                  const isMarkedInSession = sessionMarkedWords.has(cleanWord);
+                  // Check if this word is marked in session OR is part of a marked phrase
+                  const isMarkedInSession = sessionMarkedWords.has(cleanWord) || 
+                    Array.from(sessionMarkedWords).some(phrase => 
+                      phrase.includes(' ') && phrase.split(/\s+/).includes(cleanWord)
+                    );
                   const isSpace = /^\s+$/.test(word);
                   const canBeMarked = !isStopWord(word);
 
@@ -424,7 +428,7 @@ const ReadingPage = () => {
               {selectedWord ? (
                 <div className="explanation-panel animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-baloo text-2xl font-bold text-primary break-words max-w-[200px]">
+                    <h3 className="font-baloo text-2xl font-bold break-words max-w-[200px]">
                       {selectedWord}
                     </h3>
                     <Button
@@ -457,13 +461,13 @@ const ReadingPage = () => {
 
               {/* Marked words count */}
               <div className="mt-6 p-4 bg-card rounded-xl text-center">
-                <p className="text-sm text-muted-foreground">Gelernte Wörter (gesamt)</p>
-                <p className="text-3xl font-baloo font-bold text-primary">
+                <p className="text-sm text-muted-foreground">Erklärungen (gesamt)</p>
+                <p className="text-3xl font-baloo font-bold text-accent-foreground">
                   {totalMarkedCount}
                 </p>
                 {sessionMarkedWords.size > 0 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Heute: <span className="font-bold text-primary">{sessionMarkedWords.size}</span>
+                    Heute: <span className="font-bold text-accent-foreground">{sessionMarkedWords.size}</span>
                   </p>
                 )}
               </div>
