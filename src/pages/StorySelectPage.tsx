@@ -1,0 +1,120 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, BookOpen, Sparkles } from "lucide-react";
+import heroImage from "@/assets/hero-reading.jpg";
+
+interface Story {
+  id: string;
+  title: string;
+  content: string;
+  cover_image_url: string | null;
+}
+
+const StorySelectPage = () => {
+  const navigate = useNavigate();
+  const [stories, setStories] = useState<Story[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadStories();
+  }, []);
+
+  const loadStories = async () => {
+    const { data } = await supabase
+      .from("stories")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (data) {
+      setStories(data);
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen gradient-hero">
+      {/* Header */}
+      <div className="p-4 md:p-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/")}
+          className="rounded-full hover:bg-primary/20"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* Title */}
+      <div className="text-center px-4 mb-8">
+        <h1 className="text-4xl md:text-5xl font-baloo text-foreground mb-2 flex items-center justify-center gap-3">
+          <Sparkles className="h-8 w-8 text-primary animate-sparkle" />
+          Choisis une histoire
+          <Sparkles className="h-8 w-8 text-primary animate-sparkle" />
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Wähle eine Geschichte zum Lesen
+        </p>
+      </div>
+
+      {/* Stories Grid */}
+      <div className="container max-w-5xl px-4 pb-12">
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-bounce-soft">
+              <BookOpen className="h-16 w-16 text-primary" />
+            </div>
+          </div>
+        ) : stories.length === 0 ? (
+          <div className="text-center py-20">
+            <img
+              src={heroImage}
+              alt="Reading adventure"
+              className="w-64 h-40 object-cover rounded-2xl mx-auto mb-6 shadow-card"
+            />
+            <p className="text-xl text-muted-foreground mb-4">
+              Noch keine Geschichten vorhanden
+            </p>
+            <Button
+              onClick={() => navigate("/admin")}
+              className="btn-primary-kid"
+            >
+              Geschichte hinzufügen
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stories.map((story) => (
+              <div
+                key={story.id}
+                onClick={() => navigate(`/read/${story.id}`)}
+                className="card-story group"
+              >
+                <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted">
+                  {story.cover_image_url ? (
+                    <img
+                      src={story.cover_image_url}
+                      alt={story.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
+                      <BookOpen className="h-16 w-16 text-primary/50" />
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
+                  {story.title}
+                </h3>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default StorySelectPage;
