@@ -162,7 +162,11 @@
   }
 
   .explanation-panel {
-    @apply bg-gradient-to-br from-sky-blue/50 to-lavender/50 rounded-2xl p-6 shadow-card;
+    @apply bg-gradient-to-br from-sky-blue/60 to-lavender/60 rounded-2xl p-6 shadow-card text-foreground;
+  }
+
+  .explanation-panel h3 {
+    @apply text-accent-foreground;
   }
 
   .gradient-hero {
