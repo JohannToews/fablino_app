@@ -321,9 +321,16 @@ const ReadingPage = () => {
                     return <span key={wIndex}>{word}</span>;
                   }
 
-                  // Stop words rendered without interaction
+                  // Stop words: no click interaction, but still show as marked if part of a phrase
                   if (!canBeMarked) {
-                    return <span key={wIndex}>{word}</span>;
+                    return (
+                      <span 
+                        key={wIndex} 
+                        className={isMarkedInSession ? "word-marked" : ""}
+                      >
+                        {word}
+                      </span>
+                    );
                   }
 
                   return (
