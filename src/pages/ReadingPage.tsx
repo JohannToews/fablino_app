@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle } from "lucide-react";
+import ComprehensionQuiz from "@/components/ComprehensionQuiz";
 
 interface Story {
   id: string;
@@ -67,13 +68,26 @@ const ReadingPage = () => {
   const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
   const [selectionRange, setSelectionRange] = useState<Range | null>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
+  // Show comprehension quiz after reading
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [hasQuestions, setHasQuestions] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadStory();
       loadCachedExplanations();
+      checkForQuestions();
     }
   }, [id]);
+
+  const checkForQuestions = async () => {
+    const { count } = await supabase
+      .from("comprehension_questions")
+      .select("*", { count: "exact", head: true })
+      .eq("story_id", id);
+    
+    setHasQuestions((count || 0) > 0);
+  };
 
   // Listen for selection changes
   useEffect(() => {
@@ -495,13 +509,21 @@ const ReadingPage = () => {
               <div className="mt-10 pt-6 border-t border-border flex justify-center">
                 <Button
                   onClick={() => {
-                    toast.success("Super! Du hast den Text fertig gelesen! 🎉");
-                    navigate("/stories");
+                    if (hasQuestions) {
+                      setShowQuiz(true);
+                    } else {
+                      toast.success("Super! Du hast den Text fertig gelesen! 🎉");
+                      navigate("/stories");
+                    }
                   }}
                   onTouchEnd={(e) => {
                     e.preventDefault();
-                    toast.success("Super! Du hast den Text fertig gelesen! 🎉");
-                    navigate("/stories");
+                    if (hasQuestions) {
+                      setShowQuiz(true);
+                    } else {
+                      toast.success("Super! Du hast den Text fertig gelesen! 🎉");
+                      navigate("/stories");
+                    }
                   }}
                   className="btn-accent-kid flex items-center gap-3 text-lg py-4 px-8 min-h-[56px] touch-manipulation"
                 >
@@ -509,6 +531,23 @@ const ReadingPage = () => {
                   Text fertig gelesen
                 </Button>
               </div>
+
+              {/* Comprehension Quiz Section */}
+              {showQuiz && (
+                <div className="mt-8 pt-8 border-t-2 border-primary/30">
+                  <div className="flex items-center gap-3 mb-6">
+                    <HelpCircle className="h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-baloo font-bold">Questions de compréhension</h2>
+                  </div>
+                  <ComprehensionQuiz 
+                    storyId={id!} 
+                    onComplete={() => {
+                      toast.success("Bravo! Tu as terminé le quiz! 🏆");
+                      navigate("/stories");
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
