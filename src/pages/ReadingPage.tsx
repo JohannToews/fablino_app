@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion } from "lucide-react";
+import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2 } from "lucide-react";
 
 interface Story {
   id: string;
@@ -439,10 +439,21 @@ const ReadingPage = () => {
         </div>
       </div>
 
-      <div className="container max-w-6xl p-4 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Reading Area */}
-          <div className="lg:col-span-2">
+      <div className="container max-w-7xl p-4 md:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Reading Area - wider for tablets */}
+          <div className="lg:col-span-3">
+            {/* Cover image above the text */}
+            {story?.cover_image_url && (
+              <div className="mb-6 rounded-2xl overflow-hidden shadow-card">
+                <img 
+                  src={story.cover_image_url} 
+                  alt={story.title}
+                  className="w-full h-48 md:h-64 object-cover"
+                />
+              </div>
+            )}
+            
             <div className="bg-card rounded-2xl p-6 md:p-10 shadow-card relative">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <Sparkles className="h-4 w-4" />
@@ -479,6 +490,25 @@ const ReadingPage = () => {
               >
                 {renderFormattedText()}
               </div>
+
+              {/* "Text fertig gelesen" button at the bottom */}
+              <div className="mt-10 pt-6 border-t border-border flex justify-center">
+                <Button
+                  onClick={() => {
+                    toast.success("Super! Du hast den Text fertig gelesen! 🎉");
+                    navigate("/stories");
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    toast.success("Super! Du hast den Text fertig gelesen! 🎉");
+                    navigate("/stories");
+                  }}
+                  className="btn-accent-kid flex items-center gap-3 text-lg py-4 px-8 min-h-[56px] touch-manipulation"
+                >
+                  <CheckCircle2 className="h-6 w-6" />
+                  Text fertig gelesen
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -507,7 +537,7 @@ const ReadingPage = () => {
                       <span>Je réfléchis...</span>
                     </div>
                   ) : (
-                    <p className="text-xl leading-relaxed font-semibold">{explanation}</p>
+                    <p className="text-xl leading-relaxed">{explanation}</p>
                   )}
                 </div>
               ) : (
