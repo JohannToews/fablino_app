@@ -121,6 +121,17 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-baloo font-bold;
   }
+
+  /* Text selection styling - light background with dark text */
+  ::selection {
+    background-color: hsl(195 80% 85%);
+    color: hsl(220 50% 20%);
+  }
+  
+  ::-moz-selection {
+    background-color: hsl(195 80% 85%);
+    color: hsl(220 50% 20%);
+  }
 }
 
 @layer components {
