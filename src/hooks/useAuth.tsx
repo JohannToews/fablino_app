@@ -2,28 +2,22 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  login: (token: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Check session on initial render
+    return !!sessionStorage.getItem('liremagie_session');
+  });
 
-  useEffect(() => {
-    // Check if session exists
-    const token = sessionStorage.getItem('liremagie_session');
-    setIsAuthenticated(!!token);
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      const token = sessionStorage.getItem('liremagie_session');
-      setIsAuthenticated(!!token);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  const login = (token: string) => {
+    sessionStorage.setItem('liremagie_session', token);
+    setIsAuthenticated(true);
+  };
 
   const logout = () => {
     sessionStorage.removeItem('liremagie_session');
@@ -31,7 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

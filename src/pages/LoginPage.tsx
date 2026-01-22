@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Sparkles, Lock } from "lucide-react";
 
 const LoginPage = () => {
@@ -14,6 +15,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,13 +52,13 @@ const LoginPage = () => {
       if (error) throw error;
 
       if (data.success) {
-        // Store session token
-        sessionStorage.setItem('liremagie_session', data.token);
+        // Store session token via auth context
+        login(data.token);
         toast({
           title: "Willkommen!",
           description: "Erfolgreich angemeldet.",
         });
-        navigate("/");
+        navigate("/", { replace: true });
       } else {
         toast({
           title: "Fehler",
