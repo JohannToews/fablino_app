@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, X, Loader2, BookOpen } from "lucide-react";
+import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion } from "lucide-react";
 
 interface Story {
   id: string;
@@ -57,6 +57,10 @@ const ReadingPage = () => {
   const [cachedExplanations, setCachedExplanations] = useState<Map<string, string>>(new Map());
   // Total marked words count from DB (for display)
   const [totalMarkedCount, setTotalMarkedCount] = useState(0);
+  // Current text selection for phrase marking
+  const [currentSelection, setCurrentSelection] = useState<string | null>(null);
+  const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
+  const textContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -64,6 +68,46 @@ const ReadingPage = () => {
       loadCachedExplanations();
     }
   }, [id]);
+
+  // Listen for selection changes
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+        setCurrentSelection(null);
+        setSelectionPosition(null);
+        return;
+      }
+
+      const selectedText = selection.toString().trim();
+      
+      // Only show button for multi-word selections
+      if (!selectedText || selectedText.length < 4) {
+        setCurrentSelection(null);
+        setSelectionPosition(null);
+        return;
+      }
+
+      // Check if selection is within our text container
+      if (textContainerRef.current) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const containerRect = textContainerRef.current.getBoundingClientRect();
+        
+        // Check if selection is inside the container
+        if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom + 100) {
+          setCurrentSelection(selectedText);
+          setSelectionPosition({
+            x: rect.left + rect.width / 2,
+            y: rect.top - 10
+          });
+        }
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
 
   const loadStory = async () => {
     const { data, error } = await supabase
@@ -101,31 +145,21 @@ const ReadingPage = () => {
     }
   };
 
-  const handleTextSelection = useCallback(async () => {
-    // Small delay to ensure selection is complete
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
-    
-    const selectedText = selection.toString().trim();
-    
-    // Only handle multi-word selections (contains space) or selections > 1 word
-    // Single words are handled by handleWordClick
-    if (!selectedText || !selectedText.includes(' ')) {
-      return;
-    }
+  const handleExplainSelection = async () => {
+    if (!currentSelection) return;
 
-    const cleanText = selectedText
+    const cleanText = currentSelection
       .replace(/[.,!?;:'"«»\n\r]/g, " ")
       .replace(/\s+/g, " ")
       .trim()
       .toLowerCase();
-    
+
     if (!cleanText || cleanText.length < 3) return;
 
-    // Prevent click event from also firing
-    selection.removeAllRanges();
+    // Clear the selection UI
+    window.getSelection()?.removeAllRanges();
+    setCurrentSelection(null);
+    setSelectionPosition(null);
 
     setSelectedWord(cleanText);
     setExplanation(null);
@@ -178,7 +212,9 @@ const ReadingPage = () => {
     }
 
     setIsExplaining(false);
-  }, [id, cachedExplanations]);
+  };
+
+  // Old handleTextSelection removed - now using selectionchange listener with button
 
   const handleWordClick = async (word: string, event: React.MouseEvent) => {
     // Check if there's a text selection - if so, don't handle the click
@@ -346,16 +382,36 @@ const ReadingPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Reading Area */}
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-2xl p-6 md:p-10 shadow-card">
+            <div className="bg-card rounded-2xl p-6 md:p-10 shadow-card relative">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <Sparkles className="h-4 w-4" />
                 <span>Tippe auf ein Wort oder markiere einen Satzteil</span>
               </div>
               
+              {/* Floating button for phrase selection */}
+              {currentSelection && selectionPosition && (
+                <div 
+                  className="fixed z-50 animate-in fade-in zoom-in-95"
+                  style={{
+                    left: `${selectionPosition.x}px`,
+                    top: `${selectionPosition.y}px`,
+                    transform: 'translate(-50%, -100%)'
+                  }}
+                >
+                  <Button
+                    onClick={handleExplainSelection}
+                    className="btn-primary-kid shadow-lg flex items-center gap-2 text-sm py-2 px-3"
+                    size="sm"
+                  >
+                    <MessageCircleQuestion className="h-4 w-4" />
+                    Erklären
+                  </Button>
+                </div>
+              )}
+              
               <div 
+                ref={textContainerRef}
                 className="reading-text select-text"
-                onMouseUp={handleTextSelection}
-                onTouchEnd={handleTextSelection}
               >
                 {renderFormattedText()}
               </div>
