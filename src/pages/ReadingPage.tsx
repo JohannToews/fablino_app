@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Sparkles, X, Loader2, Star, BookOpen } from "lucide-react";
 
 interface Story {
   id: string;
@@ -17,6 +17,12 @@ interface MarkedWord {
   explanation: string | null;
 }
 
+interface SpecialExpression {
+  phrase: string;
+  type: "idiom" | "metaphor" | "difficult";
+  hint: string;
+}
+
 const ReadingPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -25,7 +31,9 @@ const ReadingPage = () => {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
-  const [markedWords, setMarkedWords] = useState<Set<string>>(new Set());
+  const [markedWords, setMarkedWords] = useState<Map<string, string | null>>(new Map());
+  const [specialExpressions, setSpecialExpressions] = useState<SpecialExpression[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -33,6 +41,13 @@ const ReadingPage = () => {
       loadMarkedWords();
     }
   }, [id]);
+
+  // Analyze text for special expressions when story loads
+  useEffect(() => {
+    if (story?.content && specialExpressions.length === 0) {
+      analyzeTextForSpecialExpressions();
+    }
+  }, [story?.content]);
 
   const loadStory = async () => {
     const { data, error } = await supabase
@@ -53,16 +68,100 @@ const ReadingPage = () => {
   const loadMarkedWords = async () => {
     const { data } = await supabase
       .from("marked_words")
-      .select("word")
+      .select("word, explanation")
       .eq("story_id", id);
     
     if (data) {
-      setMarkedWords(new Set(data.map((w) => w.word.toLowerCase())));
+      const wordMap = new Map<string, string | null>();
+      data.forEach((w) => wordMap.set(w.word.toLowerCase(), w.explanation));
+      setMarkedWords(wordMap);
     }
   };
 
+  const analyzeTextForSpecialExpressions = async () => {
+    if (!story?.content) return;
+    setIsAnalyzing(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-text", {
+        body: { text: story.content },
+      });
+
+      if (data?.specialExpressions) {
+        setSpecialExpressions(data.specialExpressions);
+      }
+    } catch (err) {
+      console.error("Error analyzing text:", err);
+    }
+    
+    setIsAnalyzing(false);
+  };
+
+  const handleTextSelection = useCallback(async () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    
+    const selectedText = selection.toString().trim();
+    if (!selectedText || selectedText.length < 2) return;
+
+    // Clean the selection
+    const cleanText = selectedText.replace(/[.,!?;:'"«»\n\r]/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    
+    if (!cleanText) return;
+
+    setSelectedWord(cleanText);
+    setExplanation(null);
+    setIsExplaining(true);
+
+    // Check if already in DB
+    const existingExplanation = markedWords.get(cleanText);
+    
+    if (existingExplanation) {
+      setExplanation(existingExplanation);
+      setIsExplaining(false);
+      return;
+    }
+
+    // Mark in DB
+    if (!markedWords.has(cleanText)) {
+      await supabase.from("marked_words").insert({
+        story_id: id,
+        word: cleanText,
+      });
+    }
+
+    // Get explanation from Gemini
+    try {
+      const { data, error } = await supabase.functions.invoke("explain-word", {
+        body: { word: cleanText },
+      });
+
+      if (error) {
+        console.error("Error:", error);
+        setExplanation("Pas d'explication disponible.");
+      } else if (data?.explanation) {
+        setExplanation(data.explanation);
+        
+        // Update marked word with explanation
+        await supabase
+          .from("marked_words")
+          .update({ explanation: data.explanation })
+          .eq("story_id", id)
+          .eq("word", cleanText);
+
+        // Update local state
+        setMarkedWords(new Map(markedWords.set(cleanText, data.explanation)));
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setExplanation("Erreur lors de la récupération.");
+    }
+
+    setIsExplaining(false);
+    selection.removeAllRanges();
+  }, [id, markedWords]);
+
   const handleWordClick = async (word: string) => {
-    // Clean the word from punctuation
     const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
     
     if (!cleanWord) return;
@@ -71,13 +170,21 @@ const ReadingPage = () => {
     setExplanation(null);
     setIsExplaining(true);
 
-    // Mark the word in DB
+    // Check if already in DB with explanation
+    const existingExplanation = markedWords.get(cleanWord);
+    
+    if (existingExplanation) {
+      setExplanation(existingExplanation);
+      setIsExplaining(false);
+      return;
+    }
+
+    // Mark in DB if not exists
     if (!markedWords.has(cleanWord)) {
       await supabase.from("marked_words").insert({
         story_id: id,
         word: cleanWord,
       });
-      setMarkedWords(new Set([...markedWords, cleanWord]));
     }
 
     // Get explanation from Gemini
@@ -88,20 +195,23 @@ const ReadingPage = () => {
 
       if (error) {
         console.error("Error:", error);
-        setExplanation("Pas d'explication disponible pour le moment.");
+        setExplanation("Pas d'explication disponible.");
       } else if (data?.explanation) {
         setExplanation(data.explanation);
         
-        // Update the marked word with explanation
+        // Update marked word with explanation
         await supabase
           .from("marked_words")
           .update({ explanation: data.explanation })
           .eq("story_id", id)
           .eq("word", cleanWord);
+
+        // Update local state
+        setMarkedWords(new Map(markedWords.set(cleanWord, data.explanation)));
       }
     } catch (err) {
       console.error("Error:", err);
-      setExplanation("Erreur lors de la récupération de l'explication.");
+      setExplanation("Erreur lors de la récupération.");
     }
 
     setIsExplaining(false);
@@ -112,28 +222,68 @@ const ReadingPage = () => {
     setExplanation(null);
   };
 
-  const renderText = () => {
+  const isSpecialExpression = (text: string): SpecialExpression | undefined => {
+    const lowerText = text.toLowerCase();
+    return specialExpressions.find(expr => 
+      lowerText.includes(expr.phrase.toLowerCase()) || 
+      expr.phrase.toLowerCase().includes(lowerText)
+    );
+  };
+
+  const renderFormattedText = () => {
     if (!story) return null;
 
-    const words = story.content.split(/(\s+)/);
+    // Split into paragraphs
+    const paragraphs = story.content.split(/\n\n+/);
     
-    return words.map((word, index) => {
-      const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
-      const isMarked = markedWords.has(cleanWord);
-      const isSpace = /^\s+$/.test(word);
-
-      if (isSpace) {
-        return <span key={index}>{word}</span>;
-      }
-
+    return paragraphs.map((paragraph, pIndex) => {
+      // Split paragraph into sentences for varied formatting
+      const sentences = paragraph.split(/(?<=[.!?])\s+/);
+      
       return (
-        <span
-          key={index}
-          onClick={() => handleWordClick(word)}
-          className={`word-highlight ${isMarked ? "word-marked" : ""}`}
-        >
-          {word}
-        </span>
+        <p key={pIndex} className="mb-6 leading-loose">
+          {sentences.map((sentence, sIndex) => {
+            // Add some formatting variety
+            const shouldBold = sIndex === 0 && pIndex === 0; // First sentence bold
+            const shouldItalic = sentence.includes("«") || sentence.includes("»"); // Dialogue italic
+            
+            const words = sentence.split(/(\s+)/);
+            
+            return (
+              <span 
+                key={sIndex} 
+                className={`${shouldBold ? "font-bold" : ""} ${shouldItalic ? "italic text-secondary-foreground" : ""}`}
+              >
+                {words.map((word, wIndex) => {
+                  const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
+                  const isMarked = markedWords.has(cleanWord);
+                  const isSpace = /^\s+$/.test(word);
+                  const special = isSpecialExpression(cleanWord);
+
+                  if (isSpace) {
+                    return <span key={wIndex}>{word}</span>;
+                  }
+
+                  return (
+                    <span
+                      key={wIndex}
+                      onClick={() => handleWordClick(word)}
+                      className={`word-highlight ${isMarked ? "word-marked" : ""} ${
+                        special ? "special-expression" : ""
+                      }`}
+                      title={special?.hint}
+                    >
+                      {word}
+                      {special && (
+                        <Star className="inline-block h-3 w-3 ml-0.5 text-primary opacity-60" />
+                      )}
+                    </span>
+                  );
+                })}
+              </span>
+            );
+          })}
+        </p>
       );
     });
   };
@@ -152,18 +302,27 @@ const ReadingPage = () => {
     <div className="min-h-screen gradient-hero">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/stories")}
+              className="rounded-full hover:bg-primary/20"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+            <h1 className="text-2xl md:text-3xl font-baloo text-foreground truncate">
+              {story?.title}
+            </h1>
+          </div>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/stories")}
-            className="rounded-full hover:bg-primary/20"
+            onClick={() => navigate("/quiz")}
+            className="btn-accent-kid flex items-center gap-2"
           >
-            <ArrowLeft className="h-6 w-6" />
+            <BookOpen className="h-5 w-5" />
+            <span className="hidden sm:inline">Quiz</span>
           </Button>
-          <h1 className="text-2xl md:text-3xl font-baloo text-foreground truncate">
-            {story?.title}
-          </h1>
         </div>
       </div>
 
@@ -172,11 +331,32 @@ const ReadingPage = () => {
           {/* Reading Area */}
           <div className="lg:col-span-2">
             <div className="bg-card rounded-2xl p-6 md:p-10 shadow-card">
-              <p className="text-sm text-muted-foreground mb-4 flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <Sparkles className="h-4 w-4" />
-                Tippe auf ein Wort für eine Erklärung
-              </p>
-              <div className="reading-text">{renderText()}</div>
+                <span>Tippe auf ein Wort oder markiere einen Satzteil</span>
+                {isAnalyzing && (
+                  <span className="flex items-center gap-1 text-primary">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Analysiere...
+                  </span>
+                )}
+              </div>
+              
+              {/* Special expressions legend */}
+              {specialExpressions.length > 0 && (
+                <div className="mb-6 p-3 bg-sunshine/20 rounded-xl flex items-center gap-2 text-sm">
+                  <Star className="h-4 w-4 text-primary" />
+                  <span>Wörter mit Stern sind besondere Ausdrücke</span>
+                </div>
+              )}
+              
+              <div 
+                className="reading-text select-text"
+                onMouseUp={handleTextSelection}
+                onTouchEnd={handleTextSelection}
+              >
+                {renderFormattedText()}
+              </div>
             </div>
           </div>
 
@@ -186,14 +366,14 @@ const ReadingPage = () => {
               {selectedWord ? (
                 <div className="explanation-panel animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-baloo text-2xl font-bold text-primary">
+                    <h3 className="font-baloo text-2xl font-bold text-primary break-words max-w-[200px]">
                       {selectedWord}
                     </h3>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={closeExplanation}
-                      className="rounded-full -mt-1 -mr-1"
+                      className="rounded-full -mt-1 -mr-1 flex-shrink-0"
                     >
                       <X className="h-5 w-5" />
                     </Button>
@@ -205,7 +385,7 @@ const ReadingPage = () => {
                       <span>Je réfléchis...</span>
                     </div>
                   ) : (
-                    <p className="text-lg leading-relaxed">{explanation}</p>
+                    <p className="text-xl leading-relaxed font-semibold">{explanation}</p>
                   )}
                 </div>
               ) : (

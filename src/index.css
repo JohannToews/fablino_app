@@ -142,15 +142,23 @@
   }
 
   .word-highlight {
-    @apply cursor-pointer px-1 py-0.5 rounded-md transition-all duration-200 hover:bg-sunshine/40 active:bg-sunshine/60 select-none;
+    @apply cursor-pointer px-1 py-0.5 rounded-md transition-all duration-200 hover:bg-sunshine/40 active:bg-sunshine/60;
   }
 
   .word-marked {
     @apply bg-sunshine/50 border-b-2 border-primary;
   }
 
+  .special-expression {
+    @apply bg-lavender/40 border-b-2 border-dashed border-purple-400;
+  }
+
   .reading-text {
-    @apply text-2xl leading-relaxed font-nunito tracking-wide;
+    @apply text-xl md:text-2xl leading-loose font-nunito tracking-wide;
+  }
+
+  .reading-text p {
+    @apply mb-6 first-letter:text-4xl first-letter:font-bold first-letter:text-primary first-letter:mr-1;
   }
 
   .explanation-panel {

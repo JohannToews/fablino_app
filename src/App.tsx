@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import AdminPage from "./pages/AdminPage";
 import StorySelectPage from "./pages/StorySelectPage";
 import ReadingPage from "./pages/ReadingPage";
+import VocabularyQuizPage from "./pages/VocabularyQuizPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/stories" element={<StorySelectPage />} />
           <Route path="/read/:id" element={<ReadingPage />} />
+          <Route path="/quiz" element={<VocabularyQuizPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

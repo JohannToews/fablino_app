@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { word, context } = await req.json();
+    const { word, correctExplanation } = await req.json();
     
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     
@@ -22,20 +22,19 @@ serve(async (req) => {
       );
     }
 
-    // Prompt für SEHR kurze Erklärung (< 10 Worte)
-    const prompt = `Tu es un dictionnaire pour enfants français.
+    const prompt = `Crée un quiz pour le mot français "${word}".
+La bonne réponse est: "${correctExplanation}"
 
-Explique le mot ou l'expression "${word}" en MAXIMUM 8 mots simples.
-${context ? `Contexte: "${context}"` : ''}
+Génère 3 FAUSSES réponses qui:
+- Sont plausibles mais incorrectes
+- Ont la même longueur que la bonne réponse (environ ${correctExplanation.split(' ').length} mots)
+- Sont en français simple pour enfant de 7 ans
+- Ne sont PAS des synonymes de la bonne réponse
 
-Règles STRICTES:
-- Maximum 8 mots
-- Pas de ponctuation finale
-- Français simple pour enfant de 7 ans
-- Juste la définition, rien d'autre
-
-Exemple: "content" -> "Être heureux et joyeux"
-Exemple: "maison" -> "L'endroit où on habite"`;
+Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
+{
+  "wrongOptions": ["fausse réponse 1", "fausse réponse 2", "fausse réponse 3"]
+}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -45,8 +44,8 @@ Exemple: "maison" -> "L'endroit où on habite"`;
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 50,
+            temperature: 0.7,
+            maxOutputTokens: 200,
           },
         }),
       }
@@ -62,10 +61,25 @@ Exemple: "maison" -> "L'endroit où on habite"`;
     }
 
     const data = await response.json();
-    const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Pas d\'explication disponible.';
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    let result;
+    try {
+      const cleanJson = rawText.replace(/```json\n?|\n?```/g, '').trim();
+      result = JSON.parse(cleanJson);
+    } catch {
+      console.error('Failed to parse JSON:', rawText);
+      result = { 
+        wrongOptions: [
+          "Une couleur vive",
+          "Un animal de la forêt", 
+          "Quelque chose de rond"
+        ] 
+      };
+    }
 
     return new Response(
-      JSON.stringify({ explanation }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
