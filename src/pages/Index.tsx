@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Settings, Sparkles, Star } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, Settings, Sparkles, Star, BookText, Brain } from "lucide-react";
 import heroImage from "@/assets/hero-reading.jpg";
 
 const Index = () => {
@@ -16,18 +17,6 @@ const Index = () => {
       </div>
 
       <div className="relative container max-w-4xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center min-h-screen">
-        {/* Header with Admin Link */}
-        <div className="w-full flex justify-end mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/admin")}
-            className="rounded-full hover:bg-primary/20"
-            title="Admin-Bereich"
-          >
-            <Settings className="h-5 w-5 text-muted-foreground" />
-          </Button>
-        </div>
 
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -56,20 +45,50 @@ const Index = () => {
             />
           </div>
 
-          {/* CTA Button */}
-          <Button
-            onClick={() => navigate("/stories")}
-            className="btn-primary-kid text-xl px-10 py-6 shadow-glow hover:shadow-card group"
-          >
-            <BookOpen className="h-6 w-6 mr-3 group-hover:animate-bounce-soft" />
-            Commencer à lire
-            <Sparkles className="h-5 w-5 ml-3 animate-sparkle" />
-          </Button>
+          {/* Navigation Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl">
+            {/* Lire une Histoire */}
+            <Card 
+              onClick={() => navigate("/stories")}
+              className="cursor-pointer border-2 border-primary/30 hover:border-primary hover:shadow-card transition-all duration-300 group touch-manipulation"
+            >
+              <CardContent className="flex flex-col items-center p-6 text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <BookOpen className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-baloo font-bold text-lg mb-1">Lire une Histoire</h3>
+                <p className="text-sm text-muted-foreground">Lis et apprends de nouveaux mots</p>
+              </CardContent>
+            </Card>
 
-          {/* Subtitle */}
-          <p className="mt-6 text-muted-foreground">
-            Wähle eine Geschichte und lerne neue Wörter
-          </p>
+            {/* Quiz des Mots */}
+            <Card 
+              onClick={() => navigate("/quiz")}
+              className="cursor-pointer border-2 border-accent/30 hover:border-accent hover:shadow-card transition-all duration-300 group touch-manipulation"
+            >
+              <CardContent className="flex flex-col items-center p-6 text-center">
+                <div className="h-16 w-16 rounded-full bg-accent/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Brain className="h-8 w-8 text-accent-foreground" />
+                </div>
+                <h3 className="font-baloo font-bold text-lg mb-1">Quiz des Mots</h3>
+                <p className="text-sm text-muted-foreground">Teste ton vocabulaire</p>
+              </CardContent>
+            </Card>
+
+            {/* Admin (Papa) */}
+            <Card 
+              onClick={() => navigate("/admin")}
+              className="cursor-pointer border-2 border-lavender/50 hover:border-lavender hover:shadow-card transition-all duration-300 group touch-manipulation"
+            >
+              <CardContent className="flex flex-col items-center p-6 text-center">
+                <div className="h-16 w-16 rounded-full bg-lavender/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Settings className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-baloo font-bold text-lg mb-1">Admin (Papa)</h3>
+                <p className="text-sm text-muted-foreground">Histoires verwalten</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Footer */}

@@ -38,6 +38,41 @@ export type Database = {
         }
         Relationships: []
       }
+      comprehension_questions: {
+        Row: {
+          created_at: string
+          expected_answer: string
+          id: string
+          order_index: number
+          question: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string
+          expected_answer: string
+          id?: string
+          order_index?: number
+          question: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string
+          expected_answer?: string
+          id?: string
+          order_index?: number
+          question?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comprehension_questions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marked_words: {
         Row: {
           created_at: string

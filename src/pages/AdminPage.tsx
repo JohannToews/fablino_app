@@ -107,24 +107,63 @@ const AdminPage = () => {
       coverUrl = urlData.publicUrl;
     }
 
-    const { error } = await supabase.from("stories").insert({
+    // Insert story
+    const { data: insertedStory, error } = await supabase.from("stories").insert({
       title,
       content,
       cover_image_url: coverUrl,
-    });
+    }).select().single();
+
+    if (error || !insertedStory) {
+      toast.error("Fehler beim Speichern der Geschichte");
+      setIsLoading(false);
+      return;
+    }
+
+    // Generate comprehension questions using LLM
+    toast.info("Generiere Verständnisfragen...");
+    try {
+      const { data: questionsData, error: questionsError } = await supabase.functions.invoke(
+        "generate-comprehension-questions",
+        {
+          body: { storyContent: content, storyTitle: title },
+        }
+      );
+
+      if (questionsError) {
+        console.error("Questions generation error:", questionsError);
+        toast.warning("Fragen konnten nicht generiert werden");
+      } else if (questionsData?.questions) {
+        // Save questions to DB
+        const questionsToInsert = questionsData.questions.map((q: { question: string; expectedAnswer: string }, index: number) => ({
+          story_id: insertedStory.id,
+          question: q.question,
+          expected_answer: q.expectedAnswer,
+          order_index: index,
+        }));
+
+        const { error: insertError } = await supabase
+          .from("comprehension_questions")
+          .insert(questionsToInsert);
+
+        if (insertError) {
+          console.error("Failed to save questions:", insertError);
+          toast.warning("Fragen konnten nicht gespeichert werden");
+        } else {
+          toast.success("Geschichte und Fragen gespeichert! 🎉");
+        }
+      }
+    } catch (err) {
+      console.error("Error generating questions:", err);
+      toast.warning("Fragen-Generierung fehlgeschlagen");
+    }
 
     setIsLoading(false);
-
-    if (error) {
-      toast.error("Fehler beim Speichern der Geschichte");
-    } else {
-      toast.success("Geschichte gespeichert!");
-      setTitle("");
-      setContent("");
-      setCoverImage(null);
-      setCoverPreview(null);
-      loadStories();
-    }
+    setTitle("");
+    setContent("");
+    setCoverImage(null);
+    setCoverPreview(null);
+    loadStories();
   };
 
   const deleteStory = async (id: string) => {
