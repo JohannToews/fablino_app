@@ -51,8 +51,11 @@ const ReadingPage = () => {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
   
-  // Session-only marked words (visual highlighting only for current session)
-  const [sessionMarkedWords, setSessionMarkedWords] = useState<Set<string>>(new Set());
+  // Session-only marked positions (visual highlighting only for current session)
+  // Format: "pIndex-sIndex-wIndex" for single words, or "pIndex-sIndex-wStart:wEnd" for phrases
+  const [sessionMarkedPositions, setSessionMarkedPositions] = useState<Set<string>>(new Set());
+  // Map from position key to the word/phrase text for display
+  const [markedTexts, setMarkedTexts] = useState<Map<string, string>>(new Map());
   // DB cached explanations (for avoiding re-fetching from LLM)
   const [cachedExplanations, setCachedExplanations] = useState<Map<string, string>>(new Map());
   // Total marked words count from DB (for display)
@@ -60,6 +63,7 @@ const ReadingPage = () => {
   // Current text selection for phrase marking
   const [currentSelection, setCurrentSelection] = useState<string | null>(null);
   const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
+  const [selectionRange, setSelectionRange] = useState<Range | null>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,6 +101,7 @@ const ReadingPage = () => {
         // Check if selection is inside the container
         if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom + 100) {
           setCurrentSelection(selectedText);
+          setSelectionRange(range.cloneRange());
           setSelectionPosition({
             x: rect.left + rect.width / 2,
             y: rect.top - 10
@@ -146,7 +151,7 @@ const ReadingPage = () => {
   };
 
   const handleExplainSelection = async () => {
-    if (!currentSelection) return;
+    if (!currentSelection || !selectionRange) return;
 
     const cleanText = currentSelection
       .replace(/[.,!?;:'"«»\n\r]/g, " ")
@@ -156,17 +161,40 @@ const ReadingPage = () => {
 
     if (!cleanText || cleanText.length < 3) return;
 
+    // Find all word elements within the selection and get their positions
+    const selectedPositions: string[] = [];
+    if (textContainerRef.current) {
+      const allWordSpans = textContainerRef.current.querySelectorAll('[data-position]');
+      allWordSpans.forEach(span => {
+        if (selectionRange.intersectsNode(span)) {
+          const position = span.getAttribute('data-position');
+          if (position) {
+            selectedPositions.push(position);
+          }
+        }
+      });
+    }
+    
     // Clear the selection UI
     window.getSelection()?.removeAllRanges();
     setCurrentSelection(null);
     setSelectionPosition(null);
+    setSelectionRange(null);
 
     setSelectedWord(cleanText);
     setExplanation(null);
     setIsExplaining(true);
     
-    // Mark in current session
-    setSessionMarkedWords(prev => new Set([...prev, cleanText]));
+    // Mark all selected positions in current session
+    setSessionMarkedPositions(prev => {
+      const newSet = new Set(prev);
+      selectedPositions.forEach(pos => newSet.add(pos));
+      return newSet;
+    });
+    // Store the phrase text for the first position
+    if (selectedPositions.length > 0) {
+      setMarkedTexts(prev => new Map(prev.set(selectedPositions[0], cleanText)));
+    }
 
     // Check if already cached
     const existingExplanation = cachedExplanations.get(cleanText);
@@ -227,12 +255,17 @@ const ReadingPage = () => {
     
     if (!cleanWord) return;
 
+    // Create unique position key using event target data attributes
+    const target = event.currentTarget;
+    const positionKey = target.getAttribute('data-position') || `click-${Date.now()}`;
+
     setSelectedWord(cleanWord);
     setExplanation(null);
     setIsExplaining(true);
     
-    // Mark in current session
-    setSessionMarkedWords(prev => new Set([...prev, cleanWord]));
+    // Mark position in current session
+    setSessionMarkedPositions(prev => new Set([...prev, positionKey]));
+    setMarkedTexts(prev => new Map(prev.set(positionKey, cleanWord)));
 
     // Check if already cached
     const existingExplanation = cachedExplanations.get(cleanWord);
@@ -309,11 +342,9 @@ const ReadingPage = () => {
               >
                 {words.map((word, wIndex) => {
                   const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
-                  // Check if this word is marked in session OR is part of a marked phrase
-                  const isMarkedInSession = sessionMarkedWords.has(cleanWord) || 
-                    Array.from(sessionMarkedWords).some(phrase => 
-                      phrase.includes(' ') && phrase.split(/\s+/).includes(cleanWord)
-                    );
+                  const positionKey = `${pIndex}-${sIndex}-${wIndex}`;
+                  // Check if this specific position is marked
+                  const isMarkedInSession = sessionMarkedPositions.has(positionKey);
                   const isSpace = /^\s+$/.test(word);
                   const canBeMarked = !isStopWord(word);
 
@@ -325,7 +356,8 @@ const ReadingPage = () => {
                   if (!canBeMarked) {
                     return (
                       <span 
-                        key={wIndex} 
+                        key={wIndex}
+                        data-position={positionKey}
                         className={isMarkedInSession ? "word-marked" : ""}
                       >
                         {word}
@@ -336,6 +368,7 @@ const ReadingPage = () => {
                   return (
                     <span
                       key={wIndex}
+                      data-position={positionKey}
                       onClick={(e) => handleWordClick(word, e)}
                       className={`word-highlight ${isMarkedInSession ? "word-marked" : ""}`}
                     >
@@ -472,9 +505,9 @@ const ReadingPage = () => {
                 <p className="text-3xl font-baloo font-bold text-accent-foreground">
                   {totalMarkedCount}
                 </p>
-                {sessionMarkedWords.size > 0 && (
+                {sessionMarkedPositions.size > 0 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Heute: <span className="font-bold text-accent-foreground">{sessionMarkedWords.size}</span>
+                    Heute: <span className="font-bold text-accent-foreground">{sessionMarkedPositions.size}</span>
                   </p>
                 )}
               </div>
