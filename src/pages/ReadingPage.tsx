@@ -404,7 +404,7 @@ const ReadingPage = () => {
             return (
               <span 
                 key={sIndex} 
-                className={`${shouldBold ? "font-bold" : ""} ${shouldItalic ? "italic text-secondary-foreground" : ""}`}
+                className={`${shouldBold ? "font-bold" : ""} ${shouldItalic ? "italic text-foreground" : ""}`}
               >
                 {words.map((word, wIndex) => {
                   const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
