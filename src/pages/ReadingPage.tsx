@@ -23,6 +23,37 @@ interface SpecialExpression {
   hint: string;
 }
 
+// French stop words that should not be marked/highlighted
+const FRENCH_STOP_WORDS = new Set([
+  // Articles
+  "le", "la", "les", "l", "un", "une", "des", "du", "de", "d",
+  // Pronouns
+  "je", "tu", "il", "elle", "on", "nous", "vous", "ils", "elles",
+  "me", "te", "se", "lui", "leur", "moi", "toi", "soi",
+  // Possessives
+  "mon", "ma", "mes", "ton", "ta", "tes", "son", "sa", "ses",
+  "notre", "nos", "votre", "vos", "leur", "leurs",
+  // Demonstratives
+  "ce", "cet", "cette", "ces", "ça", "c",
+  // Prepositions & conjunctions
+  "à", "au", "aux", "en", "dans", "sur", "sous", "avec", "sans", "pour",
+  "par", "vers", "chez", "entre", "et", "ou", "mais", "donc", "car", "ni",
+  "que", "qui", "quoi", "dont", "où", "si", "ne", "pas", "plus", "moins",
+  // Common verbs (conjugated)
+  "est", "sont", "a", "ai", "as", "ont", "été", "être", "avoir",
+  "fait", "faire", "dit", "dire", "va", "vais", "vont", "aller",
+  // Other common short words
+  "y", "n", "s", "t", "qu", "j", "m"
+]);
+
+// Minimum word length to be markable (excluding stop words check)
+const MIN_WORD_LENGTH = 3;
+
+const isStopWord = (word: string): boolean => {
+  const clean = word.toLowerCase().replace(/[.,!?;:'"«»]/g, "");
+  return FRENCH_STOP_WORDS.has(clean) || clean.length < MIN_WORD_LENGTH;
+};
+
 const ReadingPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -256,11 +287,17 @@ const ReadingPage = () => {
               >
                 {words.map((word, wIndex) => {
                   const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
-                  const isMarked = markedWords.has(cleanWord);
+                  const isMarked = markedWords.has(cleanWord) && !isStopWord(word);
                   const isSpace = /^\s+$/.test(word);
                   const special = isSpecialExpression(cleanWord);
+                  const canBeMarked = !isStopWord(word);
 
                   if (isSpace) {
+                    return <span key={wIndex}>{word}</span>;
+                  }
+
+                  // Stop words are rendered without click handler and highlight
+                  if (!canBeMarked) {
                     return <span key={wIndex}>{word}</span>;
                   }
 
