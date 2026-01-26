@@ -10,6 +10,7 @@ import AdminPage from "./pages/AdminPage";
 import StorySelectPage from "./pages/StorySelectPage";
 import ReadingPage from "./pages/ReadingPage";
 import VocabularyQuizPage from "./pages/VocabularyQuizPage";
+import ResultsPage from "./pages/ResultsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +50,12 @@ const App = () => (
                 <VocabularyQuizPage />
               </ProtectedRoute>
             } />
+            <Route path="/results" element={
+              <ProtectedRoute>
+                <ResultsPage />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

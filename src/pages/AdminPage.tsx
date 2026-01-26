@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
+import PointsConfigSection from "@/components/PointsConfigSection";
 
 interface Story {
   id: string;
@@ -365,6 +366,9 @@ const AdminPage = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Points Configuration */}
+        <PointsConfigSection />
       </div>
     </div>
   );

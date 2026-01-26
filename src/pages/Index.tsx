@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Settings, Sparkles, Star, BookText, Brain } from "lucide-react";
+import { BookOpen, Settings, Sparkles, Star, BookText, Brain, Trophy } from "lucide-react";
 import heroImage from "@/assets/hero-reading.jpg";
 
 const Index = () => {
@@ -72,6 +72,20 @@ const Index = () => {
                 </div>
                 <h3 className="font-baloo font-bold text-lg mb-1">Quiz des Mots</h3>
                 <p className="text-sm text-muted-foreground">Teste ton vocabulaire</p>
+              </CardContent>
+            </Card>
+
+            {/* Meine Resultate */}
+            <Card 
+              onClick={() => navigate("/results")}
+              className="cursor-pointer border-2 border-sunshine/50 hover:border-sunshine hover:shadow-card transition-all duration-300 group touch-manipulation"
+            >
+              <CardContent className="flex flex-col items-center p-6 text-center">
+                <div className="h-16 w-16 rounded-full bg-sunshine/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Trophy className="h-8 w-8 text-amber-600" />
+                </div>
+                <h3 className="font-baloo font-bold text-lg mb-1">Meine Resultate</h3>
+                <p className="text-sm text-muted-foreground">Mes points et progrès</p>
               </CardContent>
             </Card>
 

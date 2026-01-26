@@ -43,10 +43,27 @@ const VocabularyQuizPage = () => {
   const [totalQuestions, setTotalQuestions] = useState(5);
   const [selectedQuestionCount, setSelectedQuestionCount] = useState<"5" | "10">("5");
   const [quizStarted, setQuizStarted] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState(0);
+  const [quizPointValue, setQuizPointValue] = useState(2); // default points per correct answer
 
   useEffect(() => {
     loadWords();
+    loadQuizPointValue();
   }, []);
+
+  const loadQuizPointValue = async () => {
+    // Load quiz point value for medium difficulty (default)
+    const { data } = await supabase
+      .from("point_settings")
+      .select("points")
+      .eq("category", "quiz")
+      .eq("difficulty", "medium")
+      .maybeSingle();
+
+    if (data) {
+      setQuizPointValue(data.points);
+    }
+  };
 
   const loadWords = async () => {
     // Only load words that are NOT marked as "easy" and NOT learned
@@ -175,11 +192,24 @@ const VocabularyQuizPage = () => {
     }
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     const nextIndex = questionIndex + 1;
     
     if (nextIndex >= totalQuestions || nextIndex >= quizWords.length) {
       setQuizComplete(true);
+      // Save result if passed
+      if (score >= getPassThreshold()) {
+        const earnedPoints = score * quizPointValue;
+        setPointsEarned(earnedPoints);
+        
+        await supabase.from("user_results").insert({
+          activity_type: "quiz_passed",
+          difficulty: "medium",
+          points_earned: earnedPoints,
+          correct_answers: score,
+          total_questions: totalQuestions,
+        });
+      }
       return;
     }
     
@@ -421,10 +451,15 @@ const VocabularyQuizPage = () => {
               <p className="text-6xl font-baloo font-bold mb-2" style={{ color: isPassed() ? '#166534' : '#991b1b' }}>
                 {score} / {totalQuestions}
               </p>
+              {isPassed() && (
+                <p className="text-2xl font-baloo text-green-700 mb-2">
+                  +{pointsEarned} points! 🎯
+                </p>
+              )}
               <p className="text-muted-foreground mb-2">
                 {isPassed() 
                   ? "Bravo! Tu as réussi le quiz! 🏆" 
-                  : `Il te fallait ${getPassThreshold()} bonnes réponses pour réussir.`}
+                  : `Il te fallait ${getPassThreshold()} bonnes réponses pour réussir. (0 points)`}
               </p>
               <p className="text-sm text-muted-foreground">
                 Les mots répondus 3 fois correctement de suite sont marqués comme appris!

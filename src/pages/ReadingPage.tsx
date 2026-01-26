@@ -11,6 +11,7 @@ interface Story {
   title: string;
   content: string;
   cover_image_url: string | null;
+  difficulty?: string;
 }
 
 // French stop words that should not be marked/highlighted
@@ -602,20 +603,54 @@ const ReadingPage = () => {
               {/* "Text fertig gelesen" button at the bottom */}
               <div className="mt-10 pt-6 border-t border-border flex justify-center">
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      toast.success("Super! Tu as fini de lire! 🏆");
+                      // Save story read points
+                      const { data: pointData } = await supabase
+                        .from("point_settings")
+                        .select("points")
+                        .eq("category", "story")
+                        .eq("difficulty", story?.difficulty || "medium")
+                        .maybeSingle();
+                      
+                      const storyPoints = pointData?.points || 10;
+                      
+                      await supabase.from("user_results").insert({
+                        activity_type: "story_read",
+                        reference_id: id,
+                        difficulty: story?.difficulty || "medium",
+                        points_earned: storyPoints,
+                      });
+                      
+                      toast.success(`Super! Tu as fini de lire! 🏆 (+${storyPoints} points)`);
                       navigate("/stories");
                     }
                   }}
-                  onTouchEnd={(e) => {
+                  onTouchEnd={async (e) => {
                     e.preventDefault();
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      toast.success("Super! Tu as fini de lire! 🏆");
+                      // Save story read points
+                      const { data: pointData } = await supabase
+                        .from("point_settings")
+                        .select("points")
+                        .eq("category", "story")
+                        .eq("difficulty", story?.difficulty || "medium")
+                        .maybeSingle();
+                      
+                      const storyPoints = pointData?.points || 10;
+                      
+                      await supabase.from("user_results").insert({
+                        activity_type: "story_read",
+                        reference_id: id,
+                        difficulty: story?.difficulty || "medium",
+                        points_earned: storyPoints,
+                      });
+                      
+                      toast.success(`Super! Tu as fini de lire! 🏆 (+${storyPoints} points)`);
                       navigate("/stories");
                     }
                   }}
@@ -634,9 +669,35 @@ const ReadingPage = () => {
                     <h2 className="text-2xl font-baloo font-bold">Questions de compréhension</h2>
                   </div>
                   <ComprehensionQuiz 
-                    storyId={id!} 
-                    onComplete={() => {
-                      toast.success("Bravo! Tu as fini le quiz! 🏆");
+                    storyId={id!}
+                    storyDifficulty={story?.difficulty || "medium"}
+                    onComplete={async (correctCount, totalCount) => {
+                      // Save points for correct answers
+                      if (correctCount > 0) {
+                        // Load point value for questions
+                        const { data: pointData } = await supabase
+                          .from("point_settings")
+                          .select("points")
+                          .eq("category", "question")
+                          .eq("difficulty", story?.difficulty || "medium")
+                          .maybeSingle();
+                        
+                        const pointsPerQuestion = pointData?.points || 3;
+                        const earnedPoints = correctCount * pointsPerQuestion;
+                        
+                        await supabase.from("user_results").insert({
+                          activity_type: "question_answered",
+                          reference_id: id,
+                          difficulty: story?.difficulty || "medium",
+                          points_earned: earnedPoints,
+                          correct_answers: correctCount,
+                          total_questions: totalCount,
+                        });
+                        
+                        toast.success(`Bravo! Tu as fini le quiz! 🏆 (+${earnedPoints} points)`);
+                      } else {
+                        toast.success("Bravo! Tu as fini le quiz! 🏆");
+                      }
                       navigate("/stories");
                     }}
                   />
