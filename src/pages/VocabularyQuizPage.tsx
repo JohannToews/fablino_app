@@ -4,12 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface QuizWord {
   id: string;
   word: string;
   explanation: string;
   story_id: string;
+  quiz_history?: string[];
+  is_learned?: boolean;
 }
 
 interface QuizQuestion {
@@ -22,6 +31,7 @@ interface QuizQuestion {
 const VocabularyQuizPage = () => {
   const navigate = useNavigate();
   const [words, setWords] = useState<QuizWord[]>([]);
+  const [quizWords, setQuizWords] = useState<QuizWord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -30,26 +40,32 @@ const VocabularyQuizPage = () => {
   const [score, setScore] = useState(0);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizComplete, setQuizComplete] = useState(false);
-  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(5);
+  const [selectedQuestionCount, setSelectedQuestionCount] = useState<"5" | "10">("5");
+  const [quizStarted, setQuizStarted] = useState(false);
 
   useEffect(() => {
     loadWords();
   }, []);
 
   const loadWords = async () => {
-    // Only load words that are NOT marked as "easy"
+    // Only load words that are NOT marked as "easy" and NOT learned
     const { data, error } = await supabase
       .from("marked_words")
       .select("*")
       .not("explanation", "is", null)
       .or("difficulty.is.null,difficulty.neq.easy")
+      .or("is_learned.is.null,is_learned.eq.false")
       .order("created_at", { ascending: false });
 
     if (data && data.length > 0) {
-      // Filter words that have explanations
-      const validWords = data.filter(w => w.explanation && w.explanation.trim().length > 0);
+      // Filter words that have explanations and are not learned
+      const validWords = data.filter(w => 
+        w.explanation && 
+        w.explanation.trim().length > 0 &&
+        !w.is_learned
+      );
       setWords(validWords as QuizWord[]);
-      setTotalQuestions(Math.min(validWords.length, 10)); // Max 10 questions
     }
     setIsLoading(false);
   };
@@ -106,27 +122,39 @@ const VocabularyQuizPage = () => {
   const startQuiz = () => {
     if (words.length === 0) return;
     
+    const questionCount = parseInt(selectedQuestionCount);
+    const actualQuestionCount = Math.min(questionCount, words.length);
+    
+    setTotalQuestions(actualQuestionCount);
     setQuestionIndex(0);
     setScore(0);
     setQuizComplete(false);
     setSelectedAnswer(null);
     setIsCorrect(null);
+    setQuizStarted(true);
     
-    // Shuffle words and pick first one
+    // Shuffle words and pick the needed amount
     const shuffled = [...words].sort(() => Math.random() - 0.5);
-    setWords(shuffled);
-    generateQuizQuestion(shuffled[0]);
+    const selectedWords = shuffled.slice(0, actualQuestionCount);
+    setQuizWords(selectedWords);
+    generateQuizQuestion(selectedWords[0]);
   };
 
-  const markWordAsEasy = async (wordId: string) => {
-    // Mark word as "easy" in the database so it won't appear in future quizzes
+  const updateWordQuizHistory = async (wordId: string, isCorrectAnswer: boolean) => {
+    // Get current word to access its quiz_history
+    const currentWord = quizWords.find(w => w.id === wordId);
+    const currentHistory = currentWord?.quiz_history || [];
+    
+    // Add new result and keep only last 3
+    const newHistory = [...currentHistory, isCorrectAnswer ? 'correct' : 'incorrect'].slice(-3);
+    
     const { error } = await supabase
       .from("marked_words")
-      .update({ difficulty: "easy" } as any)
+      .update({ quiz_history: newHistory } as any)
       .eq("id", wordId);
 
     if (error) {
-      console.error("Error marking word as easy:", error);
+      console.error("Error updating quiz history:", error);
     }
   };
 
@@ -139,19 +167,18 @@ const VocabularyQuizPage = () => {
     
     if (correct) {
       setScore(prev => prev + 1);
-      // Mark word as "easy" when answered correctly the first time
-      if (currentQuestion?.wordId) {
-        await markWordAsEasy(currentQuestion.wordId);
-        // Remove from local words array so it won't appear again in this session
-        setWords(prev => prev.filter(w => w.id !== currentQuestion.wordId));
-      }
+    }
+    
+    // Update quiz history for this word
+    if (currentQuestion?.wordId) {
+      await updateWordQuizHistory(currentQuestion.wordId, correct);
     }
   };
 
   const nextQuestion = () => {
     const nextIndex = questionIndex + 1;
     
-    if (nextIndex >= totalQuestions || nextIndex >= words.length) {
+    if (nextIndex >= totalQuestions || nextIndex >= quizWords.length) {
       setQuizComplete(true);
       return;
     }
@@ -159,7 +186,22 @@ const VocabularyQuizPage = () => {
     setQuestionIndex(nextIndex);
     setSelectedAnswer(null);
     setIsCorrect(null);
-    generateQuizQuestion(words[nextIndex]);
+    generateQuizQuestion(quizWords[nextIndex]);
+  };
+
+  const getPassThreshold = () => {
+    return totalQuestions === 10 ? 8 : 4;
+  };
+
+  const isPassed = () => {
+    return score >= getPassThreshold();
+  };
+
+  const resetQuiz = () => {
+    setQuizStarted(false);
+    setCurrentQuestion(null);
+    setQuizComplete(false);
+    loadWords(); // Reload words to get updated learned status
   };
 
   if (isLoading) {
@@ -244,19 +286,38 @@ const VocabularyQuizPage = () => {
 
       <div className="container max-w-2xl p-4 md:p-8">
         {/* Quiz not started */}
-        {!currentQuestion && !quizComplete && (
+        {!quizStarted && !quizComplete && (
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
             <Sparkles className="h-16 w-16 text-primary mx-auto mb-6 animate-sparkle" />
             <h2 className="text-3xl font-baloo mb-4">Prêt à jouer?</h2>
             <p className="text-lg text-muted-foreground mb-2">
-              Tu as appris <strong>{words.length}</strong> mots!
+              Tu as <strong>{words.length}</strong> mots à apprendre!
             </p>
-            <p className="text-muted-foreground mb-8">
-              Le quiz teste {totalQuestions} mots au hasard.
-            </p>
+            
+            {/* Question count selection */}
+            <div className="my-8 flex flex-col items-center gap-4">
+              <label className="text-lg font-medium">Combien de questions?</label>
+              <Select 
+                value={selectedQuestionCount} 
+                onValueChange={(value: "5" | "10") => setSelectedQuestionCount(value)}
+              >
+                <SelectTrigger className="w-32 text-center text-xl font-baloo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5" className="text-lg">5 questions</SelectItem>
+                  <SelectItem value="10" className="text-lg">10 questions</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Pour réussir: {selectedQuestionCount === "5" ? "4/5" : "8/10"} bonnes réponses
+              </p>
+            </div>
+
             <Button
               onClick={startQuiz}
               className="btn-primary-kid text-xl px-8 py-4"
+              disabled={words.length === 0}
             >
               Commencer le quiz! 🚀
             </Button>
@@ -264,7 +325,7 @@ const VocabularyQuizPage = () => {
         )}
 
         {/* Quiz question */}
-        {currentQuestion && !quizComplete && (
+        {quizStarted && currentQuestion && !quizComplete && (
           <div className="bg-card rounded-2xl p-6 md:p-10 shadow-card">
             {isGeneratingQuiz ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -351,29 +412,32 @@ const VocabularyQuizPage = () => {
         {/* Quiz complete */}
         {quizComplete && (
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
-            <Trophy className="h-20 w-20 text-primary mx-auto mb-6" />
-            <h2 className="text-4xl font-baloo mb-4">Quiz terminé!</h2>
+            <Trophy className={`h-20 w-20 mx-auto mb-6 ${isPassed() ? "text-primary" : "text-muted-foreground"}`} />
+            <h2 className="text-4xl font-baloo mb-4">
+              {isPassed() ? "Quiz réussi! 🎉" : "Quiz terminé!"}
+            </h2>
             
-            <div className="bg-primary/20 rounded-2xl p-6 mb-8">
-              <p className="text-6xl font-baloo font-bold text-primary mb-2">
+            <div className={`rounded-2xl p-6 mb-8 ${isPassed() ? "bg-mint" : "bg-cotton-candy/30"}`}>
+              <p className="text-6xl font-baloo font-bold mb-2" style={{ color: isPassed() ? '#166534' : '#991b1b' }}>
                 {score} / {totalQuestions}
               </p>
-              <p className="text-muted-foreground">
-                {score === totalQuestions 
-                  ? "Parfait! Tu es un champion du vocabulaire! 🏆" 
-                  : score >= totalQuestions / 2 
-                    ? "Bien joué! Continue à t'entraîner! 💪"
-                    : "C'est en forgeant qu'on devient forgeron! 📚"}
+              <p className="text-muted-foreground mb-2">
+                {isPassed() 
+                  ? "Bravo! Tu as réussi le quiz! 🏆" 
+                  : `Il te fallait ${getPassThreshold()} bonnes réponses pour réussir.`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Les mots répondus 3 fois correctement de suite sont marqués comme appris!
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                onClick={startQuiz}
+                onClick={resetQuiz}
                 className="btn-primary-kid flex items-center gap-2"
               >
                 <RotateCcw className="h-5 w-5" />
-                Rejouer
+                Nouveau quiz
               </Button>
               <Button
                 onClick={() => navigate("/stories")}
