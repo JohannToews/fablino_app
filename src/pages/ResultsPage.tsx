@@ -5,12 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Trophy, BookOpen, Brain, MessageCircleQuestion, Star, Sparkles } from "lucide-react";
 
-interface PointSettings {
-  category: string;
-  difficulty: string;
-  points: number;
-}
-
 interface UserResult {
   id: string;
   activity_type: string;
@@ -20,6 +14,12 @@ interface UserResult {
   correct_answers: number | null;
   total_questions: number | null;
   created_at: string;
+}
+
+interface LevelSetting {
+  level_number: number;
+  title: string;
+  min_points: number;
 }
 
 const ResultsPage = () => {
@@ -33,6 +33,7 @@ const ResultsPage = () => {
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [quizzesPassed, setQuizzesPassed] = useState(0);
   const [wordsLearned, setWordsLearned] = useState(0);
+  const [levels, setLevels] = useState<LevelSetting[]>([]);
 
   useEffect(() => {
     loadResults();
@@ -40,6 +41,16 @@ const ResultsPage = () => {
 
   const loadResults = async () => {
     try {
+      // Load level settings
+      const { data: levelData } = await supabase
+        .from("level_settings")
+        .select("*")
+        .order("level_number");
+
+      if (levelData) {
+        setLevels(levelData);
+      }
+
       // Load all user results
       const { data: results } = await supabase
         .from("user_results")
@@ -93,15 +104,31 @@ const ResultsPage = () => {
   };
 
   const getLevel = (points: number): { level: number; title: string; nextLevel: number } => {
-    if (points < 50) return { level: 1, title: "Débutant", nextLevel: 50 };
-    if (points < 150) return { level: 2, title: "Apprenti", nextLevel: 150 };
-    if (points < 300) return { level: 3, title: "Lecteur", nextLevel: 300 };
-    if (points < 500) return { level: 4, title: "Expert", nextLevel: 500 };
-    if (points < 800) return { level: 5, title: "Champion", nextLevel: 800 };
-    return { level: 6, title: "Maître", nextLevel: points };
+    if (levels.length === 0) {
+      return { level: 1, title: "Débutant", nextLevel: 50 };
+    }
+
+    // Find current level based on points
+    let currentLevel = levels[0];
+    let nextLevelPoints = levels[1]?.min_points || points;
+
+    for (let i = levels.length - 1; i >= 0; i--) {
+      if (points >= levels[i].min_points) {
+        currentLevel = levels[i];
+        nextLevelPoints = levels[i + 1]?.min_points || points;
+        break;
+      }
+    }
+
+    return {
+      level: currentLevel.level_number,
+      title: currentLevel.title,
+      nextLevel: nextLevelPoints
+    };
   };
 
   const levelInfo = getLevel(totalPoints);
+  const isMaxLevel = levels.length > 0 && levelInfo.level === levels[levels.length - 1]?.level_number;
 
   if (isLoading) {
     return (
@@ -127,39 +154,39 @@ const ResultsPage = () => {
             <ArrowLeft className="h-6 w-6" />
           </Button>
           <h1 className="text-2xl md:text-3xl font-baloo text-foreground">
-            Meine Resultate
+            Mes Résultats
           </h1>
         </div>
       </div>
 
       <div className="container max-w-4xl p-4 md:p-8">
-        {/* Total Points Hero */}
-        <Card className="mb-8 border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent overflow-hidden">
-          <CardContent className="p-8 text-center relative">
-            <div className="absolute top-4 right-4">
-              <Sparkles className="h-8 w-8 text-primary/30 animate-sparkle" />
+        {/* Total Points Hero - More Compact */}
+        <Card className="mb-6 border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent overflow-hidden">
+          <CardContent className="p-5 text-center relative">
+            <div className="absolute top-3 right-3">
+              <Sparkles className="h-6 w-6 text-primary/30 animate-sparkle" />
             </div>
-            <Trophy className="h-20 w-20 text-primary mx-auto mb-4" />
-            <p className="text-7xl md:text-8xl font-baloo font-bold text-primary mb-2">
+            <Trophy className="h-14 w-14 text-primary mx-auto mb-2" />
+            <p className="text-5xl md:text-6xl font-baloo font-bold text-primary mb-1">
               {totalPoints}
             </p>
-            <p className="text-xl text-muted-foreground mb-4">Points totaux</p>
+            <p className="text-lg text-muted-foreground mb-3">Points totaux</p>
             
             {/* Level Badge */}
-            <div className="inline-flex items-center gap-2 bg-primary/20 rounded-full px-6 py-2">
-              <Star className="h-5 w-5 text-primary" />
-              <span className="font-baloo font-bold text-lg">Niveau {levelInfo.level}: {levelInfo.title}</span>
+            <div className="inline-flex items-center gap-2 bg-primary/20 rounded-full px-4 py-1.5">
+              <Star className="h-4 w-4 text-primary" />
+              <span className="font-baloo font-bold">{levelInfo.title}</span>
             </div>
             
             {/* Progress to next level */}
-            {levelInfo.level < 6 && (
-              <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">
+            {!isMaxLevel && (
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground mb-1">
                   Encore {levelInfo.nextLevel - totalPoints} points pour le niveau suivant
                 </p>
-                <div className="w-full bg-muted rounded-full h-3 max-w-xs mx-auto">
+                <div className="w-full bg-muted rounded-full h-2 max-w-xs mx-auto">
                   <div 
-                    className="bg-primary h-3 rounded-full transition-all duration-500"
+                    className="bg-primary h-2 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min((totalPoints / levelInfo.nextLevel) * 100, 100)}%` }}
                   />
                 </div>

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
+import LevelConfigSection from "@/components/LevelConfigSection";
 
 interface Story {
   id: string;
@@ -369,6 +370,9 @@ const AdminPage = () => {
 
         {/* Points Configuration */}
         <PointsConfigSection />
+
+        {/* Level Configuration */}
+        <LevelConfigSection />
       </div>
     </div>
   );

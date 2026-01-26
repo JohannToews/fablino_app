@@ -73,6 +73,33 @@ export type Database = {
           },
         ]
       }
+      level_settings: {
+        Row: {
+          created_at: string
+          id: string
+          level_number: number
+          min_points: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level_number: number
+          min_points: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level_number?: number
+          min_points?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marked_words: {
         Row: {
           created_at: string

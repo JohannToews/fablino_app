@@ -92,8 +92,8 @@ const Index = () => {
                 <div className="h-16 w-16 rounded-full bg-sunshine/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Trophy className="h-8 w-8 text-amber-600" />
                 </div>
-                <h3 className="font-baloo font-bold text-lg mb-1">Meine Resultate</h3>
-                <p className="text-sm text-muted-foreground">Mes points et progrès</p>
+                <h3 className="font-baloo font-bold text-lg mb-1">Mes Résultats</h3>
+                <p className="text-sm text-muted-foreground">Points et progrès</p>
               </CardContent>
             </Card>
           </div>
