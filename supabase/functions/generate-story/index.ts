@@ -133,10 +133,25 @@ Die ${questionCount} Verständnisfragen sollen:
 
     const story = JSON.parse(jsonMatch[0]);
 
-    // Generate cover image based on description
-    console.log("Generating cover image for:", description);
+    // Generate cover image based on description and age
+    console.log("Generating cover image for:", description, "age:", childAge);
     
-    const imagePrompt = `A colorful, child-friendly book cover illustration for a French children's story. Theme: ${description}. Style: Whimsical, warm, inviting, suitable for children ages ${childAge}. Cartoon style, bright colors, no text.`;
+    // Age-appropriate style mapping
+    let artStyle: string;
+    if (childAge <= 5) {
+      artStyle = "Very soft, round shapes, pastel colors, extremely cute and simple cartoon style like Peppa Pig or Bluey. Large friendly eyes, simple backgrounds.";
+    } else if (childAge <= 7) {
+      artStyle = "Colorful cartoon style, friendly characters with expressive faces, slightly more detailed backgrounds, similar to Disney Junior or Paw Patrol style.";
+    } else if (childAge <= 9) {
+      artStyle = "Dynamic comic book style, more mature character designs with personality, action-oriented poses, vibrant colors, similar to modern animated movies like Pixar or DreamWorks. Characters should look cool and adventurous, not babyish.";
+    } else {
+      artStyle = "Semi-realistic illustration style, detailed environments, characters with realistic proportions, dynamic compositions, similar to graphic novel or manga-inspired art. Sophisticated color palette.";
+    }
+    
+    const imagePrompt = `A captivating book cover illustration for a French children's story. Theme: ${description}. 
+Art Style: ${artStyle}
+Target audience: ${childAge} year old child.
+Requirements: No text on the image, high quality illustration, engaging composition that tells a story.`;
     
     const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
