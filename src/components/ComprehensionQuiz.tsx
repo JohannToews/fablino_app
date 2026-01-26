@@ -56,13 +56,33 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
     setIsLoading(false);
   };
 
-  const startRecording = () => {
+  const startRecording = async () => {
     // Check for browser support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
       toast.error("Ton navigateur ne supporte pas la reconnaissance vocale");
       return;
+    }
+
+    // Request microphone permission explicitly for tablets/mobile
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the stream immediately - we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      console.error("Microphone permission error:", err);
+      toast.error("Autorise l'accès au microphone pour parler");
+      return;
+    }
+
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        // Ignore abort errors
+      }
     }
 
     const recognition = new SpeechRecognition();
@@ -72,6 +92,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
+      console.log("Speech recognition started");
       setIsRecording(true);
       setTranscript("");
       setCurrentFeedback(null);
@@ -90,6 +111,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
         }
       }
 
+      console.log("Speech result:", finalTranscript || interimTranscript);
       setTranscript(finalTranscript || interimTranscript);
     };
 
@@ -98,22 +120,41 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
       setIsRecording(false);
       if (event.error === "no-speech") {
         toast.error("Je n'ai rien entendu. Essaie encore!");
+      } else if (event.error === "not-allowed") {
+        toast.error("Autorise l'accès au microphone pour parler");
+      } else if (event.error === "aborted") {
+        // Silently handle aborted - usually from stopping
       } else {
         toast.error("Erreur de reconnaissance vocale");
       }
     };
 
     recognition.onend = () => {
+      console.log("Speech recognition ended");
       setIsRecording(false);
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
+    
+    // Small delay for tablets to ensure audio context is ready
+    setTimeout(() => {
+      try {
+        recognition.start();
+      } catch (e) {
+        console.error("Failed to start recognition:", e);
+        toast.error("Erreur lors du démarrage. Réessaie!");
+        setIsRecording(false);
+      }
+    }, 100);
   };
 
   const stopRecording = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore stop errors
+      }
     }
   };
 
