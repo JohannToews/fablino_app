@@ -79,6 +79,8 @@ export type Database = {
           difficulty: string | null
           explanation: string | null
           id: string
+          is_learned: boolean | null
+          quiz_history: string[] | null
           story_id: string
           word: string
         }
@@ -87,6 +89,8 @@ export type Database = {
           difficulty?: string | null
           explanation?: string | null
           id?: string
+          is_learned?: boolean | null
+          quiz_history?: string[] | null
           story_id: string
           word: string
         }
@@ -95,6 +99,8 @@ export type Database = {
           difficulty?: string | null
           explanation?: string | null
           id?: string
+          is_learned?: boolean | null
+          quiz_history?: string[] | null
           story_id?: string
           word?: string
         }
