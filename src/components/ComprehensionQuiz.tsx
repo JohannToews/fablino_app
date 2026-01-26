@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Loader2, CheckCircle2, XCircle, CircleDot, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Mic, MicOff, Loader2, CheckCircle2, XCircle, CircleDot, ChevronRight, Keyboard } from "lucide-react";
 import { toast } from "sonner";
 
 interface Question {
@@ -33,6 +34,8 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
   const [transcript, setTranscript] = useState("");
   const [results, setResults] = useState<QuizResult[]>([]);
   const [currentFeedback, setCurrentFeedback] = useState<{ result: string; feedback: string } | null>(null);
+  const [useTextInput, setUseTextInput] = useState(false);
+  const [textAnswer, setTextAnswer] = useState("");
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -204,6 +207,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setTranscript("");
+      setTextAnswer("");
       setCurrentFeedback(null);
     } else {
       // Quiz complete - count correct answers
@@ -287,37 +291,88 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: 
       {/* Recording section */}
       {!currentFeedback && (
         <div className="flex flex-col items-center gap-4">
-          <Button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isEvaluating}
-            className={`rounded-full h-20 w-20 ${
-              isRecording 
-                ? "bg-cotton-candy hover:bg-cotton-candy/80 animate-pulse" 
-                : "btn-primary-kid"
-            }`}
-          >
-            {isRecording ? (
-              <MicOff className="h-10 w-10" />
-            ) : (
-              <Mic className="h-10 w-10" />
-            )}
-          </Button>
-          <p className="text-muted-foreground text-sm">
-            {isRecording ? "Parle maintenant... (appuie pour arrêter)" : "Appuie pour répondre"}
-          </p>
+          {/* Toggle between voice and text input */}
+          <div className="flex gap-2 mb-2">
+            <Button
+              variant={!useTextInput ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUseTextInput(false)}
+              className="flex items-center gap-2"
+            >
+              <Mic className="h-4 w-4" />
+              Parler
+            </Button>
+            <Button
+              variant={useTextInput ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUseTextInput(true)}
+              className="flex items-center gap-2"
+            >
+              <Keyboard className="h-4 w-4" />
+              Écrire
+            </Button>
+          </div>
 
-          {/* Transcript display */}
-          {transcript && (
-            <div className="w-full bg-card rounded-xl p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Ta réponse:</p>
-              <p className="text-lg">{transcript}</p>
-            </div>
+          {!useTextInput ? (
+            <>
+              <Button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isEvaluating}
+                className={`rounded-full h-20 w-20 ${
+                  isRecording 
+                    ? "bg-cotton-candy hover:bg-cotton-candy/80 animate-pulse" 
+                    : "btn-primary-kid"
+                }`}
+              >
+                {isRecording ? (
+                  <MicOff className="h-10 w-10" />
+                ) : (
+                  <Mic className="h-10 w-10" />
+                )}
+              </Button>
+              <p className="text-muted-foreground text-sm">
+                {isRecording ? "Parle maintenant... (appuie pour arrêter)" : "Appuie pour répondre"}
+              </p>
+
+              {/* Transcript display */}
+              {transcript && (
+                <div className="w-full bg-card rounded-xl p-4 border border-border">
+                  <p className="text-sm text-muted-foreground mb-1">Ta réponse:</p>
+                  <p className="text-lg">{transcript}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="w-full space-y-3">
+                <Input
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                  placeholder="Écris ta réponse ici..."
+                  className="text-lg py-6"
+                  disabled={isEvaluating}
+                />
+                {textAnswer && (
+                  <div className="w-full bg-card rounded-xl p-4 border border-border">
+                    <p className="text-sm text-muted-foreground mb-1">Ta réponse:</p>
+                    <p className="text-lg">{textAnswer}</p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           {/* Evaluate button */}
-          {transcript && !isRecording && (
+          {((transcript && !isRecording && !useTextInput) || (textAnswer && useTextInput)) && (
             <Button
-              onClick={evaluateAnswer}
+              onClick={() => {
+                if (useTextInput) {
+                  setTranscript(textAnswer);
+                  setTimeout(evaluateAnswer, 100);
+                } else {
+                  evaluateAnswer();
+                }
+              }}
               disabled={isEvaluating}
               className="btn-accent-kid flex items-center gap-2"
             >
