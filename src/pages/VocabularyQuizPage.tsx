@@ -66,13 +66,16 @@ const VocabularyQuizPage = () => {
       });
 
       if (data?.wrongOptions) {
+        // Use infinitive form if returned by the API, otherwise use original word
+        const displayWord = data.infinitive || word.word;
+        
         // Shuffle options
         const allOptions = [word.explanation, ...data.wrongOptions];
         const shuffled = allOptions.sort(() => Math.random() - 0.5);
         
         setCurrentQuestion({
           wordId: word.id,
-          word: word.word,
+          word: displayWord,
           correctAnswer: word.explanation,
           options: shuffled,
         });

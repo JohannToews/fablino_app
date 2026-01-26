@@ -25,6 +25,9 @@ serve(async (req) => {
     const prompt = `Crée un quiz pour le mot français "${word}".
 La bonne réponse est: "${correctExplanation}"
 
+IMPORTANT: Si le mot "${word}" est un verbe conjugué, convertis-le d'abord en infinitif.
+Par exemple: "dépasse" → "dépasser", "mangeons" → "manger", "allait" → "aller"
+
 Génère 3 FAUSSES réponses qui:
 - Sont plausibles mais incorrectes
 - Ont la même longueur que la bonne réponse (environ ${correctExplanation.split(' ').length} mots)
@@ -33,6 +36,7 @@ Génère 3 FAUSSES réponses qui:
 
 Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
 {
+  "infinitive": "le mot en infinitif (si verbe) ou le mot original",
   "wrongOptions": ["fausse réponse 1", "fausse réponse 2", "fausse réponse 3"]
 }`;
 
@@ -70,6 +74,7 @@ Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
     } catch {
       console.error('Failed to parse JSON:', rawText);
       result = { 
+        infinitive: word,
         wrongOptions: [
           "Une couleur vive",
           "Un animal de la forêt", 
