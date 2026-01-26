@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
+import confetti from "canvas-confetti";
 import {
   Select,
   SelectContent,
@@ -45,6 +46,45 @@ const VocabularyQuizPage = () => {
   const [quizStarted, setQuizStarted] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
   const [quizPointValue, setQuizPointValue] = useState(2); // default points per correct answer
+  const [scoreAnimation, setScoreAnimation] = useState(false);
+
+  // Confetti effect for correct answers
+  const triggerConfetti = useCallback(() => {
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.6 },
+      colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181'],
+    });
+  }, []);
+
+  // Big confetti for quiz passed
+  const triggerBigConfetti = useCallback(() => {
+    const duration = 2000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#FF6B6B', '#4ECDC4', '#FFE66D'],
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#95E1D3', '#F38181', '#AA96DA'],
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
+  }, []);
 
   useEffect(() => {
     loadWords();
@@ -230,6 +270,10 @@ const VocabularyQuizPage = () => {
     
     if (correct) {
       setScore(prev => prev + 1);
+      // Trigger celebrations!
+      triggerConfetti();
+      setScoreAnimation(true);
+      setTimeout(() => setScoreAnimation(false), 600);
     }
     
     // Update quiz history for this word
@@ -247,6 +291,9 @@ const VocabularyQuizPage = () => {
       if (score >= getPassThreshold()) {
         const earnedPoints = score * quizPointValue;
         setPointsEarned(earnedPoints);
+        
+        // Trigger big celebration!
+        setTimeout(() => triggerBigConfetti(), 300);
         
         await supabase.from("user_results").insert({
           activity_type: "quiz_passed",
@@ -352,7 +399,7 @@ const VocabularyQuizPage = () => {
               <span className="text-sm text-muted-foreground">
                 Question {questionIndex + 1} / {totalQuestions}
               </span>
-              <div className="bg-primary/20 rounded-full px-4 py-1">
+              <div className={`bg-primary/20 rounded-full px-4 py-1 transition-transform ${scoreAnimation ? 'animate-bounce scale-125' : ''}`}>
                 <span className="font-baloo font-bold text-primary">{score} Points</span>
               </div>
             </div>
