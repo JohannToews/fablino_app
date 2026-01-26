@@ -20,10 +20,11 @@ interface QuizResult {
 
 interface ComprehensionQuizProps {
   storyId: string;
-  onComplete: () => void;
+  storyDifficulty?: string;
+  onComplete: (correctCount: number, totalCount: number) => void;
 }
 
-const ComprehensionQuiz = ({ storyId, onComplete }: ComprehensionQuizProps) => {
+const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", onComplete }: ComprehensionQuizProps) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -158,14 +159,20 @@ const ComprehensionQuiz = ({ storyId, onComplete }: ComprehensionQuizProps) => {
     setIsEvaluating(false);
   };
 
-  const goToNextQuestion = () => {
+  const goToNextQuestion = async () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setTranscript("");
       setCurrentFeedback(null);
     } else {
-      // Quiz complete!
-      onComplete();
+      // Quiz complete - count correct answers
+      const correctCount = results.filter(r => r.result === "correct").length;
+      // Include current feedback if it exists
+      const finalCorrectCount = currentFeedback?.result === "correct" 
+        ? correctCount + 1 
+        : correctCount;
+      
+      onComplete(finalCorrectCount, questions.length);
     }
   };
 
@@ -203,7 +210,7 @@ const ComprehensionQuiz = ({ storyId, onComplete }: ComprehensionQuizProps) => {
     return (
       <div className="text-center p-8">
         <p className="text-muted-foreground">Pas de questions pour cette histoire</p>
-        <Button onClick={onComplete} className="btn-accent-kid mt-4">
+        <Button onClick={() => onComplete(0, 0)} className="btn-accent-kid mt-4">
           Continuer
         </Button>
       </div>

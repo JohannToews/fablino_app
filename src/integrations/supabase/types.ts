@@ -114,11 +114,39 @@ export type Database = {
           },
         ]
       }
+      point_settings: {
+        Row: {
+          category: string
+          created_at: string
+          difficulty: string
+          id: string
+          points: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          difficulty: string
+          id?: string
+          points?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          points?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           content: string
           cover_image_url: string | null
           created_at: string
+          difficulty: string | null
           id: string
           title: string
           updated_at: string
@@ -127,6 +155,7 @@ export type Database = {
           content: string
           cover_image_url?: string | null
           created_at?: string
+          difficulty?: string | null
           id?: string
           title: string
           updated_at?: string
@@ -135,9 +164,43 @@ export type Database = {
           content?: string
           cover_image_url?: string | null
           created_at?: string
+          difficulty?: string | null
           id?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_results: {
+        Row: {
+          activity_type: string
+          correct_answers: number | null
+          created_at: string
+          difficulty: string | null
+          id: string
+          points_earned: number
+          reference_id: string | null
+          total_questions: number | null
+        }
+        Insert: {
+          activity_type: string
+          correct_answers?: number | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          points_earned?: number
+          reference_id?: string | null
+          total_questions?: number | null
+        }
+        Update: {
+          activity_type?: string
+          correct_answers?: number | null
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          points_earned?: number
+          reference_id?: string | null
+          total_questions?: number | null
         }
         Relationships: []
       }
