@@ -23,56 +23,50 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Map color palette to descriptive colors
+    // Map color palette to pure color descriptions (NO thematic names!)
     const paletteColors: Record<string, string> = {
-      sunshine: "warm golden yellow and soft orange tones",
-      mint: "fresh mint green and light teal colors",
-      lavender: "soft purple and lavender tones",
-      ocean: "deep blue and turquoise ocean colors",
-      sunset: "warm orange, coral and pink sunset hues",
-      forest: "deep green and earthy forest tones",
+      sunshine: "warm golden yellow (#FFD700) and soft orange (#FFA500) tones",
+      mint: "fresh green (#98FF98) and light teal (#40E0D0) colors",
+      lavender: "soft purple (#E6E6FA) and violet (#EE82EE) tones",
+      ocean: "deep blue (#0077BE) and turquoise (#40E0D0) colors",
+      sunset: "warm coral (#FF7F50), peach (#FFCBA4) and soft pink (#FFB6C1) hues",
+      forest: "rich green (#228B22) and earthy brown-green (#6B8E23) tones",
+      sky: "light blue (#87CEEB) and soft white (#F0F8FF) colors",
+      berry: "rich magenta (#C71585) and raspberry (#E30B5C) tones",
+      earth: "warm brown (#8B4513) and terracotta (#E2725B) colors",
+      candy: "bright pink (#FF69B4) and soft lilac (#C8A2C8) tones",
+      arctic: "icy blue (#B0E0E6) and silver-white (#C0C0C0) colors",
+      tropical: "vibrant teal (#00CED1) and lime green (#32CD32) tones",
     };
 
     const colorDescription = paletteColors[colorPalette] || paletteColors.sunshine;
     const childAge = age || 8;
 
-    // Adjust art style based on age
-    let styleDescription: string;
-    let subjectDescription: string;
-    
-    if (childAge <= 5) {
-      // Very young: soft, dreamy, simple shapes
-      styleDescription = "Soft watercolor children's book illustration style. Simple, rounded shapes. Dreamy and magical atmosphere. Cute and whimsical.";
-      subjectDescription = `a happy young child (around ${childAge} years old)`;
-    } else if (childAge <= 7) {
-      // Young: still colorful but slightly more detailed
-      styleDescription = "Colorful children's book illustration. Friendly and inviting. Some detail but still playful and imaginative.";
-      subjectDescription = `a cheerful child (around ${childAge} years old)`;
-    } else if (childAge <= 9) {
-      // Middle: balanced between playful and realistic
-      styleDescription = "Modern digital illustration style. Vibrant colors, clean lines. Semi-realistic but still fun and engaging. Like a cool book cover for kids.";
-      subjectDescription = `a confident young person (around ${childAge} years old)`;
-    } else if (childAge <= 11) {
-      // Pre-teen: more mature, less childish
-      styleDescription = "Contemporary digital art style. Dynamic composition. Cool and stylish, appropriate for pre-teens. Not too childish, not too adult.";
-      subjectDescription = `a cool pre-teen (around ${childAge} years old)`;
-    } else {
-      // Teen: more mature, realistic
-      styleDescription = "Modern digital illustration. Clean, sophisticated style. Age-appropriate for teenagers. Trendy and stylish aesthetic.";
-      subjectDescription = `a teenager (around ${childAge} years old)`;
-    }
+    // Base style description - modern cartoon style like the reference image
+    const baseStyle = `Modern digital cartoon illustration style. Clean vector-like artwork with smooth gradients and soft shadows. 
+Cute expressive character with big friendly eyes and warm smile. 
+Bright, cheerful lighting with soft ambient glow. 
+Professional children's app illustration quality.
+The scene should be warm, inviting and fun.
+Background should be simple and clean, not distracting.`;
 
-    // Create age-appropriate prompt
-    const prompt = `Create an illustration featuring ${subjectDescription} named ${name}. 
-The image should use ${colorDescription} as the main color scheme.
-${hobbies ? `Show elements related to their interests: ${hobbies}. Make these hobbies prominent in the scene.` : "Include elements suggesting learning and reading."}
-${styleDescription}
-This is a personalized cover image for a reading app - make it feel special and personal.
-The child should look engaged and happy.
-High quality, detailed illustration.
-16:9 aspect ratio, landscape orientation.`;
+    // Create the prompt
+    const prompt = `Create a cheerful cartoon illustration of a happy child named ${name} (approximately ${childAge} years old) sitting and reading a book with excitement.
 
-    console.log("Generating cover image for age", childAge, "with prompt:", prompt);
+The child should be the main focus, sitting comfortably with an open book, looking happy and engaged.
+
+Around the child, include items representing their hobbies: ${hobbies || "books, art supplies, and creative activities"}.
+These items should be arranged naturally around the scene, not overwhelming the composition.
+
+COLOR SCHEME: Use ${colorDescription} as the dominant palette for the background and ambient lighting.
+
+STYLE: ${baseStyle}
+
+The illustration should feel personal and special - like a custom avatar for a reading app.
+16:9 landscape aspect ratio.
+High quality, polished finish.`;
+
+    console.log("Generating cover image for age", childAge);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

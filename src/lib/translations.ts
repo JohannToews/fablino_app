@@ -100,6 +100,12 @@ export interface Translations {
   paletteOcean: string;
   paletteSunset: string;
   paletteForest: string;
+  paletteSky: string;
+  paletteBerry: string;
+  paletteEarth: string;
+  paletteCandy: string;
+  paletteArctic: string;
+  paletteTropical: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -192,12 +198,18 @@ const translations: Record<Language, Translations> = {
     coverGenerated: 'Titelbild wurde generiert! 🖼️',
     
     // Color palettes
-    paletteSunshine: 'Sonnenschein (Gelb)',
-    paletteMint: 'Minze (Grün)',
-    paletteLavender: 'Lavendel (Lila)',
-    paletteOcean: 'Ozean (Blau)',
-    paletteSunset: 'Sonnenuntergang (Orange)',
-    paletteForest: 'Wald (Dunkelgrün)',
+    paletteSunshine: 'Gelb',
+    paletteMint: 'Grün',
+    paletteLavender: 'Lila',
+    paletteOcean: 'Blau',
+    paletteSunset: 'Orange',
+    paletteForest: 'Dunkelgrün',
+    paletteSky: 'Hellblau',
+    paletteBerry: 'Beere',
+    paletteEarth: 'Erde',
+    paletteCandy: 'Rosa',
+    paletteArctic: 'Eisblau',
+    paletteTropical: 'Türkis',
   },
   
   en: {
@@ -289,12 +301,18 @@ const translations: Record<Language, Translations> = {
     coverGenerated: 'Cover image generated! 🖼️',
     
     // Color palettes
-    paletteSunshine: 'Sunshine (Yellow)',
-    paletteMint: 'Mint (Green)',
-    paletteLavender: 'Lavender (Purple)',
-    paletteOcean: 'Ocean (Blue)',
-    paletteSunset: 'Sunset (Orange)',
-    paletteForest: 'Forest (Dark Green)',
+    paletteSunshine: 'Yellow',
+    paletteMint: 'Green',
+    paletteLavender: 'Purple',
+    paletteOcean: 'Blue',
+    paletteSunset: 'Orange',
+    paletteForest: 'Dark Green',
+    paletteSky: 'Light Blue',
+    paletteBerry: 'Berry',
+    paletteEarth: 'Earth',
+    paletteCandy: 'Pink',
+    paletteArctic: 'Ice Blue',
+    paletteTropical: 'Teal',
   },
   
   fr: {
@@ -386,12 +404,18 @@ const translations: Record<Language, Translations> = {
     coverGenerated: 'Image de couverture générée ! 🖼️',
     
     // Color palettes
-    paletteSunshine: 'Soleil (Jaune)',
-    paletteMint: 'Menthe (Vert)',
-    paletteLavender: 'Lavande (Violet)',
-    paletteOcean: 'Océan (Bleu)',
-    paletteSunset: 'Coucher de soleil (Orange)',
-    paletteForest: 'Forêt (Vert foncé)',
+    paletteSunshine: 'Jaune',
+    paletteMint: 'Vert',
+    paletteLavender: 'Violet',
+    paletteOcean: 'Bleu',
+    paletteSunset: 'Orange',
+    paletteForest: 'Vert foncé',
+    paletteSky: 'Bleu ciel',
+    paletteBerry: 'Baie',
+    paletteEarth: 'Terre',
+    paletteCandy: 'Rose',
+    paletteArctic: 'Bleu glacé',
+    paletteTropical: 'Turquoise',
   },
 };
 

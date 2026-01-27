@@ -28,9 +28,15 @@ const COLOR_PALETTES = [
   { id: 'sunshine', color: 'bg-amber-400', border: 'border-amber-500' },
   { id: 'mint', color: 'bg-emerald-400', border: 'border-emerald-500' },
   { id: 'lavender', color: 'bg-purple-400', border: 'border-purple-500' },
-  { id: 'ocean', color: 'bg-blue-400', border: 'border-blue-500' },
+  { id: 'ocean', color: 'bg-blue-500', border: 'border-blue-600' },
   { id: 'sunset', color: 'bg-orange-400', border: 'border-orange-500' },
   { id: 'forest', color: 'bg-green-700', border: 'border-green-800' },
+  { id: 'sky', color: 'bg-sky-400', border: 'border-sky-500' },
+  { id: 'berry', color: 'bg-pink-600', border: 'border-pink-700' },
+  { id: 'earth', color: 'bg-amber-700', border: 'border-amber-800' },
+  { id: 'candy', color: 'bg-pink-400', border: 'border-pink-500' },
+  { id: 'arctic', color: 'bg-cyan-300', border: 'border-cyan-400' },
+  { id: 'tropical', color: 'bg-teal-500', border: 'border-teal-600' },
 ];
 
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
@@ -75,6 +81,12 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       case 'ocean': return t.paletteOcean;
       case 'sunset': return t.paletteSunset;
       case 'forest': return t.paletteForest;
+      case 'sky': return t.paletteSky;
+      case 'berry': return t.paletteBerry;
+      case 'earth': return t.paletteEarth;
+      case 'candy': return t.paletteCandy;
+      case 'arctic': return t.paletteArctic;
+      case 'tropical': return t.paletteTropical;
       default: return paletteId;
     }
   };
