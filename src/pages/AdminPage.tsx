@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp } from "lucide-react";
+import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp, CreditCard, Mail, Lock, UserX, Receipt, Crown } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
@@ -52,6 +52,7 @@ const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [storySubTab, setStorySubTab] = useState("generator");
   const [settingsSubTab, setSettingsSubTab] = useState("points");
+  const [accountSubTab, setAccountSubTab] = useState("management");
 
   useEffect(() => {
     if (user) {
@@ -276,7 +277,7 @@ const AdminPage = () => {
 
       {/* Tab Navigation - Native App Style */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="flex-none grid grid-cols-3 mx-4 mt-3 h-12 bg-muted/50">
+        <TabsList className="flex-none grid grid-cols-4 mx-4 mt-3 h-12 bg-muted/50">
           <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t.kidProfile}</span>
@@ -291,6 +292,11 @@ const AdminPage = () => {
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Einstellungen</span>
             <span className="sm:hidden">Config</span>
+          </TabsTrigger>
+          <TabsTrigger value="account" className="flex items-center gap-2 text-sm font-medium">
+            <CreditCard className="h-4 w-4" />
+            <span className="hidden sm:inline">Konto</span>
+            <span className="sm:hidden">Konto</span>
           </TabsTrigger>
         </TabsList>
 
@@ -527,6 +533,171 @@ const AdminPage = () => {
                 )}
                 {settingsSubTab === "levels" && (
                   <LevelConfigSection language={adminLang} />
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Account Tab */}
+          <TabsContent value="account" className="h-full overflow-hidden m-0">
+            <div className="h-full flex flex-col max-w-4xl mx-auto">
+              {/* Sub-Tab Navigation */}
+              <div className="flex-none flex gap-2 mb-4">
+                <Button
+                  variant={accountSubTab === "management" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAccountSubTab("management")}
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Konto
+                </Button>
+                <Button
+                  variant={accountSubTab === "subscription" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAccountSubTab("subscription")}
+                  className="flex items-center gap-2"
+                >
+                  <Crown className="h-4 w-4" />
+                  Abo & Plan
+                </Button>
+              </div>
+
+              {/* Sub-Tab Content */}
+              <div className="flex-1 overflow-y-auto pr-2">
+                {/* Account Management */}
+                {accountSubTab === "management" && (
+                  <Card className="border-2 border-primary/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Konto-Verwaltung</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Email */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Mail className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">E-Mail ändern</p>
+                            <p className="text-xs text-muted-foreground">Aktuelle E-Mail aktualisieren</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" disabled>
+                          Ändern
+                        </Button>
+                      </div>
+
+                      {/* Password */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Lock className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">Passwort ändern</p>
+                            <p className="text-xs text-muted-foreground">Neues Passwort setzen</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" disabled>
+                          Ändern
+                        </Button>
+                      </div>
+
+                      {/* Delete Account */}
+                      <div className="flex items-center justify-between p-4 bg-destructive/10 rounded-xl border border-destructive/30">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                            <UserX className="h-5 w-5 text-destructive" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-destructive">Account löschen</p>
+                            <p className="text-xs text-muted-foreground">DSGVO: Alle Daten werden gelöscht</p>
+                          </div>
+                        </div>
+                        <Button variant="destructive" size="sm" disabled>
+                          Löschen
+                        </Button>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground text-center pt-2">
+                        ⚠️ Diese Funktionen werden in einer zukünftigen Version aktiviert
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Subscription */}
+                {accountSubTab === "subscription" && (
+                  <Card className="border-2 border-primary/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Abo & Plan</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Current Plan */}
+                      <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/30">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Crown className="h-6 w-6 text-primary" />
+                          <div>
+                            <p className="font-bold">Aktueller Plan</p>
+                            <p className="text-sm text-muted-foreground">Kostenlos / Free</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Upgrade */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <TrendingUp className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">Upgrade / Downgrade</p>
+                            <p className="text-xs text-muted-foreground">Plan wechseln</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" disabled>
+                          Pläne ansehen
+                        </Button>
+                      </div>
+
+                      {/* Payment Method */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <CreditCard className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">Zahlungsmethode</p>
+                            <p className="text-xs text-muted-foreground">Kreditkarte oder PayPal verwalten</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" disabled>
+                          Verwalten
+                        </Button>
+                      </div>
+
+                      {/* Invoices */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Receipt className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">Rechnungen</p>
+                            <p className="text-xs text-muted-foreground">Invoices einsehen & herunterladen</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" disabled>
+                          Anzeigen
+                        </Button>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground text-center pt-2">
+                        ⚠️ Stripe-Integration wird in einer zukünftigen Version aktiviert
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             </div>
