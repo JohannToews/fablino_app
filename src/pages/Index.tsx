@@ -10,6 +10,7 @@ import heroImage from "@/assets/hero-reading.jpg";
 
 interface KidProfile {
   name: string;
+  cover_image_url: string | null;
 }
 
 const Index = () => {
@@ -29,7 +30,7 @@ const Index = () => {
     
     const { data } = await supabase
       .from("kid_profiles")
-      .select("name")
+      .select("name, cover_image_url")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -38,8 +39,8 @@ const Index = () => {
     }
   };
 
-  // Always use the standard hero image - no dynamic profile cover
-  const displayImage = heroImage;
+  // Use profile cover if available, otherwise standard hero image
+  const displayImage = kidProfile?.cover_image_url || heroImage;
   const childName = kidProfile?.name;
 
   return (
