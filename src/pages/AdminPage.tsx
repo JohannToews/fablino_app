@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut } from "lucide-react";
+import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
@@ -48,6 +49,7 @@ const AdminPage = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile");
 
   useEffect(() => {
     if (user) {
@@ -237,187 +239,215 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-admin p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-              className="rounded-full hover:bg-primary/20"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-baloo text-foreground">
-                {t.adminArea} 🔧
-              </h1>
+    <div className="h-screen flex flex-col gradient-admin overflow-hidden">
+      {/* Compact Header */}
+      <header className="flex-none flex items-center justify-between px-4 py-3 border-b border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/")}
+            className="rounded-full hover:bg-primary/20 h-9 w-9"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-baloo font-bold text-foreground">
+              {t.adminArea}
+            </h1>
+            {user && (
+              <p className="text-xs text-muted-foreground">
+                {user.displayName}
+              </p>
+            )}
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </header>
+
+      {/* Tab Navigation - Native App Style */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <TabsList className="flex-none grid grid-cols-3 mx-4 mt-3 h-12 bg-muted/50">
+          <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">{t.kidProfile}</span>
+            <span className="sm:hidden">Profil</span>
+          </TabsTrigger>
+          <TabsTrigger value="stories" className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">{t.newStory}</span>
+            <span className="sm:hidden">Stories</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2 text-sm font-medium">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Einstellungen</span>
+            <span className="sm:hidden">Config</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab Content - Scrollable within each tab */}
+        <div className="flex-1 overflow-hidden p-4">
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="h-full overflow-y-auto m-0 pr-2">
+            <div className="max-w-3xl mx-auto">
               {user && (
-                <p className="text-sm text-muted-foreground">
-                  {user.displayName} • {adminLang.toUpperCase()}
-                </p>
+                <KidProfileSection 
+                  language={adminLang} 
+                  userId={user.id}
+                />
               )}
             </div>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-        </div>
+          </TabsContent>
 
-        {/* Kid Profile Section */}
-        {user && (
-          <KidProfileSection 
-            language={adminLang} 
-            userId={user.id}
-          />
-        )}
-
-        {/* Story Generator Section */}
-        <div className="mb-8">
-          <StoryGenerator
-            onStoryGenerated={(story) => {
-              setTitle(story.title);
-              setContent(story.content);
-              if (story.questions && story.questions.length > 0) {
-                setGeneratedQuestions(story.questions);
-              }
-              if (story.coverImageBase64) {
-                setGeneratedCoverBase64(story.coverImageBase64);
-                setCoverPreview(story.coverImageBase64);
-              }
-              toast.info(t.storyTransferred);
-            }}
-          />
-        </div>
-
-        {/* New Story Section */}
-        <Card className="mb-8 border-2 border-sunshine/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <BookOpen className="h-5 w-5 text-primary" />
-              {t.newStory}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold mb-2">{t.title}</label>
-              <Input
-                placeholder="z.B. Le petit chat"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+          {/* Stories Tab */}
+          <TabsContent value="stories" className="h-full overflow-y-auto m-0 pr-2">
+            <div className="max-w-3xl mx-auto space-y-6">
+              {/* Story Generator */}
+              <StoryGenerator
+                onStoryGenerated={(story) => {
+                  setTitle(story.title);
+                  setContent(story.content);
+                  if (story.questions && story.questions.length > 0) {
+                    setGeneratedQuestions(story.questions);
+                  }
+                  if (story.coverImageBase64) {
+                    setGeneratedCoverBase64(story.coverImageBase64);
+                    setCoverPreview(story.coverImageBase64);
+                  }
+                  toast.info(t.storyTransferred);
+                }}
               />
-            </div>
 
-            <div>
-              <label className="block text-sm font-semibold mb-2">
-                {t.coverImage}
-              </label>
-              <div className="flex items-center gap-4">
-                <label className="btn-secondary-kid cursor-pointer flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  {t.selectImage}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </label>
-                {coverPreview && (
-                  <img
-                    src={coverPreview}
-                    alt="Preview"
-                    className="h-20 w-20 object-cover rounded-xl shadow-soft"
-                  />
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold mb-2">
-                {t.readingText}
-              </label>
-              <Textarea
-                placeholder="Le petit chat dort sur le canapé..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[200px] text-lg"
-              />
-            </div>
-
-            <Button
-              onClick={saveStory}
-              disabled={isLoading}
-              className="btn-primary-kid w-full"
-            >
-              <Save className="h-5 w-5 mr-2" />
-              {isLoading ? t.saving : t.saveStory}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Existing Stories */}
-        <Card className="border-2 border-mint/50">
-          <CardHeader>
-            <CardTitle className="text-xl">{t.existingStories}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stories.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                {t.noStoriesYet}
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {stories.map((story) => (
-                  <div
-                    key={story.id}
-                    className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border"
-                  >
-                    {story.cover_image_url ? (
-                      <img
-                        src={story.cover_image_url}
-                        alt={story.title}
-                        className="h-16 w-16 object-cover rounded-lg"
+              {/* New Story Form */}
+              <Card className="border-2 border-primary/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    {t.newStory}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">{t.title}</label>
+                      <Input
+                        placeholder="z.B. Le petit chat"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
                       />
-                    ) : (
-                      <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center">
-                        <Image className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-baloo font-bold">{story.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate max-w-md">
-                        {story.content}
-                      </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteStory(story.id)}
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">{t.coverImage}</label>
+                      <div className="flex items-center gap-3">
+                        <label className="btn-secondary-kid cursor-pointer flex items-center gap-2 text-sm py-2 px-3">
+                          <Upload className="h-4 w-4" />
+                          {t.selectImage}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                        {coverPreview && (
+                          <img
+                            src={coverPreview}
+                            alt="Preview"
+                            className="h-10 w-10 object-cover rounded-lg shadow-soft"
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Points Configuration */}
-        <PointsConfigSection language={adminLang} />
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">{t.readingText}</label>
+                    <Textarea
+                      placeholder="Le petit chat dort sur le canapé..."
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="min-h-[120px] text-base"
+                    />
+                  </div>
 
-        {/* Level Configuration */}
-        <LevelConfigSection language={adminLang} />
-      </div>
+                  <Button
+                    onClick={saveStory}
+                    disabled={isLoading}
+                    className="btn-primary-kid w-full"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isLoading ? t.saving : t.saveStory}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Existing Stories */}
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{t.existingStories}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stories.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-6 text-sm">
+                      {t.noStoriesYet}
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                      {stories.map((story) => (
+                        <div
+                          key={story.id}
+                          className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50"
+                        >
+                          {story.cover_image_url ? (
+                            <img
+                              src={story.cover_image_url}
+                              alt={story.title}
+                              className="h-12 w-12 object-cover rounded-lg flex-none"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center flex-none">
+                              <Image className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-baloo font-bold text-sm truncate">{story.title}</h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {story.content.substring(0, 60)}...
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteStory(story.id)}
+                            className="text-destructive hover:bg-destructive/10 flex-none h-8 w-8"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="h-full overflow-y-auto m-0 pr-2">
+            <div className="max-w-3xl mx-auto space-y-6">
+              <PointsConfigSection language={adminLang} />
+              <LevelConfigSection language={adminLang} />
+            </div>
+          </TabsContent>
+        </div>
+      </Tabs>
     </div>
   );
 };
