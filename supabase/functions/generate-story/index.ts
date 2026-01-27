@@ -11,12 +11,21 @@ serve(async (req) => {
   }
 
   try {
-    const { length, difficulty, description, childAge, schoolLevel, customSystemPrompt } = await req.json();
+    const { length, difficulty, description, childAge, schoolLevel, textType, textLanguage, globalLanguage, customSystemPrompt } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    // Language mappings
+    const languageNames: Record<string, string> = {
+      DE: "Deutsch",
+      FR: "Französisch",
+      EN: "Englisch",
+    };
+
+    const targetLanguage = languageNames[textLanguage] || "Französisch";
 
     // Map length to approximate word count
     const lengthMap: Record<string, string> = {
@@ -39,49 +48,82 @@ serve(async (req) => {
       difficult: "reichhaltigerer Wortschatz, komplexere Satzstrukturen, literarische Elemente",
     };
 
+    // Text type mapping
+    const textTypeLabels: Record<string, string> = {
+      fiction: "eine fiktive Geschichte (Erzählung, Märchen, Abenteuer)",
+      "non-fiction": "eine Sachgeschichte (informativ, lehrreich, basierend auf Fakten)",
+    };
+
+    const textTypeDescription = textTypeLabels[textType] || textTypeLabels.fiction;
     const questionCount = questionCountMap[length] || 5;
 
-    // Base system prompt
-    let systemPrompt = `Du bist ein erfahrener Kinderbuchautor, der französische Geschichten für Kinder schreibt.
-Du erstellst kindgerechte, pädagogisch wertvolle Geschichten auf Französisch.
-Die Geschichten sollen das Leseverständnis fördern und altersgerecht sein.
+    // Use custom system prompt if provided, otherwise use default
+    let systemPrompt: string;
+    
+    if (customSystemPrompt && customSystemPrompt.trim()) {
+      // Use the custom system prompt as base, with dynamic variables injected
+      systemPrompt = customSystemPrompt
+        .replace(/\{targetLanguage\}/g, targetLanguage)
+        .replace(/\{childAge\}/g, String(childAge))
+        .replace(/\{schoolLevel\}/g, schoolLevel)
+        .replace(/\{difficulty\}/g, difficultyMap[difficulty] || difficultyMap.medium)
+        .replace(/\{length\}/g, lengthMap[length] || lengthMap.medium)
+        .replace(/\{questionCount\}/g, String(questionCount))
+        .replace(/\{textType\}/g, textTypeDescription);
+      
+      // Append critical instructions that must always be included
+      systemPrompt += `
+
+WICHTIGE PARAMETER FÜR DIESE GESCHICHTE:
+- Zielsprache des Textes: ${targetLanguage}
+- Alter des Kindes: ${childAge} Jahre
+- Schulniveau: ${schoolLevel}
+- Schwierigkeit: ${difficultyMap[difficulty] || difficultyMap.medium}
+- Länge: ${lengthMap[length] || lengthMap.medium}
+- Art: ${textTypeDescription}
+- Anzahl Verständnisfragen: ${questionCount}`;
+    } else {
+      // Default system prompt
+      systemPrompt = `Du bist ein erfahrener Kinderbuchautor.
+Du erstellst kindgerechte, pädagogisch wertvolle Texte.
+Die Texte sollen das Leseverständnis fördern und altersgerecht sein.
 
 WICHTIG: 
-- Schreibe NUR auf Französisch
+- Schreibe den Text auf ${targetLanguage}
 - Die Geschichte soll für ein ${childAge}-jähriges Kind sein (Schulniveau: ${schoolLevel})
 - Verwende ${difficultyMap[difficulty] || difficultyMap.medium}
 - Die Geschichte soll ${lengthMap[length] || lengthMap.medium} lang sein
-- Erstelle auch einen passenden französischen Titel
-- Erstelle ${questionCount} Verständnisfragen mit erwarteten Antworten`;
-
-    // Append custom system prompt if provided
-    if (customSystemPrompt && customSystemPrompt.trim()) {
-      systemPrompt += `\n\nZUSÄTZLICHE ANWEISUNGEN:\n${customSystemPrompt.trim()}`;
+- Art des Textes: ${textTypeDescription}
+- Erstelle auch einen passenden Titel in ${targetLanguage}
+- Erstelle ${questionCount} Verständnisfragen mit erwarteten Antworten (in ${targetLanguage})`;
     }
 
-    const userPrompt = `Erstelle eine französische Geschichte basierend auf dieser Beschreibung: "${description}"
+    const userPrompt = `Erstelle ${textTypeDescription} basierend auf dieser Beschreibung: "${description}"
+
+Der Text muss auf ${targetLanguage} geschrieben sein.
 
 Antworte im folgenden JSON-Format:
 {
-  "title": "Der französische Titel der Geschichte",
-  "content": "Der vollständige Text der Geschichte auf Französisch",
+  "title": "Der Titel der Geschichte auf ${targetLanguage}",
+  "content": "Der vollständige Text auf ${targetLanguage}",
   "questions": [
     {
-      "question": "Frage auf Französisch",
-      "expectedAnswer": "Erwartete kurze Antwort auf Französisch"
+      "question": "Frage auf ${targetLanguage}",
+      "expectedAnswer": "Erwartete kurze Antwort auf ${targetLanguage}"
     }
   ]
 }
 
-Achte darauf, dass die Geschichte:
+Achte darauf, dass der Text:
 1. Einen klaren Anfang, Mittelteil und Ende hat
 2. Interessant und spannend für Kinder ist
 3. Positive Werte vermittelt
 4. Dem gewünschten Schwierigkeitsgrad entspricht
+${textType === "non-fiction" ? "5. Faktenbasiert und lehrreich ist" : ""}
 
 Die ${questionCount} Verständnisfragen sollen:
 1. Das Textverständnis prüfen
-2. Auf Französisch formuliert sein
+2. Auf ${targetLanguage} formuliert sein
 3. Kurze, prägnante Antworten haben`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
