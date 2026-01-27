@@ -41,6 +41,9 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   const [description, setDescription] = useState("");
   const [childAge, setChildAge] = useState<number>(8);
   const [schoolLevel, setSchoolLevel] = useState<string>("3e primaire (CE2)");
+  const [textType, setTextType] = useState<string>("fiction");
+  const [textLanguage, setTextLanguage] = useState<string>("FR");
+  const [globalLanguage, setGlobalLanguage] = useState<string>("DE");
   const [customSystemPrompt, setCustomSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
@@ -108,6 +111,9 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
           description,
           childAge,
           schoolLevel,
+          textType,
+          textLanguage,
+          globalLanguage,
           customSystemPrompt,
         },
       });
@@ -155,7 +161,50 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Global Language Selection */}
+        <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
+          <Label htmlFor="globalLanguage" className="font-semibold">🌍 Globale Sprache (UI & Anweisungen)</Label>
+          <Select value={globalLanguage} onValueChange={setGlobalLanguage}>
+            <SelectTrigger id="globalLanguage">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DE">🇩🇪 Deutsch</SelectItem>
+              <SelectItem value="FR">🇫🇷 Français</SelectItem>
+              <SelectItem value="EN">🇬🇧 English</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Text Type */}
+          <div className="space-y-2">
+            <Label htmlFor="textType">Art des Textes</Label>
+            <Select value={textType} onValueChange={setTextType}>
+              <SelectTrigger id="textType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fiction">📖 Fiktion</SelectItem>
+                <SelectItem value="non-fiction">📚 Sachgeschichte</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Text Language */}
+          <div className="space-y-2">
+            <Label htmlFor="textLanguage">Sprache des Textes</Label>
+            <Select value={textLanguage} onValueChange={setTextLanguage}>
+              <SelectTrigger id="textLanguage">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FR">🇫🇷 Französisch</SelectItem>
+                <SelectItem value="DE">🇩🇪 Deutsch</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Length */}
           <div className="space-y-2">
             <Label htmlFor="length">Länge</Label>
