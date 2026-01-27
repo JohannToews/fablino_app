@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useColorPalette } from "@/hooks/useColorPalette";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,7 @@ interface QuizQuestion {
 }
 
 const VocabularyQuizPage = () => {
+  const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const navigate = useNavigate();
   const [words, setWords] = useState<QuizWord[]>([]);
@@ -89,9 +91,11 @@ const VocabularyQuizPage = () => {
   }, []);
 
   useEffect(() => {
-    loadWords();
+    if (user) {
+      loadWords();
+    }
     loadQuizPointValue();
-  }, []);
+  }, [user]);
 
   const loadQuizPointValue = async () => {
     // Load quiz point value for medium difficulty (default)
@@ -108,18 +112,24 @@ const VocabularyQuizPage = () => {
   };
 
   const loadWords = async () => {
-    // Only load words that are NOT marked as "easy" and NOT learned
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    
+    // Load words only from stories that belong to this user
     const { data, error } = await supabase
       .from("marked_words")
-      .select("*")
+      .select("*, stories!inner(user_id)")
       .not("explanation", "is", null)
       .or("difficulty.is.null,difficulty.neq.easy")
       .or("is_learned.is.null,is_learned.eq.false")
       .order("created_at", { ascending: false });
 
     if (data && data.length > 0) {
-      // Filter words that have explanations and are not learned
-      const validWords = data.filter(w => 
+      // Filter words that belong to user's stories and have explanations
+      const validWords = data.filter((w: any) => 
+        w.stories?.user_id === user.id &&
         w.explanation && 
         w.explanation.trim().length > 0 &&
         !w.is_learned
