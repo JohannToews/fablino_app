@@ -42,15 +42,16 @@ serve(async (req) => {
     const colorDescription = paletteColors[colorPalette] || paletteColors.sunshine;
     const childAge = age || 8;
 
-    // Base style description - modern cartoon style like the reference image
+    // Base style description - modern cartoon style, NO TEXT
     const baseStyle = `Modern digital cartoon illustration style. Clean vector-like artwork with smooth gradients and soft shadows. 
 Cute expressive character with big friendly eyes and warm smile. 
 Bright, cheerful lighting with soft ambient glow. 
 Professional children's app illustration quality.
 The scene should be warm, inviting and fun.
-Background should be simple and clean, not distracting.`;
+Background should be simple and clean, not distracting.
+CRITICAL: Do NOT include any text, letters, words, numbers, or typography in the image. No labels, no signs, no book titles - completely text-free illustration.`;
 
-    // Create the prompt
+    // Create the prompt - fixed 16:9 landscape for tablet
     const prompt = `Create a cheerful cartoon illustration of a happy child named ${name} (approximately ${childAge} years old) sitting and reading a book with excitement.
 
 The child should be the main focus, sitting comfortably with an open book, looking happy and engaged.
@@ -63,7 +64,8 @@ COLOR SCHEME: Use ${colorDescription} as the dominant palette for the background
 STYLE: ${baseStyle}
 
 The illustration should feel personal and special - like a custom avatar for a reading app.
-16:9 landscape aspect ratio.
+IMPORTANT: 16:9 wide landscape format, optimized for tablet display.
+IMPORTANT: Absolutely NO text, letters, words, or numbers anywhere in the image.
 High quality, polished finish.`;
 
     console.log("Generating cover image for age", childAge);
