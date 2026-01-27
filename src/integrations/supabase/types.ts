@@ -198,6 +198,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          admin_language: string
+          app_language: string
+          created_at: string
+          display_name: string
+          id: string
+          password_hash: string
+          system_prompt: string | null
+          text_language: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          admin_language?: string
+          app_language?: string
+          created_at?: string
+          display_name: string
+          id?: string
+          password_hash: string
+          system_prompt?: string | null
+          text_language?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          admin_language?: string
+          app_language?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          password_hash?: string
+          system_prompt?: string | null
+          text_language?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_results: {
         Row: {
           activity_type: string
