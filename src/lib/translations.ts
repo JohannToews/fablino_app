@@ -78,6 +78,27 @@ export interface Translations {
   fromPoints: string;
   saveLevelConfig: string;
   levelConfigSaved: string;
+  
+  // Kid Profile
+  kidProfile: string;
+  kidProfileDescription: string;
+  kidName: string;
+  hobbies: string;
+  hobbiesPlaceholder: string;
+  colorPalette: string;
+  generateCover: string;
+  generatingCover: string;
+  saveProfile: string;
+  profileSaved: string;
+  coverGenerated: string;
+  
+  // Color palettes
+  paletteSunshine: string;
+  paletteMint: string;
+  paletteLavender: string;
+  paletteOcean: string;
+  paletteSunset: string;
+  paletteForest: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -154,6 +175,27 @@ const translations: Record<Language, Translations> = {
     fromPoints: 'Ab Punkte',
     saveLevelConfig: 'Niveau-Konfiguration speichern',
     levelConfigSaved: 'Niveau-Konfiguration gespeichert! ⭐',
+    
+    // Kid Profile
+    kidProfile: 'Kinderprofil',
+    kidProfileDescription: 'Definiere das Profil des Kindes für personalisierte Inhalte.',
+    kidName: 'Name des Kindes',
+    hobbies: 'Hobbies & Interessen',
+    hobbiesPlaceholder: 'z.B. Fußball, Dinosaurier, Weltraum, Malen...',
+    colorPalette: 'Farbpalette',
+    generateCover: 'Titelbild generieren',
+    generatingCover: 'Generiere Bild...',
+    saveProfile: 'Profil speichern',
+    profileSaved: 'Profil gespeichert! 🎨',
+    coverGenerated: 'Titelbild wurde generiert! 🖼️',
+    
+    // Color palettes
+    paletteSunshine: 'Sonnenschein (Gelb)',
+    paletteMint: 'Minze (Grün)',
+    paletteLavender: 'Lavendel (Lila)',
+    paletteOcean: 'Ozean (Blau)',
+    paletteSunset: 'Sonnenuntergang (Orange)',
+    paletteForest: 'Wald (Dunkelgrün)',
   },
   
   en: {
@@ -229,6 +271,27 @@ const translations: Record<Language, Translations> = {
     fromPoints: 'From Points',
     saveLevelConfig: 'Save Level Configuration',
     levelConfigSaved: 'Level configuration saved! ⭐',
+    
+    // Kid Profile
+    kidProfile: 'Kid Profile',
+    kidProfileDescription: 'Define the child\'s profile for personalized content.',
+    kidName: 'Child\'s Name',
+    hobbies: 'Hobbies & Interests',
+    hobbiesPlaceholder: 'e.g. Soccer, Dinosaurs, Space, Painting...',
+    colorPalette: 'Color Palette',
+    generateCover: 'Generate Cover Image',
+    generatingCover: 'Generating image...',
+    saveProfile: 'Save Profile',
+    profileSaved: 'Profile saved! 🎨',
+    coverGenerated: 'Cover image generated! 🖼️',
+    
+    // Color palettes
+    paletteSunshine: 'Sunshine (Yellow)',
+    paletteMint: 'Mint (Green)',
+    paletteLavender: 'Lavender (Purple)',
+    paletteOcean: 'Ocean (Blue)',
+    paletteSunset: 'Sunset (Orange)',
+    paletteForest: 'Forest (Dark Green)',
   },
   
   fr: {
@@ -304,6 +367,27 @@ const translations: Record<Language, Translations> = {
     fromPoints: 'À partir de',
     saveLevelConfig: 'Sauvegarder la configuration des niveaux',
     levelConfigSaved: 'Configuration des niveaux sauvegardée ! ⭐',
+    
+    // Kid Profile
+    kidProfile: 'Profil de l\'enfant',
+    kidProfileDescription: 'Définissez le profil de l\'enfant pour un contenu personnalisé.',
+    kidName: 'Prénom de l\'enfant',
+    hobbies: 'Loisirs & Intérêts',
+    hobbiesPlaceholder: 'ex. Football, Dinosaures, Espace, Peinture...',
+    colorPalette: 'Palette de couleurs',
+    generateCover: 'Générer l\'image de couverture',
+    generatingCover: 'Génération de l\'image...',
+    saveProfile: 'Sauvegarder le profil',
+    profileSaved: 'Profil sauvegardé ! 🎨',
+    coverGenerated: 'Image de couverture générée ! 🖼️',
+    
+    // Color palettes
+    paletteSunshine: 'Soleil (Jaune)',
+    paletteMint: 'Menthe (Vert)',
+    paletteLavender: 'Lavande (Violet)',
+    paletteOcean: 'Océan (Bleu)',
+    paletteSunset: 'Coucher de soleil (Orange)',
+    paletteForest: 'Forêt (Vert foncé)',
   },
 };
 

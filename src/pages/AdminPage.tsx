@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut } from "lucide
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
+import KidProfileSection from "@/components/KidProfileSection";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations, Language } from "@/lib/translations";
 
@@ -269,6 +270,14 @@ const AdminPage = () => {
             Logout
           </Button>
         </div>
+
+        {/* Kid Profile Section */}
+        {user && (
+          <KidProfileSection 
+            language={adminLang} 
+            userId={user.id}
+          />
+        )}
 
         {/* Story Generator Section */}
         <div className="mb-8">
