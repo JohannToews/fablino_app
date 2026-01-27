@@ -20,14 +20,13 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
     const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
     
     if (!trimmedUsername || !trimmedPassword) {
       toast({
-        title: "Fehler",
-        description: "Bitte gib Benutzername und Passwort ein.",
+        title: "Error",
+        description: "Please enter username and password.",
         variant: "destructive",
       });
       return;
@@ -35,8 +34,8 @@ const LoginPage = () => {
 
     if (trimmedUsername.length > 50 || trimmedPassword.length > 100) {
       toast({
-        title: "Fehler",
-        description: "Eingabe zu lang.",
+        title: "Error",
+        description: "Input too long.",
         variant: "destructive",
       });
       return;
@@ -52,25 +51,24 @@ const LoginPage = () => {
       if (error) throw error;
 
       if (data.success) {
-        // Store session token via auth context
-        login(data.token);
+        login(data.token, data.user);
         toast({
-          title: "Willkommen!",
-          description: "Erfolgreich angemeldet.",
+          title: "Welcome!",
+          description: `Hello, ${data.user.displayName}!`,
         });
         navigate("/", { replace: true });
       } else {
         toast({
-          title: "Fehler",
-          description: data.error || "Anmeldung fehlgeschlagen.",
+          title: "Error",
+          description: data.error || "Login failed.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: "Fehler",
-        description: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
+        title: "Error",
+        description: "An error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -98,20 +96,20 @@ const LoginPage = () => {
             LireMagie
             <Sparkles className="w-6 h-6 text-yellow-500" />
           </CardTitle>
-          <p className="text-muted-foreground">Bitte melde dich an</p>
+          <p className="text-muted-foreground">Please sign in</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="username" className="text-lg font-medium">
-                Benutzername
+                Username
               </Label>
               <Input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Benutzername eingeben..."
+                placeholder="Enter username..."
                 className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
                 maxLength={50}
                 autoComplete="username"
@@ -119,14 +117,14 @@ const LoginPage = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-lg font-medium">
-                Passwort
+                Password
               </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Passwort eingeben..."
+                placeholder="Enter password..."
                 className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
                 maxLength={100}
                 autoComplete="current-password"
@@ -139,11 +137,11 @@ const LoginPage = () => {
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span> Lädt...
+                  <span className="animate-spin">⏳</span> Loading...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  🔓 Anmelden
+                  🔓 Sign In
                 </span>
               )}
             </Button>
