@@ -18,6 +18,7 @@ import { toast } from "sonner";
 interface FlipbookReaderProps {
   content: string;
   storyId: string;
+  coverImageUrl?: string | null;
   onFinishReading: () => void;
 }
 
@@ -44,7 +45,7 @@ const isStopWord = (word: string): boolean => {
   return FRENCH_STOP_WORDS.has(clean) || clean.length < MIN_WORD_LENGTH;
 };
 
-const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderProps) => {
+const FlipbookReader = ({ content, storyId, coverImageUrl, onFinishReading }: FlipbookReaderProps) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pages, setPages] = useState<string[][]>([]);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -74,15 +75,18 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
   const [currentPositionKey, setCurrentPositionKey] = useState<string | null>(null);
   const [unsavedPositions, setUnsavedPositions] = useState<Set<string>>(new Set());
 
+  // Check if we have a cover image to show as page 0
+  const hasCoverPage = !!coverImageUrl;
+
   // Split content into pages based on paragraphs
   useEffect(() => {
     const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
     const pagesArray: string[][] = [];
     
-    // Group paragraphs into pages (2-3 paragraphs per page depending on length)
+    // Group paragraphs into pages (fewer words per page for larger text)
     let currentPageParagraphs: string[] = [];
     let currentWordCount = 0;
-    const WORDS_PER_PAGE = 120; // Target words per page
+    const WORDS_PER_PAGE = 80; // Reduced for larger text display
     
     paragraphs.forEach((para) => {
       const wordCount = para.split(/\s+/).length;
@@ -103,6 +107,13 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
     
     setPages(pagesArray);
   }, [content]);
+
+  // Total pages including cover
+  const totalPages = pages.length + (hasCoverPage ? 1 : 0);
+  
+  // Actual content page index (adjusted for cover)
+  const contentPageIndex = hasCoverPage ? currentPage - 1 : currentPage;
+  const isOnCoverPage = hasCoverPage && currentPage === 0;
 
   // Load cached explanations
   useEffect(() => {
@@ -186,7 +197,7 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
     
-    if (isLeftSwipe && currentPage < pages.length - 1) {
+    if (isLeftSwipe && currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
       closePanel();
     }
@@ -197,7 +208,7 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
   };
 
   const goToPage = (page: number) => {
-    if (page >= 0 && page < pages.length) {
+    if (page >= 0 && page < totalPages) {
       setCurrentPage(page);
       closePanel();
     }
@@ -402,7 +413,7 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
       const globalPIndex = `${pageIndex}-${pIndex}`;
       
       return (
-        <p key={pIndex} className="mb-4 leading-relaxed text-lg md:text-xl">
+        <p key={pIndex} className="mb-6 leading-loose text-2xl md:text-3xl font-nunito">
           {sentences.map((sentence, sIndex) => {
             const words = sentence.split(/(\s+)/);
             
@@ -455,7 +466,8 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
     });
   };
 
-  const isLastPage = currentPage === pages.length - 1;
+  // Cover page is page 0 when we have an image, so last content page is totalPages - 1
+  const isLastPage = currentPage === totalPages - 1;
 
   return (
     <div className="relative h-full flex flex-col">
@@ -468,7 +480,7 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
         onTouchEnd={onTouchEnd}
       >
         {/* Floating button for phrase selection */}
-        {currentSelection && selectionPosition && (
+        {currentSelection && selectionPosition && !isOnCoverPage && (
           <div 
             data-selection-button
             className="fixed z-50 animate-in fade-in zoom-in-95"
@@ -485,65 +497,78 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
                 e.stopPropagation();
                 handleExplainSelection();
               }}
-              className="btn-primary-kid shadow-lg flex items-center gap-2 text-base py-3 px-5 min-h-[52px] touch-manipulation"
+              className="btn-primary-kid shadow-lg flex items-center gap-3 text-lg py-4 px-6 min-h-[56px] touch-manipulation"
             >
-              <MessageCircleQuestion className="h-5 w-5" />
+              <MessageCircleQuestion className="h-6 w-6" />
               Expliquer
             </Button>
           </div>
         )}
 
+        {/* Cover image page */}
+        {isOnCoverPage && coverImageUrl && (
+          <div className="h-full flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+            <img 
+              src={coverImageUrl} 
+              alt="Story cover"
+              className="max-h-full max-w-full object-contain rounded-xl shadow-card"
+            />
+          </div>
+        )}
+
         {/* Page text */}
-        <div 
-          ref={textContainerRef}
-          className={`h-full overflow-y-auto px-4 py-6 select-text transition-opacity duration-200 ${showPanel ? 'pb-48' : 'pb-24'}`}
-        >
-          {pages[currentPage] && renderPage(pages[currentPage], currentPage)}
-        </div>
+        {!isOnCoverPage && (
+          <div 
+            ref={textContainerRef}
+            className={`h-full overflow-y-auto px-6 md:px-10 py-8 select-text transition-opacity duration-200 ${showPanel ? 'pb-52' : 'pb-32'}`}
+          >
+            {pages[contentPageIndex] && renderPage(pages[contentPageIndex], contentPageIndex)}
+          </div>
+        )}
       </div>
 
       {/* Navigation controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-4 px-4">
-        {/* Page dots */}
-        <div className="flex items-center justify-center gap-2 mb-4">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-6 pb-6 px-6">
+        {/* Page dots and arrows */}
+        <div className="flex items-center justify-center gap-4 mb-3">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 0}
-            className="h-10 w-10 rounded-full"
+            className="h-14 w-14 rounded-full border-2 border-primary/30 hover:bg-primary/10"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-8 w-8" />
           </Button>
           
-          <div className="flex gap-1.5">
-            {pages.map((_, idx) => (
+          <div className="flex gap-2 flex-wrap justify-center max-w-[200px]">
+            {Array.from({ length: totalPages }).map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => goToPage(idx)}
-                className={`h-2.5 rounded-full transition-all duration-200 ${
+                className={`h-3 rounded-full transition-all duration-200 ${
                   idx === currentPage 
-                    ? 'w-8 bg-primary' 
-                    : 'w-2.5 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                    ? 'w-10 bg-primary' 
+                    : 'w-3 bg-muted-foreground/40 hover:bg-muted-foreground/60'
                 }`}
               />
             ))}
           </div>
           
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === pages.length - 1}
-            className="h-10 w-10 rounded-full"
+            disabled={currentPage === totalPages - 1}
+            className="h-14 w-14 rounded-full border-2 border-primary/30 hover:bg-primary/10"
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-8 w-8" />
           </Button>
         </div>
 
         {/* Page number */}
-        <p className="text-center text-sm text-muted-foreground mb-3">
-          Page {currentPage + 1} / {pages.length}
+        <p className="text-center text-lg font-medium text-muted-foreground mb-4">
+          {isOnCoverPage ? 'Couverture' : `Page ${contentPageIndex + 1} / ${pages.length}`}
         </p>
 
         {/* Finish button on last page */}
@@ -551,9 +576,9 @@ const FlipbookReader = ({ content, storyId, onFinishReading }: FlipbookReaderPro
           <div className="flex justify-center">
             <Button
               onClick={onFinishReading}
-              className="btn-accent-kid flex items-center gap-2 text-lg py-3 px-6"
+              className="btn-accent-kid flex items-center gap-3 text-xl py-4 px-8"
             >
-              <CheckCircle2 className="h-5 w-5" />
+              <CheckCircle2 className="h-6 w-6" />
               J'ai fini de lire
             </Button>
           </div>

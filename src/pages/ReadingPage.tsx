@@ -134,44 +134,34 @@ const ReadingPage = () => {
     return (
       <div className={`fixed inset-0 bg-gradient-to-br ${paletteColors.bg} flex flex-col`}>
         {/* Minimal header */}
-        <div className="flex items-center justify-between p-3 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="flex items-center justify-between p-4 bg-background/90 backdrop-blur-sm border-b border-border">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => navigate("/stories")}
-            className="rounded-full hover:bg-primary/20"
+            className="h-12 w-12 rounded-full border-2 hover:bg-primary/10"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-lg md:text-xl font-baloo text-foreground truncate max-w-[60%] text-center">
+          <h1 className="text-xl md:text-2xl font-baloo text-foreground truncate max-w-[55%] text-center">
             {story.title}
           </h1>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => navigate("/quiz")}
-            className="rounded-full hover:bg-accent/20"
+            className="h-12 w-12 rounded-full border-2 hover:bg-accent/10"
           >
-            <BookOpen className="h-5 w-5" />
+            <BookOpen className="h-6 w-6" />
           </Button>
         </div>
 
-        {/* Cover image (optional, smaller in flipbook mode) */}
-        {story.cover_image_url && (
-          <div className="h-32 md:h-40 overflow-hidden">
-            <img 
-              src={story.cover_image_url} 
-              alt={story.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Flipbook reader */}
+        {/* Flipbook reader - no separate cover image display, it's now page 0 */}
         <div className="flex-1 overflow-hidden bg-card">
           <FlipbookReader 
             content={story.content}
             storyId={story.id}
+            coverImageUrl={story.cover_image_url}
             onFinishReading={handleFinishReading}
           />
         </div>
