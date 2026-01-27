@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
+import { useAuth } from "@/hooks/useAuth";
+import { useTranslations, Language } from "@/lib/translations";
 
 interface Story {
   id: string;
@@ -32,6 +34,10 @@ interface GeneratedStory {
 
 const AdminPage = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const adminLang = (user?.adminLanguage || 'de') as Language;
+  const t = useTranslations(adminLang);
+  
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState<File | null>(null);
@@ -66,7 +72,7 @@ const AdminPage = () => {
 
   const saveStory = async () => {
     if (!title.trim() || !content.trim()) {
-      toast.error("Bitte Titel und Text eingeben");
+      toast.error(t.enterTitleAndText);
       return;
     }
 
@@ -83,7 +89,7 @@ const AdminPage = () => {
         .upload(fileName, coverImage);
       
       if (uploadError) {
-        toast.error("Fehler beim Hochladen des Bildes");
+        toast.error(t.imageUploadError);
         setIsLoading(false);
         return;
       }
@@ -111,7 +117,7 @@ const AdminPage = () => {
         
         if (uploadError) {
           console.error("Cover upload error:", uploadError);
-          toast.warning("Cover-Bild konnte nicht hochgeladen werden");
+          toast.warning(t.imageUploadError);
         } else {
           const { data: urlData } = supabase.storage
             .from("covers")
@@ -131,7 +137,7 @@ const AdminPage = () => {
     }).select().single();
 
     if (error || !insertedStory) {
-      toast.error("Fehler beim Speichern der Geschichte");
+      toast.error(t.storySaveError);
       setIsLoading(false);
       return;
     }
@@ -152,13 +158,13 @@ const AdminPage = () => {
 
       if (insertError) {
         console.error("Failed to save questions:", insertError);
-        toast.warning("Fragen konnten nicht gespeichert werden");
+        toast.warning(t.questionsCouldNotBeSaved);
       } else {
-        toast.success("Geschichte und Fragen gespeichert! 🎉");
+        toast.success(t.storyAndQuestionsSaved);
       }
     } else {
       // Generate comprehension questions using LLM (fallback for manual stories)
-      toast.info("Generiere Verständnisfragen...");
+      toast.info(t.generatingQuestions);
       try {
         const { data: questionsData, error: questionsError } = await supabase.functions.invoke(
           "generate-comprehension-questions",
@@ -169,7 +175,7 @@ const AdminPage = () => {
 
         if (questionsError) {
           console.error("Questions generation error:", questionsError);
-          toast.warning("Fragen konnten nicht generiert werden");
+          toast.warning(t.questionsCouldNotBeSaved);
         } else if (questionsData?.questions) {
           // Save questions to DB
           const questionsToInsert = questionsData.questions.map((q: { question: string; expectedAnswer: string }, index: number) => ({
@@ -185,14 +191,14 @@ const AdminPage = () => {
 
           if (insertError) {
             console.error("Failed to save questions:", insertError);
-            toast.warning("Fragen konnten nicht gespeichert werden");
+            toast.warning(t.questionsCouldNotBeSaved);
           } else {
-            toast.success("Geschichte und Fragen gespeichert! 🎉");
+            toast.success(t.storyAndQuestionsSaved);
           }
         }
       } catch (err) {
         console.error("Error generating questions:", err);
-        toast.warning("Fragen-Generierung fehlgeschlagen");
+        toast.warning(t.questionsGenerationFailed);
       }
     }
 
@@ -210,29 +216,51 @@ const AdminPage = () => {
     const { error } = await supabase.from("stories").delete().eq("id", id);
     
     if (error) {
-      toast.error("Fehler beim Löschen");
+      toast.error(t.deleteError);
     } else {
-      toast.success("Geschichte gelöscht");
+      toast.success(t.storyDeleted);
       loadStories();
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   return (
     <div className="min-h-screen gradient-admin p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full hover:bg-primary/20"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-baloo text-foreground">
+                {t.adminArea} 🔧
+              </h1>
+              {user && (
+                <p className="text-sm text-muted-foreground">
+                  {user.displayName} • {adminLang.toUpperCase()}
+                </p>
+              )}
+            </div>
+          </div>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="rounded-full hover:bg-primary/20"
+            variant="outline"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
           >
-            <ArrowLeft className="h-6 w-6" />
+            <LogOut className="h-4 w-4" />
+            Logout
           </Button>
-          <h1 className="text-3xl md:text-4xl font-baloo text-foreground">
-            Admin-Bereich 🔧
-          </h1>
         </div>
 
         {/* Story Generator Section */}
@@ -248,7 +276,7 @@ const AdminPage = () => {
                 setGeneratedCoverBase64(story.coverImageBase64);
                 setCoverPreview(story.coverImageBase64);
               }
-              toast.info("Geschichte wurde in das Formular übernommen. Du kannst sie jetzt bearbeiten und speichern.");
+              toast.info(t.storyTransferred);
             }}
           />
         </div>
@@ -258,12 +286,12 @@ const AdminPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <BookOpen className="h-5 w-5 text-primary" />
-              Neue Leseübung erstellen
+              {t.newStory}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-2">Titel</label>
+              <label className="block text-sm font-semibold mb-2">{t.title}</label>
               <Input
                 placeholder="z.B. Le petit chat"
                 value={title}
@@ -273,12 +301,12 @@ const AdminPage = () => {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Titelbild
+                {t.coverImage}
               </label>
               <div className="flex items-center gap-4">
                 <label className="btn-secondary-kid cursor-pointer flex items-center gap-2">
                   <Upload className="h-4 w-4" />
-                  Bild auswählen
+                  {t.selectImage}
                   <input
                     type="file"
                     accept="image/*"
@@ -298,7 +326,7 @@ const AdminPage = () => {
 
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Lesetext (Französisch)
+                {t.readingText}
               </label>
               <Textarea
                 placeholder="Le petit chat dort sur le canapé..."
@@ -314,7 +342,7 @@ const AdminPage = () => {
               className="btn-primary-kid w-full"
             >
               <Save className="h-5 w-5 mr-2" />
-              {isLoading ? "Speichere..." : "Geschichte speichern"}
+              {isLoading ? t.saving : t.saveStory}
             </Button>
           </CardContent>
         </Card>
@@ -322,12 +350,12 @@ const AdminPage = () => {
         {/* Existing Stories */}
         <Card className="border-2 border-mint/50">
           <CardHeader>
-            <CardTitle className="text-xl">Vorhandene Geschichten</CardTitle>
+            <CardTitle className="text-xl">{t.existingStories}</CardTitle>
           </CardHeader>
           <CardContent>
             {stories.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                Noch keine Geschichten vorhanden
+                {t.noStoriesYet}
               </p>
             ) : (
               <div className="space-y-4">

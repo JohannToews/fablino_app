@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { Wand2, Loader2, Sparkles, Settings, Save } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useTranslations, Language } from "@/lib/translations";
 
 interface GeneratedQuestion {
   question: string;
@@ -26,9 +28,9 @@ interface StoryGeneratorProps {
   onStoryGenerated: (story: GeneratedStory) => void;
 }
 
-const SYSTEM_PROMPT_KEY = "story_generation_system_prompt";
+const USER_PROMPT_KEY_PREFIX = "story_generation_system_prompt_";
 
-const DEFAULT_SYSTEM_PROMPT = `# SYSTEM PROMPT: Leseverständnis-Texte Generator für Sprachlernende
+const DEFAULT_SYSTEM_PROMPT_DE = `# SYSTEM PROMPT: Leseverständnis-Texte Generator für Sprachlernende
 
 ## Deine Rolle
 Du bist ein erfahrener Sprachdidaktiker und Autor von Lernmaterialien für Kinder. Du erstellst altergerechte Texte mit passenden Verständnisfragen, die das Leseverständnis systematisch fördern.
@@ -172,52 +174,84 @@ Wortbedeutung aus dem Zusammenhang erschließen.
 - **Altersgerechte Komplexität:** Auch "schwere" Texte bleiben kindgerecht`;
 
 const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
+  const { user } = useAuth();
+  const adminLang = (user?.adminLanguage || 'de') as Language;
+  const t = useTranslations(adminLang);
+  
   const [length, setLength] = useState<string>("medium");
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [description, setDescription] = useState("");
   const [childAge, setChildAge] = useState<number>(8);
   const [schoolLevel, setSchoolLevel] = useState<string>("3e primaire (CE2)");
   const [textType, setTextType] = useState<string>("fiction");
-  const [textLanguage, setTextLanguage] = useState<string>("FR");
-  const [globalLanguage, setGlobalLanguage] = useState<string>("DE");
-  const [customSystemPrompt, setCustomSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  const [textLanguage, setTextLanguage] = useState<string>(user?.textLanguage?.toUpperCase() || "FR");
+  const [globalLanguage, setGlobalLanguage] = useState<string>(adminLang.toUpperCase());
+  const [customSystemPrompt, setCustomSystemPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
 
-  // Load saved system prompt from database
+  // Get user-specific prompt key
+  const getPromptKey = () => user?.id ? `${USER_PROMPT_KEY_PREFIX}${user.id}` : "story_generation_system_prompt";
+
+  // Load saved system prompt - user-specific from profile or app_settings
   useEffect(() => {
     const loadSystemPrompt = async () => {
+      if (!user) {
+        setCustomSystemPrompt(DEFAULT_SYSTEM_PROMPT_DE);
+        setIsLoadingPrompt(false);
+        return;
+      }
+
+      // First check if user has a custom prompt in their profile
+      if (user.systemPrompt) {
+        setCustomSystemPrompt(user.systemPrompt);
+        setIsLoadingPrompt(false);
+        return;
+      }
+
+      // Otherwise try to load from app_settings (per-user key)
       const { data, error } = await supabase
         .from("app_settings")
         .select("value")
-        .eq("key", SYSTEM_PROMPT_KEY)
-        .single();
+        .eq("key", getPromptKey())
+        .maybeSingle();
 
       if (data && !error) {
         setCustomSystemPrompt(data.value);
+      } else {
+        // Fall back to default
+        setCustomSystemPrompt(DEFAULT_SYSTEM_PROMPT_DE);
       }
       setIsLoadingPrompt(false);
     };
     loadSystemPrompt();
-  }, []);
+  }, [user]);
 
-  // Save system prompt to database when it changes
+  // Update text language when user changes
+  useEffect(() => {
+    if (user?.textLanguage) {
+      setTextLanguage(user.textLanguage.toUpperCase());
+    }
+  }, [user?.textLanguage]);
+
+  // Save system prompt to database
   const saveSystemPrompt = async (prompt: string) => {
+    const key = getPromptKey();
     const { data: existing } = await supabase
       .from("app_settings")
       .select("id")
-      .eq("key", SYSTEM_PROMPT_KEY)
-      .single();
+      .eq("key", key)
+      .maybeSingle();
 
     if (existing) {
       await supabase
         .from("app_settings")
         .update({ value: prompt, updated_at: new Date().toISOString() })
-        .eq("key", SYSTEM_PROMPT_KEY);
+        .eq("key", key);
     } else {
       await supabase
         .from("app_settings")
-        .insert({ key: SYSTEM_PROMPT_KEY, value: prompt });
+        .insert({ key, value: prompt });
     }
   };
 
@@ -225,19 +259,21 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
     setCustomSystemPrompt(e.target.value);
   };
 
-  const handlePromptBlur = () => {
+  const handlePromptSave = () => {
     saveSystemPrompt(customSystemPrompt);
-    toast.success("System-Prompt gespeichert");
+    toast.success(t.save + " ✓");
   };
 
   const handleGenerate = async () => {
     if (!description.trim()) {
-      toast.error("Bitte gib eine kurze Beschreibung ein");
+      toast.error(adminLang === 'de' ? "Bitte gib eine kurze Beschreibung ein" : 
+                  adminLang === 'fr' ? "Veuillez entrer une courte description" :
+                  "Please enter a short description");
       return;
     }
 
     setIsGenerating(true);
-    toast.info("Geschichte wird generiert... ⚽🎨 (inkl. Cover-Bild)");
+    toast.info(t.generating + " ⚽🎨");
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-story", {
@@ -256,7 +292,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
       if (error) {
         console.error("Generation error:", error);
-        toast.error("Fehler bei der Generierung");
+        toast.error(t.error);
         return;
       }
 
@@ -266,26 +302,26 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
       }
 
       if (data?.title && data?.content) {
-        toast.success("Geschichte erfolgreich generiert! 🏆");
+        toast.success(t.success + " 🏆");
         onStoryGenerated(data);
       } else {
-        toast.error("Ungültige Antwort vom Server");
+        toast.error(t.error);
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Ein Fehler ist aufgetreten");
+      toast.error(t.error);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const getLengthLabel = (val: string) => {
-    switch (val) {
-      case "short": return "Kurz (220-250 Wörter, 3 Fragen)";
-      case "medium": return "Mittel (250-350 Wörter, 5 Fragen)";
-      case "long": return "Lang (350-550 Wörter, 7 Fragen)";
-      default: return val;
-    }
+    const labels = {
+      de: { short: "Kurz (220-250 Wörter, 3 Fragen)", medium: "Mittel (250-350 Wörter, 5 Fragen)", long: "Lang (350-550 Wörter, 7 Fragen)" },
+      en: { short: "Short (220-250 words, 3 questions)", medium: "Medium (250-350 words, 5 questions)", long: "Long (350-550 words, 7 questions)" },
+      fr: { short: "Court (220-250 mots, 3 questions)", medium: "Moyen (250-350 mots, 5 questions)", long: "Long (350-550 mots, 7 questions)" },
+    };
+    return labels[adminLang]?.[val as keyof typeof labels.de] || val;
   };
 
   return (
@@ -293,13 +329,13 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
           <Sparkles className="h-5 w-5 text-primary" />
-          Geschichte mit KI generieren
+          {t.storyGenerator}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Global Language Selection */}
         <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
-          <Label htmlFor="globalLanguage" className="font-semibold">🌍 Globale Sprache (UI & Anweisungen)</Label>
+          <Label htmlFor="globalLanguage" className="font-semibold">🌍 {t.globalLanguage}</Label>
           <Select value={globalLanguage} onValueChange={setGlobalLanguage}>
             <SelectTrigger id="globalLanguage">
               <SelectValue />
@@ -315,27 +351,27 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Text Type */}
           <div className="space-y-2">
-            <Label htmlFor="textType">Art des Textes</Label>
+            <Label htmlFor="textType">{t.textType}</Label>
             <Select value={textType} onValueChange={setTextType}>
               <SelectTrigger id="textType">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="fiction">📖 Fiktion</SelectItem>
-                <SelectItem value="non-fiction">📚 Sachgeschichte</SelectItem>
+                <SelectItem value="fiction">📖 {t.fiction}</SelectItem>
+                <SelectItem value="non-fiction">📚 {t.nonFiction}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Text Language */}
           <div className="space-y-2">
-            <Label htmlFor="textLanguage">Sprache des Textes</Label>
+            <Label htmlFor="textLanguage">{t.textLanguage}</Label>
             <Select value={textLanguage} onValueChange={setTextLanguage}>
               <SelectTrigger id="textLanguage">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="FR">🇫🇷 Französisch</SelectItem>
+                <SelectItem value="FR">🇫🇷 Français</SelectItem>
                 <SelectItem value="DE">🇩🇪 Deutsch</SelectItem>
               </SelectContent>
             </Select>
@@ -343,7 +379,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
           {/* Length */}
           <div className="space-y-2">
-            <Label htmlFor="length">Länge</Label>
+            <Label htmlFor="length">{t.textLength}</Label>
             <Select value={length} onValueChange={setLength}>
               <SelectTrigger id="length">
                 <SelectValue />
@@ -358,22 +394,22 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
           {/* Difficulty */}
           <div className="space-y-2">
-            <Label htmlFor="difficulty">Schwierigkeitsgrad</Label>
+            <Label htmlFor="difficulty">{t.difficulty}</Label>
             <Select value={difficulty} onValueChange={setDifficulty}>
               <SelectTrigger id="difficulty">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="easy">Einfach</SelectItem>
-                <SelectItem value="medium">Mittel</SelectItem>
-                <SelectItem value="difficult">Schwer</SelectItem>
+                <SelectItem value="easy">{t.easy}</SelectItem>
+                <SelectItem value="medium">{t.medium}</SelectItem>
+                <SelectItem value="difficult">{t.hard}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Child Age */}
           <div className="space-y-2">
-            <Label htmlFor="age">Alter des Kindes</Label>
+            <Label htmlFor="age">{t.childAge}</Label>
             <Input
               id="age"
               type="number"
@@ -386,7 +422,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
           {/* School Level */}
           <div className="space-y-2">
-            <Label htmlFor="school">Schulniveau</Label>
+            <Label htmlFor="school">{t.schoolLevel}</Label>
             <Select value={schoolLevel} onValueChange={setSchoolLevel}>
               <SelectTrigger id="school">
                 <SelectValue />
@@ -406,11 +442,13 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
         {/* Description */}
         <div className="space-y-2">
           <Label htmlFor="description">
-            Kurze Beschreibung (auf Deutsch)
+            {adminLang === 'de' ? 'Kurze Beschreibung' : adminLang === 'fr' ? 'Courte description' : 'Short description'}
           </Label>
           <Input
             id="description"
-            placeholder="z.B. Eine Geschichte über einen mutigen kleinen Hund, der sich im Wald verirrt"
+            placeholder={adminLang === 'de' ? "z.B. Eine Geschichte über einen mutigen kleinen Hund" :
+                         adminLang === 'fr' ? "p.ex. Une histoire sur un petit chien courageux" :
+                         "e.g. A story about a brave little dog"}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="text-base"
@@ -423,7 +461,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
             <AccordionTrigger className="hover:no-underline">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Settings className="h-4 w-4" />
-                System-Prompt anpassen (optional)
+                {t.systemPrompt}
               </div>
             </AccordionTrigger>
             <AccordionContent>
@@ -431,30 +469,34 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
                 {isLoadingPrompt ? (
                   <div className="flex items-center gap-2 text-muted-foreground py-4">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Lade gespeicherten Prompt...</span>
+                    <span>{t.loading}</span>
                   </div>
                 ) : (
                   <>
                     <Textarea
                       id="systemPrompt"
-                      placeholder="Anweisungen für die KI..."
+                      placeholder={adminLang === 'de' ? "Anweisungen für die KI..." : 
+                                   adminLang === 'fr' ? "Instructions pour l'IA..." :
+                                   "Instructions for the AI..."}
                       value={customSystemPrompt}
                       onChange={handlePromptChange}
                       className="min-h-[150px] text-sm font-mono"
                     />
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-xs text-muted-foreground">
-                        Dieser Prompt wird bei der Generierung an die KI übergeben.
+                        {adminLang === 'de' ? 'Dieser Prompt wird bei der Generierung an die KI übergeben.' :
+                         adminLang === 'fr' ? 'Ce prompt sera transmis à l\'IA lors de la génération.' :
+                         'This prompt will be passed to the AI during generation.'}
                       </p>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handlePromptBlur}
+                        onClick={handlePromptSave}
                         className="flex items-center gap-1"
                       >
                         <Save className="h-3 w-3" />
-                        Speichern
+                        {t.savePrompt}
                       </Button>
                     </div>
                   </>
@@ -472,12 +514,12 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
           {isGenerating ? (
             <>
               <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              Generiere Geschichte & Cover...
+              {t.generating}
             </>
           ) : (
             <>
               <Wand2 className="h-5 w-5 mr-2" />
-              Geschichte generieren
+              {t.generateStory}
             </>
           )}
         </Button>
