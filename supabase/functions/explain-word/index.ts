@@ -22,16 +22,18 @@ serve(async (req) => {
       );
     }
 
-    // Improved prompt for better, child-friendly explanations
+    // Improved prompt for better, child-friendly explanations + spelling correction
     const prompt = `Tu es un dictionnaire vivant pour enfants français de 8 ans.
 
 Le mot ou l'expression à expliquer: "${word}"
 ${context ? `Contexte de la phrase: "${context}"` : ''}
 
-MISSION: Donne une explication SIMPLE et CLAIRE en 8 mots maximum.
+MISSION: 
+1. Si le mot est mal orthographié, corrige-le
+2. Donne une explication SIMPLE et CLAIRE en 8 mots maximum
 
 RÈGLES STRICTES:
-1. Maximum 8 mots, pas plus
+1. Maximum 8 mots pour l'explication, pas plus
 2. Utilise des mots très simples qu'un enfant de 8 ans connaît
 3. Pas de ponctuation finale (ni point, ni virgule)
 4. Pas de répétition du mot à expliquer
@@ -43,18 +45,10 @@ EXEMPLES PARFAITS:
 - "courageux" → "Quelqu'un qui n'a pas peur"
 - "dévorer" → "Manger très vite avec appétit"
 - "magnifique" → "Très très beau"
-- "s'élancer" → "Partir vite en courant"
-- "un terrier" → "La maison sous terre d'un animal"
-- "inquiet" → "Qui a un peu peur dans sa tête"
-- "bondir" → "Sauter très haut"
-- "murmurer" → "Parler très doucement"
+- "château" (si écrit "chateau") → corrigé: "château"
 
-MAUVAIS EXEMPLES (à éviter):
-- Trop long: "C'est quand quelqu'un fait quelque chose de bien pour aider les autres"
-- Trop compliqué: "Manifestation d'un sentiment positif"
-- Répète le mot: "Courageux veut dire être courageux"
-
-Ta réponse (8 mots max, simple, clair):`;
+RÉPONDS UNIQUEMENT en JSON valide:
+{"correctedWord": "mot_corrigé_ou_original", "explanation": "explication courte"}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -65,7 +59,7 @@ Ta réponse (8 mots max, simple, clair):`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 60,
+            maxOutputTokens: 100,
           },
         }),
       }
@@ -81,23 +75,34 @@ Ta réponse (8 mots max, simple, clair):`;
     }
 
     const data = await response.json();
-    let explanation = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-    // Clean up the response
-    if (!explanation) {
+    // Try to parse JSON response
+    try {
+      // Clean up potential markdown code blocks
+      rawText = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      const parsed = JSON.parse(rawText);
+      let explanation = parsed.explanation || '';
+      let correctedWord = parsed.correctedWord || word;
+      
+      // Clean up the response
+      explanation = explanation.replace(/[.!?]$/, '').replace(/^["']|["']$/g, '').trim();
+      correctedWord = correctedWord.toLowerCase().trim();
+      
       return new Response(
-        JSON.stringify({ explanation: null, error: 'No explanation generated' }),
+        JSON.stringify({ explanation, correctedWord }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (parseError) {
+      // Fallback: treat whole response as explanation
+      let explanation = rawText.replace(/[.!?]$/, '').replace(/^["']|["']$/g, '').trim();
+      
+      return new Response(
+        JSON.stringify({ explanation, correctedWord: word }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Remove trailing punctuation and quotes
-    explanation = explanation.replace(/[.!?]$/, '').replace(/^["']|["']$/g, '').trim();
-
-    return new Response(
-      JSON.stringify({ explanation }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (error) {
     console.error('Error:', error);
