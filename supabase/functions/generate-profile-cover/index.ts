@@ -51,22 +51,23 @@ The scene should be warm, inviting and fun.
 Background should be simple and clean, not distracting.
 CRITICAL: Do NOT include any text, letters, words, numbers, or typography in the image. No labels, no signs, no book titles - completely text-free illustration.`;
 
-    // Create the prompt - fixed 16:9 landscape for tablet
-    const prompt = `Create a cheerful cartoon illustration of a happy child named ${name} (approximately ${childAge} years old) sitting and reading a book with excitement.
+    // Create the prompt - fixed 16:9 WIDE landscape for tablet
+    const prompt = `Create a wide panoramic cartoon illustration (16:9 aspect ratio, much wider than tall) of a happy child named ${name} (approximately ${childAge} years old) reading a book with excitement.
 
-The child should be the main focus, sitting comfortably with an open book, looking happy and engaged.
+The child should be centered, sitting comfortably with an open book, looking happy and engaged.
 
-Around the child, include items representing their hobbies: ${hobbies || "books, art supplies, and creative activities"}.
-These items should be arranged naturally around the scene, not overwhelming the composition.
+Around the child, include small items representing their hobbies: ${hobbies || "books, art supplies, and creative activities"}.
+Keep composition simple and balanced across the wide format.
 
 COLOR SCHEME: Use ${colorDescription} as the dominant palette for the background and ambient lighting.
 
 STYLE: ${baseStyle}
 
-The illustration should feel personal and special - like a custom avatar for a reading app.
-IMPORTANT: 16:9 wide landscape format, optimized for tablet display.
-IMPORTANT: Absolutely NO text, letters, words, or numbers anywhere in the image.
-High quality, polished finish.`;
+CRITICAL FORMAT REQUIREMENTS:
+- Wide panoramic 16:9 landscape orientation (much wider than tall, like a movie screen)
+- Absolutely NO text, letters, words, numbers, or typography anywhere
+- Simple clean background, child as focal point in center
+- High quality, polished finish suitable for app header image`;
 
     console.log("Generating cover image for age", childAge);
 

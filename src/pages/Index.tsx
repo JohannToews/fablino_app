@@ -78,13 +78,13 @@ const Index = () => {
             Apprends à lire avec plaisir! ✨
           </p>
 
-          {/* Hero Image */}
-          <div className="relative mb-10">
-            <div className={`absolute inset-0 ${paletteColors.primary} rounded-3xl blur-2xl transform scale-105`} />
+          {/* Hero Image - wide aspect ratio for tablet */}
+          <div className="relative w-full max-w-2xl mb-6">
+            <div className={`absolute inset-0 ${paletteColors.primary} rounded-2xl blur-2xl transform scale-105`} />
             <img
               src={displayImage}
               alt="Magical reading adventure"
-              className="relative w-full max-w-lg h-auto rounded-3xl shadow-card object-cover"
+              className="relative w-full h-auto max-h-[30vh] rounded-2xl shadow-card object-cover"
             />
           </div>
 
