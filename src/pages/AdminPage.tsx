@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
@@ -50,6 +50,8 @@ const AdminPage = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [storySubTab, setStorySubTab] = useState("generator");
+  const [settingsSubTab, setSettingsSubTab] = useState("points");
 
   useEffect(() => {
     if (user) {
@@ -307,143 +309,226 @@ const AdminPage = () => {
           </TabsContent>
 
           {/* Stories Tab */}
-          <TabsContent value="stories" className="h-full overflow-y-auto m-0 pr-2">
-            <div className="max-w-3xl mx-auto space-y-6">
-              {/* Story Generator */}
-              <StoryGenerator
-                onStoryGenerated={(story) => {
-                  setTitle(story.title);
-                  setContent(story.content);
-                  if (story.questions && story.questions.length > 0) {
-                    setGeneratedQuestions(story.questions);
-                  }
-                  if (story.coverImageBase64) {
-                    setGeneratedCoverBase64(story.coverImageBase64);
-                    setCoverPreview(story.coverImageBase64);
-                  }
-                  toast.info(t.storyTransferred);
-                }}
-              />
-
-              {/* New Story Form */}
-              <Card className="border-2 border-primary/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    {t.newStory}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">{t.title}</label>
-                      <Input
-                        placeholder="z.B. Le petit chat"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">{t.coverImage}</label>
-                      <div className="flex items-center gap-3">
-                        <label className="btn-secondary-kid cursor-pointer flex items-center gap-2 text-sm py-2 px-3">
-                          <Upload className="h-4 w-4" />
-                          {t.selectImage}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                        {coverPreview && (
-                          <img
-                            src={coverPreview}
-                            alt="Preview"
-                            className="h-10 w-10 object-cover rounded-lg shadow-soft"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t.readingText}</label>
-                    <Textarea
-                      placeholder="Le petit chat dort sur le canapé..."
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      className="min-h-[120px] text-base"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={saveStory}
-                    disabled={isLoading}
-                    className="btn-primary-kid w-full"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isLoading ? t.saving : t.saveStory}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Existing Stories */}
-              <Card className="border-2 border-muted">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">{t.existingStories}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {stories.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-6 text-sm">
-                      {t.noStoriesYet}
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                      {stories.map((story) => (
-                        <div
-                          key={story.id}
-                          className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50"
-                        >
-                          {story.cover_image_url ? (
-                            <img
-                              src={story.cover_image_url}
-                              alt={story.title}
-                              className="h-12 w-12 object-cover rounded-lg flex-none"
-                            />
-                          ) : (
-                            <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center flex-none">
-                              <Image className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-baloo font-bold text-sm truncate">{story.title}</h3>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {story.content.substring(0, 60)}...
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteStory(story.id)}
-                            className="text-destructive hover:bg-destructive/10 flex-none h-8 w-8"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+          <TabsContent value="stories" className="h-full overflow-hidden m-0">
+            <div className="h-full flex flex-col max-w-4xl mx-auto">
+              {/* Sub-Tab Navigation */}
+              <div className="flex-none flex gap-2 mb-4">
+                <Button
+                  variant={storySubTab === "generator" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStorySubTab("generator")}
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Generator
+                </Button>
+                <Button
+                  variant={storySubTab === "editor" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStorySubTab("editor")}
+                  className="flex items-center gap-2"
+                >
+                  <FileEdit className="h-4 w-4" />
+                  Bearbeiten
+                </Button>
+                <Button
+                  variant={storySubTab === "library" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStorySubTab("library")}
+                  className="flex items-center gap-2"
+                >
+                  <Library className="h-4 w-4" />
+                  Bibliothek
+                  {stories.length > 0 && (
+                    <span className="ml-1 bg-primary/20 text-primary text-xs px-1.5 py-0.5 rounded-full">
+                      {stories.length}
+                    </span>
                   )}
-                </CardContent>
-              </Card>
+                </Button>
+              </div>
+
+              {/* Sub-Tab Content */}
+              <div className="flex-1 overflow-y-auto pr-2">
+                {/* Generator Sub-Tab */}
+                {storySubTab === "generator" && (
+                  <StoryGenerator
+                    onStoryGenerated={(story) => {
+                      setTitle(story.title);
+                      setContent(story.content);
+                      if (story.questions && story.questions.length > 0) {
+                        setGeneratedQuestions(story.questions);
+                      }
+                      if (story.coverImageBase64) {
+                        setGeneratedCoverBase64(story.coverImageBase64);
+                        setCoverPreview(story.coverImageBase64);
+                      }
+                      setStorySubTab("editor");
+                      toast.info(t.storyTransferred);
+                    }}
+                  />
+                )}
+
+                {/* Editor Sub-Tab */}
+                {storySubTab === "editor" && (
+                  <Card className="border-2 border-primary/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                        {t.newStory}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">{t.title}</label>
+                          <Input
+                            placeholder="z.B. Le petit chat"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">{t.coverImage}</label>
+                          <div className="flex items-center gap-3">
+                            <label className="btn-secondary-kid cursor-pointer flex items-center gap-2 text-sm py-2 px-3">
+                              <Upload className="h-4 w-4" />
+                              {t.selectImage}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="hidden"
+                              />
+                            </label>
+                            {coverPreview && (
+                              <img
+                                src={coverPreview}
+                                alt="Preview"
+                                className="h-10 w-10 object-cover rounded-lg shadow-soft"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">{t.readingText}</label>
+                        <Textarea
+                          placeholder="Le petit chat dort sur le canapé..."
+                          value={content}
+                          onChange={(e) => setContent(e.target.value)}
+                          className="min-h-[200px] text-base"
+                        />
+                      </div>
+
+                      {generatedQuestions.length > 0 && (
+                        <div className="p-3 bg-muted/50 rounded-lg">
+                          <p className="text-sm text-muted-foreground">
+                            ✓ {generatedQuestions.length} Verständnisfragen bereit
+                          </p>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={saveStory}
+                        disabled={isLoading}
+                        className="btn-primary-kid w-full"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {isLoading ? t.saving : t.saveStory}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Library Sub-Tab */}
+                {storySubTab === "library" && (
+                  <Card className="border-2 border-muted">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{t.existingStories}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {stories.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-8 text-sm">
+                          {t.noStoriesYet}
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {stories.map((story) => (
+                            <div
+                              key={story.id}
+                              className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50"
+                            >
+                              {story.cover_image_url ? (
+                                <img
+                                  src={story.cover_image_url}
+                                  alt={story.title}
+                                  className="h-14 w-14 object-cover rounded-lg flex-none"
+                                />
+                              ) : (
+                                <div className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center flex-none">
+                                  <Image className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-baloo font-bold text-sm truncate">{story.title}</h3>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {story.content.substring(0, 50)}...
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteStory(story.id)}
+                                className="text-destructive hover:bg-destructive/10 flex-none h-8 w-8"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="h-full overflow-y-auto m-0 pr-2">
-            <div className="max-w-3xl mx-auto space-y-6">
-              <PointsConfigSection language={adminLang} />
-              <LevelConfigSection language={adminLang} />
+          <TabsContent value="settings" className="h-full overflow-hidden m-0">
+            <div className="h-full flex flex-col max-w-4xl mx-auto">
+              {/* Sub-Tab Navigation */}
+              <div className="flex-none flex gap-2 mb-4">
+                <Button
+                  variant={settingsSubTab === "points" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSettingsSubTab("points")}
+                  className="flex items-center gap-2"
+                >
+                  <Star className="h-4 w-4" />
+                  Punkte
+                </Button>
+                <Button
+                  variant={settingsSubTab === "levels" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSettingsSubTab("levels")}
+                  className="flex items-center gap-2"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Level
+                </Button>
+              </div>
+
+              {/* Sub-Tab Content */}
+              <div className="flex-1 overflow-y-auto pr-2">
+                {settingsSubTab === "points" && (
+                  <PointsConfigSection language={adminLang} />
+                )}
+                {settingsSubTab === "levels" && (
+                  <LevelConfigSection language={adminLang} />
+                )}
+              </div>
             </div>
           </TabsContent>
         </div>
