@@ -61,6 +61,23 @@ export interface Translations {
   questionsGenerationFailed: string;
   storyDeleted: string;
   deleteError: string;
+  
+  // Points Config
+  pointsConfiguration: string;
+  comprehensionQuestion: string;
+  quizPerCorrectAnswer: string;
+  storyRead: string;
+  pointsNote: string;
+  savePointsConfig: string;
+  errorSaving: string;
+  pointsConfigSaved: string;
+  
+  // Level Config
+  levelConfiguration: string;
+  defineLevels: string;
+  fromPoints: string;
+  saveLevelConfig: string;
+  levelConfigSaved: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -120,6 +137,23 @@ const translations: Record<Language, Translations> = {
     questionsGenerationFailed: 'Fragen-Generierung fehlgeschlagen',
     storyDeleted: 'Geschichte gelöscht',
     deleteError: 'Fehler beim Löschen',
+    
+    // Points Config
+    pointsConfiguration: 'Punktekonfiguration',
+    comprehensionQuestion: 'Verständnisfrage',
+    quizPerCorrectAnswer: 'Quiz (pro richtige Antwort)',
+    storyRead: 'Geschichte gelesen',
+    pointsNote: 'Quiz-Punkte werden nur vergeben, wenn das Quiz insgesamt bestanden wird (4/5 oder 8/10).',
+    savePointsConfig: 'Punktekonfiguration speichern',
+    errorSaving: 'Fehler beim Speichern',
+    pointsConfigSaved: 'Punktekonfiguration gespeichert! 🎯',
+    
+    // Level Config
+    levelConfiguration: 'Niveau-Konfiguration',
+    defineLevels: 'Definiere die Niveaustufen und die benötigten Punkte.',
+    fromPoints: 'Ab Punkte',
+    saveLevelConfig: 'Niveau-Konfiguration speichern',
+    levelConfigSaved: 'Niveau-Konfiguration gespeichert! ⭐',
   },
   
   en: {
@@ -178,6 +212,23 @@ const translations: Record<Language, Translations> = {
     questionsGenerationFailed: 'Question generation failed',
     storyDeleted: 'Story deleted',
     deleteError: 'Error deleting',
+    
+    // Points Config
+    pointsConfiguration: 'Points Configuration',
+    comprehensionQuestion: 'Comprehension Question',
+    quizPerCorrectAnswer: 'Quiz (per correct answer)',
+    storyRead: 'Story Read',
+    pointsNote: 'Quiz points are only awarded when the quiz is passed overall (4/5 or 8/10).',
+    savePointsConfig: 'Save Points Configuration',
+    errorSaving: 'Error saving',
+    pointsConfigSaved: 'Points configuration saved! 🎯',
+    
+    // Level Config
+    levelConfiguration: 'Level Configuration',
+    defineLevels: 'Define the levels and required points.',
+    fromPoints: 'From Points',
+    saveLevelConfig: 'Save Level Configuration',
+    levelConfigSaved: 'Level configuration saved! ⭐',
   },
   
   fr: {
@@ -236,6 +287,23 @@ const translations: Record<Language, Translations> = {
     questionsGenerationFailed: 'Échec de la génération des questions',
     storyDeleted: 'Histoire supprimée',
     deleteError: 'Erreur lors de la suppression',
+    
+    // Points Config
+    pointsConfiguration: 'Configuration des points',
+    comprehensionQuestion: 'Question de compréhension',
+    quizPerCorrectAnswer: 'Quiz (par réponse correcte)',
+    storyRead: 'Histoire lue',
+    pointsNote: 'Les points de quiz ne sont attribués que si le quiz est réussi (4/5 ou 8/10).',
+    savePointsConfig: 'Sauvegarder la configuration des points',
+    errorSaving: 'Erreur lors de la sauvegarde',
+    pointsConfigSaved: 'Configuration des points sauvegardée ! 🎯',
+    
+    // Level Config
+    levelConfiguration: 'Configuration des niveaux',
+    defineLevels: 'Définissez les niveaux et les points requis.',
+    fromPoints: 'À partir de',
+    saveLevelConfig: 'Sauvegarder la configuration des niveaux',
+    levelConfigSaved: 'Configuration des niveaux sauvegardée ! ⭐',
   },
 };
 

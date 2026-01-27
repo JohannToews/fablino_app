@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trophy, Save, Loader2 } from "lucide-react";
+import { useTranslations, Language } from "@/lib/translations";
 
 interface PointSetting {
   id: string;
@@ -14,7 +15,12 @@ interface PointSetting {
   points: number;
 }
 
-const PointsConfigSection = () => {
+interface PointsConfigSectionProps {
+  language: Language;
+}
+
+const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
+  const t = useTranslations(language);
   const [settings, setSettings] = useState<PointSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,16 +60,16 @@ const PointsConfigSection = () => {
         
         if (error) {
           console.error("Error saving setting:", error);
-          toast.error("Fehler beim Speichern");
+          toast.error(t.errorSaving);
           setIsSaving(false);
           return;
         }
       }
       
-      toast.success("Punktekonfiguration gespeichert! 🎯");
+      toast.success(t.pointsConfigSaved);
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Fehler beim Speichern");
+      toast.error(t.errorSaving);
     }
     
     setIsSaving(false);
@@ -71,25 +77,25 @@ const PointsConfigSection = () => {
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'story': return '📖 Geschichte gelesen';
-      case 'question': return '❓ Verständnisfrage';
-      case 'quiz': return '🧠 Quiz (pro richtige Antwort)';
+      case 'story': return `📖 ${t.storyRead}`;
+      case 'question': return `❓ ${t.comprehensionQuestion}`;
+      case 'quiz': return `🧠 ${t.quizPerCorrectAnswer}`;
       default: return category;
     }
   };
 
   const getDifficultyLabel = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'Einfach';
-      case 'medium': return 'Mittel';
-      case 'difficult': return 'Schwer';
+      case 'easy': return t.easy;
+      case 'medium': return t.medium;
+      case 'difficult': return t.hard;
       default: return difficulty;
     }
   };
 
   if (isLoading) {
     return (
-      <Card className="border-2 border-sunshine/50">
+      <Card className="border-2 border-sunshine/50 mt-8">
         <CardContent className="p-8 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
@@ -107,11 +113,11 @@ const PointsConfigSection = () => {
   });
 
   return (
-    <Card className="border-2 border-sunshine/50">
+    <Card className="border-2 border-sunshine/50 mt-8">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
           <Trophy className="h-5 w-5 text-primary" />
-          Punktekonfiguration
+          {t.pointsConfiguration}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -144,7 +150,7 @@ const PointsConfigSection = () => {
 
         <div className="pt-4 border-t">
           <p className="text-sm text-muted-foreground mb-4">
-            <strong>Hinweis:</strong> Quiz-Punkte werden nur vergeben, wenn das Quiz insgesamt bestanden wird (4/5 oder 8/10).
+            <strong>{language === 'de' ? 'Hinweis' : language === 'en' ? 'Note' : 'Remarque'}:</strong> {t.pointsNote}
           </p>
           <Button
             onClick={saveSettings}
@@ -154,12 +160,12 @@ const PointsConfigSection = () => {
             {isSaving ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Speichere...
+                {t.saving}
               </>
             ) : (
               <>
                 <Save className="h-5 w-5 mr-2" />
-                Punktekonfiguration speichern
+                {t.savePointsConfig}
               </>
             )}
           </Button>

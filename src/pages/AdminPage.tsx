@@ -18,6 +18,7 @@ interface Story {
   title: string;
   content: string;
   cover_image_url: string | null;
+  user_id: string | null;
 }
 
 interface GeneratedQuestion {
@@ -48,13 +49,18 @@ const AdminPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    loadStories();
-  }, []);
+    if (user) {
+      loadStories();
+    }
+  }, [user]);
 
   const loadStories = async () => {
+    if (!user) return;
+    
     const { data } = await supabase
       .from("stories")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
     if (data) {
@@ -129,11 +135,12 @@ const AdminPage = () => {
       }
     }
 
-    // Insert story
+    // Insert story with user_id
     const { data: insertedStory, error } = await supabase.from("stories").insert({
       title,
       content,
       cover_image_url: coverUrl,
+      user_id: user?.id,
     }).select().single();
 
     if (error || !insertedStory) {
@@ -397,10 +404,10 @@ const AdminPage = () => {
         </Card>
 
         {/* Points Configuration */}
-        <PointsConfigSection />
+        <PointsConfigSection language={adminLang} />
 
         {/* Level Configuration */}
-        <LevelConfigSection />
+        <LevelConfigSection language={adminLang} />
       </div>
     </div>
   );

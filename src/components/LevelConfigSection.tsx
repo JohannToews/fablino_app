@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Star, Save, Loader2 } from "lucide-react";
+import { useTranslations, Language } from "@/lib/translations";
 
 interface LevelSetting {
   id: string;
@@ -14,7 +15,12 @@ interface LevelSetting {
   min_points: number;
 }
 
-const LevelConfigSection = () => {
+interface LevelConfigSectionProps {
+  language: Language;
+}
+
+const LevelConfigSection = ({ language }: LevelConfigSectionProps) => {
+  const t = useTranslations(language);
   const [levels, setLevels] = useState<LevelSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,16 +62,16 @@ const LevelConfigSection = () => {
 
         if (error) {
           console.error("Error saving level:", error);
-          toast.error("Fehler beim Speichern");
+          toast.error(t.errorSaving);
           setIsSaving(false);
           return;
         }
       }
 
-      toast.success("Niveau-Konfiguration gespeichert! ⭐");
+      toast.success(t.levelConfigSaved);
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Fehler beim Speichern");
+      toast.error(t.errorSaving);
     }
 
     setIsSaving(false);
@@ -86,12 +92,12 @@ const LevelConfigSection = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
           <Star className="h-5 w-5 text-primary" />
-          Niveau-Konfiguration
+          {t.levelConfiguration}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground mb-4">
-          Definiere die Niveaustufen und die benötigten Punkte.
+          {t.defineLevels}
         </p>
         
         <div className="space-y-3">
@@ -101,7 +107,7 @@ const LevelConfigSection = () => {
                 <span className="font-baloo font-bold text-primary">{level.level_number}</span>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Titel</Label>
+                <Label className="text-xs text-muted-foreground">{t.title}</Label>
                 <Input
                   value={level.title}
                   onChange={(e) => updateLevel(level.id, 'title', e.target.value)}
@@ -110,7 +116,7 @@ const LevelConfigSection = () => {
                 />
               </div>
               <div className="space-y-1 w-24">
-                <Label className="text-xs text-muted-foreground">Ab Punkte</Label>
+                <Label className="text-xs text-muted-foreground">{t.fromPoints}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -133,12 +139,12 @@ const LevelConfigSection = () => {
             {isSaving ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Speichere...
+                {t.saving}
               </>
             ) : (
               <>
                 <Save className="h-5 w-5 mr-2" />
-                Niveau-Konfiguration speichern
+                {t.saveLevelConfig}
               </>
             )}
           </Button>
