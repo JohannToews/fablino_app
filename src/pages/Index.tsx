@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Settings, Sparkles, Star, Brain, Trophy } from "lucide-react";
+import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
@@ -52,14 +52,23 @@ const Index = () => {
       </div>
 
       <div className="relative container max-w-4xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center min-h-screen">
-        {/* Admin Icon - Top Right */}
-        <button
-          onClick={() => navigate("/admin")}
-          className="absolute top-4 right-4 p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
-          title="Admin (Papa)"
-        >
-          <Settings className="h-5 w-5 text-muted-foreground" />
-        </button>
+        {/* Top Right Icons */}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <button
+            onClick={() => navigate("/words")}
+            className="p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
+            title="Wörter verwalten"
+          >
+            <Hand className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <button
+            onClick={() => navigate("/admin")}
+            className="p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
+            title="Admin (Papa)"
+          >
+            <Settings className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
 
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center text-center">
