@@ -75,6 +75,7 @@ export type Database = {
       }
       kid_profiles: {
         Row: {
+          age: number
           color_palette: string
           cover_image_url: string | null
           created_at: string
@@ -85,6 +86,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          age?: number
           color_palette?: string
           cover_image_url?: string | null
           created_at?: string
@@ -95,6 +97,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          age?: number
           color_palette?: string
           cover_image_url?: string | null
           created_at?: string

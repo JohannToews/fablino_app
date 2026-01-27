@@ -12,6 +12,7 @@ import { useTranslations, Language } from "@/lib/translations";
 interface KidProfile {
   id?: string;
   name: string;
+  age: number;
   hobbies: string;
   color_palette: string;
   cover_image_url: string | null;
@@ -36,6 +37,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
   const t = useTranslations(language);
   const [profile, setProfile] = useState<KidProfile>({
     name: '',
+    age: 8,
     hobbies: '',
     color_palette: 'sunshine',
     cover_image_url: null,
@@ -88,6 +90,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       const { data, error } = await supabase.functions.invoke("generate-profile-cover", {
         body: {
           name: profile.name,
+          age: profile.age,
           hobbies: profile.hobbies,
           colorPalette: profile.color_palette,
         },
@@ -138,6 +141,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       const profileData = {
         user_id: userId,
         name: profile.name,
+        age: profile.age,
         hobbies: profile.hobbies,
         color_palette: profile.color_palette,
         cover_image_url: coverUrl,
@@ -193,14 +197,28 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left column: Inputs */}
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="kidName">{t.kidName}</Label>
-              <Input
-                id="kidName"
-                value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                placeholder={language === 'de' ? 'z.B. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="kidName">{t.kidName}</Label>
+                <Input
+                  id="kidName"
+                  value={profile.name}
+                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  placeholder={language === 'de' ? 'z.B. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="kidAge">{t.kidAge}</Label>
+                <Input
+                  id="kidAge"
+                  type="number"
+                  min={3}
+                  max={14}
+                  value={profile.age}
+                  onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) || 8 })}
+                  className="text-center"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

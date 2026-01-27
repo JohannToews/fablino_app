@@ -83,6 +83,7 @@ export interface Translations {
   kidProfile: string;
   kidProfileDescription: string;
   kidName: string;
+  kidAge: string;
   hobbies: string;
   hobbiesPlaceholder: string;
   colorPalette: string;
@@ -180,6 +181,7 @@ const translations: Record<Language, Translations> = {
     kidProfile: 'Kinderprofil',
     kidProfileDescription: 'Definiere das Profil des Kindes für personalisierte Inhalte.',
     kidName: 'Name des Kindes',
+    kidAge: 'Alter',
     hobbies: 'Hobbies & Interessen',
     hobbiesPlaceholder: 'z.B. Fußball, Dinosaurier, Weltraum, Malen...',
     colorPalette: 'Farbpalette',
@@ -276,6 +278,7 @@ const translations: Record<Language, Translations> = {
     kidProfile: 'Kid Profile',
     kidProfileDescription: 'Define the child\'s profile for personalized content.',
     kidName: 'Child\'s Name',
+    kidAge: 'Age',
     hobbies: 'Hobbies & Interests',
     hobbiesPlaceholder: 'e.g. Soccer, Dinosaurs, Space, Painting...',
     colorPalette: 'Color Palette',
@@ -372,6 +375,7 @@ const translations: Record<Language, Translations> = {
     kidProfile: 'Profil de l\'enfant',
     kidProfileDescription: 'Définissez le profil de l\'enfant pour un contenu personnalisé.',
     kidName: 'Prénom de l\'enfant',
+    kidAge: 'Âge',
     hobbies: 'Loisirs & Intérêts',
     hobbiesPlaceholder: 'ex. Football, Dinosaures, Espace, Peinture...',
     colorPalette: 'Palette de couleurs',

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { name, hobbies, colorPalette } = await req.json();
+    const { name, age, hobbies, colorPalette } = await req.json();
 
     if (!name) {
       throw new Error("Name is required");
@@ -34,17 +34,45 @@ serve(async (req) => {
     };
 
     const colorDescription = paletteColors[colorPalette] || paletteColors.sunshine;
+    const childAge = age || 8;
 
-    // Create a child-friendly prompt for the cover image
-    const prompt = `Create a magical, whimsical illustration for a child named ${name}. 
-The image should be colorful and cheerful, featuring ${colorDescription}.
-${hobbies ? `Include playful elements related to: ${hobbies}.` : "Include playful elements like books, stars, and magical sparkles."}
-Style: Soft watercolor children's book illustration, dreamy and enchanting.
-The image should feel warm, inviting, and perfect for a reading app for kids.
-Make it look like a professional children's book cover illustration.
-Ultra high resolution, vibrant colors.`;
+    // Adjust art style based on age
+    let styleDescription: string;
+    let subjectDescription: string;
+    
+    if (childAge <= 5) {
+      // Very young: soft, dreamy, simple shapes
+      styleDescription = "Soft watercolor children's book illustration style. Simple, rounded shapes. Dreamy and magical atmosphere. Cute and whimsical.";
+      subjectDescription = `a happy young child (around ${childAge} years old)`;
+    } else if (childAge <= 7) {
+      // Young: still colorful but slightly more detailed
+      styleDescription = "Colorful children's book illustration. Friendly and inviting. Some detail but still playful and imaginative.";
+      subjectDescription = `a cheerful child (around ${childAge} years old)`;
+    } else if (childAge <= 9) {
+      // Middle: balanced between playful and realistic
+      styleDescription = "Modern digital illustration style. Vibrant colors, clean lines. Semi-realistic but still fun and engaging. Like a cool book cover for kids.";
+      subjectDescription = `a confident young person (around ${childAge} years old)`;
+    } else if (childAge <= 11) {
+      // Pre-teen: more mature, less childish
+      styleDescription = "Contemporary digital art style. Dynamic composition. Cool and stylish, appropriate for pre-teens. Not too childish, not too adult.";
+      subjectDescription = `a cool pre-teen (around ${childAge} years old)`;
+    } else {
+      // Teen: more mature, realistic
+      styleDescription = "Modern digital illustration. Clean, sophisticated style. Age-appropriate for teenagers. Trendy and stylish aesthetic.";
+      subjectDescription = `a teenager (around ${childAge} years old)`;
+    }
 
-    console.log("Generating cover image with prompt:", prompt);
+    // Create age-appropriate prompt
+    const prompt = `Create an illustration featuring ${subjectDescription} named ${name}. 
+The image should use ${colorDescription} as the main color scheme.
+${hobbies ? `Show elements related to their interests: ${hobbies}. Make these hobbies prominent in the scene.` : "Include elements suggesting learning and reading."}
+${styleDescription}
+This is a personalized cover image for a reading app - make it feel special and personal.
+The child should look engaged and happy.
+High quality, detailed illustration.
+16:9 aspect ratio, landscape orientation.`;
+
+    console.log("Generating cover image for age", childAge, "with prompt:", prompt);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
