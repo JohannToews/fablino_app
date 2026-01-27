@@ -43,10 +43,8 @@ const VocabularyManagePage = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newWord, setNewWord] = useState("");
-  const [newExplanation, setNewExplanation] = useState("");
-  const [selectedStoryId, setSelectedStoryId] = useState<string>("");
+  const [defaultStoryId, setDefaultStoryId] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -62,11 +60,9 @@ const VocabularyManagePage = () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
-    if (storiesData) {
+    if (storiesData && storiesData.length > 0) {
       setStories(storiesData);
-      if (storiesData.length > 0 && !selectedStoryId) {
-        setSelectedStoryId(storiesData[0].id);
-      }
+      setDefaultStoryId(storiesData[0].id);
     }
 
     // Load all marked words from user's stories
@@ -84,69 +80,45 @@ const VocabularyManagePage = () => {
     setIsLoading(false);
   };
 
-  const generateExplanation = async () => {
-    if (!newWord.trim()) {
-      toast.error(adminLang === 'de' ? "Bitte Wort eingeben" : "Please enter a word");
-      return;
-    }
-
-    setIsGeneratingExplanation(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("explain-word", {
-        body: { word: newWord.trim() },
-      });
-
-      if (error) throw error;
-      
-      if (data?.explanation) {
-        setNewExplanation(data.explanation);
-        toast.success(adminLang === 'de' ? "Erklärung generiert" : "Explanation generated");
-      }
-    } catch (err) {
-      console.error("Error generating explanation:", err);
-      toast.error(adminLang === 'de' ? "Fehler beim Generieren" : "Error generating");
-    }
-    setIsGeneratingExplanation(false);
-  };
-
   const addWord = async () => {
-    if (!newWord.trim() || !selectedStoryId) {
-      toast.error(adminLang === 'de' ? "Bitte Wort und Geschichte auswählen" : "Please enter word and select story");
+    if (!newWord.trim() || !defaultStoryId) {
+      toast.error(adminLang === 'de' ? "Bitte Wort eingeben" : "Please enter a word");
       return;
     }
 
     setIsSaving(true);
     
-    let explanation = newExplanation.trim();
-    
-    // If no explanation provided, generate one
-    if (!explanation) {
-      try {
-        const { data, error } = await supabase.functions.invoke("explain-word", {
-          body: { word: newWord.trim() },
-        });
-        if (!error && data?.explanation) {
-          explanation = data.explanation;
-        }
-      } catch (err) {
-        console.error("Error generating explanation:", err);
+    try {
+      // Call explain-word which will also correct spelling and generate explanation
+      const { data, error } = await supabase.functions.invoke("explain-word", {
+        body: { word: newWord.trim() },
+      });
+
+      // Use corrected word if available, otherwise use input
+      const correctedWord = (data?.correctedWord || newWord.trim()).toLowerCase();
+      const explanation = data?.explanation || null;
+
+      const { error: insertError } = await supabase.from("marked_words").insert({
+        word: correctedWord,
+        explanation: explanation,
+        story_id: defaultStoryId,
+      });
+
+      if (insertError) {
+        toast.error(adminLang === 'de' ? "Fehler beim Speichern" : "Error saving");
+      } else {
+        const message = correctedWord !== newWord.trim().toLowerCase() 
+          ? (adminLang === 'de' ? `"${correctedWord}" hinzugefügt (korrigiert)` : `"${correctedWord}" added (corrected)`)
+          : (adminLang === 'de' ? "Wort hinzugefügt" : "Word added");
+        toast.success(message);
+        setNewWord("");
+        loadData();
       }
-    }
-
-    const { error } = await supabase.from("marked_words").insert({
-      word: newWord.trim().toLowerCase(),
-      explanation: explanation || null,
-      story_id: selectedStoryId,
-    });
-
-    if (error) {
+    } catch (err) {
+      console.error("Error adding word:", err);
       toast.error(adminLang === 'de' ? "Fehler beim Speichern" : "Error saving");
-    } else {
-      toast.success(adminLang === 'de' ? "Wort hinzugefügt" : "Word added");
-      setNewWord("");
-      setNewExplanation("");
-      loadData();
     }
+    
     setIsSaving(false);
   };
 
@@ -221,74 +193,38 @@ const VocabularyManagePage = () => {
             {adminLang === 'de' ? 'Neues Wort hinzufügen' : adminLang === 'fr' ? 'Ajouter un nouveau mot' : 'Add new word'}
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
               <label className="block text-sm font-medium mb-1">
                 {adminLang === 'de' ? 'Wort' : adminLang === 'fr' ? 'Mot' : 'Word'}
               </label>
               <Input
                 value={newWord}
                 onChange={(e) => setNewWord(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addWord()}
                 placeholder={adminLang === 'de' ? 'z.B. château' : 'e.g. château'}
                 className="text-lg"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {adminLang === 'de' ? 'Geschichte' : adminLang === 'fr' ? 'Histoire' : 'Story'}
-              </label>
-              <select
-                value={selectedStoryId}
-                onChange={(e) => setSelectedStoryId(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 text-base"
-              >
-                {stories.map((story) => (
-                  <option key={story.id} value={story.id}>
-                    {story.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Button
+              onClick={addWord}
+              disabled={isSaving || !newWord.trim() || !defaultStoryId}
+              className="btn-primary-kid"
+            >
+              {isSaving ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-5 w-5 mr-2" />
+              )}
+              {adminLang === 'de' ? 'Hinzufügen' : adminLang === 'fr' ? 'Ajouter' : 'Add'}
+            </Button>
           </div>
           
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              {adminLang === 'de' ? 'Erklärung (optional)' : adminLang === 'fr' ? 'Explication (optionnel)' : 'Explanation (optional)'}
-            </label>
-            <div className="flex gap-2">
-              <Input
-                value={newExplanation}
-                onChange={(e) => setNewExplanation(e.target.value)}
-                placeholder={adminLang === 'de' ? 'Wird automatisch generiert wenn leer' : 'Will be auto-generated if empty'}
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                onClick={generateExplanation}
-                disabled={isGeneratingExplanation || !newWord.trim()}
-                className="shrink-0"
-              >
-                {isGeneratingExplanation ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  adminLang === 'de' ? 'Generieren' : 'Generate'
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <Button
-            onClick={addWord}
-            disabled={isSaving || !newWord.trim() || !selectedStoryId}
-            className="btn-primary-kid"
-          >
-            {isSaving ? (
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-5 w-5 mr-2" />
-            )}
-            {adminLang === 'de' ? 'Wort speichern' : adminLang === 'fr' ? 'Enregistrer' : 'Save word'}
-          </Button>
+          {!defaultStoryId && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {adminLang === 'de' ? 'Bitte zuerst eine Geschichte erstellen' : 'Please create a story first'}
+            </p>
+          )}
         </div>
 
         {/* Words table */}
