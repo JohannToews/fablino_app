@@ -10,6 +10,7 @@ import AdminPage from "./pages/AdminPage";
 import StorySelectPage from "./pages/StorySelectPage";
 import ReadingPage from "./pages/ReadingPage";
 import VocabularyQuizPage from "./pages/VocabularyQuizPage";
+import VocabularyManagePage from "./pages/VocabularyManagePage";
 import ResultsPage from "./pages/ResultsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
@@ -48,6 +49,11 @@ const App = () => (
             <Route path="/quiz" element={
               <ProtectedRoute>
                 <VocabularyQuizPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/words" element={
+              <ProtectedRoute>
+                <VocabularyManagePage />
               </ProtectedRoute>
             } />
             <Route path="/results" element={
