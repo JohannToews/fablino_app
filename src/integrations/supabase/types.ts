@@ -73,6 +73,47 @@ export type Database = {
           },
         ]
       }
+      kid_profiles: {
+        Row: {
+          color_palette: string
+          cover_image_url: string | null
+          created_at: string
+          hobbies: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color_palette?: string
+          cover_image_url?: string | null
+          created_at?: string
+          hobbies?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color_palette?: string
+          cover_image_url?: string | null
+          created_at?: string
+          hobbies?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kid_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       level_settings: {
         Row: {
           created_at: string
