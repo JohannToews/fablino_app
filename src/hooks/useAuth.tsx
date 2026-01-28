@@ -4,9 +4,9 @@ export interface UserSettings {
   id: string;
   username: string;
   displayName: string;
-  adminLanguage: 'de' | 'fr' | 'en';
-  appLanguage: 'de' | 'fr' | 'en';
-  textLanguage: 'de' | 'fr';
+  adminLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl';
+  appLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl';
+  textLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl';
   systemPrompt: string | null;
 }
 

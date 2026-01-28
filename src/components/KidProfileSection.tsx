@@ -210,7 +210,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
 
   const generateCoverImage = async () => {
     if (!currentProfile.name.trim()) {
-      toast.error(language === 'de' ? 'Bitte gib einen Namen ein' : language === 'en' ? 'Please enter a name' : 'Veuillez entrer un prénom');
+      toast.error(t.kidName);
       return;
     }
 
@@ -359,7 +359,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
             className="flex items-center gap-1"
           >
             <Plus className="h-4 w-4" />
-            {language === 'de' ? 'Kind hinzufügen' : language === 'fr' ? 'Ajouter un enfant' : 'Add child'}
+            {t.addChild}
           </Button>
         </CardTitle>
       </CardHeader>
@@ -374,7 +374,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   size="sm"
                   onClick={() => selectProfile(index)}
                 >
-                  {profile.name || `Kind ${index + 1}`}
+                  {profile.name || `${t.kidProfile} ${index + 1}`}
                 </Button>
                 {profiles.length > 1 && (
                   <Button
@@ -404,13 +404,13 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 id="kidName"
                 value={currentProfile.name}
                 onChange={(e) => updateCurrentProfile({ name: e.target.value })}
-                placeholder={language === 'de' ? 'z.B. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
+                placeholder={language === 'de' ? 'z.B. Emma' : language === 'es' ? 'ej. Emma' : language === 'nl' ? 'bijv. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{language === 'de' ? 'Schulsystem' : language === 'fr' ? 'Système scolaire' : 'School system'}</Label>
+                <Label>{t.schoolSystem}</Label>
                 <Select value={currentProfile.school_system} onValueChange={handleSchoolSystemChange}>
                   <SelectTrigger>
                     <SelectValue />
@@ -425,7 +425,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{language === 'de' ? 'Schulklasse' : language === 'fr' ? 'Classe' : 'Grade'}</Label>
+                <Label>{t.schoolClass}</Label>
                 <Select 
                   value={currentProfile.school_class} 
                   onValueChange={(value) => updateCurrentProfile({ school_class: value })}

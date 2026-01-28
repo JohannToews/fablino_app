@@ -1,5 +1,5 @@
 // Translations for the application
-export type Language = 'de' | 'fr' | 'en';
+export type Language = 'de' | 'fr' | 'en' | 'es' | 'nl';
 
 export interface Translations {
   // Common
@@ -24,6 +24,14 @@ export interface Translations {
   noStoriesYet: string;
   pointsConfig: string;
   levelConfig: string;
+  settings: string;
+  account: string;
+  
+  // Story Sub-tabs
+  generator: string;
+  editor: string;
+  library: string;
+  questionsReady: string;
   
   // Story Generator
   storyGenerator: string;
@@ -92,6 +100,9 @@ export interface Translations {
   saveProfile: string;
   profileSaved: string;
   coverGenerated: string;
+  addChild: string;
+  schoolSystem: string;
+  schoolClass: string;
   
   // Color palettes
   paletteSunshine: string;
@@ -130,6 +141,13 @@ const translations: Record<Language, Translations> = {
     noStoriesYet: 'Noch keine Geschichten vorhanden',
     pointsConfig: 'Punkte-Konfiguration',
     levelConfig: 'Level-Konfiguration',
+    settings: 'Einstellungen',
+    account: 'Konto',
+    
+    generator: 'Generator',
+    editor: 'Bearbeiten',
+    library: 'Bibliothek',
+    questionsReady: 'Verständnisfragen bereit',
     
     storyGenerator: 'Geschichte generieren',
     generateNewStory: 'Neue Geschichte mit KI generieren',
@@ -166,7 +184,6 @@ const translations: Record<Language, Translations> = {
     storyDeleted: 'Geschichte gelöscht',
     deleteError: 'Fehler beim Löschen',
     
-    // Points Config
     pointsConfiguration: 'Punktekonfiguration',
     comprehensionQuestion: 'Verständnisfrage',
     quizPerCorrectAnswer: 'Quiz (pro richtige Antwort)',
@@ -176,14 +193,12 @@ const translations: Record<Language, Translations> = {
     errorSaving: 'Fehler beim Speichern',
     pointsConfigSaved: 'Punktekonfiguration gespeichert! 🎯',
     
-    // Level Config
     levelConfiguration: 'Niveau-Konfiguration',
     defineLevels: 'Definiere die Niveaustufen und die benötigten Punkte.',
     fromPoints: 'Ab Punkte',
     saveLevelConfig: 'Niveau-Konfiguration speichern',
     levelConfigSaved: 'Niveau-Konfiguration gespeichert! ⭐',
     
-    // Kid Profile
     kidProfile: 'Kinderprofil',
     kidProfileDescription: 'Definiere das Profil des Kindes für personalisierte Inhalte.',
     kidName: 'Name des Kindes',
@@ -196,8 +211,10 @@ const translations: Record<Language, Translations> = {
     saveProfile: 'Profil speichern',
     profileSaved: 'Profil gespeichert! 🎨',
     coverGenerated: 'Titelbild wurde generiert! 🖼️',
+    addChild: 'Kind hinzufügen',
+    schoolSystem: 'Schulsystem',
+    schoolClass: 'Schulklasse',
     
-    // Color palettes
     paletteSunshine: 'Gelb',
     paletteMint: 'Grün',
     paletteLavender: 'Lila',
@@ -233,6 +250,13 @@ const translations: Record<Language, Translations> = {
     noStoriesYet: 'No stories yet',
     pointsConfig: 'Points Configuration',
     levelConfig: 'Level Configuration',
+    settings: 'Settings',
+    account: 'Account',
+    
+    generator: 'Generator',
+    editor: 'Edit',
+    library: 'Library',
+    questionsReady: 'comprehension questions ready',
     
     storyGenerator: 'Story Generator',
     generateNewStory: 'Generate New Story with AI',
@@ -269,7 +293,6 @@ const translations: Record<Language, Translations> = {
     storyDeleted: 'Story deleted',
     deleteError: 'Error deleting',
     
-    // Points Config
     pointsConfiguration: 'Points Configuration',
     comprehensionQuestion: 'Comprehension Question',
     quizPerCorrectAnswer: 'Quiz (per correct answer)',
@@ -279,14 +302,12 @@ const translations: Record<Language, Translations> = {
     errorSaving: 'Error saving',
     pointsConfigSaved: 'Points configuration saved! 🎯',
     
-    // Level Config
     levelConfiguration: 'Level Configuration',
     defineLevels: 'Define the levels and required points.',
     fromPoints: 'From Points',
     saveLevelConfig: 'Save Level Configuration',
     levelConfigSaved: 'Level configuration saved! ⭐',
     
-    // Kid Profile
     kidProfile: 'Kid Profile',
     kidProfileDescription: 'Define the child\'s profile for personalized content.',
     kidName: 'Child\'s Name',
@@ -299,8 +320,10 @@ const translations: Record<Language, Translations> = {
     saveProfile: 'Save Profile',
     profileSaved: 'Profile saved! 🎨',
     coverGenerated: 'Cover image generated! 🖼️',
+    addChild: 'Add child',
+    schoolSystem: 'School system',
+    schoolClass: 'Grade',
     
-    // Color palettes
     paletteSunshine: 'Yellow',
     paletteMint: 'Green',
     paletteLavender: 'Purple',
@@ -336,6 +359,13 @@ const translations: Record<Language, Translations> = {
     noStoriesYet: 'Pas encore d\'histoires',
     pointsConfig: 'Configuration des points',
     levelConfig: 'Configuration des niveaux',
+    settings: 'Paramètres',
+    account: 'Compte',
+    
+    generator: 'Générateur',
+    editor: 'Éditer',
+    library: 'Bibliothèque',
+    questionsReady: 'questions de compréhension prêtes',
     
     storyGenerator: 'Générateur d\'histoires',
     generateNewStory: 'Générer une nouvelle histoire avec l\'IA',
@@ -372,7 +402,6 @@ const translations: Record<Language, Translations> = {
     storyDeleted: 'Histoire supprimée',
     deleteError: 'Erreur lors de la suppression',
     
-    // Points Config
     pointsConfiguration: 'Configuration des points',
     comprehensionQuestion: 'Question de compréhension',
     quizPerCorrectAnswer: 'Quiz (par réponse correcte)',
@@ -382,14 +411,12 @@ const translations: Record<Language, Translations> = {
     errorSaving: 'Erreur lors de la sauvegarde',
     pointsConfigSaved: 'Configuration des points sauvegardée ! 🎯',
     
-    // Level Config
     levelConfiguration: 'Configuration des niveaux',
     defineLevels: 'Définissez les niveaux et les points requis.',
     fromPoints: 'À partir de',
     saveLevelConfig: 'Sauvegarder la configuration des niveaux',
     levelConfigSaved: 'Configuration des niveaux sauvegardée ! ⭐',
     
-    // Kid Profile
     kidProfile: 'Profil de l\'enfant',
     kidProfileDescription: 'Définissez le profil de l\'enfant pour un contenu personnalisé.',
     kidName: 'Prénom de l\'enfant',
@@ -402,8 +429,10 @@ const translations: Record<Language, Translations> = {
     saveProfile: 'Sauvegarder le profil',
     profileSaved: 'Profil sauvegardé ! 🎨',
     coverGenerated: 'Image de couverture générée ! 🖼️',
+    addChild: 'Ajouter un enfant',
+    schoolSystem: 'Système scolaire',
+    schoolClass: 'Classe',
     
-    // Color palettes
     paletteSunshine: 'Jaune',
     paletteMint: 'Vert',
     paletteLavender: 'Violet',
@@ -415,6 +444,224 @@ const translations: Record<Language, Translations> = {
     paletteEarth: 'Terre',
     paletteCandy: 'Rose',
     paletteArctic: 'Bleu glacé',
+    paletteTropical: 'Turquoise',
+  },
+  
+  es: {
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    delete: 'Eliminar',
+    edit: 'Editar',
+    loading: 'Cargando...',
+    error: 'Error',
+    success: 'Éxito',
+    
+    adminArea: 'Área de Administración',
+    newStory: 'Crear nuevo ejercicio de lectura',
+    title: 'Título',
+    coverImage: 'Imagen de portada',
+    selectImage: 'Seleccionar imagen',
+    readingText: 'Texto de lectura',
+    saveStory: 'Guardar historia',
+    saving: 'Guardando...',
+    existingStories: 'Historias existentes',
+    noStoriesYet: 'Aún no hay historias',
+    pointsConfig: 'Configuración de puntos',
+    levelConfig: 'Configuración de niveles',
+    settings: 'Configuración',
+    account: 'Cuenta',
+    
+    generator: 'Generador',
+    editor: 'Editar',
+    library: 'Biblioteca',
+    questionsReady: 'preguntas de comprensión listas',
+    
+    storyGenerator: 'Generador de historias',
+    generateNewStory: 'Generar nueva historia con IA',
+    textType: 'Tipo de texto',
+    fiction: 'Ficción',
+    nonFiction: 'No ficción',
+    textLanguage: 'Idioma del texto',
+    globalLanguage: 'Idioma global',
+    childAge: 'Edad del niño',
+    years: 'años',
+    schoolLevel: 'Nivel escolar',
+    difficulty: 'Dificultad',
+    easy: 'Fácil',
+    medium: 'Medio',
+    hard: 'Difícil',
+    textLength: 'Longitud del texto',
+    short: 'Corto',
+    long: 'Largo',
+    systemPrompt: 'Prompt del sistema',
+    showSystemPrompt: 'Mostrar prompt del sistema',
+    hideSystemPrompt: 'Ocultar prompt del sistema',
+    savePrompt: 'Guardar prompt',
+    generateStory: 'Generar historia',
+    generating: 'Generando...',
+    storyTransferred: 'La historia ha sido transferida al formulario. Ahora puedes editarla y guardarla.',
+    
+    enterTitleAndText: 'Por favor ingresa título y texto',
+    imageUploadError: 'Error al subir la imagen',
+    storySaveError: 'Error al guardar la historia',
+    questionsCouldNotBeSaved: 'Las preguntas no pudieron guardarse',
+    storyAndQuestionsSaved: '¡Historia y preguntas guardadas! 🎉',
+    generatingQuestions: 'Generando preguntas de comprensión...',
+    questionsGenerationFailed: 'Falló la generación de preguntas',
+    storyDeleted: 'Historia eliminada',
+    deleteError: 'Error al eliminar',
+    
+    pointsConfiguration: 'Configuración de puntos',
+    comprehensionQuestion: 'Pregunta de comprensión',
+    quizPerCorrectAnswer: 'Quiz (por respuesta correcta)',
+    storyRead: 'Historia leída',
+    pointsNote: 'Los puntos del quiz solo se otorgan cuando el quiz se aprueba (4/5 o 8/10).',
+    savePointsConfig: 'Guardar configuración de puntos',
+    errorSaving: 'Error al guardar',
+    pointsConfigSaved: '¡Configuración de puntos guardada! 🎯',
+    
+    levelConfiguration: 'Configuración de niveles',
+    defineLevels: 'Define los niveles y los puntos requeridos.',
+    fromPoints: 'Desde puntos',
+    saveLevelConfig: 'Guardar configuración de niveles',
+    levelConfigSaved: '¡Configuración de niveles guardada! ⭐',
+    
+    kidProfile: 'Perfil del niño',
+    kidProfileDescription: 'Define el perfil del niño para contenido personalizado.',
+    kidName: 'Nombre del niño',
+    kidAge: 'Edad',
+    hobbies: 'Hobbies e intereses',
+    hobbiesPlaceholder: 'ej. Fútbol, Dinosaurios, Espacio, Pintura...',
+    colorPalette: 'Paleta de colores',
+    generateCover: 'Generar imagen de portada',
+    generatingCover: 'Generando imagen...',
+    saveProfile: 'Guardar perfil',
+    profileSaved: '¡Perfil guardado! 🎨',
+    coverGenerated: '¡Imagen de portada generada! 🖼️',
+    addChild: 'Añadir niño',
+    schoolSystem: 'Sistema escolar',
+    schoolClass: 'Grado',
+    
+    paletteSunshine: 'Amarillo',
+    paletteMint: 'Verde',
+    paletteLavender: 'Morado',
+    paletteOcean: 'Azul',
+    paletteSunset: 'Naranja',
+    paletteForest: 'Verde oscuro',
+    paletteSky: 'Celeste',
+    paletteBerry: 'Baya',
+    paletteEarth: 'Tierra',
+    paletteCandy: 'Rosa',
+    paletteArctic: 'Azul hielo',
+    paletteTropical: 'Turquesa',
+  },
+  
+  nl: {
+    save: 'Opslaan',
+    cancel: 'Annuleren',
+    delete: 'Verwijderen',
+    edit: 'Bewerken',
+    loading: 'Laden...',
+    error: 'Fout',
+    success: 'Succes',
+    
+    adminArea: 'Admin Gebied',
+    newStory: 'Nieuwe leesoefening maken',
+    title: 'Titel',
+    coverImage: 'Omslagafbeelding',
+    selectImage: 'Afbeelding selecteren',
+    readingText: 'Leestekst',
+    saveStory: 'Verhaal opslaan',
+    saving: 'Opslaan...',
+    existingStories: 'Bestaande verhalen',
+    noStoriesYet: 'Nog geen verhalen',
+    pointsConfig: 'Puntenconfiguratie',
+    levelConfig: 'Niveauconfiguratie',
+    settings: 'Instellingen',
+    account: 'Account',
+    
+    generator: 'Generator',
+    editor: 'Bewerken',
+    library: 'Bibliotheek',
+    questionsReady: 'begripsvragen klaar',
+    
+    storyGenerator: 'Verhaalgenerator',
+    generateNewStory: 'Nieuw verhaal genereren met AI',
+    textType: 'Teksttype',
+    fiction: 'Fictie',
+    nonFiction: 'Non-fictie',
+    textLanguage: 'Teksttaal',
+    globalLanguage: 'Globale taal',
+    childAge: 'Leeftijd kind',
+    years: 'jaar',
+    schoolLevel: 'Schoolniveau',
+    difficulty: 'Moeilijkheid',
+    easy: 'Makkelijk',
+    medium: 'Gemiddeld',
+    hard: 'Moeilijk',
+    textLength: 'Tekstlengte',
+    short: 'Kort',
+    long: 'Lang',
+    systemPrompt: 'Systeemprompt',
+    showSystemPrompt: 'Systeemprompt tonen',
+    hideSystemPrompt: 'Systeemprompt verbergen',
+    savePrompt: 'Prompt opslaan',
+    generateStory: 'Verhaal genereren',
+    generating: 'Genereren...',
+    storyTransferred: 'Verhaal is overgebracht naar het formulier. Je kunt het nu bewerken en opslaan.',
+    
+    enterTitleAndText: 'Voer titel en tekst in',
+    imageUploadError: 'Fout bij uploaden afbeelding',
+    storySaveError: 'Fout bij opslaan verhaal',
+    questionsCouldNotBeSaved: 'Vragen konden niet worden opgeslagen',
+    storyAndQuestionsSaved: 'Verhaal en vragen opgeslagen! 🎉',
+    generatingQuestions: 'Begripsvragen genereren...',
+    questionsGenerationFailed: 'Vragen genereren mislukt',
+    storyDeleted: 'Verhaal verwijderd',
+    deleteError: 'Fout bij verwijderen',
+    
+    pointsConfiguration: 'Puntenconfiguratie',
+    comprehensionQuestion: 'Begripsvraag',
+    quizPerCorrectAnswer: 'Quiz (per correct antwoord)',
+    storyRead: 'Verhaal gelezen',
+    pointsNote: 'Quizpunten worden alleen toegekend als de quiz wordt gehaald (4/5 of 8/10).',
+    savePointsConfig: 'Puntenconfiguratie opslaan',
+    errorSaving: 'Fout bij opslaan',
+    pointsConfigSaved: 'Puntenconfiguratie opgeslagen! 🎯',
+    
+    levelConfiguration: 'Niveauconfiguratie',
+    defineLevels: 'Definieer de niveaus en vereiste punten.',
+    fromPoints: 'Vanaf punten',
+    saveLevelConfig: 'Niveauconfiguratie opslaan',
+    levelConfigSaved: 'Niveauconfiguratie opgeslagen! ⭐',
+    
+    kidProfile: 'Kindprofiel',
+    kidProfileDescription: 'Definieer het profiel van het kind voor gepersonaliseerde inhoud.',
+    kidName: 'Naam van het kind',
+    kidAge: 'Leeftijd',
+    hobbies: 'Hobby\'s & Interesses',
+    hobbiesPlaceholder: 'bijv. Voetbal, Dinosaurussen, Ruimte, Schilderen...',
+    colorPalette: 'Kleurenpalet',
+    generateCover: 'Omslagafbeelding genereren',
+    generatingCover: 'Afbeelding genereren...',
+    saveProfile: 'Profiel opslaan',
+    profileSaved: 'Profiel opgeslagen! 🎨',
+    coverGenerated: 'Omslagafbeelding gegenereerd! 🖼️',
+    addChild: 'Kind toevoegen',
+    schoolSystem: 'Schoolsysteem',
+    schoolClass: 'Groep',
+    
+    paletteSunshine: 'Geel',
+    paletteMint: 'Groen',
+    paletteLavender: 'Paars',
+    paletteOcean: 'Blauw',
+    paletteSunset: 'Oranje',
+    paletteForest: 'Donkergroen',
+    paletteSky: 'Lichtblauw',
+    paletteBerry: 'Bes',
+    paletteEarth: 'Aarde',
+    paletteCandy: 'Roze',
+    paletteArctic: 'IJsblauw',
     paletteTropical: 'Turquoise',
   },
 };

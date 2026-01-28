@@ -281,22 +281,18 @@ const AdminPage = () => {
           <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t.kidProfile}</span>
-            <span className="sm:hidden">Profil</span>
           </TabsTrigger>
           <TabsTrigger value="stories" className="flex items-center gap-2 text-sm font-medium">
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">{t.newStory}</span>
-            <span className="sm:hidden">Stories</span>
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2 text-sm font-medium">
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Einstellungen</span>
-            <span className="sm:hidden">Config</span>
+            <span className="hidden sm:inline">{t.settings}</span>
           </TabsTrigger>
           <TabsTrigger value="account" className="flex items-center gap-2 text-sm font-medium">
             <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:inline">Konto</span>
-            <span className="sm:hidden">Konto</span>
+            <span className="hidden sm:inline">{t.account}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -326,7 +322,7 @@ const AdminPage = () => {
                   className="flex items-center gap-2"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Generator
+                  {t.generator}
                 </Button>
                 <Button
                   variant={storySubTab === "editor" ? "default" : "outline"}
@@ -335,7 +331,7 @@ const AdminPage = () => {
                   className="flex items-center gap-2"
                 >
                   <FileEdit className="h-4 w-4" />
-                  Bearbeiten
+                  {t.editor}
                 </Button>
                 <Button
                   variant={storySubTab === "library" ? "default" : "outline"}
@@ -344,7 +340,7 @@ const AdminPage = () => {
                   className="flex items-center gap-2"
                 >
                   <Library className="h-4 w-4" />
-                  Bibliothek
+                  {t.library}
                   {stories.length > 0 && (
                     <span className="ml-1 bg-primary/20 text-primary text-xs px-1.5 py-0.5 rounded-full">
                       {stories.length}
@@ -430,7 +426,7 @@ const AdminPage = () => {
                       {generatedQuestions.length > 0 && (
                         <div className="p-3 bg-muted/50 rounded-lg">
                           <p className="text-sm text-muted-foreground">
-                            ✓ {generatedQuestions.length} Verständnisfragen bereit
+                            ✓ {generatedQuestions.length} {t.questionsReady}
                           </p>
                         </div>
                       )}
