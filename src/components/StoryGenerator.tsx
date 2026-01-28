@@ -15,10 +15,16 @@ interface GeneratedQuestion {
   expectedAnswer: string;
 }
 
+interface GeneratedVocabulary {
+  word: string;
+  explanation: string;
+}
+
 interface GeneratedStory {
   title: string;
   content: string;
   questions?: GeneratedQuestion[];
+  vocabulary?: GeneratedVocabulary[];
   coverImageBase64?: string;
   storyImages?: string[]; // Additional progress images (base64)
 }

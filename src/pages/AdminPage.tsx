@@ -30,10 +30,16 @@ interface GeneratedQuestion {
   expectedAnswer: string;
 }
 
+interface GeneratedVocabulary {
+  word: string;
+  explanation: string;
+}
+
 interface GeneratedStory {
   title: string;
   content: string;
   questions?: GeneratedQuestion[];
+  vocabulary?: GeneratedVocabulary[];
   coverImageBase64?: string;
   storyImages?: string[]; // Additional progress images (base64)
 }
@@ -51,6 +57,7 @@ const AdminPage = () => {
   const [generatedCoverBase64, setGeneratedCoverBase64] = useState<string | null>(null);
   const [generatedStoryImages, setGeneratedStoryImages] = useState<string[]>([]);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [generatedVocabulary, setGeneratedVocabulary] = useState<GeneratedVocabulary[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -250,6 +257,27 @@ const AdminPage = () => {
       }
     }
 
+    // Save pre-generated vocabulary to marked_words
+    if (generatedVocabulary.length > 0) {
+      const vocabToInsert = generatedVocabulary.map((v) => ({
+        story_id: insertedStory.id,
+        word: v.word,
+        explanation: v.explanation,
+        difficulty: "medium", // Default difficulty
+        is_learned: false,
+      }));
+
+      const { error: vocabError } = await supabase
+        .from("marked_words")
+        .insert(vocabToInsert);
+
+      if (vocabError) {
+        console.error("Failed to save vocabulary:", vocabError);
+      } else {
+        console.log(`Saved ${vocabToInsert.length} vocabulary words to marked_words`);
+      }
+    }
+
     setIsLoading(false);
     setTitle("");
     setContent("");
@@ -257,6 +285,7 @@ const AdminPage = () => {
     setCoverPreview(null);
     setGeneratedCoverBase64(null);
     setGeneratedQuestions([]);
+    setGeneratedVocabulary([]);
     loadStories();
   };
 
@@ -398,6 +427,9 @@ const AdminPage = () => {
                       setContent(story.content);
                       if (story.questions && story.questions.length > 0) {
                         setGeneratedQuestions(story.questions);
+                      }
+                      if (story.vocabulary && story.vocabulary.length > 0) {
+                        setGeneratedVocabulary(story.vocabulary);
                       }
                       if (story.coverImageBase64) {
                         setGeneratedCoverBase64(story.coverImageBase64);

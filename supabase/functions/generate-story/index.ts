@@ -490,6 +490,13 @@ Typische Techniken zur Texterweiterung:
 - Der gesamte Text muss auf ${targetLanguage} sein!
 - Der Text MUSS mindestens **${minWordCount} Wörter** haben! Zähle deine Wörter und erweitere wenn nötig!
 
+**VOKABEL-AUSWAHL:**
+Wähle die 10 BESTEN Lernwörter aus dem Text aus. Diese sollten:
+- NICHT trivial sein (keine Wörter wie "le", "la", "et", "est", "un", "une", "de", "à", "il", "elle", "dans", "sur", "avec", "pour", "que", "qui", "ce", "cette")
+- Für Kinder auf ${schoolLevel}-Niveau herausfordernd aber lernbar sein
+- Substantive, Verben (Infinitivform angeben!) oder Adjektive sein
+- Zum Textverständnis und Wortschatzaufbau beitragen
+
 Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
 {
   "title": "Titel auf ${targetLanguage}",
@@ -503,6 +510,12 @@ Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
       "question": "Frage 2 auf ${targetLanguage}",
       "expectedAnswer": "Erwartete Antwort auf ${targetLanguage}"
     }
+  ],
+  "vocabulary": [
+    {
+      "word": "das Wort aus dem Text (bei Verben: Infinitiv)",
+      "explanation": "kindgerechte Erklärung auf ${targetLanguage} (max 15 Wörter)"
+    }
   ]
 }
 
@@ -510,7 +523,9 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
 - ~30% explizite Informationsfragen
 - ~40% Inferenzfragen (die wichtigste Kategorie!)
 - ~15% Vokabular im Kontext
-- ~15% Textstruktur & Zusammenhänge`;
+- ~15% Textstruktur & Zusammenhänge
+
+Wähle genau 10 Vokabelwörter aus.`;
 
     console.log("Generating story with Gemini API directly:", {
       targetLanguage,
@@ -523,10 +538,11 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
     });
 
     // Generate the story using direct Gemini API
-    let story: { title: string; content: string; questions: any[] } = {
+    let story: { title: string; content: string; questions: any[]; vocabulary: any[] } = {
       title: "",
       content: "",
-      questions: []
+      questions: [],
+      vocabulary: []
     };
     let attempts = 0;
     const maxAttempts = 2;
@@ -761,6 +777,9 @@ CRITICAL: The characters MUST be the exact same as in the cover image - identica
       : (totalImageCount > 1 && storyImages.length < (totalImageCount - 1))
         ? "some_progress_images_failed"
         : null;
+
+    // Log vocabulary selection
+    console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
 
     return new Response(JSON.stringify({
       ...story,
