@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, BookOpen, Sparkles, BookText, GraduationCap } from "lucide-react";
+import { BookOpen, Sparkles, BookText, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useTranslations, Language } from "@/lib/translations";
 import heroImage from "@/assets/hero-reading.jpg";
+import PageHeader from "@/components/PageHeader";
 
 interface Story {
   id: string;
@@ -73,30 +74,14 @@ const StorySelectPage = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-      {/* Header */}
-      <div className="p-4 md:p-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/")}
-          className="rounded-full hover:bg-primary/20"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {/* Title */}
-      <div className="text-center px-4 mb-6">
-        <h1 className="text-4xl md:text-5xl font-baloo text-foreground mb-2 flex items-center justify-center gap-3">
-          <Sparkles className="h-8 w-8 text-primary animate-sparkle" />
-          {appLang === 'de' ? 'Wähle eine Geschichte' : 
-           appLang === 'fr' ? 'Choisis une histoire' :
-           appLang === 'es' ? 'Elige una historia' :
-           appLang === 'nl' ? 'Kies een verhaal' :
-           'Choose a story'}
-          <Sparkles className="h-8 w-8 text-primary animate-sparkle" />
-        </h1>
-      </div>
+      <PageHeader 
+        title={appLang === 'de' ? 'Wähle eine Geschichte' : 
+               appLang === 'fr' ? 'Choisis une histoire' :
+               appLang === 'es' ? 'Elige una historia' :
+               appLang === 'nl' ? 'Kies een verhaal' :
+               'Choose a story'} 
+        backTo="/" 
+      />
 
       {/* Tabs for Fiction / Non-Fiction */}
       <div className="container max-w-5xl px-4 pb-12">

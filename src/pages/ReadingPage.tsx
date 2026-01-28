@@ -3,10 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw } from "lucide-react";
+import { Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw } from "lucide-react";
 import ComprehensionQuiz from "@/components/ComprehensionQuiz";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
+import PageHeader from "@/components/PageHeader";
 
 interface Story {
   id: string;
@@ -565,22 +566,10 @@ const ReadingPage = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/stories")}
-              className="rounded-full hover:bg-primary/20"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-2xl md:text-3xl font-baloo text-foreground truncate">
-              {story?.title}
-            </h1>
-          </div>
+      <PageHeader 
+        title={story?.title || ""}
+        backTo="/stories"
+        rightContent={
           <Button
             onClick={() => navigate("/quiz")}
             className="btn-accent-kid flex items-center gap-2"
@@ -588,8 +577,8 @@ const ReadingPage = () => {
             <BookOpen className="h-5 w-5" />
             <span className="hidden sm:inline">Quiz</span>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="container max-w-7xl p-4 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

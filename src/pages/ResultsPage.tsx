@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Trophy, BookOpen, Brain, Star, Sparkles } from "lucide-react";
+import { Trophy, BookOpen, Brain, Star, Sparkles } from "lucide-react";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
-
+import PageHeader from "@/components/PageHeader";
 interface UserResult {
   id: string;
   activity_type: string;
@@ -146,22 +146,7 @@ const ResultsPage = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="rounded-full hover:bg-primary/20"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <h1 className="text-2xl md:text-3xl font-baloo text-foreground">
-            Mes Résultats
-          </h1>
-        </div>
-      </div>
+      <PageHeader title="Mes Résultats" backTo="/" />
 
       <div className="container max-w-4xl p-4 md:p-8">
         {/* Total Points Hero - More Compact */}

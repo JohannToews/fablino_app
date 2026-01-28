@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
+import { Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
+import PageHeader from "@/components/PageHeader";
 import {
   Select,
   SelectContent,
@@ -353,21 +354,7 @@ const VocabularyQuizPage = () => {
   if (words.length === 0) {
     return (
       <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4">
-          <div className="max-w-4xl mx-auto flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/stories")}
-              className="rounded-full hover:bg-primary/20"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-2xl md:text-3xl font-baloo text-foreground">
-              Quiz des Mots
-            </h1>
-          </div>
-        </div>
+        <PageHeader title="Quiz des Mots" backTo="/stories" />
 
         <div className="container max-w-2xl p-8 text-center">
           <div className="bg-card rounded-2xl p-12 shadow-card">
@@ -390,35 +377,22 @@ const VocabularyQuizPage = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/stories")}
-              className="rounded-full hover:bg-primary/20"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-2xl md:text-3xl font-baloo text-foreground">
-              Quiz des Mots
-            </h1>
-          </div>
-          
-          {currentQuestion && !quizComplete && (
-            <div className="flex items-center gap-4">
+      <PageHeader 
+        title="Quiz des Mots" 
+        backTo="/stories"
+        rightContent={
+          currentQuestion && !quizComplete && (
+            <>
               <span className="text-sm text-muted-foreground">
                 Question {questionIndex + 1} / {totalQuestions}
               </span>
               <div className={`bg-primary/20 rounded-full px-4 py-1 transition-transform ${scoreAnimation ? 'animate-bounce scale-125' : ''}`}>
                 <span className="font-baloo font-bold text-primary">{score} Points</span>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            </>
+          )
+        }
+      />
 
       <div className="container max-w-2xl p-4 md:p-8">
         {/* Quiz not started */}
