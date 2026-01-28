@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, BookOpen, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
+import { useTranslations, Language } from "@/lib/translations";
 import heroImage from "@/assets/hero-reading.jpg";
 
 interface Story {
@@ -16,10 +17,21 @@ interface Story {
   difficulty: string | null;
 }
 
+// Difficulty labels in different languages
+const difficultyLabels: Record<string, Record<string, string>> = {
+  de: { easy: "Leicht", medium: "Mittel", difficult: "Schwer" },
+  fr: { easy: "Facile", medium: "Moyen", difficult: "Difficile" },
+  en: { easy: "Easy", medium: "Medium", difficult: "Hard" },
+  es: { easy: "Fácil", medium: "Medio", difficult: "Difícil" },
+  nl: { easy: "Makkelijk", medium: "Gemiddeld", difficult: "Moeilijk" },
+};
+
 const StorySelectPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
+  const appLang = (user?.appLanguage || 'fr') as Language;
+  const t = useTranslations(appLang);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -125,7 +137,7 @@ const StorySelectPage = () => {
                             : 'bg-red-500 hover:bg-red-600'
                       } text-white`}
                     >
-                      {story.difficulty === 'easy' ? 'Leicht' : story.difficulty === 'medium' ? 'Mittel' : 'Schwer'}
+                      {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
                     </Badge>
                   )}
                 </div>

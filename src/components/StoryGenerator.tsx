@@ -27,6 +27,7 @@ interface GeneratedStory {
   vocabulary?: GeneratedVocabulary[];
   coverImageBase64?: string;
   storyImages?: string[]; // Additional progress images (base64)
+  difficulty?: string; // The difficulty level selected during generation
 }
 
 interface StoryGeneratorProps {
@@ -136,7 +137,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
           );
         }
 
-        onStoryGenerated(data);
+        onStoryGenerated({ ...data, difficulty });
       } else {
         toast.error(t.error);
       }

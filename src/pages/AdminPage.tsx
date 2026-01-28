@@ -42,6 +42,7 @@ interface GeneratedStory {
   vocabulary?: GeneratedVocabulary[];
   coverImageBase64?: string;
   storyImages?: string[]; // Additional progress images (base64)
+  difficulty?: string; // The difficulty level selected during generation
 }
 
 const AdminPage = () => {
@@ -58,6 +59,7 @@ const AdminPage = () => {
   const [generatedStoryImages, setGeneratedStoryImages] = useState<string[]>([]);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
   const [generatedVocabulary, setGeneratedVocabulary] = useState<GeneratedVocabulary[]>([]);
+  const [generatedDifficulty, setGeneratedDifficulty] = useState<string>("medium");
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -182,13 +184,14 @@ const AdminPage = () => {
       }
     }
 
-    // Insert story with user_id and story_images
+    // Insert story with user_id, story_images, and difficulty
     const { data: insertedStory, error } = await supabase.from("stories").insert({
       title,
       content,
       cover_image_url: coverUrl,
       user_id: user?.id,
       story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
+      difficulty: generatedDifficulty,
     }).select().single();
 
     if (error || !insertedStory) {
@@ -300,6 +303,7 @@ const AdminPage = () => {
     setGeneratedCoverBase64(null);
     setGeneratedQuestions([]);
     setGeneratedVocabulary([]);
+    setGeneratedDifficulty("medium");
     loadStories();
   };
 
@@ -437,9 +441,12 @@ const AdminPage = () => {
                 {storySubTab === "generator" && (
                   <StoryGenerator
                     onStoryGenerated={(story) => {
-                      console.log("Story generated with vocabulary:", story.vocabulary);
+                      console.log("Story generated with vocabulary:", story.vocabulary, "difficulty:", story.difficulty);
                       setTitle(story.title);
                       setContent(story.content);
+                      if (story.difficulty) {
+                        setGeneratedDifficulty(story.difficulty);
+                      }
                       if (story.questions && story.questions.length > 0) {
                         setGeneratedQuestions(story.questions);
                       }
