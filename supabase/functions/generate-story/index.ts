@@ -29,9 +29,9 @@ serve(async (req) => {
 
     // Map length to approximate word count
     const lengthMap: Record<string, string> = {
-      short: "150-200 Wörter",
-      medium: "200-300 Wörter",
-      long: "300-400 Wörter",
+      short: "250-300 Wörter",
+      medium: "300-350 Wörter",
+      long: "350-450 Wörter",
     };
 
     // Map length to question count
