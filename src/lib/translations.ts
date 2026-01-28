@@ -103,20 +103,14 @@ export interface Translations {
   addChild: string;
   schoolSystem: string;
   schoolClass: string;
+  imageStyle: string;
   
-  // Color palettes
-  paletteSunshine: string;
-  paletteMint: string;
-  paletteLavender: string;
+  // Color palettes (5 distinct)
   paletteOcean: string;
   paletteSunset: string;
   paletteForest: string;
-  paletteSky: string;
-  paletteBerry: string;
-  paletteEarth: string;
-  paletteCandy: string;
-  paletteArctic: string;
-  paletteTropical: string;
+  paletteLavender: string;
+  paletteSunshine: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -214,19 +208,13 @@ const translations: Record<Language, Translations> = {
     addChild: 'Kind hinzufügen',
     schoolSystem: 'Schulsystem',
     schoolClass: 'Schulklasse',
+    imageStyle: 'Bild-Stil',
     
-    paletteSunshine: 'Gelb',
-    paletteMint: 'Grün',
-    paletteLavender: 'Lila',
-    paletteOcean: 'Blau',
-    paletteSunset: 'Orange',
-    paletteForest: 'Dunkelgrün',
-    paletteSky: 'Hellblau',
-    paletteBerry: 'Beere',
-    paletteEarth: 'Erde',
-    paletteCandy: 'Rosa',
-    paletteArctic: 'Eisblau',
-    paletteTropical: 'Türkis',
+    paletteOcean: 'Ozean',
+    paletteSunset: 'Sonnenuntergang',
+    paletteForest: 'Wald',
+    paletteLavender: 'Lavendel',
+    paletteSunshine: 'Sonne',
   },
   
   en: {
@@ -323,19 +311,13 @@ const translations: Record<Language, Translations> = {
     addChild: 'Add child',
     schoolSystem: 'School system',
     schoolClass: 'Grade',
+    imageStyle: 'Image Style',
     
-    paletteSunshine: 'Yellow',
-    paletteMint: 'Green',
-    paletteLavender: 'Purple',
-    paletteOcean: 'Blue',
-    paletteSunset: 'Orange',
-    paletteForest: 'Dark Green',
-    paletteSky: 'Light Blue',
-    paletteBerry: 'Berry',
-    paletteEarth: 'Earth',
-    paletteCandy: 'Pink',
-    paletteArctic: 'Ice Blue',
-    paletteTropical: 'Teal',
+    paletteOcean: 'Ocean',
+    paletteSunset: 'Sunset',
+    paletteForest: 'Forest',
+    paletteLavender: 'Lavender',
+    paletteSunshine: 'Sunshine',
   },
   
   fr: {
@@ -432,19 +414,13 @@ const translations: Record<Language, Translations> = {
     addChild: 'Ajouter un enfant',
     schoolSystem: 'Système scolaire',
     schoolClass: 'Classe',
+    imageStyle: 'Style d\'image',
     
-    paletteSunshine: 'Jaune',
-    paletteMint: 'Vert',
-    paletteLavender: 'Violet',
-    paletteOcean: 'Bleu',
-    paletteSunset: 'Orange',
-    paletteForest: 'Vert foncé',
-    paletteSky: 'Bleu ciel',
-    paletteBerry: 'Baie',
-    paletteEarth: 'Terre',
-    paletteCandy: 'Rose',
-    paletteArctic: 'Bleu glacé',
-    paletteTropical: 'Turquoise',
+    paletteOcean: 'Océan',
+    paletteSunset: 'Coucher de soleil',
+    paletteForest: 'Forêt',
+    paletteLavender: 'Lavande',
+    paletteSunshine: 'Soleil',
   },
   
   es: {
@@ -541,19 +517,13 @@ const translations: Record<Language, Translations> = {
     addChild: 'Añadir niño',
     schoolSystem: 'Sistema escolar',
     schoolClass: 'Grado',
+    imageStyle: 'Estilo de imagen',
     
-    paletteSunshine: 'Amarillo',
-    paletteMint: 'Verde',
-    paletteLavender: 'Morado',
-    paletteOcean: 'Azul',
-    paletteSunset: 'Naranja',
-    paletteForest: 'Verde oscuro',
-    paletteSky: 'Celeste',
-    paletteBerry: 'Baya',
-    paletteEarth: 'Tierra',
-    paletteCandy: 'Rosa',
-    paletteArctic: 'Azul hielo',
-    paletteTropical: 'Turquesa',
+    paletteOcean: 'Océano',
+    paletteSunset: 'Atardecer',
+    paletteForest: 'Bosque',
+    paletteLavender: 'Lavanda',
+    paletteSunshine: 'Sol',
   },
   
   nl: {
@@ -650,19 +620,13 @@ const translations: Record<Language, Translations> = {
     addChild: 'Kind toevoegen',
     schoolSystem: 'Schoolsysteem',
     schoolClass: 'Groep',
+    imageStyle: 'Afbeeldingsstijl',
     
-    paletteSunshine: 'Geel',
-    paletteMint: 'Groen',
-    paletteLavender: 'Paars',
-    paletteOcean: 'Blauw',
-    paletteSunset: 'Oranje',
-    paletteForest: 'Donkergroen',
-    paletteSky: 'Lichtblauw',
-    paletteBerry: 'Bes',
-    paletteEarth: 'Aarde',
-    paletteCandy: 'Roze',
-    paletteArctic: 'IJsblauw',
-    paletteTropical: 'Turquoise',
+    paletteOcean: 'Oceaan',
+    paletteSunset: 'Zonsondergang',
+    paletteForest: 'Bos',
+    paletteLavender: 'Lavendel',
+    paletteSunshine: 'Zon',
   },
 };
 

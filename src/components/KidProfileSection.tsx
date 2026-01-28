@@ -17,6 +17,7 @@ interface KidProfile {
   school_class: string;
   hobbies: string;
   color_palette: string;
+  image_style: string;
   cover_image_url: string | null;
 }
 
@@ -35,19 +36,13 @@ interface KidProfileSectionProps {
   onProfileUpdate?: (profile: KidProfile) => void;
 }
 
+// 5 distinct, visually different palettes
 const COLOR_PALETTES = [
-  { id: 'sunshine', color: 'bg-amber-400', border: 'border-amber-500' },
-  { id: 'mint', color: 'bg-emerald-400', border: 'border-emerald-500' },
-  { id: 'lavender', color: 'bg-purple-400', border: 'border-purple-500' },
-  { id: 'ocean', color: 'bg-blue-500', border: 'border-blue-600' },
-  { id: 'sunset', color: 'bg-orange-400', border: 'border-orange-500' },
-  { id: 'forest', color: 'bg-green-700', border: 'border-green-800' },
-  { id: 'sky', color: 'bg-sky-400', border: 'border-sky-500' },
-  { id: 'berry', color: 'bg-pink-600', border: 'border-pink-700' },
-  { id: 'earth', color: 'bg-amber-700', border: 'border-amber-800' },
-  { id: 'candy', color: 'bg-pink-400', border: 'border-pink-500' },
-  { id: 'arctic', color: 'bg-cyan-300', border: 'border-cyan-400' },
-  { id: 'tropical', color: 'bg-teal-500', border: 'border-teal-600' },
+  { id: 'ocean', color: 'bg-blue-500', border: 'border-blue-600', gradient: 'from-blue-400 to-cyan-500' },
+  { id: 'sunset', color: 'bg-gradient-to-r from-orange-400 to-rose-500', border: 'border-orange-500', gradient: 'from-orange-400 to-rose-500' },
+  { id: 'forest', color: 'bg-emerald-600', border: 'border-emerald-700', gradient: 'from-emerald-500 to-teal-600' },
+  { id: 'lavender', color: 'bg-gradient-to-r from-purple-400 to-indigo-500', border: 'border-purple-500', gradient: 'from-purple-400 to-indigo-500' },
+  { id: 'sunshine', color: 'bg-gradient-to-r from-amber-400 to-yellow-500', border: 'border-amber-500', gradient: 'from-amber-400 to-yellow-500' },
 ];
 
 const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
@@ -73,7 +68,8 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     school_system: 'fr',
     school_class: 'CE1',
     hobbies: '',
-    color_palette: 'sunshine',
+    color_palette: 'ocean',
+    image_style: 'modern cartoon',
     cover_image_url: null,
   };
 
@@ -113,6 +109,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         school_class: d.school_class,
         hobbies: d.hobbies,
         color_palette: d.color_palette,
+        image_style: (d as any).image_style || 'modern cartoon',
         cover_image_url: d.cover_image_url,
       }));
       setProfiles(mappedProfiles);
@@ -126,7 +123,8 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         school_system: 'fr',
         school_class: 'CE1',
         hobbies: '',
-        color_palette: 'sunshine',
+        color_palette: 'ocean',
+        image_style: 'modern cartoon',
         cover_image_url: null,
       }]);
     }
@@ -155,7 +153,8 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       school_system: 'fr',
       school_class: 'CE1',
       hobbies: '',
-      color_palette: 'sunshine',
+      color_palette: 'ocean',
+      image_style: 'modern cartoon',
       cover_image_url: null,
     };
     setProfiles(prev => [...prev, newProfile]);
@@ -192,18 +191,11 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
 
   const getPaletteLabel = (paletteId: string) => {
     switch (paletteId) {
-      case 'sunshine': return t.paletteSunshine;
-      case 'mint': return t.paletteMint;
-      case 'lavender': return t.paletteLavender;
       case 'ocean': return t.paletteOcean;
       case 'sunset': return t.paletteSunset;
       case 'forest': return t.paletteForest;
-      case 'sky': return t.paletteSky;
-      case 'berry': return t.paletteBerry;
-      case 'earth': return t.paletteEarth;
-      case 'candy': return t.paletteCandy;
-      case 'arctic': return t.paletteArctic;
-      case 'tropical': return t.paletteTropical;
+      case 'lavender': return t.paletteLavender;
+      case 'sunshine': return t.paletteSunshine;
       default: return paletteId;
     }
   };
@@ -222,6 +214,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
           schoolClass: currentProfile.school_class,
           hobbies: currentProfile.hobbies,
           colorPalette: currentProfile.color_palette,
+          imageStyle: currentProfile.image_style,
         },
       });
 
@@ -274,6 +267,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         school_class: currentProfile.school_class,
         hobbies: currentProfile.hobbies,
         color_palette: currentProfile.color_palette,
+        image_style: currentProfile.image_style,
         cover_image_url: coverUrl,
       };
 
@@ -309,6 +303,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         school_class: savedData.school_class,
         hobbies: savedData.hobbies,
         color_palette: savedData.color_palette,
+        image_style: savedData.image_style || 'modern cartoon',
         cover_image_url: savedData.cover_image_url,
       };
 
@@ -456,23 +451,33 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="imageStyle">{t.imageStyle}</Label>
+              <Input
+                id="imageStyle"
+                value={currentProfile.image_style}
+                onChange={(e) => updateCurrentProfile({ image_style: e.target.value })}
+                placeholder={language === 'de' ? 'z.B. Comic, Aquarell, Schwarz-Weiß' : language === 'es' ? 'ej. cómic, acuarela' : language === 'nl' ? 'bijv. strip, aquarel' : language === 'en' ? 'e.g. comic, watercolor' : 'ex. bande dessinée, aquarelle'}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
                 {t.colorPalette}
               </Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {COLOR_PALETTES.map((palette) => (
                   <button
                     key={palette.id}
                     onClick={() => updateCurrentProfile({ color_palette: palette.id })}
-                    className={`p-3 rounded-lg border-2 transition-all ${palette.color} ${
+                    className={`px-4 py-2 rounded-full border-2 transition-all bg-gradient-to-r ${palette.gradient} ${
                       currentProfile.color_palette === palette.id 
                         ? `${palette.border} ring-2 ring-offset-2 ring-primary` 
                         : 'border-transparent hover:border-muted'
                     }`}
                   >
                     <span className="text-xs font-medium text-white drop-shadow-md">
-                      {getPaletteLabel(palette.id).split(' ')[0]}
+                      {getPaletteLabel(palette.id)}
                     </span>
                   </button>
                 ))}

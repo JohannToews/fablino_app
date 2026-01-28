@@ -80,6 +80,7 @@ export type Database = {
           created_at: string
           hobbies: string
           id: string
+          image_style: string | null
           name: string
           school_class: string
           school_system: string
@@ -92,6 +93,7 @@ export type Database = {
           created_at?: string
           hobbies?: string
           id?: string
+          image_style?: string | null
           name?: string
           school_class?: string
           school_system?: string
@@ -104,6 +106,7 @@ export type Database = {
           created_at?: string
           hobbies?: string
           id?: string
+          image_style?: string | null
           name?: string
           school_class?: string
           school_system?: string

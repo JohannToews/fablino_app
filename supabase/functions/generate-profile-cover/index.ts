@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { name, age, hobbies, colorPalette } = await req.json();
+    const { name, age, hobbies, colorPalette, imageStyle } = await req.json();
 
     if (!name) {
       throw new Error("Name is required");
@@ -23,27 +23,23 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Map color palette to pure color descriptions (NO thematic names!)
+    // Map color palette to pure color descriptions (5 distinct palettes)
     const paletteColors: Record<string, string> = {
-      sunshine: "warm golden yellow (#FFD700) and soft orange (#FFA500) tones",
-      mint: "fresh green (#98FF98) and light teal (#40E0D0) colors",
-      lavender: "soft purple (#E6E6FA) and violet (#EE82EE) tones",
-      ocean: "deep blue (#0077BE) and turquoise (#40E0D0) colors",
-      sunset: "warm coral (#FF7F50), peach (#FFCBA4) and soft pink (#FFB6C1) hues",
-      forest: "rich green (#228B22) and earthy brown-green (#6B8E23) tones",
-      sky: "light blue (#87CEEB) and soft white (#F0F8FF) colors",
-      berry: "rich magenta (#C71585) and raspberry (#E30B5C) tones",
-      earth: "warm brown (#8B4513) and terracotta (#E2725B) colors",
-      candy: "bright pink (#FF69B4) and soft lilac (#C8A2C8) tones",
-      arctic: "icy blue (#B0E0E6) and silver-white (#C0C0C0) colors",
-      tropical: "vibrant teal (#00CED1) and lime green (#32CD32) tones",
+      ocean: "deep blue (#0077BE), turquoise (#40E0D0) and cyan (#00CED1) colors",
+      sunset: "warm coral (#FF7F50), rose (#FF6B6B) and soft pink (#FFB6C1) hues",
+      forest: "rich emerald green (#228B22), teal (#008B8B) and forest tones",
+      lavender: "soft purple (#9B59B6), violet (#8E44AD) and indigo (#6366F1) tones",
+      sunshine: "warm golden yellow (#FFD700), amber (#FFA500) and orange tones",
     };
 
-    const colorDescription = paletteColors[colorPalette] || paletteColors.sunshine;
+    const colorDescription = paletteColors[colorPalette] || paletteColors.ocean;
+    
+    // User-defined image style or default
+    const styleDescription = imageStyle || "modern cartoon";
     const childAge = age || 8;
 
-    // Base style description - modern cartoon style, NO TEXT
-    const baseStyle = `Modern digital cartoon illustration style. Clean vector-like artwork with smooth gradients and soft shadows. 
+    // Base style description - uses user-defined style
+    const baseStyle = `${styleDescription} illustration style. 
 Cute expressive character with big friendly eyes and warm smile. 
 Bright, cheerful lighting with soft ambient glow. 
 Professional children's app illustration quality.
