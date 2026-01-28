@@ -75,35 +75,38 @@ export type Database = {
       }
       kid_profiles: {
         Row: {
-          age: number
           color_palette: string
           cover_image_url: string | null
           created_at: string
           hobbies: string
           id: string
           name: string
+          school_class: string
+          school_system: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          age?: number
           color_palette?: string
           cover_image_url?: string | null
           created_at?: string
           hobbies?: string
           id?: string
           name?: string
+          school_class?: string
+          school_system?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          age?: number
           color_palette?: string
           cover_image_url?: string | null
           created_at?: string
           hobbies?: string
           id?: string
           name?: string
+          school_class?: string
+          school_system?: string
           updated_at?: string
           user_id?: string
         }
@@ -111,7 +114,7 @@ export type Database = {
           {
             foreignKeyName: "kid_profiles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -219,6 +222,7 @@ export type Database = {
           created_at: string
           difficulty: string | null
           id: string
+          kid_profile_id: string | null
           title: string
           updated_at: string
           user_id: string | null
@@ -229,6 +233,7 @@ export type Database = {
           created_at?: string
           difficulty?: string | null
           id?: string
+          kid_profile_id?: string | null
           title: string
           updated_at?: string
           user_id?: string | null
@@ -239,11 +244,19 @@ export type Database = {
           created_at?: string
           difficulty?: string | null
           id?: string
+          kid_profile_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stories_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stories_user_id_fkey"
             columns: ["user_id"]

@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, Lock } from "lucide-react";
+import { Sparkles, Lock, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -93,10 +93,10 @@ const LoginPage = () => {
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2">
             <Sparkles className="w-6 h-6 text-yellow-500" />
-            LireMagie
+            Le Petit Lecteur
             <Sparkles className="w-6 h-6 text-yellow-500" />
           </CardTitle>
-          <p className="text-muted-foreground">Please sign in</p>
+          <CardDescription className="text-base">Bitte anmelden</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
@@ -137,14 +137,21 @@ const LoginPage = () => {
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span> Loading...
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  🔓 Sign In
+                  🔓 Anmelden
                 </span>
               )}
             </Button>
+
+            <p className="text-center text-sm text-muted-foreground pt-4">
+              Noch kein Konto?{" "}
+              <Link to="/register" className="text-violet-600 hover:underline font-medium">
+                Neuen Benutzer erstellen
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>

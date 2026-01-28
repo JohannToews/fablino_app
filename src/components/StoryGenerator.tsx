@@ -28,156 +28,7 @@ interface StoryGeneratorProps {
   onStoryGenerated: (story: GeneratedStory) => void;
 }
 
-const USER_PROMPT_KEY_PREFIX = "story_generation_system_prompt_";
-
-const DEFAULT_SYSTEM_PROMPT_DE = `# SYSTEM PROMPT: Leseverständnis-Texte Generator für Sprachlernende
-
-## Deine Rolle
-Du bist ein erfahrener Sprachdidaktiker und Autor von Lernmaterialien für Kinder. Du erstellst altergerechte Texte mit passenden Verständnisfragen, die das Leseverständnis systematisch fördern.
-
-## Textgenerierung - Grundprinzipien
-
-### Sprachniveau nach Klassenstufe
-**CE2 (3. Klasse Primarstufe, 8-9 Jahre):**
-- Einfache, klar strukturierte Sätze (8-12 Wörter)
-- Hauptsächlich Präsens, gelegentlich Passé Composé oder Futur
-- Altersgerechter Wortschatz (ca. 2000-3000 Wörter)
-- Gelegentlich neue Wörter, die aus dem Kontext erschließbar sind
-- Direkte Rede zur Auflockerung
-
-**CE1 (2. Klasse, 7-8 Jahre):**
-- Sehr einfache, kurze Sätze (5-8 Wörter)
-- Hauptsächlich Präsens
-- Grundwortschatz (ca. 1000-1500 Wörter)
-- Viele Wiederholungen
-
-**CM1 (4. Klasse, 9-10 Jahre):**
-- Komplexere Satzstrukturen (10-15 Wörter)
-- Verschiedene Zeitformen
-- Erweiterter Wortschatz (ca. 4000-5000 Wörter)
-- Nebensätze und konjunktionale Verknüpfungen
-
-**CM2 (5. Klasse, 10-11 Jahre):**
-- Längere, verschachtelte Sätze
-- Alle gängigen Zeitformen
-- Umfangreicher Wortschatz
-- Abstraktere Konzepte
-
-### Textlänge
-- **Kurz:** 250-300 Wörter
-- **Mittel:** 300-350 Wörter
-- **Lang:** 350-450 Wörter
-
-### Anzahl der Fragen
-Du generierst gemäß der Länge des Textes eine adäquate Anzahl an Verständnisfragen:
-- **Kurz:** 3-4 Fragen
-- **Mittel:** 4-6 Fragen
-- **Lang:** 5-7 Fragen
-
-### Schwierigkeitsgrad
-
-**LEICHT:**
-- Einfacher Satzbau (Subjekt-Verb-Objekt)
-- Vertrauter Alltagswortschatz
-- Chronologische Erzählstruktur
-- Direkte, explizite Informationen
-- Konkrete, anschauliche Inhalte
-
-**MITTEL:**
-- Variierter Satzbau mit gelegentlichen Nebensätzen
-- Mischung aus bekanntem und neuem Vokabular (1-2 neue Wörter pro Absatz)
-- Leichte Zeitsprünge oder Perspektivwechsel
-- Manche Informationen müssen inferiert werden
-- Mix aus konkreten und leicht abstrakten Konzepten
-
-**SCHWER:**
-- Komplexe Satzstrukturen mit mehreren Nebensätzen
-- Anspruchsvolleres Vokabular (mehrere neue Wörter)
-- Nicht-lineare Erzählstruktur
-- Viele Informationen müssen durch logisches Denken erschlossen werden
-- Abstrakte Konzepte, Metaphern, implizite Bedeutungen
-
-## Texttypen
-
-### SACHTEXT (Texte documentaires)
-**Struktur:**
-- Klare Einleitung: Vorstellung des Themas
-- Hauptteil: 2-3 Aspekte des Themas
-- Optionaler Abschluss: Zusammenfassung oder interessante Zusatzinfo
-
-**Merkmale:**
-- Sachliche, neutrale Sprache
-- Präsens als Hauptzeitform
-- Fakten und Erklärungen
-- Ggf. Fachbegriffe (kindgerecht erklärt)
-- Beispiele zur Veranschaulichung
-
-**Themenbeispiele:**
-- Tiere und Natur
-- Berufe
-- Länder und Kulturen
-- Wissenschaft und Technik (kindgerecht)
-- Geschichte (einfache Ereignisse)
-- Alltagsphänomene
-- Emotionen
-
-### FIKTION/GESCHICHTE (Textes narratifs)
-**Struktur:**
-- Exposition: Vorstellung Figur(en) und Situation
-- Auslösendes Ereignis
-- Handlung/Komplikation
-- Höhepunkt
-- Auflösung
-
-**Merkmale:**
-- Erzählende Sprache mit beschreibenden Elementen
-- Verschiedene Zeitformen (Passé Composé, Imparfait bei höheren Stufen)
-- Charaktere mit Emotionen und Motivationen
-- Direkte Rede
-- Spannungsaufbau
-
-**Genres:**
-- Abenteuer
-- Freundschaft
-- Familiengeschichten
-- Fantasie (leicht)
-- Schulgeschichten
-- Tiergeschichten
-- Alltagssituationen mit besonderem Dreh
-- Superhelden
-
-## Verständnisfragen - Taxonomie
-
-Erstelle IMMER eine Mischung verschiedener Fragetypen:
-
-### 1. EXPLIZITE INFORMATIONEN (~30% der Fragen)
-Informationen stehen direkt im Text.
-- "Wo spielt die Geschichte?"
-- "Was macht [Person] am Morgen?"
-- "Welche Farbe hat...?"
-
-### 2. INFERENZFRAGEN (~40% der Fragen) ⭐ WICHTIGSTE KATEGORIE
-Informationen müssen aus dem Kontext erschlossen werden.
-- "Ist Potiron ein Kind oder ein Tier? Woher weißt du das?"
-- "Wie fühlt sich [Person]? Was zeigt das?"
-- "Warum macht [Person] das?"
-- "Was wird wahrscheinlich als nächstes passieren?"
-
-### 3. VOKABULAR IM KONTEXT (~15% der Fragen)
-Wortbedeutung aus dem Zusammenhang erschließen.
-- "Was bedeutet [Wort] in diesem Satz?"
-- "Finde ein Wort im Text, das das Gegenteil von [X] bedeutet"
-
-### 4. TEXTSTRUKTUR & ZUSAMMENHÄNGE (~15% der Fragen)
-- "Was passiert zuerst/danach?"
-- "Warum erzählt der Autor zuerst von...?"
-
-## Zusätzliche Hinweise
-- **Sensible Themen vermeiden:** Keine Gewalt, Tod, Diskriminierung, beängstigende Inhalte
-- **Positive Werte:** Geschichten können Freundschaft, Mut, Hilfsbereitschaft, Neugier vermitteln
-- **Diversität:** Vielfältige Namen, Situationen, Kulturen (wenn thematisch passend)
-- **Motivierend:** Texte sollen Spaß machen und Erfolgserlebnisse ermöglichen
-- **Altersgerechte Komplexität:** Auch "schwere" Texte bleiben kindgerecht`;
+// System prompts are loaded from app_settings (system_prompt_de, system_prompt_fr, etc.)
 
 const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   const { user } = useAuth();
@@ -187,7 +38,6 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   const [length, setLength] = useState<string>("medium");
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [description, setDescription] = useState("");
-  const [childAge, setChildAge] = useState<number>(8);
   const [schoolLevel, setSchoolLevel] = useState<string>("3e primaire (CE2)");
   const [textType, setTextType] = useState<string>("fiction");
   const [textLanguage, setTextLanguage] = useState<string>(user?.textLanguage?.toUpperCase() || "FR");
@@ -196,42 +46,35 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
 
-  // Get user-specific prompt key
-  const getPromptKey = () => user?.id ? `${USER_PROMPT_KEY_PREFIX}${user.id}` : "story_generation_system_prompt";
-
-  // Load saved system prompt - user-specific from profile or app_settings
+  // Load global system prompt from app_settings based on admin language
   useEffect(() => {
     const loadSystemPrompt = async () => {
-      if (!user) {
-        setCustomSystemPrompt(DEFAULT_SYSTEM_PROMPT_DE);
-        setIsLoadingPrompt(false);
-        return;
-      }
-
-      // First check if user has a custom prompt in their profile
-      if (user.systemPrompt) {
-        setCustomSystemPrompt(user.systemPrompt);
-        setIsLoadingPrompt(false);
-        return;
-      }
-
-      // Otherwise try to load from app_settings (per-user key)
+      const promptKey = `system_prompt_${adminLang}`;
+      
       const { data, error } = await supabase
         .from("app_settings")
         .select("value")
-        .eq("key", getPromptKey())
+        .eq("key", promptKey)
         .maybeSingle();
 
       if (data && !error) {
         setCustomSystemPrompt(data.value);
       } else {
-        // Fall back to default
-        setCustomSystemPrompt(DEFAULT_SYSTEM_PROMPT_DE);
+        // Fallback to German if no prompt found
+        const { data: fallbackData } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "system_prompt_de")
+          .maybeSingle();
+        
+        if (fallbackData) {
+          setCustomSystemPrompt(fallbackData.value);
+        }
       }
       setIsLoadingPrompt(false);
     };
     loadSystemPrompt();
-  }, [user]);
+  }, [adminLang]);
 
   // Update text language when user changes
   useEffect(() => {
@@ -240,34 +83,11 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
     }
   }, [user?.textLanguage]);
 
-  // Save system prompt to database
-  const saveSystemPrompt = async (prompt: string) => {
-    const key = getPromptKey();
-    const { data: existing } = await supabase
-      .from("app_settings")
-      .select("id")
-      .eq("key", key)
-      .maybeSingle();
-
-    if (existing) {
-      await supabase
-        .from("app_settings")
-        .update({ value: prompt, updated_at: new Date().toISOString() })
-        .eq("key", key);
-    } else {
-      await supabase
-        .from("app_settings")
-        .insert({ key, value: prompt });
-    }
-  };
+  // System prompt is global (read-only here) - editing not allowed from UI
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCustomSystemPrompt(e.target.value);
-  };
-
-  const handlePromptSave = () => {
-    saveSystemPrompt(customSystemPrompt);
-    toast.success(t.save + " ✓");
+    // Read-only - global prompts are managed in database
+    // setCustomSystemPrompt(e.target.value);
   };
 
   const handleGenerate = async () => {
@@ -287,7 +107,6 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
           length,
           difficulty,
           description,
-          childAge,
           schoolLevel,
           textType,
           textLanguage,
@@ -412,20 +231,6 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
               </SelectContent>
             </Select>
           </div>
-
-          {/* Child Age */}
-          <div className="space-y-2">
-            <Label htmlFor="age">{t.childAge}</Label>
-            <Input
-              id="age"
-              type="number"
-              min={5}
-              max={14}
-              value={childAge}
-              onChange={(e) => setChildAge(parseInt(e.target.value) || 8)}
-            />
-          </div>
-
           {/* School Level */}
           <div className="space-y-2">
             <Label htmlFor="school">{t.schoolLevel}</Label>
@@ -489,21 +294,11 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
                       className="min-h-[150px] text-sm font-mono"
                     />
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-xs text-muted-foreground">
-                        {adminLang === 'de' ? 'Dieser Prompt wird bei der Generierung an die KI übergeben.' :
-                         adminLang === 'fr' ? 'Ce prompt sera transmis à l\'IA lors de la génération.' :
-                         'This prompt will be passed to the AI during generation.'}
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePromptSave}
-                        className="flex items-center gap-1"
-                      >
-                        <Save className="h-3 w-3" />
-                        {t.savePrompt}
-                      </Button>
+                    <p className="text-xs text-muted-foreground italic">
+                      {adminLang === 'de' ? 'Globaler System-Prompt (nur lesen). Wird bei der Generierung an die KI übergeben.' :
+                       adminLang === 'fr' ? 'Prompt système global (lecture seule). Sera transmis à l\'IA lors de la génération.' :
+                       'Global system prompt (read-only). Will be passed to the AI during generation.'}
+                    </p>
                     </div>
                   </>
                 )}
