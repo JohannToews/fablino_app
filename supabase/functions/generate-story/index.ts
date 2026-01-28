@@ -14,164 +14,235 @@ function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(word => word.length > 0).length;
 }
 
-// Helper function to call Gemini API for text generation
+// Helper function to sleep for a given number of milliseconds
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Helper function to call Gemini API for text generation with retry logic
 async function callGeminiTextAPI(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
-  temperature: number = 0.8
+  temperature: number = 0.8,
+  maxRetries: number = 3
 ): Promise<string> {
-  const response = await fetch(`${GEMINI_TEXT_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-        }
-      ],
-      generationConfig: {
-        temperature,
-        maxOutputTokens: 8192,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Gemini Text API error:", response.status, errorText);
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  let lastError: Error | null = null;
   
-  if (!content) {
-    throw new Error("No content in Gemini response");
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Exponential backoff: 2s, 4s, 8s...
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+    
+    try {
+      const response = await fetch(`${GEMINI_TEXT_URL}?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+            }
+          ],
+          generationConfig: {
+            temperature,
+            maxOutputTokens: 8192,
+          },
+        }),
+      });
+
+      if (response.status === 429) {
+        console.log(`Gemini API rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        lastError = new Error("Rate limited");
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini Text API error:", response.status, errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!content) {
+        throw new Error("No content in Gemini response");
+      }
+      
+      return content;
+    } catch (error) {
+      if (error instanceof Error && error.message === "Rate limited") {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
   }
   
-  return content;
+  throw lastError || new Error("Max retries exceeded");
 }
 
-// Helper function to call Gemini API for image generation
+// Helper function to call Gemini API for image generation with retry logic
 async function callGeminiImageAPI(
   apiKey: string,
-  prompt: string
+  prompt: string,
+  maxRetries: number = 3
 ): Promise<string | null> {
-  try {
-    const response = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-          responseModalities: ["image", "text"],
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Exponential backoff: 3s, 6s, 12s... (longer for images)
+      const waitTime = Math.pow(2, attempt) * 1500;
+      console.log(`Image API rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+    
+    try {
+      const response = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ["image", "text"],
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini Image API error:", response.status, errorText);
+      if (response.status === 429) {
+        console.log(`Gemini Image API rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        lastError = new Error("Rate limited");
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini Image API error:", response.status, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // Look for inline_data with image in the response
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.mimeType?.startsWith("image/")) {
+          const base64Data = part.inlineData.data;
+          const mimeType = part.inlineData.mimeType;
+          return `data:${mimeType};base64,${base64Data}`;
+        }
+      }
+      
+      console.error("No image found in Gemini response");
+      return null;
+    } catch (error) {
+      console.error("Error calling Gemini Image API:", error);
       return null;
     }
-
-    const data = await response.json();
-    
-    // Look for inline_data with image in the response
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    for (const part of parts) {
-      if (part.inlineData?.mimeType?.startsWith("image/")) {
-        const base64Data = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType;
-        return `data:${mimeType};base64,${base64Data}`;
-      }
-    }
-    
-    console.error("No image found in Gemini response");
-    return null;
-  } catch (error) {
-    console.error("Error calling Gemini Image API:", error);
-    return null;
   }
+  
+  console.log("Max retries exceeded for image generation");
+  return null;
 }
 
-// Helper function to call Gemini API for image editing (with reference image)
+// Helper function to call Gemini API for image editing (with reference image) with retry logic
 async function callGeminiImageEditAPI(
   apiKey: string,
   prompt: string,
-  referenceImageBase64: string
+  referenceImageBase64: string,
+  maxRetries: number = 3
 ): Promise<string | null> {
-  try {
-    // Extract base64 data and mime type from data URL
-    const matches = referenceImageBase64.match(/^data:(.+);base64,(.+)$/);
-    if (!matches) {
-      console.error("Invalid base64 image format");
-      return null;
-    }
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-
-    const response = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: prompt },
-              { 
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Data
-                }
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          responseModalities: ["image", "text"],
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini Image Edit API error:", response.status, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    // Look for inline_data with image in the response
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    for (const part of parts) {
-      if (part.inlineData?.mimeType?.startsWith("image/")) {
-        const imgBase64Data = part.inlineData.data;
-        const imgMimeType = part.inlineData.mimeType;
-        return `data:${imgMimeType};base64,${imgBase64Data}`;
-      }
-    }
-    
-    console.error("No image found in Gemini edit response");
-    return null;
-  } catch (error) {
-    console.error("Error calling Gemini Image Edit API:", error);
+  // Extract base64 data and mime type from data URL
+  const matches = referenceImageBase64.match(/^data:(.+);base64,(.+)$/);
+  if (!matches) {
+    console.error("Invalid base64 image format");
     return null;
   }
+  const mimeType = matches[1];
+  const base64Data = matches[2];
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1500;
+      console.log(`Image Edit API rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+    
+    try {
+      const response = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: prompt },
+                { 
+                  inlineData: {
+                    mimeType: mimeType,
+                    data: base64Data
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ["image", "text"],
+          },
+        }),
+      });
+
+      if (response.status === 429) {
+        console.log(`Gemini Image Edit API rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini Image Edit API error:", response.status, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // Look for inline_data with image in the response
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.mimeType?.startsWith("image/")) {
+          const imgBase64Data = part.inlineData.data;
+          const imgMimeType = part.inlineData.mimeType;
+          return `data:${imgMimeType};base64,${imgBase64Data}`;
+        }
+      }
+      
+      console.error("No image found in Gemini edit response");
+      return null;
+    } catch (error) {
+      console.error("Error calling Gemini Image Edit API:", error);
+      return null;
+    }
+  }
+  
+  console.log("Max retries exceeded for image editing");
+  return null;
 }
 
 serve(async (req) => {
