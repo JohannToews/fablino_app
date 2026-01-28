@@ -266,14 +266,13 @@ const AdminPage = () => {
     // Save pre-generated vocabulary to marked_words
     console.log("Vocabulary to save:", generatedVocabulary);
     if (generatedVocabulary.length > 0) {
-      // marked_words.difficulty currently allows only: 'easy' | 'normal'
-      const vocabDifficulty = generatedDifficulty === "easy" ? "easy" : "normal";
-
+      // Always use 'normal' difficulty for vocabulary so words appear in quiz
+      // (The quiz filters out 'easy' words - those are only for manually marked simple words)
       const vocabToInsert = generatedVocabulary.map((v) => ({
         story_id: insertedStory.id,
         word: v.word,
         explanation: v.explanation,
-        difficulty: vocabDifficulty,
+        difficulty: "normal",
         is_learned: false,
       }));
 
