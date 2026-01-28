@@ -118,6 +118,18 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
       if (data?.title && data?.content) {
         toast.success(t.success + " 🏆");
+
+        // If the story was generated but images were throttled, warn the user explicitly.
+        if (!data?.coverImageBase64) {
+          toast.warning(
+            adminLang === 'de'
+              ? "Text erstellt, aber Bilder konnten gerade nicht generiert werden (Rate-Limit). Bitte in 1–2 Minuten erneut versuchen."
+              : adminLang === 'fr'
+                ? "Texte créé, mais les images n'ont pas pu être générées (limite de débit). Réessaie dans 1–2 minutes."
+                : "Text created, but images couldn't be generated (rate limit). Please try again in 1–2 minutes."
+          );
+        }
+
         onStoryGenerated(data);
       } else {
         toast.error(t.error);
