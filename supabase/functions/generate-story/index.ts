@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Gemini API endpoints
-const GEMINI_TEXT_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+// API endpoints
+const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 // Helper function to count words in a text
@@ -19,8 +19,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Helper function to call Gemini API for text generation with retry logic
-async function callGeminiTextAPI(
+// Helper function to call Lovable AI Gateway for text generation (better rate limits)
+async function callLovableAI(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
@@ -38,42 +38,43 @@ async function callGeminiTextAPI(
     }
     
     try {
-      const response = await fetch(`${GEMINI_TEXT_URL}?key=${apiKey}`, {
+      const response = await fetch(LOVABLE_AI_GATEWAY, {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-            }
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
           ],
-          generationConfig: {
-            temperature,
-            maxOutputTokens: 8192,
-          },
+          temperature,
         }),
       });
 
       if (response.status === 429) {
-        console.log(`Gemini API rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        console.log(`Lovable AI rate limited (attempt ${attempt + 1}/${maxRetries})`);
         lastError = new Error("Rate limited");
         continue;
       }
 
+      if (response.status === 402) {
+        throw new Error("Payment required - please add credits to your Lovable workspace");
+      }
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Gemini Text API error:", response.status, errorText);
-        throw new Error(`Gemini API error: ${response.status}`);
+        console.error("Lovable AI Gateway error:", response.status, errorText);
+        throw new Error(`AI Gateway error: ${response.status}`);
       }
 
       const data = await response.json();
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const content = data.choices?.[0]?.message?.content;
       
       if (!content) {
-        throw new Error("No content in Gemini response");
+        throw new Error("No content in AI response");
       }
       
       return content;
@@ -261,10 +262,15 @@ serve(async (req) => {
     };
     const totalImageCount = imageCountMap[length] || 1;
 
-    // Get Gemini API key
+    // Get API keys
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
     if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+      throw new Error("GEMINI_API_KEY is not configured (needed for image generation)");
     }
 
     // Language mappings
@@ -409,7 +415,7 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
         ? userPrompt 
         : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
-      const content = await callGeminiTextAPI(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+      const content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
 
       // Parse the JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -451,7 +457,7 @@ ${story.content}
 Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
         try {
-          const expandedContent = await callGeminiTextAPI(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          const expandedContent = await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
           const newWordCount = countWords(expandedContent);
           console.log(`Expanded story word count: ${newWordCount}`);
           
@@ -517,7 +523,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       
       const characterContext = `Geschichte: "${story.title}"\n${story.content.substring(0, 500)}...`;
       
-      characterDescription = await callGeminiTextAPI(GEMINI_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
+      characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
       console.log("Character description generated:", characterDescription.substring(0, 100));
     } catch (err) {
       console.error("Error generating character description:", err);
