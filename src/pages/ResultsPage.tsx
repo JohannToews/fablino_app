@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Trophy, BookOpen, Brain, MessageCircleQuestion, Star, Sparkles } from "lucide-react";
+import { ArrowLeft, Trophy, BookOpen, Brain, Star, Sparkles } from "lucide-react";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -31,10 +31,8 @@ const ResultsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [totalPoints, setTotalPoints] = useState(0);
   const [storyPoints, setStoryPoints] = useState(0);
-  const [questionPoints, setQuestionPoints] = useState(0);
   const [quizPoints, setQuizPoints] = useState(0);
   const [storiesRead, setStoriesRead] = useState(0);
-  const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [quizzesPassed, setQuizzesPassed] = useState(0);
   const [wordsLearned, setWordsLearned] = useState(0);
   const [levels, setLevels] = useState<LevelSetting[]>([]);
@@ -72,19 +70,14 @@ const ResultsPage = () => {
       if (results) {
         // Calculate totals by category
         let storyPts = 0;
-        let questionPts = 0;
         let quizPts = 0;
         let storyCount = 0;
-        let questionCount = 0;
         let quizCount = 0;
 
         results.forEach((r: UserResult) => {
           if (r.activity_type === 'story_read') {
             storyPts += r.points_earned;
             storyCount++;
-          } else if (r.activity_type === 'question_answered') {
-            questionPts += r.points_earned;
-            questionCount++;
           } else if (r.activity_type === 'quiz_passed') {
             quizPts += r.points_earned;
             quizCount++;
@@ -92,12 +85,10 @@ const ResultsPage = () => {
         });
 
         setStoryPoints(storyPts);
-        setQuestionPoints(questionPts);
         setQuizPoints(quizPts);
         setStoriesRead(storyCount);
-        setQuestionsAnswered(questionCount);
         setQuizzesPassed(quizCount);
-        setTotalPoints(storyPts + questionPts + quizPts);
+        setTotalPoints(storyPts + quizPts);
       }
 
       // Load learned words count - only from user's stories
@@ -209,45 +200,31 @@ const ResultsPage = () => {
         </Card>
 
         {/* Category Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {/* Stories */}
-          <Card className="border-2 border-mint/50">
+          <Card className="border-2 border-primary/30">
             <CardHeader className="pb-2">
-              <div className="h-12 w-12 rounded-full bg-mint/30 flex items-center justify-center mb-2">
-                <BookOpen className="h-6 w-6 text-green-700" />
+              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+                <BookOpen className="h-6 w-6 text-primary" />
               </div>
               <CardTitle className="text-lg font-baloo">Histoires</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-green-700 mb-1">{storyPoints}</p>
+              <p className="text-3xl font-bold text-primary mb-1">{storyPoints}</p>
               <p className="text-sm text-muted-foreground">{storiesRead} histoires lues</p>
             </CardContent>
           </Card>
 
-          {/* Questions */}
-          <Card className="border-2 border-sky-blue/50">
-            <CardHeader className="pb-2">
-              <div className="h-12 w-12 rounded-full bg-sky-blue/30 flex items-center justify-center mb-2">
-                <MessageCircleQuestion className="h-6 w-6 text-blue-700" />
-              </div>
-              <CardTitle className="text-lg font-baloo">Questions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-blue-700 mb-1">{questionPoints}</p>
-              <p className="text-sm text-muted-foreground">{questionsAnswered} réponses correctes</p>
-            </CardContent>
-          </Card>
-
           {/* Quiz */}
-          <Card className="border-2 border-cotton-candy/50">
+          <Card className="border-2 border-secondary/30">
             <CardHeader className="pb-2">
-              <div className="h-12 w-12 rounded-full bg-cotton-candy/30 flex items-center justify-center mb-2">
-                <Brain className="h-6 w-6 text-pink-700" />
+              <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center mb-2">
+                <Brain className="h-6 w-6 text-secondary" />
               </div>
               <CardTitle className="text-lg font-baloo">Quiz</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-pink-700 mb-1">{quizPoints}</p>
+              <p className="text-3xl font-bold text-secondary mb-1">{quizPoints}</p>
               <p className="text-sm text-muted-foreground">{quizzesPassed} quiz réussis</p>
             </CardContent>
           </Card>
