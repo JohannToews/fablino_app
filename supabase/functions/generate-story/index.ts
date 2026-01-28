@@ -171,10 +171,12 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
     const story = JSON.parse(jsonMatch[0]);
 
     // Generate cover image based on description and school level
-    console.log("Generating cover image for:", description, "school level:", schoolLevel);
+    // Default to CE2 (mid primary) if schoolLevel is not provided
+    const effectiveSchoolLevel = schoolLevel || "CE2";
+    console.log("Generating cover image for:", description, "school level:", effectiveSchoolLevel);
     
     // Map school level to art style - different styles for fiction vs non-fiction
-    const schoolLevelLower = schoolLevel.toLowerCase();
+    const schoolLevelLower = effectiveSchoolLevel.toLowerCase();
     let artStyle: string;
     let targetAudience: string;
     
