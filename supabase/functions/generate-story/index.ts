@@ -290,8 +290,8 @@ Very understated visual style - muted grays, soft beiges, gentle blues. Intentio
 Target audience: ${targetAudience}. No text. Illustration should complement reading without drawing too much attention.`);
       }
       
-      // Generate each progress image
-      for (const prompt of progressImagePrompts) {
+      // Generate all progress images in parallel for faster response
+      const progressImagePromises = progressImagePrompts.map(async (prompt, index) => {
         try {
           const progressResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -310,16 +310,20 @@ Target audience: ${targetAudience}. No text. Illustration should complement read
             const progressData = await progressResponse.json();
             const progressUrl = progressData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
             if (progressUrl) {
-              storyImages.push(progressUrl);
-              console.log(`Progress image ${storyImages.length} generated successfully`);
+              console.log(`Progress image ${index + 1} generated successfully`);
+              return progressUrl;
             }
           } else {
-            console.error("Failed to generate progress image:", await progressResponse.text());
+            console.error(`Failed to generate progress image ${index + 1}:`, await progressResponse.text());
           }
         } catch (imgError) {
-          console.error("Error generating progress image:", imgError);
+          console.error(`Error generating progress image ${index + 1}:`, imgError);
         }
-      }
+        return null;
+      });
+
+      const results = await Promise.all(progressImagePromises);
+      storyImages.push(...results.filter((url): url is string => url !== null));
     }
 
     return new Response(JSON.stringify({
