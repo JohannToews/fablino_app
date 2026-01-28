@@ -19,6 +19,28 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Extract a generated image data URL (or b64) from Lovable AI Gateway response
+function extractGatewayImageUrl(data: any): string | null {
+  const img = data?.choices?.[0]?.message?.images?.[0];
+  if (!img) return null;
+
+  // OpenAI-style nested object
+  const nestedUrl = img?.image_url?.url;
+  if (typeof nestedUrl === "string" && nestedUrl.length > 0) return nestedUrl;
+
+  // Some gateways return a direct string
+  const directUrl = img?.image_url;
+  if (typeof directUrl === "string" && directUrl.length > 0) return directUrl;
+
+  // Some providers return b64_json
+  const b64 = img?.b64_json;
+  if (typeof b64 === "string" && b64.length > 0) {
+    return `data:image/png;base64,${b64}`;
+  }
+
+  return null;
+}
+
 // Helper function to call Lovable AI Gateway for text generation (better rate limits)
 async function callLovableAI(
   apiKey: string,
@@ -106,41 +128,58 @@ async function callLovableImageGenerate(
       await sleep(waitTime);
     }
 
-    const response = await fetch(LOVABLE_AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-      }),
-    });
+    // Try the fast image model first, then a higher-quality fallback model.
+    const tryModels = [
+      "google/gemini-2.5-flash-image",
+      "google/gemini-3-pro-image-preview",
+    ];
 
-    if (response.status === 429) {
-      lastError = new Error("Rate limited");
+    let imageUrl: string | null = null;
+
+    for (const model of tryModels) {
+      const response = await fetch(LOVABLE_AI_GATEWAY, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (response.status === 429) {
+        lastError = new Error("Rate limited");
+        imageUrl = null;
+        break; // handle retry outside
+      }
+
+      if (response.status === 402) {
+        throw new Error("Payment required");
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Lovable image gateway error:", response.status, errorText);
+        // Try next model (if any)
+        continue;
+      }
+
+      const data = await response.json();
+      imageUrl = extractGatewayImageUrl(data);
+      if (typeof imageUrl === "string" && imageUrl.length > 0) {
+        return imageUrl;
+      }
+
+      console.error("Lovable image gateway returned no image for model:", model);
+    }
+
+    if (lastError?.message === "Rate limited") {
       continue;
     }
 
-    if (response.status === 402) {
-      throw new Error("Payment required");
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable image gateway error:", response.status, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (typeof imageUrl === "string" && imageUrl.startsWith("data:image/")) {
-      return imageUrl;
-    }
-
-    console.error("Lovable image gateway returned no image");
     return null;
   }
 
@@ -164,49 +203,61 @@ async function callLovableImageEdit(
       await sleep(waitTime);
     }
 
-    const response = await fetch(LOVABLE_AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: referenceImageDataUrl } },
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+    const tryModels = [
+      "google/gemini-2.5-flash-image",
+      "google/gemini-3-pro-image-preview",
+    ];
 
-    if (response.status === 429) {
-      lastError = new Error("Rate limited");
+    for (const model of tryModels) {
+      const response = await fetch(LOVABLE_AI_GATEWAY, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: referenceImageDataUrl } },
+              ],
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (response.status === 429) {
+        lastError = new Error("Rate limited");
+        break;
+      }
+
+      if (response.status === 402) {
+        throw new Error("Payment required");
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Lovable image edit gateway error:", response.status, errorText);
+        continue;
+      }
+
+      const data = await response.json();
+      const imageUrl = extractGatewayImageUrl(data);
+      if (typeof imageUrl === "string" && imageUrl.length > 0) {
+        return imageUrl;
+      }
+
+      console.error("Lovable image edit gateway returned no image for model:", model);
+    }
+
+    if (lastError?.message === "Rate limited") {
       continue;
     }
 
-    if (response.status === 402) {
-      throw new Error("Payment required");
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable image edit gateway error:", response.status, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (typeof imageUrl === "string" && imageUrl.startsWith("data:image/")) {
-      return imageUrl;
-    }
-
-    console.error("Lovable image edit gateway returned no image");
     return null;
   }
 
