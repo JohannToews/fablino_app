@@ -90,6 +90,130 @@ async function callLovableAI(
   throw lastError || new Error("Max retries exceeded");
 }
 
+// Helper function to call Lovable AI Gateway for IMAGE generation (fallback when Gemini is rate-limited)
+async function callLovableImageGenerate(
+  apiKey: string,
+  prompt: string,
+  maxRetries: number = 3
+): Promise<string | null> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Slightly longer backoff for images
+      const waitTime = Math.pow(2, attempt) * 1500;
+      console.log(`Lovable image rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+
+    const response = await fetch(LOVABLE_AI_GATEWAY, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (response.status === 429) {
+      lastError = new Error("Rate limited");
+      continue;
+    }
+
+    if (response.status === 402) {
+      throw new Error("Payment required");
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Lovable image gateway error:", response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (typeof imageUrl === "string" && imageUrl.startsWith("data:image/")) {
+      return imageUrl;
+    }
+
+    console.error("Lovable image gateway returned no image");
+    return null;
+  }
+
+  if (lastError) throw lastError;
+  return null;
+}
+
+// Helper function to call Lovable AI Gateway for IMAGE editing (keeps character consistency via reference image)
+async function callLovableImageEdit(
+  apiKey: string,
+  prompt: string,
+  referenceImageDataUrl: string,
+  maxRetries: number = 3
+): Promise<string | null> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1500;
+      console.log(`Lovable image edit rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+
+    const response = await fetch(LOVABLE_AI_GATEWAY, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: referenceImageDataUrl } },
+            ],
+          },
+        ],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (response.status === 429) {
+      lastError = new Error("Rate limited");
+      continue;
+    }
+
+    if (response.status === 402) {
+      throw new Error("Payment required");
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Lovable image edit gateway error:", response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (typeof imageUrl === "string" && imageUrl.startsWith("data:image/")) {
+      return imageUrl;
+    }
+
+    console.error("Lovable image edit gateway returned no image");
+    return null;
+  }
+
+  if (lastError) throw lastError;
+  return null;
+}
+
 // Helper function to call Gemini API for image generation with retry logic
 async function callGeminiImageAPI(
   apiKey: string,
@@ -540,7 +664,11 @@ IMPORTANT: Create distinctive, memorable character designs that can be recognize
     
     // Generate cover image using Gemini's image generation
     console.log("Calling Gemini Image API for cover...");
-    const coverImageBase64 = await callGeminiImageAPI(GEMINI_API_KEY, imagePrompt);
+    let coverImageBase64 = await callGeminiImageAPI(GEMINI_API_KEY, imagePrompt);
+    if (!coverImageBase64) {
+      console.log("Cover image via Gemini failed; falling back to Lovable image gateway...");
+      coverImageBase64 = await callLovableImageGenerate(LOVABLE_API_KEY, imagePrompt);
+    }
     
     if (coverImageBase64) {
       console.log("Cover image generated successfully via Gemini");
@@ -599,42 +727,58 @@ Target audience: ${targetAudience}. No text.
 CRITICAL: The characters MUST be the exact same as in the cover image - identical faces, features, and clothing.`);
       }
       
-      // Generate all progress images in parallel, using cover as reference
-      const progressImagePromises = progressImagePrompts.map(async (prompt, index) => {
+      // Generate progress images sequentially (parallel bursts tend to trigger rate limits)
+      for (let index = 0; index < progressImagePrompts.length; index++) {
+        const prompt = progressImagePrompts[index];
         try {
+          // Small spacing between image requests to reduce throttling
+          if (index > 0) await sleep(700);
+
           console.log(`Generating progress image ${index + 1} with Gemini...`);
-          // Use image editing with cover as reference for consistency
-          const progressImage = await callGeminiImageEditAPI(GEMINI_API_KEY, prompt, coverImageBase64);
+          let progressImage = await callGeminiImageEditAPI(GEMINI_API_KEY, prompt, coverImageBase64);
+
+          if (!progressImage) {
+            console.log(`Progress image ${index + 1} via Gemini failed; falling back to Lovable image gateway...`);
+            progressImage = await callLovableImageEdit(LOVABLE_API_KEY, prompt, coverImageBase64);
+          }
+
           if (progressImage) {
-            console.log(`Progress image ${index + 1} generated successfully with character consistency`);
-            return progressImage;
+            console.log(`Progress image ${index + 1} generated successfully`);
+            storyImages.push(progressImage);
           }
         } catch (imgError) {
           console.error(`Error generating progress image ${index + 1}:`, imgError);
         }
-        return null;
-      });
-
-      const results = await Promise.all(progressImagePromises);
-      storyImages.push(...results.filter((url): url is string => url !== null));
+      }
     }
 
     // Final word count log
     const finalWordCount = countWords(story.content);
     console.log(`Final story delivered with ${finalWordCount} words (min: ${minWordCount})`);
 
+    const imageWarning = !coverImageBase64
+      ? "cover_generation_failed"
+      : (totalImageCount > 1 && storyImages.length < (totalImageCount - 1))
+        ? "some_progress_images_failed"
+        : null;
+
     return new Response(JSON.stringify({
       ...story,
       coverImageBase64,
       storyImages,
+      imageWarning,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error generating story:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error generating story:", msg);
+
+    const status = msg === "Rate limited" ? 429 : (msg === "Payment required" ? 402 : 500);
+
+    return new Response(JSON.stringify({ error: msg }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
