@@ -5,19 +5,54 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Gemini API endpoint
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
 // Helper function to count words in a text
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(word => word.length > 0).length;
 }
 
-// Helper function to get minimum word count for a length setting
-function getMinWordCount(length: string): number {
-  const minWordCounts: Record<string, number> = {
-    short: 250,
-    medium: 300,
-    long: 350,
-  };
-  return minWordCounts[length] || 300;
+// Helper function to call Gemini API directly
+async function callGeminiAPI(
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number = 0.8
+): Promise<string> {
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+        }
+      ],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: 8192,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Gemini API error:", response.status, errorText);
+    throw new Error(`Gemini API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  
+  if (!content) {
+    throw new Error("No content in Gemini response");
+  }
+  
+  return content;
 }
 
 serve(async (req) => {
@@ -36,10 +71,14 @@ serve(async (req) => {
     };
     const totalImageCount = imageCountMap[length] || 1;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Get API keys
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
+
+    // Lovable API key still needed for image generation
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     // Language mappings
     const languageNames: Record<string, string> = {
@@ -156,7 +195,7 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
 - ~15% Vokabular im Kontext
 - ~15% Textstruktur & Zusammenhänge`;
 
-    console.log("Generating story with params:", {
+    console.log("Generating story with Gemini API directly:", {
       targetLanguage,
       schoolLevel,
       difficulty: difficultyLabel,
@@ -166,7 +205,7 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
       questionCount
     });
 
-    // Generate the story
+    // Generate the story using direct Gemini API
     let story: { title: string; content: string; questions: any[] } = {
       title: "",
       content: "",
@@ -179,46 +218,11 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
       attempts++;
       console.log(`Story generation attempt ${attempts}/${maxAttempts}`);
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: fullSystemPrompt },
-            { role: "user", content: attempts === 1 ? userPrompt : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!` },
-          ],
-          temperature: 0.8,
-        }),
-      });
+      const promptToUse = attempts === 1 
+        ? userPrompt 
+        : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es später erneut." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        if (response.status === 402) {
-          return new Response(
-            JSON.stringify({ error: "Zahlungsproblem. Bitte kontaktiere den Administrator." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        const errorText = await response.text();
-        console.error("AI gateway error:", response.status, errorText);
-        throw new Error("AI gateway error");
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (!content) {
-        throw new Error("No content in response");
-      }
+      const content = await callGeminiAPI(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8);
 
       // Parse the JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -240,16 +244,7 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
         console.log(`Word count check FAILED (${wordCountActual} < ${minWordCount}), requesting expansion...`);
         
         // Request expansion of the story
-        const expansionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            messages: [
-              { role: "system", content: `Du bist ein Textexpander. Deine Aufgabe ist es, den folgenden Text zu erweitern, bis er mindestens ${minWordCount} Wörter hat. Der aktuelle Text hat nur ${wordCountActual} Wörter.
+        const expansionSystemPrompt = `Du bist ein Textexpander. Deine Aufgabe ist es, den folgenden Text zu erweitern, bis er mindestens ${minWordCount} Wörter hat. Der aktuelle Text hat nur ${wordCountActual} Wörter.
 
 Erweitere den Text durch:
 - Mehr beschreibende Details zu Orten, Personen und Gefühlen
@@ -257,34 +252,29 @@ Erweitere den Text durch:
 - Erweiterte Handlungssequenzen
 - Gedanken und Emotionen der Charaktere
 
-WICHTIG: Behalte die Sprache (${targetLanguage}) und den Stil bei!` },
-              { role: "user", content: `Erweitere diesen Text auf mindestens ${minWordCount} Wörter. Aktuell: ${wordCountActual} Wörter.
+WICHTIG: Behalte die Sprache (${targetLanguage}) und den Stil bei!`;
+
+        const expansionUserPrompt = `Erweitere diesen Text auf mindestens ${minWordCount} Wörter. Aktuell: ${wordCountActual} Wörter.
 
 Titel: ${story.title}
 
 Text:
 ${story.content}
 
-Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).` },
-            ],
-            temperature: 0.8,
-          }),
-        });
+Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
-        if (expansionResponse.ok) {
-          const expansionData = await expansionResponse.json();
-          const expandedContent = expansionData.choices?.[0]?.message?.content;
+        try {
+          const expandedContent = await callGeminiAPI(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          const newWordCount = countWords(expandedContent);
+          console.log(`Expanded story word count: ${newWordCount}`);
           
-          if (expandedContent) {
-            const newWordCount = countWords(expandedContent);
-            console.log(`Expanded story word count: ${newWordCount}`);
-            
-            if (newWordCount >= minWordCount) {
-              story.content = expandedContent;
-              console.log("Story successfully expanded");
-              break;
-            }
+          if (newWordCount >= minWordCount) {
+            story.content = expandedContent;
+            console.log("Story successfully expanded");
+            break;
           }
+        } catch (err) {
+          console.error("Error expanding story:", err);
         }
       } else {
         console.log(`Final word count: ${wordCountActual} (min: ${minWordCount}) - proceeding with available content`);
@@ -334,34 +324,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).` },
     }
     
     // Generate detailed character descriptions from the story for consistency
-    const characterDescriptionPrompt = `Analysiere diese Geschichte und erstelle eine kurze, präzise visuelle Beschreibung der Hauptcharaktere (Aussehen, Kleidung, besondere Merkmale). Maximal 100 Wörter.
-
-Geschichte: "${story.title}"
-${story.content.substring(0, 500)}...
-
-Antwort auf Englisch für den Bildgenerator.`;
-
     let characterDescription = "";
     
     try {
-      const charResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [{ role: "user", content: characterDescriptionPrompt }],
-          temperature: 0.3,
-        }),
-      });
-
-      if (charResponse.ok) {
-        const charData = await charResponse.json();
-        characterDescription = charData.choices?.[0]?.message?.content || "";
-        console.log("Character description generated:", characterDescription.substring(0, 100));
-      }
+      const characterDescriptionPrompt = `Analysiere diese Geschichte und erstelle eine kurze, präzise visuelle Beschreibung der Hauptcharaktere (Aussehen, Kleidung, besondere Merkmale). Maximal 100 Wörter. Antwort auf Englisch für den Bildgenerator.`;
+      
+      const characterContext = `Geschichte: "${story.title}"\n${story.content.substring(0, 500)}...`;
+      
+      characterDescription = await callGeminiAPI(GEMINI_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
+      console.log("Character description generated:", characterDescription.substring(0, 100));
     } catch (err) {
       console.error("Error generating character description:", err);
     }
@@ -375,41 +346,48 @@ Target audience: ${targetAudience}.
 Requirements: No text on the image, high quality ${textType === "non-fiction" ? "educational and informative" : "imaginative and engaging"} illustration.
 IMPORTANT: Create distinctive, memorable character designs that can be recognized in follow-up illustrations.`;
     
-    const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          {
-            role: "user",
-            content: imagePrompt,
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
-
     let coverImageBase64: string | null = null;
 
-    if (imageResponse.ok) {
-      const imageData = await imageResponse.json();
-      const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      if (imageUrl) {
-        coverImageBase64 = imageUrl;
-        console.log("Cover image generated successfully");
+    // Only generate images if Lovable API key is available
+    if (LOVABLE_API_KEY) {
+      const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            {
+              role: "user",
+              content: imagePrompt,
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json();
+        const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (imageUrl) {
+          coverImageBase64 = imageUrl;
+          console.log("Cover image generated successfully");
+        }
+      } else {
+        const errorText = await imageResponse.text();
+        console.error("Failed to generate cover image:", errorText);
+        // Don't fail the whole request if image generation fails
       }
     } else {
-      console.error("Failed to generate cover image:", await imageResponse.text());
+      console.log("Skipping image generation - LOVABLE_API_KEY not available");
     }
 
     // Generate additional progress images for medium/long stories
     const storyImages: string[] = [];
     
-    if (totalImageCount > 1 && coverImageBase64) {
+    if (totalImageCount > 1 && coverImageBase64 && LOVABLE_API_KEY) {
       console.log(`Generating ${totalImageCount - 1} additional progress image(s) with character consistency...`);
       
       // Create progress image prompts based on story content
