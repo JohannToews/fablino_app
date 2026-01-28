@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp, CreditCard, Mail, Lock, UserX, Receipt, Crown } from "lucide-react";
+import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp, CreditCard, Mail, Lock, UserX, Receipt, Crown, Wrench } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
 import KidProfileSection from "@/components/KidProfileSection";
+import UserManagementSection from "@/components/UserManagementSection";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations, Language } from "@/lib/translations";
 
@@ -277,7 +278,7 @@ const AdminPage = () => {
 
       {/* Tab Navigation - Native App Style */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="flex-none grid grid-cols-4 mx-4 mt-3 h-12 bg-muted/50">
+        <TabsList className="flex-none grid grid-cols-5 mx-4 mt-3 h-12 bg-muted/50">
           <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t.kidProfile}</span>
@@ -293,6 +294,10 @@ const AdminPage = () => {
           <TabsTrigger value="account" className="flex items-center gap-2 text-sm font-medium">
             <CreditCard className="h-4 w-4" />
             <span className="hidden sm:inline">{t.account}</span>
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-2 text-sm font-medium">
+            <Wrench className="h-4 w-4" />
+            <span className="hidden sm:inline">System</span>
           </TabsTrigger>
         </TabsList>
 
@@ -696,6 +701,18 @@ const AdminPage = () => {
                   </Card>
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* System Tab */}
+          <TabsContent value="system" className="h-full overflow-y-auto m-0 pr-2">
+            <div className="max-w-4xl mx-auto">
+              {user && (
+                <UserManagementSection 
+                  language={adminLang}
+                  currentUserId={user.id}
+                />
+              )}
             </div>
           </TabsContent>
         </div>
