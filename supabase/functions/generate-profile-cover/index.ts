@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 // Gemini Image Generation API endpoint
-const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent";
+const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 // Helper function to call Gemini API for image generation
 async function callGeminiImageAPI(apiKey: string, prompt: string): Promise<string | null> {
