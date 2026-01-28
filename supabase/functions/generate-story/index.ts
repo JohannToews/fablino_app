@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { length, difficulty, description, childAge, schoolLevel, textType, textLanguage, globalLanguage, customSystemPrompt } = await req.json();
+    const { length, difficulty, description, schoolLevel, textType, textLanguage, globalLanguage, customSystemPrompt } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -65,7 +65,6 @@ serve(async (req) => {
 ## AKTUELLE AUFGABE - PARAMETER
 
 **Zielsprache des Textes:** ${targetLanguage}
-**Alter des Kindes:** ${childAge} Jahre
 **Schulniveau:** ${schoolLevel}
 **Schwierigkeitsgrad:** ${difficultyLabel}
 **Textlänge:** ${wordCount}
@@ -114,7 +113,6 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
 
     console.log("Generating story with params:", {
       targetLanguage,
-      childAge,
       schoolLevel,
       difficulty: difficultyLabel,
       length: wordCount,
@@ -172,25 +170,36 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
 
     const story = JSON.parse(jsonMatch[0]);
 
-    // Generate cover image based on description and age
-    console.log("Generating cover image for:", description, "age:", childAge);
+    // Generate cover image based on description and school level
+    console.log("Generating cover image for:", description, "school level:", schoolLevel);
     
-    // Age-appropriate style mapping
+    // Map school level to art style
+    const schoolLevelLower = schoolLevel.toLowerCase();
     let artStyle: string;
-    if (childAge <= 5) {
-      artStyle = "Very soft, round shapes, pastel colors, extremely cute and simple cartoon style like Peppa Pig or Bluey. Large friendly eyes, simple backgrounds.";
-    } else if (childAge <= 7) {
+    let targetAudience: string;
+    
+    if (schoolLevelLower.includes("cp") || schoolLevelLower.includes("1e") || schoolLevelLower.includes("ce1") || schoolLevelLower.includes("2e") || schoolLevelLower.includes("grade 2") || schoolLevelLower.includes("groep 4") || schoolLevelLower.includes("2. klasse") || schoolLevelLower.includes("2º")) {
+      // Early primary (ages 6-7)
       artStyle = "Colorful cartoon style, friendly characters with expressive faces, slightly more detailed backgrounds, similar to Disney Junior or Paw Patrol style.";
-    } else if (childAge <= 9) {
+      targetAudience = "early primary school children (ages 6-7)";
+    } else if (schoolLevelLower.includes("ce2") || schoolLevelLower.includes("3e") || schoolLevelLower.includes("grade 3") || schoolLevelLower.includes("groep 5") || schoolLevelLower.includes("3. klasse") || schoolLevelLower.includes("3º")) {
+      // Mid primary (ages 8-9)
       artStyle = "Dynamic comic book style, more mature character designs with personality, action-oriented poses, vibrant colors, similar to modern animated movies like Pixar or DreamWorks. Characters should look cool and adventurous, not babyish.";
+      targetAudience = "mid primary school children (ages 8-9)";
+    } else if (schoolLevelLower.includes("cm1") || schoolLevelLower.includes("4e") || schoolLevelLower.includes("grade 4") || schoolLevelLower.includes("groep 6") || schoolLevelLower.includes("4. klasse") || schoolLevelLower.includes("4º")) {
+      // Upper-mid primary (ages 9-10)
+      artStyle = "Dynamic comic book style with more sophisticated compositions, detailed character designs, vibrant colors, similar to high-quality animated movies. Characters look confident and capable.";
+      targetAudience = "upper primary school children (ages 9-10)";
     } else {
+      // Upper primary (ages 10-11+)
       artStyle = "Semi-realistic illustration style, detailed environments, characters with realistic proportions, dynamic compositions, similar to graphic novel or manga-inspired art. Sophisticated color palette.";
+      targetAudience = "upper primary school children (ages 10-11)";
     }
     
     const imagePrompt = `A captivating book cover illustration for a ${textType === "non-fiction" ? "non-fiction educational book" : "children's story"}. 
 Theme: ${description}. 
 Art Style: ${artStyle}
-Target audience: ${childAge} year old child.
+Target audience: ${targetAudience}.
 Requirements: No text on the image, high quality illustration, engaging composition that tells a story.`;
     
     const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

@@ -5,17 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { User, Palette, Save, Loader2, Sparkles } from "lucide-react";
+import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2 } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface KidProfile {
   id?: string;
   name: string;
-  age: number;
+  school_system: string;
+  school_class: string;
   hobbies: string;
   color_palette: string;
   cover_image_url: string | null;
+}
+
+interface SchoolSystem {
+  name: string;
+  classes: string[];
+}
+
+interface SchoolSystems {
+  [key: string]: SchoolSystem;
 }
 
 interface KidProfileSectionProps {
@@ -39,38 +50,144 @@ const COLOR_PALETTES = [
   { id: 'tropical', color: 'bg-teal-500', border: 'border-teal-600' },
 ];
 
+const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
+  fr: { name: "Français", classes: ["CE1", "CE2", "CM1", "CM2"] },
+  de: { name: "Deutsch", classes: ["2. Klasse", "3. Klasse", "4. Klasse", "5. Klasse"] },
+  es: { name: "Español", classes: ["2º Primaria", "3º Primaria", "4º Primaria", "5º Primaria"] },
+  nl: { name: "Nederlands", classes: ["Groep 4", "Groep 5", "Groep 6", "Groep 7"] },
+  en: { name: "English", classes: ["Grade 2", "Grade 3", "Grade 4", "Grade 5"] },
+};
+
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
   const t = useTranslations(language);
-  const [profile, setProfile] = useState<KidProfile>({
-    name: '',
-    age: 8,
-    hobbies: '',
-    color_palette: 'sunshine',
-    cover_image_url: null,
-  });
+  const [profiles, setProfiles] = useState<KidProfile[]>([]);
+  const [selectedProfileIndex, setSelectedProfileIndex] = useState<number>(0);
+  const [schoolSystems, setSchoolSystems] = useState<SchoolSystems>(DEFAULT_SCHOOL_SYSTEMS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
+  const currentProfile = profiles[selectedProfileIndex] || {
+    name: '',
+    school_system: 'fr',
+    school_class: 'CE1',
+    hobbies: '',
+    color_palette: 'sunshine',
+    cover_image_url: null,
+  };
+
   useEffect(() => {
-    loadProfile();
+    loadProfiles();
+    loadSchoolSystems();
   }, [userId]);
 
-  const loadProfile = async () => {
+  const loadSchoolSystems = async () => {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "school_systems")
+      .maybeSingle();
+
+    if (data?.value) {
+      try {
+        setSchoolSystems(JSON.parse(data.value));
+      } catch (e) {
+        console.error("Error parsing school systems:", e);
+      }
+    }
+  };
+
+  const loadProfiles = async () => {
     const { data, error } = await supabase
       .from("kid_profiles")
       .select("*")
       .eq("user_id", userId)
-      .single();
+      .order("created_at", { ascending: true });
 
-    if (data) {
-      setProfile(data);
-      if (data.cover_image_url) {
-        setCoverPreview(data.cover_image_url);
+    if (data && data.length > 0) {
+      const mappedProfiles = data.map(d => ({
+        id: d.id,
+        name: d.name,
+        school_system: d.school_system,
+        school_class: d.school_class,
+        hobbies: d.hobbies,
+        color_palette: d.color_palette,
+        cover_image_url: d.cover_image_url,
+      }));
+      setProfiles(mappedProfiles);
+      if (mappedProfiles[0]?.cover_image_url) {
+        setCoverPreview(mappedProfiles[0].cover_image_url);
       }
+    } else {
+      // Create default empty profile
+      setProfiles([{
+        name: '',
+        school_system: 'fr',
+        school_class: 'CE1',
+        hobbies: '',
+        color_palette: 'sunshine',
+        cover_image_url: null,
+      }]);
     }
     setIsLoading(false);
+  };
+
+  const updateCurrentProfile = (updates: Partial<KidProfile>) => {
+    setProfiles(prev => {
+      const newProfiles = [...prev];
+      newProfiles[selectedProfileIndex] = { ...newProfiles[selectedProfileIndex], ...updates };
+      return newProfiles;
+    });
+  };
+
+  const handleSchoolSystemChange = (value: string) => {
+    const classes = schoolSystems[value]?.classes || [];
+    updateCurrentProfile({
+      school_system: value,
+      school_class: classes[0] || '',
+    });
+  };
+
+  const addNewProfile = () => {
+    const newProfile: KidProfile = {
+      name: '',
+      school_system: 'fr',
+      school_class: 'CE1',
+      hobbies: '',
+      color_palette: 'sunshine',
+      cover_image_url: null,
+    };
+    setProfiles(prev => [...prev, newProfile]);
+    setSelectedProfileIndex(profiles.length);
+    setCoverPreview(null);
+  };
+
+  const deleteProfile = async (index: number) => {
+    const profile = profiles[index];
+    if (profile.id) {
+      const { error } = await supabase
+        .from("kid_profiles")
+        .delete()
+        .eq("id", profile.id);
+      
+      if (error) {
+        toast.error(t.errorSaving);
+        return;
+      }
+    }
+    
+    setProfiles(prev => prev.filter((_, i) => i !== index));
+    if (selectedProfileIndex >= profiles.length - 1) {
+      setSelectedProfileIndex(Math.max(0, profiles.length - 2));
+    }
+    toast.success(t.delete + " ✓");
+  };
+
+  const selectProfile = (index: number) => {
+    setSelectedProfileIndex(index);
+    const profile = profiles[index];
+    setCoverPreview(profile?.cover_image_url || null);
   };
 
   const getPaletteLabel = (paletteId: string) => {
@@ -92,7 +209,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
   };
 
   const generateCoverImage = async () => {
-    if (!profile.name.trim()) {
+    if (!currentProfile.name.trim()) {
       toast.error(language === 'de' ? 'Bitte gib einen Namen ein' : language === 'en' ? 'Please enter a name' : 'Veuillez entrer un prénom');
       return;
     }
@@ -101,10 +218,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     try {
       const { data, error } = await supabase.functions.invoke("generate-profile-cover", {
         body: {
-          name: profile.name,
-          age: profile.age,
-          hobbies: profile.hobbies,
-          colorPalette: profile.color_palette,
+          name: currentProfile.name,
+          schoolClass: currentProfile.school_class,
+          hobbies: currentProfile.hobbies,
+          colorPalette: currentProfile.color_palette,
         },
       });
 
@@ -125,7 +242,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     setIsSaving(true);
     
     try {
-      let coverUrl = profile.cover_image_url;
+      let coverUrl = currentProfile.cover_image_url;
 
       // If we have a new generated cover (base64), upload it
       if (coverPreview && coverPreview.startsWith('data:image')) {
@@ -152,28 +269,60 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
 
       const profileData = {
         user_id: userId,
-        name: profile.name,
-        age: profile.age,
-        hobbies: profile.hobbies,
-        color_palette: profile.color_palette,
+        name: currentProfile.name,
+        school_system: currentProfile.school_system,
+        school_class: currentProfile.school_class,
+        hobbies: currentProfile.hobbies,
+        color_palette: currentProfile.color_palette,
         cover_image_url: coverUrl,
       };
 
-      // Upsert the profile
-      const { data, error } = await supabase
-        .from("kid_profiles")
-        .upsert(profileData, { onConflict: 'user_id' })
-        .select()
-        .single();
+      let savedData;
+      if (currentProfile.id) {
+        // Update existing
+        const { data, error } = await supabase
+          .from("kid_profiles")
+          .update(profileData)
+          .eq("id", currentProfile.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        savedData = data;
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from("kid_profiles")
+          .insert(profileData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        savedData = data;
+      }
 
-      if (error) throw error;
+      // Update local state
+      const updatedProfile: KidProfile = {
+        id: savedData.id,
+        name: savedData.name,
+        school_system: savedData.school_system,
+        school_class: savedData.school_class,
+        hobbies: savedData.hobbies,
+        color_palette: savedData.color_palette,
+        cover_image_url: savedData.cover_image_url,
+      };
 
-      setProfile(data);
+      setProfiles(prev => {
+        const newProfiles = [...prev];
+        newProfiles[selectedProfileIndex] = updatedProfile;
+        return newProfiles;
+      });
+
       if (coverUrl) {
         setCoverPreview(coverUrl);
       }
       
-      onProfileUpdate?.(data);
+      onProfileUpdate?.(updatedProfile);
       toast.success(t.profileSaved);
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -193,15 +342,55 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     );
   }
 
+  const availableClasses = schoolSystems[currentProfile.school_system]?.classes || [];
+
   return (
     <Card className="border-2 border-primary/30 mb-8">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <User className="h-5 w-5 text-primary" />
-          {t.kidProfile}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xl">
+            <User className="h-5 w-5 text-primary" />
+            {t.kidProfile}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addNewProfile}
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            {language === 'de' ? 'Kind hinzufügen' : language === 'fr' ? 'Ajouter un enfant' : 'Add child'}
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Profile Tabs */}
+        {profiles.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            {profiles.map((profile, index) => (
+              <div key={index} className="flex items-center gap-1">
+                <Button
+                  variant={selectedProfileIndex === index ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => selectProfile(index)}
+                >
+                  {profile.name || `Kind ${index + 1}`}
+                </Button>
+                {profiles.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                    onClick={() => deleteProfile(index)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         <p className="text-sm text-muted-foreground">
           {t.kidProfileDescription}
         </p>
@@ -209,27 +398,49 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left column: Inputs */}
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="kidName">{t.kidName}</Label>
+              <Input
+                id="kidName"
+                value={currentProfile.name}
+                onChange={(e) => updateCurrentProfile({ name: e.target.value })}
+                placeholder={language === 'de' ? 'z.B. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="kidName">{t.kidName}</Label>
-                <Input
-                  id="kidName"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  placeholder={language === 'de' ? 'z.B. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
-                />
+                <Label>{language === 'de' ? 'Schulsystem' : language === 'fr' ? 'Système scolaire' : 'School system'}</Label>
+                <Select value={currentProfile.school_system} onValueChange={handleSchoolSystemChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(schoolSystems).map(([key, system]) => (
+                      <SelectItem key={key} value={key}>
+                        {system.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="kidAge">{t.kidAge}</Label>
-                <Input
-                  id="kidAge"
-                  type="number"
-                  min={3}
-                  max={14}
-                  value={profile.age}
-                  onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) || 8 })}
-                  className="text-center"
-                />
+                <Label>{language === 'de' ? 'Schulklasse' : language === 'fr' ? 'Classe' : 'Grade'}</Label>
+                <Select 
+                  value={currentProfile.school_class} 
+                  onValueChange={(value) => updateCurrentProfile({ school_class: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableClasses.map((cls) => (
+                      <SelectItem key={cls} value={cls}>
+                        {cls}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -237,8 +448,8 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               <Label htmlFor="hobbies">{t.hobbies}</Label>
               <Textarea
                 id="hobbies"
-                value={profile.hobbies}
-                onChange={(e) => setProfile({ ...profile, hobbies: e.target.value })}
+                value={currentProfile.hobbies}
+                onChange={(e) => updateCurrentProfile({ hobbies: e.target.value })}
                 placeholder={t.hobbiesPlaceholder}
                 className="min-h-[80px]"
               />
@@ -253,9 +464,9 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 {COLOR_PALETTES.map((palette) => (
                   <button
                     key={palette.id}
-                    onClick={() => setProfile({ ...profile, color_palette: palette.id })}
+                    onClick={() => updateCurrentProfile({ color_palette: palette.id })}
                     className={`p-3 rounded-lg border-2 transition-all ${palette.color} ${
-                      profile.color_palette === palette.id 
+                      currentProfile.color_palette === palette.id 
                         ? `${palette.border} ring-2 ring-offset-2 ring-primary` 
                         : 'border-transparent hover:border-muted'
                     }`}
@@ -287,7 +498,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
             </div>
             <Button
               onClick={generateCoverImage}
-              disabled={isGeneratingCover || !profile.name.trim()}
+              disabled={isGeneratingCover || !currentProfile.name.trim()}
               variant="outline"
               className="w-full"
             >
