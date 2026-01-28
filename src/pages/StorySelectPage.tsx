@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, BookOpen, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
@@ -12,6 +13,7 @@ interface Story {
   title: string;
   content: string;
   cover_image_url: string | null;
+  difficulty: string | null;
 }
 
 const StorySelectPage = () => {
@@ -101,7 +103,7 @@ const StorySelectPage = () => {
                 onClick={() => navigate(`/read/${story.id}`)}
                 className="card-story group"
               >
-                <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted">
+                <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
                   {story.cover_image_url ? (
                     <img
                       src={story.cover_image_url}
@@ -112,6 +114,19 @@ const StorySelectPage = () => {
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
                       <BookOpen className="h-16 w-16 text-primary/50" />
                     </div>
+                  )}
+                  {story.difficulty && (
+                    <Badge 
+                      className={`absolute top-2 right-2 text-xs font-bold ${
+                        story.difficulty === 'easy' 
+                          ? 'bg-green-500 hover:bg-green-600' 
+                          : story.difficulty === 'medium' 
+                            ? 'bg-amber-500 hover:bg-amber-600' 
+                            : 'bg-red-500 hover:bg-red-600'
+                      } text-white`}
+                    >
+                      {story.difficulty === 'easy' ? 'Leicht' : story.difficulty === 'medium' ? 'Mittel' : 'Schwer'}
+                    </Badge>
                   )}
                 </div>
                 <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
