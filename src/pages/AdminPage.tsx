@@ -43,6 +43,7 @@ interface GeneratedStory {
   coverImageBase64?: string;
   storyImages?: string[]; // Additional progress images (base64)
   difficulty?: string; // The difficulty level selected during generation
+  textType?: string; // fiction or non-fiction
 }
 
 const AdminPage = () => {
@@ -60,6 +61,7 @@ const AdminPage = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
   const [generatedVocabulary, setGeneratedVocabulary] = useState<GeneratedVocabulary[]>([]);
   const [generatedDifficulty, setGeneratedDifficulty] = useState<string>("medium");
+  const [generatedTextType, setGeneratedTextType] = useState<string>("fiction");
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -184,7 +186,7 @@ const AdminPage = () => {
       }
     }
 
-    // Insert story with user_id, story_images, and difficulty
+    // Insert story with user_id, story_images, difficulty, and text_type
     const { data: insertedStory, error } = await supabase.from("stories").insert({
       title,
       content,
@@ -192,6 +194,7 @@ const AdminPage = () => {
       user_id: user?.id,
       story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
       difficulty: generatedDifficulty,
+      text_type: generatedTextType,
     }).select().single();
 
     if (error || !insertedStory) {
@@ -304,6 +307,7 @@ const AdminPage = () => {
     setGeneratedQuestions([]);
     setGeneratedVocabulary([]);
     setGeneratedDifficulty("medium");
+    setGeneratedTextType("fiction");
     loadStories();
   };
 
@@ -446,6 +450,9 @@ const AdminPage = () => {
                       setContent(story.content);
                       if (story.difficulty) {
                         setGeneratedDifficulty(story.difficulty);
+                      }
+                      if (story.textType) {
+                        setGeneratedTextType(story.textType);
                       }
                       if (story.questions && story.questions.length > 0) {
                         setGeneratedQuestions(story.questions);

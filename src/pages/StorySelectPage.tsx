@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, Sparkles } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, BookOpen, Sparkles, BookText, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useTranslations, Language } from "@/lib/translations";
@@ -15,6 +16,7 @@ interface Story {
   content: string;
   cover_image_url: string | null;
   difficulty: string | null;
+  text_type: string | null;
 }
 
 // Difficulty labels in different languages
@@ -24,6 +26,15 @@ const difficultyLabels: Record<string, Record<string, string>> = {
   en: { easy: "Easy", medium: "Medium", difficult: "Hard" },
   es: { easy: "Fácil", medium: "Medio", difficult: "Difícil" },
   nl: { easy: "Makkelijk", medium: "Gemiddeld", difficult: "Moeilijk" },
+};
+
+// Tab labels in different languages
+const tabLabels: Record<string, { fiction: string; nonFiction: string }> = {
+  de: { fiction: "Geschichten", nonFiction: "Sachgeschichten" },
+  fr: { fiction: "Histoires", nonFiction: "Documentaires" },
+  en: { fiction: "Stories", nonFiction: "Non-Fiction" },
+  es: { fiction: "Historias", nonFiction: "No Ficción" },
+  nl: { fiction: "Verhalen", nonFiction: "Non-Fictie" },
 };
 
 const StorySelectPage = () => {
@@ -56,6 +67,10 @@ const StorySelectPage = () => {
     setIsLoading(false);
   };
 
+  // Filter stories by type
+  const fictionStories = stories.filter(s => !s.text_type || s.text_type === 'fiction');
+  const nonFictionStories = stories.filter(s => s.text_type === 'non-fiction');
+
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
       {/* Header */}
@@ -71,18 +86,19 @@ const StorySelectPage = () => {
       </div>
 
       {/* Title */}
-      <div className="text-center px-4 mb-8">
+      <div className="text-center px-4 mb-6">
         <h1 className="text-4xl md:text-5xl font-baloo text-foreground mb-2 flex items-center justify-center gap-3">
           <Sparkles className="h-8 w-8 text-primary animate-sparkle" />
-          Choisis une histoire
+          {appLang === 'de' ? 'Wähle eine Geschichte' : 
+           appLang === 'fr' ? 'Choisis une histoire' :
+           appLang === 'es' ? 'Elige una historia' :
+           appLang === 'nl' ? 'Kies een verhaal' :
+           'Choose a story'}
           <Sparkles className="h-8 w-8 text-primary animate-sparkle" />
         </h1>
-        <p className="text-lg text-muted-foreground">
-          Clique sur une histoire pour la lire
-        </p>
       </div>
 
-      {/* Stories Grid */}
+      {/* Tabs for Fiction / Non-Fiction */}
       <div className="container max-w-5xl px-4 pb-12">
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -98,57 +114,130 @@ const StorySelectPage = () => {
               className="w-64 h-40 object-cover rounded-2xl mx-auto mb-6 shadow-card"
             />
             <p className="text-xl text-muted-foreground mb-4">
-              Pas encore d'histoires
+              {appLang === 'de' ? 'Noch keine Geschichten' :
+               appLang === 'fr' ? "Pas encore d'histoires" :
+               appLang === 'es' ? 'Aún no hay historias' :
+               appLang === 'nl' ? 'Nog geen verhalen' :
+               'No stories yet'}
             </p>
             <Button
               onClick={() => navigate("/admin")}
               className="btn-primary-kid"
             >
-              Ajouter une histoire
+              {appLang === 'de' ? 'Geschichte hinzufügen' :
+               appLang === 'fr' ? 'Ajouter une histoire' :
+               appLang === 'es' ? 'Añadir historia' :
+               appLang === 'nl' ? 'Verhaal toevoegen' :
+               'Add a story'}
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stories.map((story) => (
-              <div
-                key={story.id}
-                onClick={() => navigate(`/read/${story.id}`)}
-                className="card-story group"
+          <Tabs defaultValue="fiction" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6 h-14 bg-card/80 backdrop-blur-sm rounded-2xl p-1">
+              <TabsTrigger 
+                value="fiction" 
+                className="flex items-center gap-2 text-lg font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
-                  {story.cover_image_url ? (
-                    <img
-                      src={story.cover_image_url}
-                      alt={story.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
-                      <BookOpen className="h-16 w-16 text-primary/50" />
-                    </div>
-                  )}
-                  {story.difficulty && (
-                    <Badge 
-                      className={`absolute top-2 right-2 text-xs font-bold ${
-                        story.difficulty === 'easy' 
-                          ? 'bg-green-500 hover:bg-green-600' 
-                          : story.difficulty === 'medium' 
-                            ? 'bg-amber-500 hover:bg-amber-600' 
-                            : 'bg-red-500 hover:bg-red-600'
-                      } text-white`}
-                    >
-                      {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
-                    </Badge>
-                  )}
-                </div>
-                <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
-                  {story.title}
-                </h3>
-              </div>
-            ))}
-          </div>
+                <BookText className="h-5 w-5" />
+                {tabLabels[appLang]?.fiction || tabLabels.fr.fiction}
+                {fictionStories.length > 0 && (
+                  <span className="ml-1 bg-background/30 text-xs px-2 py-0.5 rounded-full">
+                    {fictionStories.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="non-fiction" 
+                className="flex items-center gap-2 text-lg font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <GraduationCap className="h-5 w-5" />
+                {tabLabels[appLang]?.nonFiction || tabLabels.fr.nonFiction}
+                {nonFictionStories.length > 0 && (
+                  <span className="ml-1 bg-background/30 text-xs px-2 py-0.5 rounded-full">
+                    {nonFictionStories.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="fiction">
+              <StoryGrid stories={fictionStories} appLang={appLang} navigate={navigate} />
+            </TabsContent>
+
+            <TabsContent value="non-fiction">
+              <StoryGrid stories={nonFictionStories} appLang={appLang} navigate={navigate} />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
+    </div>
+  );
+};
+
+// Extracted StoryGrid component for reuse
+const StoryGrid = ({ 
+  stories, 
+  appLang, 
+  navigate 
+}: { 
+  stories: Story[]; 
+  appLang: string; 
+  navigate: (path: string) => void;
+}) => {
+  if (stories.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <BookOpen className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+        <p className="text-lg text-muted-foreground">
+          {appLang === 'de' ? 'Keine Geschichten in dieser Kategorie' :
+           appLang === 'fr' ? 'Aucune histoire dans cette catégorie' :
+           appLang === 'es' ? 'No hay historias en esta categoría' :
+           appLang === 'nl' ? 'Geen verhalen in deze categorie' :
+           'No stories in this category'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {stories.map((story) => (
+        <div
+          key={story.id}
+          onClick={() => navigate(`/read/${story.id}`)}
+          className="card-story group"
+        >
+          <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
+            {story.cover_image_url ? (
+              <img
+                src={story.cover_image_url}
+                alt={story.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
+                <BookOpen className="h-16 w-16 text-primary/50" />
+              </div>
+            )}
+            {story.difficulty && (
+              <Badge 
+                className={`absolute top-2 right-2 text-xs font-bold ${
+                  story.difficulty === 'easy' 
+                    ? 'bg-green-500 hover:bg-green-600' 
+                    : story.difficulty === 'medium' 
+                      ? 'bg-amber-500 hover:bg-amber-600' 
+                      : 'bg-red-500 hover:bg-red-600'
+                } text-white`}
+              >
+                {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
+              </Badge>
+            )}
+          </div>
+          <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
+            {story.title}
+          </h3>
+        </div>
+      ))}
     </div>
   );
 };
