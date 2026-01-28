@@ -51,8 +51,8 @@ const COLOR_PALETTES = [
 ];
 
 const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
-  fr: { name: "Français", classes: ["CE1", "CE2", "CM1", "CM2"] },
-  de: { name: "Deutsch", classes: ["2. Klasse", "3. Klasse", "4. Klasse", "5. Klasse"] },
+  fr: { name: "Français", classes: ["2e primaire / CE1", "3e primaire / CE2", "4e primaire / CM1", "5e primaire / CM2"] },
+  de: { name: "Deutsch", classes: ["2. Klasse / Grundschule", "3. Klasse / Grundschule", "4. Klasse / Grundschule", "5. Klasse / Grundschule"] },
   es: { name: "Español", classes: ["2º Primaria", "3º Primaria", "4º Primaria", "5º Primaria"] },
   nl: { name: "Nederlands", classes: ["Groep 4", "Groep 5", "Groep 6", "Groep 7"] },
   en: { name: "English", classes: ["Grade 2", "Grade 3", "Grade 4", "Grade 5"] },
