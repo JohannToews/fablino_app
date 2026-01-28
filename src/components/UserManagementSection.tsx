@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Trash2, Users, RefreshCw } from "lucide-react";
+import { Loader2, Trash2, Users, RefreshCw, UserPlus, Shield, User } from "lucide-react";
 import { Language, useTranslations } from "@/lib/translations";
 
 interface UserProfile {
@@ -13,6 +16,7 @@ interface UserProfile {
   display_name: string;
   admin_language: string;
   created_at: string;
+  role?: string;
 }
 
 interface UserManagementSectionProps {
@@ -25,6 +29,14 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  
+  // New user form
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<"standard" | "admin">("standard");
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -45,6 +57,61 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   useEffect(() => {
     loadUsers();
   }, []);
+
+  const createUser = async () => {
+    if (!newUsername.trim() || !newDisplayName.trim() || !newPassword.trim()) {
+      toast.error(language === 'de' ? 'Alle Felder ausfüllen!' : 
+                  language === 'es' ? '¡Completa todos los campos!' :
+                  language === 'nl' ? 'Vul alle velden in!' :
+                  language === 'fr' ? 'Remplir tous les champs !' :
+                  'Fill all fields!');
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      toast.error(language === 'de' ? 'Passwort muss mindestens 4 Zeichen haben' : 
+                  language === 'es' ? 'La contraseña debe tener al menos 4 caracteres' :
+                  language === 'nl' ? 'Wachtwoord moet minimaal 4 tekens bevatten' :
+                  language === 'fr' ? 'Le mot de passe doit avoir au moins 4 caractères' :
+                  'Password must be at least 4 characters');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-users", {
+        body: { 
+          action: "create", 
+          username: newUsername.trim(),
+          displayName: newDisplayName.trim(),
+          password: newPassword,
+          role: newRole
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success(language === 'de' ? 'Benutzer erstellt!' : 
+                      language === 'es' ? '¡Usuario creado!' :
+                      language === 'nl' ? 'Gebruiker aangemaakt!' :
+                      language === 'fr' ? 'Utilisateur créé !' :
+                      'User created!');
+        setNewUsername("");
+        setNewDisplayName("");
+        setNewPassword("");
+        setNewRole("standard");
+        setShowCreateForm(false);
+        loadUsers();
+      }
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error(t.error);
+    }
+    setIsCreating(false);
+  };
 
   const deleteUser = async (userId: string, username: string) => {
     if (userId === currentUserId) {
@@ -106,6 +173,13 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
     return flags[lang] || '🌍';
   };
 
+  const getRoleLabel = (role: string) => {
+    if (role === 'admin') {
+      return language === 'de' ? 'Admin' : language === 'fr' ? 'Admin' : 'Admin';
+    }
+    return language === 'de' ? 'Standard' : language === 'fr' ? 'Standard' : 'Standard';
+  };
+
   return (
     <Card className="border-2 border-orange-500/30">
       <CardHeader>
@@ -118,17 +192,117 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
              language === 'fr' ? 'Gestion des utilisateurs' :
              'User Management'}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadUsers}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              {language === 'de' ? 'Neu' : language === 'fr' ? 'Nouveau' : 'New'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadUsers}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Create User Form */}
+        {showCreateForm && (
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="pt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newDisplayName">
+                    {language === 'de' ? 'Anzeigename' : 
+                     language === 'fr' ? 'Nom affiché' : 'Display Name'}
+                  </Label>
+                  <Input
+                    id="newDisplayName"
+                    value={newDisplayName}
+                    onChange={(e) => setNewDisplayName(e.target.value)}
+                    placeholder={language === 'de' ? 'z.B. Diego' : 'e.g. Diego'}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newUsername">
+                    {language === 'de' ? 'Benutzername' : 
+                     language === 'fr' ? 'Identifiant' : 'Username'}
+                  </Label>
+                  <Input
+                    id="newUsername"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                    placeholder={language === 'de' ? 'z.B. diego' : 'e.g. diego'}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">
+                    {language === 'de' ? 'Passwort' : 
+                     language === 'fr' ? 'Mot de passe' : 'Password'}
+                  </Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newRole">
+                    {language === 'de' ? 'Rolle' : 
+                     language === 'fr' ? 'Rôle' : 'Role'}
+                  </Label>
+                  <Select value={newRole} onValueChange={(v) => setNewRole(v as "standard" | "admin")}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          Standard
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="admin">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Admin
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowCreateForm(false)}>
+                  {language === 'de' ? 'Abbrechen' : language === 'fr' ? 'Annuler' : 'Cancel'}
+                </Button>
+                <Button size="sm" onClick={createUser} disabled={isCreating}>
+                  {isCreating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      {language === 'de' ? 'Erstellen' : language === 'fr' ? 'Créer' : 'Create'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* User List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -161,6 +335,10 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
                      'Username'}
                   </TableHead>
                   <TableHead>
+                    {language === 'de' ? 'Rolle' : 
+                     language === 'fr' ? 'Rôle' : 'Role'}
+                  </TableHead>
+                  <TableHead>
                     {language === 'de' ? 'Sprache' : 
                      language === 'es' ? 'Idioma' :
                      language === 'nl' ? 'Taal' :
@@ -187,6 +365,18 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.username}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {user.role === 'admin' ? (
+                          <Shield className="h-4 w-4 text-orange-500" />
+                        ) : (
+                          <User className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className={user.role === 'admin' ? 'text-orange-500 font-medium' : ''}>
+                          {getRoleLabel(user.role || 'standard')}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>{getLanguageFlag(user.admin_language)} {user.admin_language.toUpperCase()}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(user.created_at)}

@@ -65,6 +65,15 @@ serve(async (req) => {
       );
     }
 
+    // Get user role
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const userRole = roleData?.role || 'standard';
+
     // Generate session token
     const sessionToken = crypto.randomUUID();
     
@@ -80,7 +89,8 @@ serve(async (req) => {
           adminLanguage: user.admin_language,
           appLanguage: user.app_language,
           textLanguage: user.text_language,
-          systemPrompt: user.system_prompt
+          systemPrompt: user.system_prompt,
+          role: userRole
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

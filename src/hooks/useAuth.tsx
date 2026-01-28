@@ -1,5 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 
+export type UserRole = 'admin' | 'standard';
+
 export interface UserSettings {
   id: string;
   username: string;
@@ -8,6 +10,7 @@ export interface UserSettings {
   appLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl';
   textLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl';
   systemPrompt: string | null;
+  role: UserRole;
 }
 
 interface AuthContextType {

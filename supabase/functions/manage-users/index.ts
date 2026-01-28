@@ -17,10 +17,10 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    const { action, userId, promptKey, promptValue } = await req.json();
+    const { action, userId, promptKey, promptValue, username, displayName, password, role } = await req.json();
 
     if (action === "list") {
-      // Get all users
+      // Get all users with their roles
       const { data: users, error } = await supabase
         .from("user_profiles")
         .select("id, username, display_name, admin_language, created_at")
@@ -28,7 +28,59 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ users }), {
+      // Get roles for all users
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      const usersWithRoles = users?.map(user => ({
+        ...user,
+        role: roles?.find(r => r.user_id === user.id)?.role || 'standard'
+      }));
+
+      return new Response(JSON.stringify({ users: usersWithRoles }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "create" && username && displayName && password) {
+      // Check if username already exists
+      const { data: existing } = await supabase
+        .from("user_profiles")
+        .select("id")
+        .eq("username", username.toLowerCase())
+        .maybeSingle();
+
+      if (existing) {
+        return new Response(JSON.stringify({ error: "Username already exists" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Create user profile
+      const { data: newUser, error: insertError } = await supabase
+        .from("user_profiles")
+        .insert({
+          username: username.toLowerCase(),
+          display_name: displayName,
+          password_hash: password,
+          admin_language: 'de',
+          app_language: 'fr',
+          text_language: 'fr',
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Create user role
+      const userRole = role === 'admin' ? 'admin' : 'standard';
+      await supabase
+        .from("user_roles")
+        .insert({ user_id: newUser.id, role: userRole });
+
+      return new Response(JSON.stringify({ success: true, user: newUser }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -49,7 +101,10 @@ serve(async (req) => {
 
     if (action === "delete" && userId) {
       // Delete user and all related data
-      // First delete kid_profiles
+      // First delete user role
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      
+      // Delete kid_profiles
       await supabase.from("kid_profiles").delete().eq("user_id", userId);
       
       // Delete stories and related data

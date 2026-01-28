@@ -157,12 +157,6 @@ const LoginPage = () => {
               )}
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground pt-4">
-              Noch kein Konto?{" "}
-              <Link to="/register" className="text-primary hover:underline font-medium">
-                Neuen Benutzer erstellen
-              </Link>
-            </p>
           </form>
         </CardContent>
       </Card>

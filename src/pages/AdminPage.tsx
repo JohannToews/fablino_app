@@ -365,7 +365,7 @@ const AdminPage = () => {
 
       {/* Tab Navigation - Native App Style */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="flex-none grid grid-cols-5 mx-4 mt-3 h-12 bg-muted/50">
+        <TabsList className={`flex-none grid mx-4 mt-3 h-12 bg-muted/50 ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
           <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t.kidProfile}</span>
@@ -382,10 +382,12 @@ const AdminPage = () => {
             <CreditCard className="h-4 w-4" />
             <span className="hidden sm:inline">{t.account}</span>
           </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2 text-sm font-medium">
-            <Wrench className="h-4 w-4" />
-            <span className="hidden sm:inline">System</span>
-          </TabsTrigger>
+          {user?.role === 'admin' && (
+            <TabsTrigger value="system" className="flex items-center gap-2 text-sm font-medium">
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">System</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Tab Content - Scrollable within each tab */}
@@ -809,23 +811,21 @@ const AdminPage = () => {
             </div>
           </TabsContent>
 
-          {/* System Tab */}
-          <TabsContent value="system" className="h-full overflow-y-auto m-0 pr-2">
-            <div className="max-w-4xl mx-auto space-y-6">
-              {/* System Prompt Editor */}
-              {user && (
+          {/* System Tab - Admin Only */}
+          {user?.role === 'admin' && (
+            <TabsContent value="system" className="h-full overflow-y-auto m-0 pr-2">
+              <div className="max-w-4xl mx-auto space-y-6">
+                {/* System Prompt Editor */}
                 <SystemPromptSection language={adminLang} />
-              )}
-              
-              {/* User Management */}
-              {user && (
+                
+                {/* User Management */}
                 <UserManagementSection 
                   language={adminLang}
                   currentUserId={user.id}
                 />
-              )}
-            </div>
-          </TabsContent>
+              </div>
+            </TabsContent>
+          )}
         </div>
       </Tabs>
     </div>
