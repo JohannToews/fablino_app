@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, Lock, Loader2 } from "lucide-react";
+import { BookOpen, Lock, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -77,31 +77,42 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-pink-50 to-yellow-50 flex items-center justify-center p-4">
-      {/* Decorative elements */}
-      <div className="fixed top-10 left-10 text-6xl animate-bounce opacity-50">✨</div>
-      <div className="fixed top-20 right-20 text-4xl animate-pulse opacity-50">🌟</div>
-      <div className="fixed bottom-20 left-20 text-5xl animate-bounce opacity-50" style={{ animationDelay: '0.5s' }}>🦋</div>
-      <div className="fixed bottom-10 right-10 text-4xl animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}>🌈</div>
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-cyan-50 to-teal-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Reading-themed background decorations */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Floating books */}
+        <div className="absolute top-[10%] left-[8%] text-5xl opacity-20 animate-bounce" style={{ animationDuration: '4s' }}>📖</div>
+        <div className="absolute top-[15%] right-[12%] text-4xl opacity-15 animate-bounce" style={{ animationDelay: '1s', animationDuration: '5s' }}>📚</div>
+        <div className="absolute bottom-[20%] left-[15%] text-4xl opacity-20 animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '4.5s' }}>📕</div>
+        <div className="absolute bottom-[15%] right-[10%] text-5xl opacity-15 animate-bounce" style={{ animationDelay: '1.5s', animationDuration: '5s' }}>📗</div>
+        
+        {/* Subtle reading elements */}
+        <div className="absolute top-[40%] left-[5%] text-3xl opacity-10">✏️</div>
+        <div className="absolute top-[60%] right-[8%] text-3xl opacity-10">🔍</div>
+        
+        {/* Abstract shapes suggesting pages */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-secondary/10 to-transparent rounded-tr-full" />
+      </div>
 
-      <Card className="w-full max-w-md shadow-2xl border-4 border-violet-200 bg-white/90 backdrop-blur">
+      <Card className="w-full max-w-md shadow-2xl border-2 border-primary/20 bg-white/95 backdrop-blur relative z-10">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-violet-500 to-pink-500 p-4 rounded-full">
-              <Lock className="w-8 h-8 text-white" />
+            <div className="bg-gradient-to-br from-primary to-secondary p-4 rounded-full shadow-lg">
+              <BookOpen className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2">
-            <Sparkles className="w-6 h-6 text-yellow-500" />
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex items-center justify-center gap-2">
+            <span className="text-2xl">📖</span>
             Le Petit Lecteur
-            <Sparkles className="w-6 h-6 text-yellow-500" />
+            <span className="text-2xl">📖</span>
           </CardTitle>
-          <CardDescription className="text-base">Bitte anmelden</CardDescription>
+          <CardDescription className="text-base text-muted-foreground">Bitte anmelden</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-lg font-medium">
+              <Label htmlFor="username" className="text-lg font-medium text-foreground">
                 Username
               </Label>
               <Input
@@ -110,13 +121,13 @@ const LoginPage = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username..."
-                className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
+                className="text-lg h-12 border-2 border-primary/20 focus:border-primary"
                 maxLength={50}
                 autoComplete="username"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-lg font-medium">
+              <Label htmlFor="password" className="text-lg font-medium text-foreground">
                 Password
               </Label>
               <Input
@@ -125,7 +136,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password..."
-                className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
+                className="text-lg h-12 border-2 border-primary/20 focus:border-primary"
                 maxLength={100}
                 autoComplete="current-password"
               />
@@ -133,7 +144,7 @@ const LoginPage = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 text-xl font-bold bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white shadow-lg"
+              className="w-full h-14 text-xl font-bold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-lg"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -141,14 +152,14 @@ const LoginPage = () => {
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  🔓 Anmelden
+                  <Lock className="h-5 w-5" /> Anmelden
                 </span>
               )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground pt-4">
               Noch kein Konto?{" "}
-              <Link to="/register" className="text-violet-600 hover:underline font-medium">
+              <Link to="/register" className="text-primary hover:underline font-medium">
                 Neuen Benutzer erstellen
               </Link>
             </p>
