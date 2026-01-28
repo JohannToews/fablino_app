@@ -258,6 +258,7 @@ const AdminPage = () => {
     }
 
     // Save pre-generated vocabulary to marked_words
+    console.log("Vocabulary to save:", generatedVocabulary);
     if (generatedVocabulary.length > 0) {
       const vocabToInsert = generatedVocabulary.map((v) => ({
         story_id: insertedStory.id,
@@ -267,15 +268,28 @@ const AdminPage = () => {
         is_learned: false,
       }));
 
+      console.log("Inserting vocabulary:", vocabToInsert);
       const { error: vocabError } = await supabase
         .from("marked_words")
         .insert(vocabToInsert);
 
       if (vocabError) {
         console.error("Failed to save vocabulary:", vocabError);
+        toast.warning(
+          adminLang === 'de' ? "Vokabeln konnten nicht gespeichert werden" :
+          adminLang === 'fr' ? "Les mots de vocabulaire n'ont pas pu être sauvegardés" :
+          "Vocabulary could not be saved"
+        );
       } else {
         console.log(`Saved ${vocabToInsert.length} vocabulary words to marked_words`);
+        toast.success(
+          adminLang === 'de' ? `${vocabToInsert.length} Vokabeln automatisch hinzugefügt!` :
+          adminLang === 'fr' ? `${vocabToInsert.length} mots de vocabulaire ajoutés !` :
+          `${vocabToInsert.length} vocabulary words added!`
+        );
       }
+    } else {
+      console.log("No vocabulary to save (generatedVocabulary is empty)");
     }
 
     setIsLoading(false);
@@ -423,6 +437,7 @@ const AdminPage = () => {
                 {storySubTab === "generator" && (
                   <StoryGenerator
                     onStoryGenerated={(story) => {
+                      console.log("Story generated with vocabulary:", story.vocabulary);
                       setTitle(story.title);
                       setContent(story.content);
                       if (story.questions && story.questions.length > 0) {
@@ -430,6 +445,11 @@ const AdminPage = () => {
                       }
                       if (story.vocabulary && story.vocabulary.length > 0) {
                         setGeneratedVocabulary(story.vocabulary);
+                        toast.info(
+                          adminLang === 'de' ? `${story.vocabulary.length} Vokabeln wurden erkannt` :
+                          adminLang === 'fr' ? `${story.vocabulary.length} mots de vocabulaire détectés` :
+                          `${story.vocabulary.length} vocabulary words detected`
+                        );
                       }
                       if (story.coverImageBase64) {
                         setGeneratedCoverBase64(story.coverImageBase64);
