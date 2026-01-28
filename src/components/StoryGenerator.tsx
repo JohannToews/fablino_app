@@ -317,9 +317,9 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
   const getLengthLabel = (val: string) => {
     const labels = {
-      de: { short: "Kurz (220-250 Wörter, 3 Fragen)", medium: "Mittel (250-350 Wörter, 5 Fragen)", long: "Lang (350-550 Wörter, 7 Fragen)" },
-      en: { short: "Short (220-250 words, 3 questions)", medium: "Medium (250-350 words, 5 questions)", long: "Long (350-550 words, 7 questions)" },
-      fr: { short: "Court (220-250 mots, 3 questions)", medium: "Moyen (250-350 mots, 5 questions)", long: "Long (350-550 mots, 7 questions)" },
+      de: { short: "Kurz (150-200 Wörter)", medium: "Mittel (200-300 Wörter)", long: "Lang (300-400 Wörter)" },
+      en: { short: "Short (150-200 words)", medium: "Medium (200-300 words)", long: "Long (300-400 words)" },
+      fr: { short: "Court (150-200 mots)", medium: "Moyen (200-300 mots)", long: "Long (300-400 mots)" },
     };
     return labels[adminLang]?.[val as keyof typeof labels.de] || val;
   };
