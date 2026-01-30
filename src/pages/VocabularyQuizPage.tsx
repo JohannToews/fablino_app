@@ -32,12 +32,20 @@ interface QuizQuestion {
   options: string[];
 }
 
+interface Story {
+  id: string;
+  title: string;
+}
+
 const VocabularyQuizPage = () => {
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const navigate = useNavigate();
+  const [allWords, setAllWords] = useState<QuizWord[]>([]);
   const [words, setWords] = useState<QuizWord[]>([]);
   const [quizWords, setQuizWords] = useState<QuizWord[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [selectedStoryId, setSelectedStoryId] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -46,11 +54,10 @@ const VocabularyQuizPage = () => {
   const [score, setScore] = useState(0);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizComplete, setQuizComplete] = useState(false);
-  const [totalQuestions, setTotalQuestions] = useState(5);
-  const [selectedQuestionCount, setSelectedQuestionCount] = useState<"5" | "10">("5");
+  const [totalQuestions, setTotalQuestions] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
-  const [quizPointValue, setQuizPointValue] = useState(2); // default points per correct answer
+  const [quizPointValue, setQuizPointValue] = useState(2);
   const [scoreAnimation, setScoreAnimation] = useState(false);
 
   // Confetti effect for correct answers
@@ -93,10 +100,19 @@ const VocabularyQuizPage = () => {
 
   useEffect(() => {
     if (user) {
-      loadWords();
+      loadWordsAndStories();
     }
     loadQuizPointValue();
   }, [user]);
+
+  // Filter words when story selection changes
+  useEffect(() => {
+    if (selectedStoryId === "all") {
+      setWords(allWords);
+    } else {
+      setWords(allWords.filter(w => w.story_id === selectedStoryId));
+    }
+  }, [selectedStoryId, allWords]);
 
   const loadQuizPointValue = async () => {
     // Load quiz point value for medium difficulty (default)
@@ -112,10 +128,21 @@ const VocabularyQuizPage = () => {
     }
   };
 
-  const loadWords = async () => {
+  const loadWordsAndStories = async () => {
     if (!user) {
       setIsLoading(false);
       return;
+    }
+    
+    // Load stories for this user (for dropdown)
+    const { data: storiesData } = await supabase
+      .from("stories")
+      .select("id, title")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    
+    if (storiesData) {
+      setStories(storiesData);
     }
     
     // Load words only from stories that belong to this user
@@ -135,6 +162,7 @@ const VocabularyQuizPage = () => {
         w.explanation.trim().length > 0 &&
         !w.is_learned
       );
+      setAllWords(validWords as QuizWord[]);
       setWords(validWords as QuizWord[]);
     }
     setIsLoading(false);
@@ -238,8 +266,8 @@ const VocabularyQuizPage = () => {
   const startQuiz = () => {
     if (words.length === 0) return;
     
-    const questionCount = parseInt(selectedQuestionCount);
-    const actualQuestionCount = Math.min(questionCount, words.length);
+    // Use all available words
+    const actualQuestionCount = words.length;
     
     setTotalQuestions(actualQuestionCount);
     setQuestionIndex(0);
@@ -249,11 +277,10 @@ const VocabularyQuizPage = () => {
     setIsCorrect(null);
     setQuizStarted(true);
     
-    // Shuffle words and pick the needed amount
+    // Shuffle words and use all of them
     const shuffled = [...words].sort(() => Math.random() - 0.5);
-    const selectedWords = shuffled.slice(0, actualQuestionCount);
-    setQuizWords(selectedWords);
-    generateQuizQuestion(selectedWords[0]);
+    setQuizWords(shuffled);
+    generateQuizQuestion(shuffled[0]);
   };
 
   const updateWordQuizHistory = async (wordId: string, isCorrectAnswer: boolean) => {
@@ -327,7 +354,7 @@ const VocabularyQuizPage = () => {
   };
 
   const getPassThreshold = () => {
-    return totalQuestions === 10 ? 8 : 4;
+    return Math.ceil(totalQuestions * 0.8); // 80%
   };
 
   const isPassed = () => {
@@ -338,7 +365,7 @@ const VocabularyQuizPage = () => {
     setQuizStarted(false);
     setCurrentQuestion(null);
     setQuizComplete(false);
-    loadWords(); // Reload words to get updated learned status
+    loadWordsAndStories(); // Reload words to get updated learned status
   };
 
   if (isLoading) {
@@ -400,33 +427,40 @@ const VocabularyQuizPage = () => {
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
             <Sparkles className="h-16 w-16 text-primary mx-auto mb-6 animate-sparkle" />
             <h2 className="text-3xl font-baloo mb-4">Prêt à jouer?</h2>
-            <p className="text-lg text-muted-foreground mb-2">
-              Tu as <strong>{words.length}</strong> mots à apprendre!
-            </p>
             
-            {/* Question count selection */}
-            <div className="my-8 flex flex-col items-center gap-4">
-              <label className="text-lg font-medium">Combien de questions?</label>
+            {/* Story selection */}
+            <div className="my-6 flex flex-col items-center gap-4">
+              <label className="text-lg font-medium">Choisir une histoire:</label>
               <Select 
-                value={selectedQuestionCount} 
-                onValueChange={(value: "5" | "10") => setSelectedQuestionCount(value)}
+                value={selectedStoryId} 
+                onValueChange={setSelectedStoryId}
               >
-                <SelectTrigger className="w-32 text-center text-xl font-baloo">
-                  <SelectValue />
+                <SelectTrigger className="w-64 text-center text-lg">
+                  <SelectValue placeholder="Toutes les histoires" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="5" className="text-lg">5 questions</SelectItem>
-                  <SelectItem value="10" className="text-lg">10 questions</SelectItem>
+                  <SelectItem value="all" className="text-lg">Toutes les histoires</SelectItem>
+                  {stories.map(story => (
+                    <SelectItem key={story.id} value={story.id} className="text-base">
+                      {story.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-sm text-muted-foreground">
-                Pour réussir: {selectedQuestionCount === "5" ? "4/5" : "8/10"} bonnes réponses
+            </div>
+            
+            <div className="bg-primary/10 rounded-xl p-4 my-4">
+              <p className="text-lg font-medium">
+                Ce quiz a <strong className="text-primary">{words.length}</strong> mots
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Pour réussir: ~80% de bonnes réponses ({Math.ceil(words.length * 0.8)}/{words.length})
               </p>
             </div>
 
             <Button
               onClick={startQuiz}
-              className="btn-primary-kid text-xl px-8 py-4"
+              className="btn-primary-kid text-xl px-8 py-4 mt-4"
               disabled={words.length === 0}
             >
               Commencer le quiz! 🚀

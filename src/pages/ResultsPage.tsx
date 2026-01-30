@@ -75,7 +75,7 @@ const ResultsPage = () => {
         let quizCount = 0;
 
         results.forEach((r: UserResult) => {
-          if (r.activity_type === 'story_read') {
+          if (r.activity_type === 'story_read' || r.activity_type === 'story_completed') {
             storyPts += r.points_earned;
             storyCount++;
           } else if (r.activity_type === 'quiz_passed') {

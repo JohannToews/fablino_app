@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2 } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
+import { DEFAULT_SCHOOL_SYSTEMS, SchoolSystems, SchoolSystem } from "@/lib/schoolSystems";
 
 interface KidProfile {
   id?: string;
@@ -19,15 +20,6 @@ interface KidProfile {
   color_palette: string;
   image_style: string;
   cover_image_url: string | null;
-}
-
-interface SchoolSystem {
-  name: string;
-  classes: string[];
-}
-
-interface SchoolSystems {
-  [key: string]: SchoolSystem;
 }
 
 interface KidProfileSectionProps {
@@ -44,14 +36,6 @@ const COLOR_PALETTES = [
   { id: 'lavender', color: 'bg-gradient-to-r from-purple-400 to-indigo-500', border: 'border-purple-500', gradient: 'from-purple-400 to-indigo-500' },
   { id: 'sunshine', color: 'bg-gradient-to-r from-amber-400 to-yellow-500', border: 'border-amber-500', gradient: 'from-amber-400 to-yellow-500' },
 ];
-
-const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
-  fr: { name: "Français", classes: ["2e primaire / CE1", "3e primaire / CE2", "4e primaire / CM1", "5e primaire / CM2"] },
-  de: { name: "Deutsch", classes: ["2. Klasse / Grundschule", "3. Klasse / Grundschule", "4. Klasse / Grundschule", "5. Klasse / Grundschule"] },
-  es: { name: "Español", classes: ["2º Primaria", "3º Primaria", "4º Primaria", "5º Primaria"] },
-  nl: { name: "Nederlands", classes: ["Groep 4", "Groep 5", "Groep 6", "Groep 7"] },
-  en: { name: "English", classes: ["Grade 2", "Grade 3", "Grade 4", "Grade 5"] },
-};
 
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
   const t = useTranslations(language);

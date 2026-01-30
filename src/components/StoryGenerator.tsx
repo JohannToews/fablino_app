@@ -195,6 +195,9 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
               <SelectContent>
                 <SelectItem value="FR">🇫🇷 Français</SelectItem>
                 <SelectItem value="DE">🇩🇪 Deutsch</SelectItem>
+                <SelectItem value="EN">🇬🇧 English</SelectItem>
+                <SelectItem value="ES">🇪🇸 Español</SelectItem>
+                <SelectItem value="NL">🇳🇱 Nederlands</SelectItem>
               </SelectContent>
             </Select>
           </div>

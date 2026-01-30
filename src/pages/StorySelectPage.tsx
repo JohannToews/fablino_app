@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Sparkles, BookText, GraduationCap } from "lucide-react";
+import { BookOpen, Sparkles, BookText, GraduationCap, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useTranslations, Language } from "@/lib/translations";
@@ -18,6 +18,11 @@ interface Story {
   cover_image_url: string | null;
   difficulty: string | null;
   text_type: string | null;
+}
+
+interface StoryStatus {
+  storyId: string;
+  isCompleted: boolean;
 }
 
 // Difficulty labels in different languages
@@ -38,6 +43,15 @@ const tabLabels: Record<string, { fiction: string; nonFiction: string }> = {
   nl: { fiction: "Verhalen", nonFiction: "Non-Fictie" },
 };
 
+// Status labels in different languages
+const statusLabels: Record<string, { toRead: string; completed: string }> = {
+  de: { toRead: "Noch zu lesen", completed: "Abgeschlossen" },
+  fr: { toRead: "À lire", completed: "Terminée" },
+  en: { toRead: "To read", completed: "Completed" },
+  es: { toRead: "Por leer", completed: "Completada" },
+  nl: { toRead: "Te lezen", completed: "Voltooid" },
+};
+
 const StorySelectPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -45,6 +59,7 @@ const StorySelectPage = () => {
   const appLang = (user?.appLanguage || 'fr') as Language;
   const t = useTranslations(appLang);
   const [stories, setStories] = useState<Story[]>([]);
+  const [storyStatuses, setStoryStatuses] = useState<Map<string, boolean>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -56,14 +71,34 @@ const StorySelectPage = () => {
   const loadStories = async () => {
     if (!user) return;
     
-    const { data } = await supabase
+    // Load stories
+    const { data: storiesData } = await supabase
       .from("stories")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
-    if (data) {
-      setStories(data);
+    if (storiesData) {
+      setStories(storiesData);
+      
+      // Load completion status for all stories
+      const storyIds = storiesData.map(s => s.id);
+      if (storyIds.length > 0) {
+        const { data: results } = await supabase
+          .from("user_results")
+          .select("reference_id")
+          .eq("user_id", user.id)
+          .eq("activity_type", "story_completed")
+          .in("reference_id", storyIds);
+        
+        const statusMap = new Map<string, boolean>();
+        results?.forEach(r => {
+          if (r.reference_id) {
+            statusMap.set(r.reference_id, true);
+          }
+        });
+        setStoryStatuses(statusMap);
+      }
     }
     setIsLoading(false);
   };
@@ -146,11 +181,11 @@ const StorySelectPage = () => {
             </TabsList>
 
             <TabsContent value="fiction">
-              <StoryGrid stories={fictionStories} appLang={appLang} navigate={navigate} />
+              <StoryGrid stories={fictionStories} appLang={appLang} navigate={navigate} storyStatuses={storyStatuses} />
             </TabsContent>
 
             <TabsContent value="non-fiction">
-              <StoryGrid stories={nonFictionStories} appLang={appLang} navigate={navigate} />
+              <StoryGrid stories={nonFictionStories} appLang={appLang} navigate={navigate} storyStatuses={storyStatuses} />
             </TabsContent>
           </Tabs>
         )}
@@ -163,11 +198,13 @@ const StorySelectPage = () => {
 const StoryGrid = ({ 
   stories, 
   appLang, 
-  navigate 
+  navigate,
+  storyStatuses,
 }: { 
   stories: Story[]; 
   appLang: string; 
   navigate: (path: string) => void;
+  storyStatuses: Map<string, boolean>;
 }) => {
   if (stories.length === 0) {
     return (
@@ -184,45 +221,63 @@ const StoryGrid = ({
     );
   }
 
+  const statusLabel = statusLabels[appLang] || statusLabels.fr;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {stories.map((story) => (
-        <div
-          key={story.id}
-          onClick={() => navigate(`/read/${story.id}`)}
-          className="card-story group"
-        >
-          <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
-            {story.cover_image_url ? (
-              <img
-                src={story.cover_image_url}
-                alt={story.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
-                <BookOpen className="h-16 w-16 text-primary/50" />
-              </div>
-            )}
-            {story.difficulty && (
+      {stories.map((story) => {
+        const isCompleted = storyStatuses.get(story.id) || false;
+        
+        return (
+          <div
+            key={story.id}
+            onClick={() => navigate(`/read/${story.id}`)}
+            className="card-story group"
+          >
+            <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
+              {story.cover_image_url ? (
+                <img
+                  src={story.cover_image_url}
+                  alt={story.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
+                  <BookOpen className="h-16 w-16 text-primary/50" />
+                </div>
+              )}
+              {/* Status badge */}
               <Badge 
-                className={`absolute top-2 right-2 text-xs font-bold ${
-                  story.difficulty === 'easy' 
-                    ? 'bg-green-500 hover:bg-green-600' 
-                    : story.difficulty === 'medium' 
-                      ? 'bg-amber-500 hover:bg-amber-600' 
-                      : 'bg-red-500 hover:bg-red-600'
-                } text-white`}
+                className={`absolute top-2 left-2 text-xs font-bold flex items-center gap-1 ${
+                  isCompleted 
+                    ? 'bg-green-500 hover:bg-green-600 text-white' 
+                    : 'bg-amber-500 hover:bg-amber-600 text-white'
+                }`}
               >
-                {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
+                {isCompleted && <CheckCircle2 className="h-3 w-3" />}
+                {isCompleted ? statusLabel.completed : statusLabel.toRead}
               </Badge>
-            )}
+              {/* Difficulty badge */}
+              {story.difficulty && (
+                <Badge 
+                  className={`absolute top-2 right-2 text-xs font-bold ${
+                    story.difficulty === 'easy' 
+                      ? 'bg-green-500 hover:bg-green-600' 
+                      : story.difficulty === 'medium' 
+                        ? 'bg-amber-500 hover:bg-amber-600' 
+                        : 'bg-red-500 hover:bg-red-600'
+                  } text-white`}
+                >
+                  {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
+                </Badge>
+              )}
+            </div>
+            <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
+              {story.title}
+            </h3>
           </div>
-          <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
-            {story.title}
-          </h3>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

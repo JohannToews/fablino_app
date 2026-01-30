@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw } from "lucide-react";
 import ComprehensionQuiz from "@/components/ComprehensionQuiz";
+import QuizCompletionResult from "@/components/QuizCompletionResult";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import PageHeader from "@/components/PageHeader";
@@ -80,6 +81,9 @@ const ReadingPage = () => {
   // Show comprehension quiz after reading
   const [showQuiz, setShowQuiz] = useState(false);
   const [hasQuestions, setHasQuestions] = useState(false);
+  // Quiz completion state
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [quizResult, setQuizResult] = useState<{ correctCount: number; totalCount: number } | null>(null);
   // Current word position for saving
   const [currentPositionKey, setCurrentPositionKey] = useState<string | null>(null);
   // Current unsaved positions (to clear when selecting new word)
@@ -641,7 +645,7 @@ const ReadingPage = () => {
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      // Save story read points
+                      // Save story completed (no questions to answer)
                       const { data: pointData } = await supabase
                         .from("point_settings")
                         .select("points")
@@ -652,7 +656,7 @@ const ReadingPage = () => {
                       const storyPoints = pointData?.points || 10;
                       
                       await supabase.from("user_results").insert({
-                        activity_type: "story_read",
+                        activity_type: "story_completed",
                         reference_id: id,
                         difficulty: story?.difficulty || "medium",
                         points_earned: storyPoints,
@@ -668,7 +672,7 @@ const ReadingPage = () => {
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      // Save story read points
+                      // Save story completed (no questions to answer)
                       const { data: pointData } = await supabase
                         .from("point_settings")
                         .select("points")
@@ -679,7 +683,7 @@ const ReadingPage = () => {
                       const storyPoints = pointData?.points || 10;
                       
                       await supabase.from("user_results").insert({
-                        activity_type: "story_read",
+                        activity_type: "story_completed",
                         reference_id: id,
                         difficulty: story?.difficulty || "medium",
                         points_earned: storyPoints,
@@ -698,7 +702,7 @@ const ReadingPage = () => {
               </div>
 
               {/* Comprehension Quiz Section */}
-              {showQuiz && (
+              {showQuiz && !quizCompleted && (
                 <div className="mt-8 pt-8 border-t-2 border-primary/30">
                   <div className="flex items-center gap-3 mb-6">
                     <HelpCircle className="h-6 w-6 text-primary" />
@@ -708,21 +712,29 @@ const ReadingPage = () => {
                     storyId={id!}
                     storyDifficulty={story?.difficulty || "medium"}
                     onComplete={async (correctCount, totalCount) => {
-                      // Save points for correct answers
-                      if (correctCount > 0) {
-                        // Load point value for questions
-                        const { data: pointData } = await supabase
-                          .from("point_settings")
-                          .select("points")
-                          .eq("category", "question")
-                          .eq("difficulty", story?.difficulty || "medium")
-                          .maybeSingle();
-                        
-                        const pointsPerQuestion = pointData?.points || 3;
-                        const earnedPoints = correctCount * pointsPerQuestion;
-                        
+                      // Save the result
+                      setQuizResult({ correctCount, totalCount });
+                      setQuizCompleted(true);
+                      
+                      // Determine if passed (>= 50%)
+                      const isPassed = totalCount === 0 || (correctCount / totalCount) >= 0.5;
+                      
+                      // Load point value for questions
+                      const { data: pointData } = await supabase
+                        .from("point_settings")
+                        .select("points")
+                        .eq("category", "question")
+                        .eq("difficulty", story?.difficulty || "medium")
+                        .maybeSingle();
+                      
+                      const pointsPerQuestion = pointData?.points || 3;
+                      const earnedPoints = correctCount * pointsPerQuestion;
+                      
+                      // Always save the result, but mark as completed only if passed
+                      if (isPassed) {
+                        // Save story_completed for tracking
                         await supabase.from("user_results").insert({
-                          activity_type: "question_answered",
+                          activity_type: "story_completed",
                           reference_id: id,
                           difficulty: story?.difficulty || "medium",
                           points_earned: earnedPoints,
@@ -730,13 +742,20 @@ const ReadingPage = () => {
                           total_questions: totalCount,
                           user_id: user?.id,
                         });
-                        
-                        toast.success(`Bravo! Tu as fini le quiz! 🏆 (+${earnedPoints} points)`);
-                      } else {
-                        toast.success("Bravo! Tu as fini le quiz! 🏆");
                       }
-                      navigate("/stories");
                     }}
+                  />
+                </div>
+              )}
+              
+              {/* Quiz Completion Result */}
+              {quizCompleted && quizResult && (
+                <div className="mt-8 pt-8 border-t-2 border-primary/30">
+                  <QuizCompletionResult
+                    correctCount={quizResult.correctCount}
+                    totalCount={quizResult.totalCount}
+                    appLanguage={user?.appLanguage || 'fr'}
+                    onContinue={() => navigate("/stories")}
                   />
                 </div>
               )}
