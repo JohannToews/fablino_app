@@ -2,13 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand } from "lucide-react";
+import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import heroImage from "@/assets/hero-reading.jpg";
 
 interface KidProfile {
+  id: string;
   name: string;
   cover_image_url: string | null;
 }
@@ -17,33 +18,37 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
-  const [kidProfile, setKidProfile] = useState<KidProfile | null>(null);
+  const [kidProfiles, setKidProfiles] = useState<KidProfile[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      loadKidProfile();
+      loadKidProfiles();
     }
   }, [user]);
 
-  const loadKidProfile = async () => {
+  const loadKidProfiles = async () => {
     if (!user) return;
     
-    // Get first kid profile (or one with cover image if multiple exist)
     const { data } = await supabase
       .from("kid_profiles")
-      .select("name, cover_image_url")
+      .select("id, name, cover_image_url")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .limit(1);
+      .order("created_at", { ascending: true });
 
     if (data && data.length > 0) {
-      setKidProfile(data[0]);
+      setKidProfiles(data);
+      // Auto-select first profile if none selected
+      if (!selectedProfileId) {
+        setSelectedProfileId(data[0].id);
+      }
     }
   };
 
-  // Use profile cover if available, otherwise standard hero image
-  const displayImage = kidProfile?.cover_image_url || heroImage;
-  const childName = kidProfile?.name;
+  const selectedProfile = kidProfiles.find(p => p.id === selectedProfileId) || kidProfiles[0];
+  const displayImage = selectedProfile?.cover_image_url || heroImage;
+  const childName = selectedProfile?.name;
+  const hasMultipleProfiles = kidProfiles.length > 1;
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} overflow-hidden`}>
@@ -86,9 +91,51 @@ const Index = () => {
             {childName ? `Salut ${childName}!` : 'LireMagie'}
           </h1>
           
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 font-nunito">
+          <p className="text-xl md:text-2xl text-muted-foreground mb-6 font-nunito">
             Apprends à lire avec plaisir! ✨
           </p>
+
+          {/* Profile Selector - show when multiple kids */}
+          {hasMultipleProfiles && (
+            <div className="flex items-center justify-center gap-3 mb-6">
+              {kidProfiles.map((profile) => (
+                <button
+                  key={profile.id}
+                  onClick={() => setSelectedProfileId(profile.id)}
+                  className={`
+                    flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-200
+                    ${selectedProfileId === profile.id 
+                      ? 'bg-primary/20 ring-2 ring-primary scale-105' 
+                      : 'bg-card/60 hover:bg-card/80 hover:scale-102'
+                    }
+                  `}
+                >
+                  <div className={`
+                    w-14 h-14 rounded-full overflow-hidden border-2 
+                    ${selectedProfileId === profile.id ? 'border-primary' : 'border-border'}
+                  `}>
+                    {profile.cover_image_url ? (
+                      <img 
+                        src={profile.cover_image_url} 
+                        alt={profile.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Users className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <span className={`
+                    text-sm font-medium
+                    ${selectedProfileId === profile.id ? 'text-primary' : 'text-muted-foreground'}
+                  `}>
+                    {profile.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Hero Image - wide aspect ratio for tablet */}
           <div className="relative w-full max-w-2xl mb-6">
