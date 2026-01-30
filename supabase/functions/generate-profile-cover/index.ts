@@ -5,52 +5,51 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Gemini Image Generation API endpoint
-const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+// Lovable AI Gateway endpoint for image generation
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-// Helper function to call Gemini API for image generation
-async function callGeminiImageAPI(apiKey: string, prompt: string): Promise<string | null> {
+// Helper function to call Lovable AI Gateway for image generation
+async function callLovableAIImageAPI(apiKey: string, prompt: string): Promise<string | null> {
   try {
-    const response = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
+    const response = await fetch(LOVABLE_AI_URL, {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
+        model: "google/gemini-2.5-flash-image",
+        messages: [
           {
             role: "user",
-            parts: [{ text: prompt }]
+            content: prompt
           }
         ],
-        generationConfig: {
-          responseModalities: ["image", "text"],
-        },
+        modalities: ["image", "text"]
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini Image API error:", response.status, errorText);
+      console.error("Lovable AI Gateway error:", response.status, errorText);
       return null;
     }
 
     const data = await response.json();
     
-    // Look for inline_data with image in the response
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    for (const part of parts) {
-      if (part.inlineData?.mimeType?.startsWith("image/")) {
-        const base64Data = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType;
-        return `data:${mimeType};base64,${base64Data}`;
+    // Extract image from Lovable AI Gateway response format
+    const images = data.choices?.[0]?.message?.images;
+    if (images && images.length > 0) {
+      const imageUrl = images[0]?.image_url?.url;
+      if (imageUrl) {
+        return imageUrl; // Already in data:image/... format
       }
     }
     
-    console.error("No image found in Gemini response");
+    console.error("No image found in Lovable AI response:", JSON.stringify(data));
     return null;
   } catch (error) {
-    console.error("Error calling Gemini Image API:", error);
+    console.error("Error calling Lovable AI Gateway:", error);
     return null;
   }
 }
@@ -67,9 +66,9 @@ serve(async (req) => {
       throw new Error("Name is required");
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     // Map color palette to pure color descriptions (5 distinct palettes)
@@ -114,9 +113,9 @@ CRITICAL FORMAT REQUIREMENTS:
 - Simple clean background, child as focal point in center
 - High quality, polished finish suitable for app header image`;
 
-    console.log("Generating cover image with Gemini for age", childAge);
+    console.log("Generating cover image with Lovable AI Gateway for age", childAge);
 
-    const imageData = await callGeminiImageAPI(GEMINI_API_KEY, prompt);
+    const imageData = await callLovableAIImageAPI(LOVABLE_API_KEY, prompt);
 
     if (!imageData) {
       throw new Error("No image generated");
