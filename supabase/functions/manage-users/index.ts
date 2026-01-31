@@ -17,7 +17,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    const { action, userId, promptKey, promptValue, username, displayName, password, role } = await req.json();
+    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage } = await req.json();
 
     if (action === "list") {
       // Get all users with their roles
@@ -58,14 +58,14 @@ serve(async (req) => {
         });
       }
 
-      // Create user profile
+      // Create user profile with selected admin language (default: de)
       const { data: newUser, error: insertError } = await supabase
         .from("user_profiles")
         .insert({
           username: username.toLowerCase(),
           display_name: displayName,
           password_hash: password,
-          admin_language: 'de',
+          admin_language: adminLanguage || 'de',
           app_language: 'fr',
           text_language: 'fr',
         })
@@ -91,6 +91,20 @@ serve(async (req) => {
         .from("app_settings")
         .update({ value: promptValue, updated_at: new Date().toISOString() })
         .eq("key", promptKey);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "updateLanguage" && userId && adminLanguage) {
+      // Update user's admin language
+      const { error } = await supabase
+        .from("user_profiles")
+        .update({ admin_language: adminLanguage, updated_at: new Date().toISOString() })
+        .eq("id", userId);
 
       if (error) throw error;
 

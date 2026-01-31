@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2, Trash2, Users, RefreshCw, UserPlus, Shield, User } from "lucide-react";
 import { Language, useTranslations } from "@/lib/translations";
+import { useAuth } from "@/hooks/useAuth";
 
 interface UserProfile {
   id: string;
@@ -26,9 +27,11 @@ interface UserManagementSectionProps {
 
 const UserManagementSection = ({ language, currentUserId }: UserManagementSectionProps) => {
   const t = useTranslations(language);
+  const { user: currentUser, login } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingLangId, setUpdatingLangId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   
   // New user form
@@ -37,6 +40,15 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"standard" | "admin">("standard");
+  const [newAdminLanguage, setNewAdminLanguage] = useState<Language>("de");
+
+  const languages: { value: Language; label: string; flag: string }[] = [
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'en', label: 'English', flag: '🇬🇧' },
+    { value: 'es', label: 'Español', flag: '🇪🇸' },
+    { value: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+  ];
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -85,7 +97,8 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
           username: newUsername.trim(),
           displayName: newDisplayName.trim(),
           password: newPassword,
-          role: newRole
+          role: newRole,
+          adminLanguage: newAdminLanguage,
         },
       });
 
@@ -103,6 +116,7 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
         setNewDisplayName("");
         setNewPassword("");
         setNewRole("standard");
+        setNewAdminLanguage("de");
         setShowCreateForm(false);
         loadUsers();
       }
@@ -111,6 +125,45 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
       toast.error(t.error);
     }
     setIsCreating(false);
+  };
+
+  const updateUserLanguage = async (userId: string, newLang: Language) => {
+    setUpdatingLangId(userId);
+    try {
+      const { error } = await supabase.functions.invoke("manage-users", {
+        body: { 
+          action: "updateLanguage", 
+          userId,
+          adminLanguage: newLang,
+        },
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.id === userId ? { ...u, admin_language: newLang } : u
+      ));
+
+      // If this is the current user, update their session
+      if (userId === currentUserId && currentUser) {
+        const updatedUser = { ...currentUser, adminLanguage: newLang };
+        const token = sessionStorage.getItem('liremagie_session') || '';
+        login(token, updatedUser);
+      }
+
+      toast.success(
+        newLang === 'de' ? 'Sprache aktualisiert' :
+        newLang === 'fr' ? 'Langue mise à jour' :
+        newLang === 'en' ? 'Language updated' :
+        newLang === 'es' ? 'Idioma actualizado' :
+        'Taal bijgewerkt'
+      );
+    } catch (error) {
+      console.error("Error updating language:", error);
+      toast.error(t.error);
+    }
+    setUpdatingLangId(null);
   };
 
   const deleteUser = async (userId: string, username: string) => {
@@ -160,17 +213,6 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
       language === 'fr' ? 'fr-FR' : 'en-US',
       { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
     );
-  };
-
-  const getLanguageFlag = (lang: string) => {
-    const flags: Record<string, string> = {
-      de: '🇩🇪',
-      fr: '🇫🇷',
-      en: '🇬🇧',
-      es: '🇪🇸',
-      nl: '🇳🇱',
-    };
-    return flags[lang] || '🌍';
   };
 
   const getRoleLabel = (role: string) => {
@@ -243,7 +285,7 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">
                     {language === 'de' ? 'Passwort' : 
@@ -279,6 +321,27 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
                           Admin
                         </div>
                       </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newAdminLanguage">
+                    {language === 'de' ? 'Sprache' : 
+                     language === 'fr' ? 'Langue' : 'Language'}
+                  </Label>
+                  <Select value={newAdminLanguage} onValueChange={(v) => setNewAdminLanguage(v as Language)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languages.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          <div className="flex items-center gap-2">
+                            <span>{lang.flag}</span>
+                            <span>{lang.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -377,7 +440,31 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{getLanguageFlag(user.admin_language)} {user.admin_language.toUpperCase()}</TableCell>
+                    <TableCell>
+                      <Select 
+                        value={user.admin_language} 
+                        onValueChange={(v) => updateUserLanguage(user.id, v as Language)}
+                        disabled={updatingLangId === user.id}
+                      >
+                        <SelectTrigger className="w-[130px] h-8">
+                          {updatingLangId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <SelectValue />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {languages.map((lang) => (
+                            <SelectItem key={lang.value} value={lang.value}>
+                              <div className="flex items-center gap-2">
+                                <span>{lang.flag}</span>
+                                <span>{lang.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(user.created_at)}
                     </TableCell>
