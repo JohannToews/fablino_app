@@ -63,7 +63,7 @@ const VocabularyManagePage = () => {
       .order("created_at", { ascending: false });
     
     if (selectedProfileId) {
-      storiesQuery = storiesQuery.eq("kid_profile_id", selectedProfileId);
+      storiesQuery = storiesQuery.or(`kid_profile_id.eq.${selectedProfileId},kid_profile_id.is.null`);
     }
     
     const { data: storiesData } = await storiesQuery;
