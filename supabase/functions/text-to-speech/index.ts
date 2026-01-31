@@ -25,9 +25,9 @@ serve(async (req) => {
       );
     }
 
-    // Use Laura voice - warm, clear, great for storytelling
+    // Use Alice voice - soft, warm, gentle - perfect for children's stories
     // eleven_multilingual_v2 supports French natively
-    const voiceId = "FGY2WhTYpPnrIDTdsKH5"; // Laura - warm and clear
+    const voiceId = "Xb7hH8MSUJpSbSDYk0k2"; // Alice - soft and gentle
     
     console.log(`Generating TTS for ${text.length} characters in ${language}`);
 
@@ -43,11 +43,11 @@ serve(async (req) => {
           text,
           model_id: "eleven_multilingual_v2",
           voice_settings: {
-            stability: 0.65,        // Balanced - not too robotic, not too varied
-            similarity_boost: 0.75, // Good voice match
-            style: 0.35,           // Subtle expressiveness for storytelling
+            stability: 0.45,        // Lower = more natural, expressive variation
+            similarity_boost: 0.80, // Strong voice character
+            style: 0.55,           // More expressive for storytelling
             use_speaker_boost: true,
-            speed: 0.85,           // Slightly slower for kids - easier to follow
+            speed: 0.88,           // Slightly slower for kids
           },
         }),
       }
