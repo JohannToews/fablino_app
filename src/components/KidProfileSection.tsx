@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2 } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 import { DEFAULT_SCHOOL_SYSTEMS, SchoolSystems, SchoolSystem } from "@/lib/schoolSystems";
+import { useKidProfile } from "@/hooks/useKidProfile";
 
 interface KidProfile {
   id?: string;
@@ -39,6 +40,7 @@ const COLOR_PALETTES = [
 
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
   const t = useTranslations(language);
+  const { refreshProfiles: refreshGlobalProfiles } = useKidProfile();
   const [profiles, setProfiles] = useState<KidProfile[]>([]);
   const [selectedProfileIndex, setSelectedProfileIndex] = useState<number>(0);
   const [schoolSystems, setSchoolSystems] = useState<SchoolSystems>(DEFAULT_SCHOOL_SYSTEMS);
@@ -158,6 +160,8 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         toast.error(t.errorSaving);
         return;
       }
+      // Refresh global context after deletion
+      await refreshGlobalProfiles();
     }
     
     setProfiles(prev => prev.filter((_, i) => i !== index));
@@ -300,6 +304,9 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       if (coverUrl) {
         setCoverPreview(coverUrl);
       }
+      
+      // Refresh global kid profiles context so other pages see the update
+      await refreshGlobalProfiles();
       
       onProfileUpdate?.(updatedProfile);
       toast.success(t.profileSaved);
