@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp, CreditCard, Mail, Lock, UserX, Receipt, Crown, Wrench } from "lucide-react";
+import { ArrowLeft, Save, Image, BookOpen, Trash2, Upload, LogOut, User, Settings, Sparkles, Library, FileEdit, Star, TrendingUp, CreditCard, Mail, Lock, UserX, Receipt, Crown, Wrench, Users } from "lucide-react";
 import StoryGenerator from "@/components/StoryGenerator";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
@@ -15,6 +15,7 @@ import KidProfileSection from "@/components/KidProfileSection";
 import UserManagementSection from "@/components/UserManagementSection";
 import SystemPromptSection from "@/components/SystemPromptSection";
 import { useAuth } from "@/hooks/useAuth";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface Story {
@@ -49,6 +50,7 @@ interface GeneratedStory {
 const AdminPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = useTranslations(adminLang);
   
@@ -186,12 +188,13 @@ const AdminPage = () => {
       }
     }
 
-    // Insert story with user_id, story_images, difficulty, and text_type
+    // Insert story with user_id, kid_profile_id, story_images, difficulty, and text_type
     const { data: insertedStory, error } = await supabase.from("stories").insert({
       title,
       content,
       cover_image_url: coverUrl,
       user_id: user?.id,
+      kid_profile_id: selectedProfileId,
       story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
       difficulty: generatedDifficulty,
       text_type: generatedTextType,
@@ -407,6 +410,39 @@ const AdminPage = () => {
           {/* Stories Tab */}
           <TabsContent value="stories" className="h-full overflow-hidden m-0">
             <div className="h-full flex flex-col max-w-4xl mx-auto">
+              {/* Kid Profile Selector */}
+              {hasMultipleProfiles && (
+                <div className="flex-none mb-4 flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
+                  <span className="text-sm text-muted-foreground mr-2">
+                    {adminLang === 'de' ? 'Für:' : adminLang === 'fr' ? 'Pour:' : 'For:'}
+                  </span>
+                  {kidProfiles.map((profile) => (
+                    <button
+                      key={profile.id}
+                      onClick={() => setSelectedProfileId(profile.id)}
+                      className={`
+                        flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+                        ${selectedProfileId === profile.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-muted'
+                        }
+                      `}
+                    >
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-border">
+                        {profile.cover_image_url ? (
+                          <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Users className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-medium text-sm">{profile.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
               {/* Sub-Tab Navigation */}
               <div className="flex-none flex gap-2 mb-4">
                 <Button

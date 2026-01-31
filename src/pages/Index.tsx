@@ -1,54 +1,26 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import heroImage from "@/assets/hero-reading.jpg";
-
-interface KidProfile {
-  id: string;
-  name: string;
-  cover_image_url: string | null;
-}
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
-  const [kidProfiles, setKidProfiles] = useState<KidProfile[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const { 
+    kidProfiles, 
+    selectedProfileId, 
+    selectedProfile, 
+    setSelectedProfileId, 
+    hasMultipleProfiles 
+  } = useKidProfile();
 
-  useEffect(() => {
-    if (user) {
-      loadKidProfiles();
-    }
-  }, [user]);
-
-  const loadKidProfiles = async () => {
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("kid_profiles")
-      .select("id, name, cover_image_url")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
-
-    if (data && data.length > 0) {
-      setKidProfiles(data);
-      // Auto-select first profile if none selected
-      if (!selectedProfileId) {
-        setSelectedProfileId(data[0].id);
-      }
-    }
-  };
-
-  const selectedProfile = kidProfiles.find(p => p.id === selectedProfileId) || kidProfiles[0];
   const displayImage = selectedProfile?.cover_image_url || heroImage;
   const childName = selectedProfile?.name;
-  const hasMultipleProfiles = kidProfiles.length > 1;
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} overflow-hidden`}>
