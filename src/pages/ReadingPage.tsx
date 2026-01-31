@@ -86,6 +86,8 @@ const ReadingPage = () => {
   const [quizResult, setQuizResult] = useState<{ correctCount: number; totalCount: number } | null>(null);
   // Current word position for saving
   const [currentPositionKey, setCurrentPositionKey] = useState<string | null>(null);
+  // Mobile popup position (Y coordinate for positioning)
+  const [mobilePopupY, setMobilePopupY] = useState<number | null>(null);
   // Current unsaved positions (to clear when selecting new word)
   const [unsavedPositions, setUnsavedPositions] = useState<Set<string>>(new Set());
 
@@ -249,6 +251,10 @@ const ReadingPage = () => {
 
     if (!cleanText || cleanText.length < 3) return;
 
+    // Capture selection position for mobile popup
+    const rect = selectionRange.getBoundingClientRect();
+    setMobilePopupY(rect.top + rect.height / 2);
+
     // Clear previous unsaved markings
     if (unsavedPositions.size > 0) {
       setSingleWordPositions(prev => {
@@ -336,6 +342,10 @@ const ReadingPage = () => {
     const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
     
     if (!cleanWord) return;
+
+    // Capture click position for mobile popup
+    const clickY = event.clientY;
+    setMobilePopupY(clickY);
 
     // Clear previous unsaved markings
     if (unsavedPositions.size > 0) {
@@ -435,6 +445,7 @@ const ReadingPage = () => {
     setExplanationError(false);
     setIsSaved(false);
     setCurrentPositionKey(null);
+    setMobilePopupY(null);
   };
 
   const renderFormattedText = () => {
@@ -630,6 +641,74 @@ const ReadingPage = () => {
                   </Button>
                 </div>
               )}
+
+              {/* Mobile Popup for word explanation - only visible on mobile/tablet */}
+              {selectedWord && mobilePopupY !== null && (
+                <div 
+                  className="lg:hidden fixed left-4 right-4 z-50 animate-in fade-in zoom-in-95 duration-200"
+                  style={{
+                    top: `${Math.min(Math.max(mobilePopupY - 80, 100), window.innerHeight - 250)}px`,
+                  }}
+                >
+                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-primary/20">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-baloo text-xl font-bold break-words max-w-[200px]">
+                        {selectedWord}
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={closeExplanation}
+                        className="rounded-full -mt-1 -mr-1 flex-shrink-0"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+                    
+                    {isExplaining ? (
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Je réfléchis...</span>
+                      </div>
+                    ) : explanationError ? (
+                      <div className="space-y-3">
+                        <p className="text-destructive text-sm">Pas d'explication trouvée.</p>
+                        <Button
+                          onClick={handleRetry}
+                          variant="outline"
+                          size="sm"
+                          className="w-full flex items-center gap-2"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Réessayer
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-lg leading-relaxed">{explanation}</p>
+                        
+                        {!isSaved && explanation && (
+                          <Button
+                            onClick={handleSaveExplanation}
+                            size="sm"
+                            className="w-full btn-secondary-kid flex items-center gap-2"
+                          >
+                            <Save className="h-4 w-4" />
+                            Sauvegarder
+                          </Button>
+                        )}
+                        
+                        {isSaved && (
+                          <div className="flex items-center gap-2 text-secondary font-medium text-sm">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Sauvegardé!
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               
               <div 
                 ref={textContainerRef}
@@ -762,8 +841,8 @@ const ReadingPage = () => {
             </div>
           </div>
 
-          {/* Explanation Panel */}
-          <div className="lg:col-span-1">
+          {/* Explanation Panel - Desktop only */}
+          <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24">
               {selectedWord ? (
                 <div className="explanation-panel animate-in fade-in slide-in-from-right-4 duration-300">
