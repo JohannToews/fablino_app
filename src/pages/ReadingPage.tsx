@@ -829,19 +829,6 @@ const ReadingPage = () => {
                   </p>
                 </div>
               )}
-
-              {/* Marked words count */}
-              <div className="mt-6 p-4 bg-card rounded-xl text-center">
-                <p className="text-sm text-muted-foreground">Explications (total)</p>
-                <p className="text-3xl font-baloo font-bold text-accent-foreground">
-                  {totalMarkedCount}
-                </p>
-                {markedTexts.size > 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Aujourd'hui: <span className="font-bold text-accent-foreground">{markedTexts.size}</span>
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         </div>
