@@ -470,7 +470,7 @@ const ReadingPage = () => {
       const sentences = paragraph.split(/(?<=[.!?])\s+/);
       
       elements.push(
-        <p key={`p-${pIndex}`} className="mb-6 leading-loose">
+        <p key={`p-${pIndex}`} className="mb-4 leading-relaxed">
           {sentences.map((sentence, sIndex) => {
             const shouldBold = sIndex === 0 && pIndex === 0;
             const shouldItalic = sentence.includes("«") || sentence.includes("»");
@@ -590,11 +590,11 @@ const ReadingPage = () => {
           <div className="lg:col-span-3">
             {/* Cover image above the text */}
             {story?.cover_image_url && (
-              <div className="mb-6 rounded-2xl overflow-hidden shadow-card">
+              <div className="mb-6 rounded-2xl overflow-hidden shadow-card bg-muted/30">
                 <img 
                   src={story.cover_image_url} 
                   alt={story.title}
-                  className="w-full h-48 md:h-64 object-cover"
+                  className="w-full h-40 md:h-52 object-contain"
                 />
               </div>
             )}

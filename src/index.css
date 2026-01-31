@@ -181,13 +181,13 @@
   }
 
   .reading-text {
-    @apply text-xl md:text-2xl leading-loose font-nunito font-light tracking-wide;
+    @apply text-base md:text-lg leading-relaxed font-nunito font-light tracking-wide;
     -webkit-user-select: text;
     user-select: text;
   }
 
   .reading-text p {
-    @apply mb-6 first-letter:text-4xl first-letter:font-semibold first-letter:text-primary first-letter:mr-1;
+    @apply mb-4 first-letter:text-3xl first-letter:font-semibold first-letter:text-primary first-letter:mr-1;
   }
 
   .explanation-panel p {
