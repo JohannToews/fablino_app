@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, CheckCircle2, XCircle, Minus, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, CheckCircle2, XCircle, Minus, Save, Loader2, Users } from "lucide-react";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, Language } from "@/lib/translations";
 import {
   Table,
@@ -36,6 +37,7 @@ const VocabularyManagePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = useTranslations(adminLang);
   
@@ -48,33 +50,52 @@ const VocabularyManagePage = () => {
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [user, selectedProfileId]);
 
   const loadData = async () => {
     if (!user) return;
     
-    // Load stories for this user
-    const { data: storiesData } = await supabase
+    // Build stories query - filter by kid_profile_id if selected
+    let storiesQuery = supabase
       .from("stories")
       .select("id, title")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
+    if (selectedProfileId) {
+      storiesQuery = storiesQuery.eq("kid_profile_id", selectedProfileId);
+    }
+    
+    const { data: storiesData } = await storiesQuery;
+    
     if (storiesData && storiesData.length > 0) {
       setStories(storiesData);
       setDefaultStoryId(storiesData[0].id);
+    } else {
+      setStories([]);
+      setDefaultStoryId("");
     }
 
-    // Load all marked words from user's stories
+    // Get story IDs for filtering words
+    const storyIds = storiesData?.map(s => s.id) || [];
+    
+    if (storyIds.length === 0) {
+      setWords([]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Load all marked words from filtered stories
     const { data: wordsData } = await supabase
       .from("marked_words")
-      .select("*, stories!inner(user_id)")
+      .select("*")
+      .in("story_id", storyIds)
       .order("created_at", { ascending: false });
     
     if (wordsData) {
-      // Filter to only show words from user's stories
-      const userWords = wordsData.filter((w: any) => w.stories?.user_id === user.id);
-      setWords(userWords as MarkedWord[]);
+      setWords(wordsData as MarkedWord[]);
+    } else {
+      setWords([]);
     }
     
     setIsLoading(false);
@@ -186,11 +207,42 @@ const VocabularyManagePage = () => {
       </div>
 
       <div className="container max-w-4xl p-4 md:p-8">
+        {/* Kid Profile Selector */}
+        {hasMultipleProfiles && (
+          <div className="mb-6 flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
+            {kidProfiles.map((profile) => (
+              <button
+                key={profile.id}
+                onClick={() => setSelectedProfileId(profile.id)}
+                className={`
+                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+                  ${selectedProfileId === profile.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-muted'
+                  }
+                `}
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                  {profile.cover_image_url ? (
+                    <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium text-sm">{profile.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Add new word section */}
         <div className="bg-card rounded-2xl p-6 shadow-card mb-8 border-2 border-primary/20">
           <h2 className="text-xl font-baloo mb-4 flex items-center gap-2">
             <Plus className="h-5 w-5 text-primary" />
             {adminLang === 'de' ? 'Neues Wort hinzufügen' : adminLang === 'fr' ? 'Ajouter un nouveau mot' : 'Add new word'}
+            {selectedProfile && <span className="text-sm text-muted-foreground ml-2">({selectedProfile.name})</span>}
           </h2>
           
           <div className="flex gap-4 items-end">
@@ -223,6 +275,7 @@ const VocabularyManagePage = () => {
           {!defaultStoryId && (
             <p className="text-sm text-muted-foreground mt-2">
               {adminLang === 'de' ? 'Bitte zuerst eine Geschichte erstellen' : 'Please create a story first'}
+              {selectedProfile && ` ${adminLang === 'de' ? 'für' : 'for'} ${selectedProfile.name}`}
             </p>
           )}
         </div>
@@ -231,11 +284,13 @@ const VocabularyManagePage = () => {
         <div className="bg-card rounded-2xl p-6 shadow-card">
           <h2 className="text-xl font-baloo mb-4">
             {adminLang === 'de' ? `Alle Wörter (${words.length})` : adminLang === 'fr' ? `Tous les mots (${words.length})` : `All words (${words.length})`}
+            {selectedProfile && <span className="text-sm text-muted-foreground ml-2">- {selectedProfile.name}</span>}
           </h2>
 
           {words.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
               {adminLang === 'de' ? 'Noch keine Wörter vorhanden' : adminLang === 'fr' ? 'Pas encore de mots' : 'No words yet'}
+              {selectedProfile && ` ${adminLang === 'de' ? 'für' : adminLang === 'fr' ? 'pour' : 'for'} ${selectedProfile.name}`}
             </p>
           ) : (
             <div className="overflow-x-auto">

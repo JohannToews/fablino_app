@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
+import { Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw, Users } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import PageHeader from "@/components/PageHeader";
 import {
   Select,
@@ -40,6 +41,7 @@ interface Story {
 const VocabularyQuizPage = () => {
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
   const navigate = useNavigate();
   const [allWords, setAllWords] = useState<QuizWord[]>([]);
   const [words, setWords] = useState<QuizWord[]>([]);
@@ -103,7 +105,7 @@ const VocabularyQuizPage = () => {
       loadWordsAndStories();
     }
     loadQuizPointValue();
-  }, [user]);
+  }, [user, selectedProfileId]);
 
   // Filter words when story selection changes
   useEffect(() => {
@@ -134,36 +136,55 @@ const VocabularyQuizPage = () => {
       return;
     }
     
-    // Load stories for this user (for dropdown)
-    const { data: storiesData } = await supabase
+    // Build stories query - filter by kid_profile_id if selected
+    let storiesQuery = supabase
       .from("stories")
       .select("id, title")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
+    if (selectedProfileId) {
+      storiesQuery = storiesQuery.eq("kid_profile_id", selectedProfileId);
+    }
+    
+    const { data: storiesData } = await storiesQuery;
+    
     if (storiesData) {
       setStories(storiesData);
     }
     
-    // Load words only from stories that belong to this user
+    // Get story IDs for filtering words
+    const storyIds = storiesData?.map(s => s.id) || [];
+    
+    if (storyIds.length === 0) {
+      setAllWords([]);
+      setWords([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Load words only from filtered stories
     const { data, error } = await supabase
       .from("marked_words")
-      .select("*, stories!inner(user_id)")
+      .select("*, stories!inner(user_id, kid_profile_id)")
+      .in("story_id", storyIds)
       .not("explanation", "is", null)
       .or("difficulty.is.null,difficulty.neq.easy")
       .or("is_learned.is.null,is_learned.eq.false")
       .order("created_at", { ascending: false });
 
     if (data && data.length > 0) {
-      // Filter words that belong to user's stories and have explanations
+      // Filter words that have explanations
       const validWords = data.filter((w: any) => 
-        w.stories?.user_id === user.id &&
         w.explanation && 
         w.explanation.trim().length > 0 &&
         !w.is_learned
       );
       setAllWords(validWords as QuizWord[]);
       setWords(validWords as QuizWord[]);
+    } else {
+      setAllWords([]);
+      setWords([]);
     }
     setIsLoading(false);
   };
@@ -422,11 +443,43 @@ const VocabularyQuizPage = () => {
       />
 
       <div className="container max-w-2xl p-4 md:p-8">
+        {/* Kid Profile Selector */}
+        {hasMultipleProfiles && !quizStarted && !quizComplete && (
+          <div className="mb-6 flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
+            {kidProfiles.map((profile) => (
+              <button
+                key={profile.id}
+                onClick={() => setSelectedProfileId(profile.id)}
+                className={`
+                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+                  ${selectedProfileId === profile.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-muted'
+                  }
+                `}
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                  {profile.cover_image_url ? (
+                    <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium text-sm">{profile.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Quiz not started */}
         {!quizStarted && !quizComplete && (
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
             <Sparkles className="h-16 w-16 text-primary mx-auto mb-6 animate-sparkle" />
-            <h2 className="text-3xl font-baloo mb-4">Prêt à jouer?</h2>
+            <h2 className="text-3xl font-baloo mb-4">
+              Prêt à jouer{selectedProfile ? `, ${selectedProfile.name}` : ''}?
+            </h2>
             
             {/* Story selection */}
             <div className="my-6 flex flex-col items-center gap-4">

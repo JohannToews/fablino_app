@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, BookOpen, Brain, Star, Sparkles } from "lucide-react";
+import { Trophy, BookOpen, Brain, Star, Sparkles, Users } from "lucide-react";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import PageHeader from "@/components/PageHeader";
+
 interface UserResult {
   id: string;
   activity_type: string;
@@ -28,6 +30,7 @@ const ResultsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
   const [isLoading, setIsLoading] = useState(true);
   const [totalPoints, setTotalPoints] = useState(0);
   const [storyPoints, setStoryPoints] = useState(0);
@@ -41,7 +44,7 @@ const ResultsPage = () => {
     if (user) {
       loadResults();
     }
-  }, [user]);
+  }, [user, selectedProfileId]);
 
   const loadResults = async () => {
     if (!user) {
@@ -60,7 +63,20 @@ const ResultsPage = () => {
         setLevels(levelData);
       }
 
-      // Load user results filtered by user_id
+      // First, get the stories for the selected kid profile
+      let storiesQuery = supabase
+        .from("stories")
+        .select("id")
+        .eq("user_id", user.id);
+      
+      if (selectedProfileId) {
+        storiesQuery = storiesQuery.eq("kid_profile_id", selectedProfileId);
+      }
+      
+      const { data: storiesData } = await storiesQuery;
+      const storyIds = storiesData?.map(s => s.id) || [];
+
+      // Load user results filtered by user_id AND by stories belonging to selected kid profile
       const { data: results } = await supabase
         .from("user_results")
         .select("*")
@@ -68,19 +84,26 @@ const ResultsPage = () => {
         .order("created_at", { ascending: false });
 
       if (results) {
-        // Calculate totals by category
+        // Calculate totals by category, filtering by kid profile's stories
         let storyPts = 0;
         let quizPts = 0;
         let storyCount = 0;
         let quizCount = 0;
 
         results.forEach((r: UserResult) => {
+          // For story activities, check if the reference_id is in our kid's stories
           if (r.activity_type === 'story_read' || r.activity_type === 'story_completed') {
-            storyPts += r.points_earned;
-            storyCount++;
+            if (!selectedProfileId || (r.reference_id && storyIds.includes(r.reference_id))) {
+              storyPts += r.points_earned;
+              storyCount++;
+            }
           } else if (r.activity_type === 'quiz_passed') {
-            quizPts += r.points_earned;
-            quizCount++;
+            // Quiz results are not directly linked to stories/kid profiles in the current schema
+            // For now, show all quiz results (could be enhanced with kid_profile_id on user_results)
+            if (!selectedProfileId || storyIds.length > 0) {
+              quizPts += r.points_earned;
+              quizCount++;
+            }
           }
         });
 
@@ -91,14 +114,27 @@ const ResultsPage = () => {
         setTotalPoints(storyPts + quizPts);
       }
 
-      // Load learned words count - only from user's stories
-      const { data: learnedData } = await supabase
-        .from("marked_words")
-        .select("*, stories!inner(user_id)")
-        .eq("is_learned", true);
-      
-      const userLearnedCount = learnedData?.filter((w: any) => w.stories?.user_id === user.id).length || 0;
-      setWordsLearned(userLearnedCount);
+      // Load learned words count - only from kid's stories
+      if (storyIds.length > 0) {
+        const { data: learnedData } = await supabase
+          .from("marked_words")
+          .select("id")
+          .eq("is_learned", true)
+          .in("story_id", storyIds);
+        
+        setWordsLearned(learnedData?.length || 0);
+      } else if (!selectedProfileId) {
+        // If no profile selected, load all user's learned words
+        const { data: learnedData } = await supabase
+          .from("marked_words")
+          .select("*, stories!inner(user_id)")
+          .eq("is_learned", true);
+        
+        const userLearnedCount = learnedData?.filter((w: any) => w.stories?.user_id === user.id).length || 0;
+        setWordsLearned(userLearnedCount);
+      } else {
+        setWordsLearned(0);
+      }
 
     } catch (err) {
       console.error("Error loading results:", err);
@@ -149,6 +185,36 @@ const ResultsPage = () => {
       <PageHeader title="Mes Résultats" backTo="/" />
 
       <div className="container max-w-4xl p-4 md:p-8">
+        {/* Kid Profile Selector */}
+        {hasMultipleProfiles && (
+          <div className="mb-6 flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
+            {kidProfiles.map((profile) => (
+              <button
+                key={profile.id}
+                onClick={() => setSelectedProfileId(profile.id)}
+                className={`
+                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+                  ${selectedProfileId === profile.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-muted'
+                  }
+                `}
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                  {profile.cover_image_url ? (
+                    <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium text-sm">{profile.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Total Points Hero - More Compact */}
         <Card className="mb-6 border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent overflow-hidden">
           <CardContent className="p-5 text-center relative">
@@ -159,7 +225,9 @@ const ResultsPage = () => {
             <p className="text-5xl md:text-6xl font-baloo font-bold text-primary mb-1">
               {totalPoints}
             </p>
-            <p className="text-lg text-muted-foreground mb-3">Points totaux</p>
+            <p className="text-lg text-muted-foreground mb-3">
+              Points totaux {selectedProfile && `- ${selectedProfile.name}`}
+            </p>
             
             {/* Level Badge */}
             <div className="inline-flex items-center gap-2 bg-primary/20 rounded-full px-4 py-1.5">

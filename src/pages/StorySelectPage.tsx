@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Sparkles, BookText, GraduationCap, CheckCircle2 } from "lucide-react";
+import { BookOpen, Sparkles, BookText, GraduationCap, CheckCircle2, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, Language } from "@/lib/translations";
 import heroImage from "@/assets/hero-reading.jpg";
 import PageHeader from "@/components/PageHeader";
@@ -18,11 +19,7 @@ interface Story {
   cover_image_url: string | null;
   difficulty: string | null;
   text_type: string | null;
-}
-
-interface StoryStatus {
-  storyId: string;
-  isCompleted: boolean;
+  kid_profile_id: string | null;
 }
 
 // Difficulty labels in different languages
@@ -56,6 +53,7 @@ const StorySelectPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
   const appLang = (user?.appLanguage || 'fr') as Language;
   const t = useTranslations(appLang);
   const [stories, setStories] = useState<Story[]>([]);
@@ -66,17 +64,24 @@ const StorySelectPage = () => {
     if (user) {
       loadStories();
     }
-  }, [user]);
+  }, [user, selectedProfileId]);
 
   const loadStories = async () => {
     if (!user) return;
     
-    // Load stories
-    const { data: storiesData } = await supabase
+    // Build query - filter by kid_profile_id if selected
+    let query = supabase
       .from("stories")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
+    
+    // Filter by selected kid profile
+    if (selectedProfileId) {
+      query = query.eq("kid_profile_id", selectedProfileId);
+    }
+    
+    const { data: storiesData } = await query;
     
     if (storiesData) {
       setStories(storiesData);
@@ -118,6 +123,38 @@ const StorySelectPage = () => {
         backTo="/" 
       />
 
+      {/* Kid Profile Selector */}
+      {hasMultipleProfiles && (
+        <div className="container max-w-5xl px-4 pb-4">
+          <div className="flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
+            {kidProfiles.map((profile) => (
+              <button
+                key={profile.id}
+                onClick={() => setSelectedProfileId(profile.id)}
+                className={`
+                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+                  ${selectedProfileId === profile.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-muted'
+                  }
+                `}
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                  {profile.cover_image_url ? (
+                    <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium text-sm">{profile.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tabs for Fiction / Non-Fiction */}
       <div className="container max-w-5xl px-4 pb-12">
         {isLoading ? (
@@ -139,6 +176,7 @@ const StorySelectPage = () => {
                appLang === 'es' ? 'Aún no hay historias' :
                appLang === 'nl' ? 'Nog geen verhalen' :
                'No stories yet'}
+              {selectedProfile && ` ${appLang === 'fr' ? 'pour' : appLang === 'de' ? 'für' : 'for'} ${selectedProfile.name}`}
             </p>
             <Button
               onClick={() => navigate("/admin")}
