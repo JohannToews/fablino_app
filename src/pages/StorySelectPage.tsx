@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, Language } from "@/lib/translations";
-import heroImage from "@/assets/hero-reading.jpg";
 import PageHeader from "@/components/PageHeader";
 
 interface Story {
@@ -165,11 +164,7 @@ const StorySelectPage = () => {
           </div>
         ) : stories.length === 0 ? (
           <div className="text-center py-20">
-            <img
-              src={heroImage}
-              alt="Reading adventure"
-              className="w-64 h-40 object-cover rounded-2xl mx-auto mb-6 shadow-card"
-            />
+            <BookOpen className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
             <p className="text-xl text-muted-foreground mb-4">
               {appLang === 'de' ? 'Noch keine Geschichten' :
                appLang === 'fr' ? "Pas encore d'histoires" :
