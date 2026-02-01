@@ -152,11 +152,11 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
 
   const getLengthLabel = (val: string) => {
     const labels: Record<string, Record<string, string>> = {
-      de: { short: "Kurz (250-300 Wörter)", medium: "Mittel (300-350 Wörter)", long: "Lang (350-450 Wörter)" },
-      en: { short: "Short (250-300 words)", medium: "Medium (300-350 words)", long: "Long (350-450 words)" },
-      fr: { short: "Court (250-300 mots)", medium: "Moyen (300-350 mots)", long: "Long (350-450 mots)" },
-      es: { short: "Corto (250-300 palabras)", medium: "Medio (300-350 palabras)", long: "Largo (350-450 palabras)" },
-      nl: { short: "Kort (250-300 woorden)", medium: "Gemiddeld (300-350 woorden)", long: "Lang (350-450 woorden)" },
+      de: { very_short: "Sehr kurz (150-200 Wörter)", short: "Kurz (250-300 Wörter)", medium: "Mittel (300-350 Wörter)", long: "Lang (350-450 Wörter)", very_long: "Sehr lang (500-600 Wörter)" },
+      en: { very_short: "Very short (150-200 words)", short: "Short (250-300 words)", medium: "Medium (300-350 words)", long: "Long (350-450 words)", very_long: "Very long (500-600 words)" },
+      fr: { very_short: "Très court (150-200 mots)", short: "Court (250-300 mots)", medium: "Moyen (300-350 mots)", long: "Long (350-450 mots)", very_long: "Très long (500-600 mots)" },
+      es: { very_short: "Muy corto (150-200 palabras)", short: "Corto (250-300 palabras)", medium: "Medio (300-350 palabras)", long: "Largo (350-450 palabras)", very_long: "Muy largo (500-600 palabras)" },
+      nl: { very_short: "Zeer kort (150-200 woorden)", short: "Kort (250-300 woorden)", medium: "Gemiddeld (300-350 woorden)", long: "Lang (350-450 woorden)", very_long: "Zeer lang (500-600 woorden)" },
     };
     return labels[adminLang]?.[val as keyof typeof labels.de] || val;
   };
@@ -210,9 +210,11 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="very_short">{getLengthLabel("very_short")}</SelectItem>
                 <SelectItem value="short">{getLengthLabel("short")}</SelectItem>
                 <SelectItem value="medium">{getLengthLabel("medium")}</SelectItem>
                 <SelectItem value="long">{getLengthLabel("long")}</SelectItem>
+                <SelectItem value="very_long">{getLengthLabel("very_long")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -431,9 +431,11 @@ serve(async (req) => {
 
     // Determine how many images to generate based on length
     const imageCountMap: Record<string, number> = {
-      short: 1,   // Cover only
-      medium: 2,  // Cover + 1 progress image
-      long: 3,    // Cover + 2 progress images
+      very_short: 1, // Cover only
+      short: 1,      // Cover only
+      medium: 2,     // Cover + 1 progress image
+      long: 3,       // Cover + 2 progress images
+      very_long: 4,  // Cover + 3 progress images
     };
     const totalImageCount = imageCountMap[length] || 1;
 
@@ -459,16 +461,20 @@ serve(async (req) => {
 
     // Map length to approximate word count with explicit minimum
     const lengthMap: Record<string, { range: string; min: number; max: number }> = {
+      very_short: { range: "150-200 Wörter", min: 150, max: 200 },
       short: { range: "250-300 Wörter", min: 250, max: 300 },
       medium: { range: "300-350 Wörter", min: 300, max: 350 },
       long: { range: "350-450 Wörter", min: 350, max: 450 },
+      very_long: { range: "500-600 Wörter", min: 500, max: 600 },
     };
 
     // Map length to question count
     const questionCountMap: Record<string, number> = {
+      very_short: 2,
       short: 3,
       medium: 5,
       long: 7,
+      very_long: 8,
     };
 
     // Map difficulty labels
