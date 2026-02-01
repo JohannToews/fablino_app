@@ -849,7 +849,7 @@ const ReadingPage = () => {
                   <QuizCompletionResult
                     correctCount={quizResult.correctCount}
                     totalCount={quizResult.totalCount}
-                    appLanguage={user?.appLanguage || 'fr'}
+                    appLanguage={user?.textLanguage || 'fr'}
                     onContinue={() => navigate("/stories")}
                   />
                 </div>
