@@ -5,7 +5,95 @@ import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users } from "
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { Language } from "@/lib/translations";
 import heroImage from "@/assets/hero-reading.jpg";
+
+// Home page translations
+const homeTranslations: Record<Language, {
+  greeting: string;
+  subtitle: string;
+  readStory: string;
+  readStoryDesc: string;
+  wordQuiz: string;
+  wordQuizDesc: string;
+  myResults: string;
+  myResultsDesc: string;
+  footer: string;
+  appName: string;
+}> = {
+  de: {
+    greeting: 'Hallo',
+    subtitle: 'Lerne lesen mit Freude! ✨',
+    readStory: 'Eine Geschichte lesen',
+    readStoryDesc: 'Lies und lerne neue Wörter',
+    wordQuiz: 'Wörter-Quiz',
+    wordQuizDesc: 'Teste dein Vokabular',
+    myResults: 'Meine Ergebnisse',
+    myResultsDesc: 'Punkte und Fortschritt',
+    footer: 'Mit ❤️ für kleine Leser gemacht',
+    appName: 'LeseMagie',
+  },
+  fr: {
+    greeting: 'Salut',
+    subtitle: 'Apprends à lire avec plaisir! ✨',
+    readStory: 'Lire une Histoire',
+    readStoryDesc: 'Lis et apprends de nouveaux mots',
+    wordQuiz: 'Quiz des Mots',
+    wordQuizDesc: 'Teste ton vocabulaire',
+    myResults: 'Mes Résultats',
+    myResultsDesc: 'Points et progrès',
+    footer: 'Fait avec ❤️ pour les petits lecteurs',
+    appName: 'LireMagie',
+  },
+  en: {
+    greeting: 'Hello',
+    subtitle: 'Learn to read with joy! ✨',
+    readStory: 'Read a Story',
+    readStoryDesc: 'Read and learn new words',
+    wordQuiz: 'Word Quiz',
+    wordQuizDesc: 'Test your vocabulary',
+    myResults: 'My Results',
+    myResultsDesc: 'Points and progress',
+    footer: 'Made with ❤️ for little readers',
+    appName: 'ReadMagic',
+  },
+  es: {
+    greeting: 'Hola',
+    subtitle: '¡Aprende a leer con alegría! ✨',
+    readStory: 'Leer una Historia',
+    readStoryDesc: 'Lee y aprende palabras nuevas',
+    wordQuiz: 'Quiz de Palabras',
+    wordQuizDesc: 'Pon a prueba tu vocabulario',
+    myResults: 'Mis Resultados',
+    myResultsDesc: 'Puntos y progreso',
+    footer: 'Hecho con ❤️ para pequeños lectores',
+    appName: 'LeerMagia',
+  },
+  nl: {
+    greeting: 'Hallo',
+    subtitle: 'Leer lezen met plezier! ✨',
+    readStory: 'Een Verhaal Lezen',
+    readStoryDesc: 'Lees en leer nieuwe woorden',
+    wordQuiz: 'Woordenquiz',
+    wordQuizDesc: 'Test je woordenschat',
+    myResults: 'Mijn Resultaten',
+    myResultsDesc: 'Punten en voortgang',
+    footer: 'Gemaakt met ❤️ voor kleine lezers',
+    appName: 'LeesMagie',
+  },
+  it: {
+    greeting: 'Ciao',
+    subtitle: 'Impara a leggere con gioia! ✨',
+    readStory: 'Leggi una Storia',
+    readStoryDesc: 'Leggi e impara nuove parole',
+    wordQuiz: 'Quiz delle Parole',
+    wordQuizDesc: 'Metti alla prova il tuo vocabolario',
+    myResults: 'I Miei Risultati',
+    myResultsDesc: 'Punti e progressi',
+    footer: 'Fatto con ❤️ per i piccoli lettori',
+    appName: 'LeggiMagia',
+  },
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,6 +106,9 @@ const Index = () => {
     setSelectedProfileId, 
     hasMultipleProfiles 
   } = useKidProfile();
+
+  const appLang = (user?.appLanguage || 'fr') as Language;
+  const t = homeTranslations[appLang] || homeTranslations.fr;
 
   const displayImage = selectedProfile?.cover_image_url || heroImage;
   const childName = selectedProfile?.name;
@@ -37,14 +128,14 @@ const Index = () => {
           <button
             onClick={() => navigate("/words")}
             className="p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
-            title="Wörter verwalten"
+            title={appLang === 'de' ? 'Wörter verwalten' : appLang === 'fr' ? 'Gérer les mots' : 'Manage words'}
           >
             <Hand className="h-5 w-5 text-muted-foreground" />
           </button>
           <button
             onClick={() => navigate("/admin")}
             className="p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
-            title="Admin (Papa)"
+            title="Admin"
           >
             <Settings className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -60,11 +151,11 @@ const Index = () => {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-baloo font-bold text-foreground mb-4 tracking-tight">
-            {childName ? `Salut ${childName}!` : 'LireMagie'}
+            {childName ? `${t.greeting} ${childName}!` : t.appName}
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-6 font-nunito">
-            Apprends à lire avec plaisir! ✨
+            {t.subtitle}
           </p>
 
           {/* Profile Selector - show when multiple kids */}
@@ -121,7 +212,7 @@ const Index = () => {
 
           {/* Navigation Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl">
-            {/* Lire une Histoire */}
+            {/* Read a Story */}
             <Card 
               onClick={() => navigate("/stories")}
               className="cursor-pointer border-2 border-primary/30 hover:border-primary hover:shadow-card transition-all duration-300 group touch-manipulation"
@@ -130,12 +221,12 @@ const Index = () => {
                 <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <BookOpen className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="font-baloo font-bold text-lg mb-1">Lire une Histoire</h3>
-                <p className="text-sm text-muted-foreground">Lis et apprends de nouveaux mots</p>
+                <h3 className="font-baloo font-bold text-lg mb-1">{t.readStory}</h3>
+                <p className="text-sm text-muted-foreground">{t.readStoryDesc}</p>
               </CardContent>
             </Card>
 
-            {/* Quiz des Mots */}
+            {/* Word Quiz */}
             <Card 
               onClick={() => navigate("/quiz")}
               className="cursor-pointer border-2 border-accent/30 hover:border-accent hover:shadow-card transition-all duration-300 group touch-manipulation"
@@ -144,12 +235,12 @@ const Index = () => {
                 <div className="h-16 w-16 rounded-full bg-accent/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Brain className="h-8 w-8 text-accent-foreground" />
                 </div>
-                <h3 className="font-baloo font-bold text-lg mb-1">Quiz des Mots</h3>
-                <p className="text-sm text-muted-foreground">Teste ton vocabulaire</p>
+                <h3 className="font-baloo font-bold text-lg mb-1">{t.wordQuiz}</h3>
+                <p className="text-sm text-muted-foreground">{t.wordQuizDesc}</p>
               </CardContent>
             </Card>
 
-            {/* Meine Resultate */}
+            {/* My Results */}
             <Card 
               onClick={() => navigate("/results")}
               className="cursor-pointer border-2 border-sunshine/50 hover:border-sunshine hover:shadow-card transition-all duration-300 group touch-manipulation"
@@ -158,8 +249,8 @@ const Index = () => {
                 <div className="h-16 w-16 rounded-full bg-sunshine/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Trophy className="h-8 w-8 text-amber-600" />
                 </div>
-                <h3 className="font-baloo font-bold text-lg mb-1">Mes Résultats</h3>
-                <p className="text-sm text-muted-foreground">Points et progrès</p>
+                <h3 className="font-baloo font-bold text-lg mb-1">{t.myResults}</h3>
+                <p className="text-sm text-muted-foreground">{t.myResultsDesc}</p>
               </CardContent>
             </Card>
           </div>
@@ -168,7 +259,7 @@ const Index = () => {
         {/* Footer */}
         <div className="mt-auto pt-8 pb-4 text-center">
           <p className="text-sm text-muted-foreground/60">
-            Fait avec ❤️ pour les petits lecteurs
+            {t.footer}
           </p>
         </div>
       </div>
