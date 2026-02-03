@@ -12,15 +12,20 @@ import { Language } from "@/lib/translations";
 import VoiceInputField from "@/components/VoiceInputField";
 import HorizontalImageCarousel from "@/components/HorizontalImageCarousel";
 
-// Character images
+// Character images - diverse representation
 import boyImg from "@/assets/characters/boy.jpg";
 import girlImg from "@/assets/characters/girl.jpg";
+import blackGirlImg from "@/assets/characters/black-girl.jpg";
+import asianBoyImg from "@/assets/characters/asian-boy.jpg";
 import robotImg from "@/assets/characters/robot.jpg";
 import grandmaImg from "@/assets/characters/grandma.jpg";
 import grandpaImg from "@/assets/characters/grandpa.jpg";
 import foxImg from "@/assets/characters/fox.jpg";
 import superheroImg from "@/assets/characters/superhero.jpg";
 import wizardCatImg from "@/assets/characters/wizard-cat.jpg";
+import familyImg from "@/assets/characters/family.jpg";
+import boysFriendsImg from "@/assets/characters/boys-friends.jpg";
+import girlsFriendsImg from "@/assets/characters/girls-friends.jpg";
 
 // Setting images
 import spaceImg from "@/assets/settings/space.jpg";
@@ -32,7 +37,11 @@ import jungleImg from "@/assets/settings/jungle.jpg";
 import castleImg from "@/assets/settings/castle.jpg";
 import futureCityImg from "@/assets/settings/future-city.jpg";
 
-const characterImages = [boyImg, girlImg, robotImg, grandmaImg, grandpaImg, foxImg, superheroImg, wizardCatImg];
+const characterImages = [
+  boyImg, blackGirlImg, asianBoyImg, girlImg, familyImg, 
+  boysFriendsImg, girlsFriendsImg, grandmaImg, grandpaImg, 
+  foxImg, robotImg, superheroImg, wizardCatImg
+];
 const settingImages = [spaceImg, mountainsImg, arenaImg, desertImg, deepseaImg, jungleImg, castleImg, futureCityImg];
 
 // Translations for the create story page
@@ -209,42 +218,49 @@ const CreateStoryPage = () => {
 
   const canCreate = charactersDescription.trim() && storyDescription.trim();
 
+  // Get a filter color based on the palette for monochromatic effect
+  const getFilterColor = () => {
+    // Use a muted version of the primary color from palette
+    return "hsl(var(--primary) / 0.6)";
+  };
+
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} overflow-hidden`}>
+    <div className={`min-h-screen md:h-screen md:overflow-hidden bg-gradient-to-br ${paletteColors.bg}`}>
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-baloo font-bold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+          <h1 className="text-lg md:text-xl font-baloo font-bold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             {t.title}
           </h1>
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative md:h-[calc(100vh-52px)] md:flex md:flex-col md:justify-center">
         {/* Characters Section with Horizontal Carousel Behind */}
-        <div className="relative py-6">
+        <div className="relative py-3 md:py-4">
           {/* Horizontal Character Carousel - Behind the card */}
           <div className="absolute inset-0 flex items-center z-0 overflow-hidden">
             <HorizontalImageCarousel 
               images={characterImages} 
               direction="left" 
-              speed={50}
+              speed={60}
               imageSize="medium"
               className="w-full"
+              filterColor={getFilterColor()}
             />
           </div>
 
           {/* Main Content - Characters Card */}
-          <div className="container max-w-xl mx-auto px-4 relative z-10">
+          <div className="container max-w-lg mx-auto px-4 relative z-10">
             <Card className="border-2 border-primary/20 bg-card/95 backdrop-blur-sm shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
+              <CardHeader className="pb-1 pt-3 md:pt-4">
+                <CardTitle className="text-base md:text-lg font-baloo">{t.charactersTitle}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-3">
                 <VoiceInputField
                   value={charactersDescription}
                   onChange={setCharactersDescription}
@@ -258,25 +274,26 @@ const CreateStoryPage = () => {
         </div>
 
         {/* Story Description Section with Horizontal Carousel Behind */}
-        <div className="relative py-6">
+        <div className="relative py-3 md:py-4">
           {/* Horizontal Settings Carousel - Behind the card */}
           <div className="absolute inset-0 flex items-center z-0 overflow-hidden">
             <HorizontalImageCarousel 
               images={settingImages} 
               direction="right" 
-              speed={45}
-              imageSize="large"
+              speed={55}
+              imageSize="medium"
               className="w-full"
+              filterColor={getFilterColor()}
             />
           </div>
 
           {/* Main Content - Story Description Card */}
-          <div className="container max-w-xl mx-auto px-4 relative z-10">
+          <div className="container max-w-lg mx-auto px-4 relative z-10">
             <Card className="border-2 border-accent/20 bg-card/95 backdrop-blur-sm shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-baloo">{t.storyDescription}</CardTitle>
+              <CardHeader className="pb-1 pt-3 md:pt-4">
+                <CardTitle className="text-base md:text-lg font-baloo">{t.storyDescription}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-3">
                 <VoiceInputField
                   value={storyDescription}
                   onChange={setStoryDescription}
@@ -290,15 +307,15 @@ const CreateStoryPage = () => {
         </div>
 
         {/* Settings & Create Button */}
-        <div className="container max-w-xl mx-auto px-4 py-6 space-y-6">
+        <div className="container max-w-lg mx-auto px-4 py-3 md:py-4 space-y-3 md:space-y-4">
           <Card className="border-2 border-muted bg-card/95 backdrop-blur-sm">
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="pt-4 pb-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Length */}
-                <div className="space-y-2">
-                  <Label>{t.length}</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">{t.length}</Label>
                   <Select value={length} onValueChange={setLength}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -312,10 +329,10 @@ const CreateStoryPage = () => {
                 </div>
 
                 {/* Difficulty */}
-                <div className="space-y-2">
-                  <Label>{t.difficulty}</Label>
+                <div className="space-y-1">
+                  <Label className="text-sm">{t.difficulty}</Label>
                   <Select value={difficulty} onValueChange={setDifficulty}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -328,14 +345,14 @@ const CreateStoryPage = () => {
               </div>
 
               {/* Series Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-accent/10 border border-accent/20">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="h-5 w-5 text-accent" />
+              <div className="flex items-center justify-between p-2 rounded-lg bg-accent/10 border border-accent/20">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-accent" />
                   <div>
-                    <Label htmlFor="series-mode" className="font-medium cursor-pointer">
+                    <Label htmlFor="series-mode" className="text-sm font-medium cursor-pointer">
                       {t.seriesMode}
                     </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground">
                       {t.seriesDescription}
                     </p>
                   </div>
@@ -365,16 +382,16 @@ const CreateStoryPage = () => {
               });
             }}
             disabled={!canCreate}
-            className="w-full h-14 text-lg font-baloo btn-primary-kid"
+            className="w-full h-12 text-base md:text-lg font-baloo btn-primary-kid"
           >
             {isSeries ? (
               <>
-                <BookOpen className="h-5 w-5 mr-2" />
+                <BookOpen className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                 {t.seriesMode} - {t.episode} 1
               </>
             ) : (
               <>
-                <Sparkles className="h-5 w-5 mr-2" />
+                <Sparkles className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                 {t.createStory}
               </>
             )}

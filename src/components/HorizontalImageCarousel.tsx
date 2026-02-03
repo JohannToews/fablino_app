@@ -6,6 +6,7 @@ interface HorizontalImageCarouselProps {
   speed?: number; // seconds for full cycle
   imageSize?: "small" | "medium" | "large";
   className?: string;
+  filterColor?: string; // CSS color for monochromatic overlay
 }
 
 const HorizontalImageCarousel = ({ 
@@ -13,14 +14,15 @@ const HorizontalImageCarousel = ({
   direction = "left", 
   speed = 40,
   imageSize = "large",
-  className = ""
+  className = "",
+  filterColor
 }: HorizontalImageCarouselProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const sizeClasses = {
-    small: "w-24 h-16",
-    medium: "w-32 h-20 md:w-40 md:h-24",
-    large: "w-40 h-24 md:w-48 md:h-28"
+    small: "w-20 h-14 md:w-24 md:h-16",
+    medium: "w-24 h-16 md:w-28 md:h-20",
+    large: "w-28 h-20 md:w-36 md:h-24"
   };
 
   // Duplicate images for seamless loop
@@ -33,7 +35,7 @@ const HorizontalImageCarousel = ({
       style={{ maskImage: "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)" }}
     >
       <div 
-        className={`flex flex-row gap-4 ${direction === "left" ? "animate-scroll-left" : "animate-scroll-right"}`}
+        className={`flex flex-row gap-3 ${direction === "left" ? "animate-scroll-left" : "animate-scroll-right"}`}
         style={{ 
           animationDuration: `${speed}s`,
           animationTimingFunction: "linear",
@@ -43,7 +45,7 @@ const HorizontalImageCarousel = ({
         {duplicatedImages.map((src, idx) => (
           <div 
             key={idx} 
-            className={`${sizeClasses[imageSize]} rounded-2xl overflow-hidden shadow-lg flex-shrink-0 border-2 border-white/50`}
+            className={`${sizeClasses[imageSize]} rounded-xl overflow-hidden shadow-md flex-shrink-0 relative`}
           >
             <img 
               src={src} 
@@ -51,6 +53,15 @@ const HorizontalImageCarousel = ({
               className="w-full h-full object-cover"
               loading="lazy"
             />
+            {/* Monochromatic overlay filter */}
+            {filterColor && (
+              <div 
+                className="absolute inset-0 mix-blend-color opacity-70"
+                style={{ backgroundColor: filterColor }}
+              />
+            )}
+            {/* Additional desaturation overlay */}
+            <div className="absolute inset-0 bg-background/30" />
           </div>
         ))}
       </div>
