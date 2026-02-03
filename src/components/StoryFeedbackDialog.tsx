@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Star, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Star, Send, Mic, MicOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Language } from "@/lib/translations";
@@ -25,114 +26,89 @@ const translations: Record<Language, {
   title: string;
   description: string;
   qualityLabel: string;
-  weakestPartLabel: string;
-  beginning: string;
-  development: string;
-  ending: string;
-  reasonLabel: string;
-  tooShort: string;
-  tooShallow: string;
-  tooRepetitive: string;
+  commentLabel: string;
+  commentPlaceholder: string;
   skip: string;
   submit: string;
   thankYou: string;
+  listening: string;
 }> = {
   de: {
     title: "Wie war die Geschichte?",
     description: "Dein Feedback hilft uns, bessere Geschichten zu erstellen!",
     qualityLabel: "Qualität der Geschichte",
-    weakestPartLabel: "Welcher Teil war am schwächsten?",
-    beginning: "Aufbau",
-    development: "Entwicklung",
-    ending: "Schluss",
-    reasonLabel: "Grund",
-    tooShort: "Zu kurz - mehr Inhalt gewünscht",
-    tooShallow: "Zu flach - Beschreibungen oberflächlich",
-    tooRepetitive: "Zu repetitiv",
+    commentLabel: "Kommentar (optional)",
+    commentPlaceholder: "Was hat dir gefallen oder nicht gefallen?",
     skip: "Überspringen",
     submit: "Absenden",
     thankYou: "Danke für dein Feedback!",
+    listening: "Ich höre zu...",
   },
   fr: {
     title: "Comment était l'histoire?",
     description: "Tes commentaires nous aident à créer de meilleures histoires!",
     qualityLabel: "Qualité de l'histoire",
-    weakestPartLabel: "Quelle partie était la plus faible?",
-    beginning: "Début",
-    development: "Développement",
-    ending: "Fin",
-    reasonLabel: "Raison",
-    tooShort: "Trop court - plus de contenu souhaité",
-    tooShallow: "Trop superficiel - descriptions peu profondes",
-    tooRepetitive: "Trop répétitif",
+    commentLabel: "Commentaire (optionnel)",
+    commentPlaceholder: "Qu'est-ce qui t'a plu ou pas?",
     skip: "Passer",
     submit: "Envoyer",
     thankYou: "Merci pour ton avis!",
+    listening: "J'écoute...",
   },
   en: {
     title: "How was the story?",
     description: "Your feedback helps us create better stories!",
     qualityLabel: "Story quality",
-    weakestPartLabel: "Which part was weakest?",
-    beginning: "Beginning",
-    development: "Development",
-    ending: "Ending",
-    reasonLabel: "Reason",
-    tooShort: "Too short - want more content",
-    tooShallow: "Too shallow - descriptions superficial",
-    tooRepetitive: "Too repetitive",
+    commentLabel: "Comment (optional)",
+    commentPlaceholder: "What did you like or dislike?",
     skip: "Skip",
     submit: "Submit",
     thankYou: "Thanks for your feedback!",
+    listening: "Listening...",
   },
   es: {
     title: "¿Cómo fue la historia?",
     description: "¡Tus comentarios nos ayudan a crear mejores historias!",
     qualityLabel: "Calidad de la historia",
-    weakestPartLabel: "¿Qué parte fue más débil?",
-    beginning: "Inicio",
-    development: "Desarrollo",
-    ending: "Final",
-    reasonLabel: "Razón",
-    tooShort: "Demasiado corto - quiero más contenido",
-    tooShallow: "Demasiado superficial",
-    tooRepetitive: "Demasiado repetitivo",
+    commentLabel: "Comentario (opcional)",
+    commentPlaceholder: "¿Qué te gustó o no te gustó?",
     skip: "Saltar",
     submit: "Enviar",
     thankYou: "¡Gracias por tu opinión!",
+    listening: "Escuchando...",
   },
   nl: {
     title: "Hoe was het verhaal?",
     description: "Je feedback helpt ons betere verhalen te maken!",
     qualityLabel: "Kwaliteit van het verhaal",
-    weakestPartLabel: "Welk deel was het zwakst?",
-    beginning: "Begin",
-    development: "Ontwikkeling",
-    ending: "Einde",
-    reasonLabel: "Reden",
-    tooShort: "Te kort - meer inhoud gewenst",
-    tooShallow: "Te oppervlakkig",
-    tooRepetitive: "Te repetitief",
+    commentLabel: "Opmerking (optioneel)",
+    commentPlaceholder: "Wat vond je leuk of niet leuk?",
     skip: "Overslaan",
     submit: "Versturen",
     thankYou: "Bedankt voor je feedback!",
+    listening: "Ik luister...",
   },
   it: {
     title: "Com'era la storia?",
     description: "Il tuo feedback ci aiuta a creare storie migliori!",
     qualityLabel: "Qualità della storia",
-    weakestPartLabel: "Quale parte era più debole?",
-    beginning: "Inizio",
-    development: "Sviluppo",
-    ending: "Fine",
-    reasonLabel: "Motivo",
-    tooShort: "Troppo corto - più contenuto desiderato",
-    tooShallow: "Troppo superficiale",
-    tooRepetitive: "Troppo ripetitivo",
+    commentLabel: "Commento (opzionale)",
+    commentPlaceholder: "Cosa ti è piaciuto o non piaciuto?",
     skip: "Salta",
     submit: "Invia",
     thankYou: "Grazie per il tuo feedback!",
+    listening: "Sto ascoltando...",
   },
+};
+
+// Language code mapping for speech recognition
+const languageToLocale: Record<string, string> = {
+  de: "de-DE",
+  fr: "fr-FR",
+  en: "en-US",
+  es: "es-ES",
+  nl: "nl-NL",
+  it: "it-IT",
 };
 
 const StoryFeedbackDialog = ({
@@ -151,11 +127,45 @@ const StoryFeedbackDialog = ({
 }: StoryFeedbackDialogProps) => {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [weakestPart, setWeakestPart] = useState<string | null>(null);
-  const [reason, setReason] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const t = translations[language] || translations.fr;
+
+  const startVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error("Speech recognition not supported");
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = languageToLocale[language] || "fr-FR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setComment(prev => prev ? `${prev} ${transcript}` : transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -175,8 +185,8 @@ const StoryFeedbackDialog = ({
         kid_school_class: kidSchoolClass || null,
         kid_school_system: kidSchoolSystem || null,
         quality_rating: rating,
-        weakest_part: weakestPart,
-        weakness_reason: reason,
+        weakest_part: null,
+        weakness_reason: comment || null,
       });
 
       if (error) throw error;
@@ -229,52 +239,38 @@ const StoryFeedbackDialog = ({
             </div>
           </div>
 
-          {/* Weakest Part */}
+          {/* Comment with Voice Input */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t.weakestPartLabel}</label>
-            <div className="flex gap-2 flex-wrap justify-center">
-              {[
-                { value: "beginning", label: t.beginning },
-                { value: "development", label: t.development },
-                { value: "ending", label: t.ending },
-              ].map((part) => (
-                <Button
-                  key={part.value}
-                  type="button"
-                  variant={weakestPart === part.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setWeakestPart(weakestPart === part.value ? null : part.value)}
-                >
-                  {part.label}
-                </Button>
-              ))}
+            <label className="text-sm font-medium">{t.commentLabel}</label>
+            <div className="relative">
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={t.commentPlaceholder}
+                className="min-h-[80px] pr-12"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={startVoiceInput}
+                disabled={isListening}
+                className={`absolute right-2 top-2 ${isListening ? 'text-primary animate-pulse' : 'text-muted-foreground'}`}
+              >
+                {isListening ? (
+                  <Mic className="h-5 w-5" />
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+              </Button>
             </div>
+            {isListening && (
+              <p className="text-sm text-primary flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {t.listening}
+              </p>
+            )}
           </div>
-
-          {/* Reason */}
-          {weakestPart && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t.reasonLabel}</label>
-              <div className="flex flex-col gap-2">
-                {[
-                  { value: "too_short", label: t.tooShort },
-                  { value: "too_shallow", label: t.tooShallow },
-                  { value: "too_repetitive", label: t.tooRepetitive },
-                ].map((r) => (
-                  <Button
-                    key={r.value}
-                    type="button"
-                    variant={reason === r.value ? "default" : "outline"}
-                    size="sm"
-                    className="justify-start text-left h-auto py-2 px-3"
-                    onClick={() => setReason(reason === r.value ? null : r.value)}
-                  >
-                    {r.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex gap-3 justify-end">
