@@ -263,7 +263,6 @@ const CreateStoryPage = () => {
             <CardContent className="space-y-4">
               {/* Character Name */}
               <VoiceInputField
-                label={t.characterName}
                 value={character.name}
                 onChange={(value) => updateCharacter(character.id, "name", value)}
                 placeholder={t.characterNamePlaceholder}
