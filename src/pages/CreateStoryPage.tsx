@@ -10,6 +10,31 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { Language } from "@/lib/translations";
 import VoiceInputField from "@/components/VoiceInputField";
+import ImageCarousel from "@/components/ImageCarousel";
+import HorizontalImageCarousel from "@/components/HorizontalImageCarousel";
+
+// Character images
+import boyImg from "@/assets/characters/boy.jpg";
+import girlImg from "@/assets/characters/girl.jpg";
+import robotImg from "@/assets/characters/robot.jpg";
+import grandmaImg from "@/assets/characters/grandma.jpg";
+import grandpaImg from "@/assets/characters/grandpa.jpg";
+import foxImg from "@/assets/characters/fox.jpg";
+import superheroImg from "@/assets/characters/superhero.jpg";
+import wizardCatImg from "@/assets/characters/wizard-cat.jpg";
+
+// Setting images
+import spaceImg from "@/assets/settings/space.jpg";
+import mountainsImg from "@/assets/settings/mountains.jpg";
+import arenaImg from "@/assets/settings/arena.jpg";
+import desertImg from "@/assets/settings/desert.jpg";
+import deepseaImg from "@/assets/settings/deepsea.jpg";
+import jungleImg from "@/assets/settings/jungle.jpg";
+import castleImg from "@/assets/settings/castle.jpg";
+import futureCityImg from "@/assets/settings/future-city.jpg";
+
+const characterImages = [boyImg, girlImg, robotImg, grandmaImg, grandpaImg, foxImg, superheroImg, wizardCatImg];
+const settingImages = [spaceImg, mountainsImg, arenaImg, desertImg, deepseaImg, jungleImg, castleImg, futureCityImg];
 
 // Translations for the create story page
 const createStoryTranslations: Record<Language, {
@@ -186,10 +211,10 @@ const CreateStoryPage = () => {
   const canCreate = charactersDescription.trim() && storyDescription.trim();
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} overflow-hidden`}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -200,128 +225,184 @@ const CreateStoryPage = () => {
         </div>
       </div>
 
-      <div className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Characters Section */}
-        <Card className="border-2 border-primary/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <VoiceInputField
-              value={charactersDescription}
-              onChange={setCharactersDescription}
-              placeholder={t.charactersPlaceholder}
-              language={storyLanguage}
-              multiline
+      <div className="relative">
+        {/* Characters Section with Carousels */}
+        <div className="relative py-6">
+          {/* Left Carousel - Hidden on mobile */}
+          <div className="absolute left-0 top-0 bottom-0 w-32 md:w-40 hidden md:block z-10">
+            <ImageCarousel 
+              images={characterImages} 
+              direction="up" 
+              speed={35}
+              imageSize="medium"
+              className="h-full"
             />
-          </CardContent>
-        </Card>
-
-        {/* Story Description */}
-        <Card className="border-2 border-accent/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-baloo">{t.storyDescription}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <VoiceInputField
-              value={storyDescription}
-              onChange={setStoryDescription}
-              placeholder={t.storyDescriptionPlaceholder}
-              language={storyLanguage}
-              multiline
+          </div>
+          
+          {/* Right Carousel - Hidden on mobile */}
+          <div className="absolute right-0 top-0 bottom-0 w-32 md:w-40 hidden md:block z-10">
+            <ImageCarousel 
+              images={[...characterImages].reverse()} 
+              direction="down" 
+              speed={40}
+              imageSize="medium"
+              className="h-full"
             />
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Settings */}
-        <Card className="border-2 border-muted">
-          <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {/* Length */}
-              <div className="space-y-2">
-                <Label>{t.length}</Label>
-                <Select value={length} onValueChange={setLength}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="very_short">{t.veryShort}</SelectItem>
-                    <SelectItem value="short">{t.short}</SelectItem>
-                    <SelectItem value="medium">{t.mediumLength}</SelectItem>
-                    <SelectItem value="long">{t.long}</SelectItem>
-                    <SelectItem value="very_long">{t.veryLong}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Main Content */}
+          <div className="container max-w-xl mx-auto px-4 relative z-10">
+            <Card className="border-2 border-primary/20 bg-card/95 backdrop-blur-sm shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VoiceInputField
+                  value={charactersDescription}
+                  onChange={setCharactersDescription}
+                  placeholder={t.charactersPlaceholder}
+                  language={storyLanguage}
+                  multiline
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-              {/* Difficulty */}
-              <div className="space-y-2">
-                <Label>{t.difficulty}</Label>
-                <Select value={difficulty} onValueChange={setDifficulty}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="easy">{t.easy}</SelectItem>
-                    <SelectItem value="medium">{t.medium}</SelectItem>
-                    <SelectItem value="difficult">{t.hard}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        {/* Story Description Section with Horizontal Carousel */}
+        <div className="relative py-6">
+          {/* Top Horizontal Carousel */}
+          <div className="mb-4">
+            <HorizontalImageCarousel 
+              images={settingImages} 
+              direction="left" 
+              speed={50}
+              imageSize="large"
+              className="w-full"
+            />
+          </div>
 
-            {/* Series Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/10 border border-accent/20">
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-accent" />
-                <div>
-                  <Label htmlFor="series-mode" className="font-medium cursor-pointer">
-                    {t.seriesMode}
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {t.seriesDescription}
-                  </p>
+          {/* Main Content */}
+          <div className="container max-w-xl mx-auto px-4 relative z-10">
+            <Card className="border-2 border-accent/20 bg-card/95 backdrop-blur-sm shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-baloo">{t.storyDescription}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VoiceInputField
+                  value={storyDescription}
+                  onChange={setStoryDescription}
+                  placeholder={t.storyDescriptionPlaceholder}
+                  language={storyLanguage}
+                  multiline
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bottom Horizontal Carousel */}
+          <div className="mt-4">
+            <HorizontalImageCarousel 
+              images={[...settingImages].reverse()} 
+              direction="right" 
+              speed={45}
+              imageSize="large"
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        {/* Settings & Create Button */}
+        <div className="container max-w-xl mx-auto px-4 py-6 space-y-6">
+          <Card className="border-2 border-muted bg-card/95 backdrop-blur-sm">
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Length */}
+                <div className="space-y-2">
+                  <Label>{t.length}</Label>
+                  <Select value={length} onValueChange={setLength}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="very_short">{t.veryShort}</SelectItem>
+                      <SelectItem value="short">{t.short}</SelectItem>
+                      <SelectItem value="medium">{t.mediumLength}</SelectItem>
+                      <SelectItem value="long">{t.long}</SelectItem>
+                      <SelectItem value="very_long">{t.veryLong}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Difficulty */}
+                <div className="space-y-2">
+                  <Label>{t.difficulty}</Label>
+                  <Select value={difficulty} onValueChange={setDifficulty}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">{t.easy}</SelectItem>
+                      <SelectItem value="medium">{t.medium}</SelectItem>
+                      <SelectItem value="difficult">{t.hard}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <Switch
-                id="series-mode"
-                checked={isSeries}
-                onCheckedChange={setIsSeries}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Create Button */}
-        <Button
-          onClick={() => {
-            // TODO: Generate story with these inputs
-            console.log({ 
-              charactersDescription, 
-              storyDescription, 
-              length, 
-              difficulty, 
-              storyLanguage,
-              isSeries,
-              endingType: isSeries ? 'C' : null, // Cliffhanger for series
-              episodeNumber: isSeries ? 1 : null
-            });
-          }}
-          disabled={!canCreate}
-          className="w-full h-14 text-lg font-baloo btn-primary-kid"
-        >
-          {isSeries ? (
-            <>
-              <BookOpen className="h-5 w-5 mr-2" />
-              {t.seriesMode} - {t.episode} 1
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-5 w-5 mr-2" />
-              {t.createStory}
-            </>
-          )}
-        </Button>
+              {/* Series Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-accent/10 border border-accent/20">
+                <div className="flex items-center gap-3">
+                  <BookOpen className="h-5 w-5 text-accent" />
+                  <div>
+                    <Label htmlFor="series-mode" className="font-medium cursor-pointer">
+                      {t.seriesMode}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t.seriesDescription}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="series-mode"
+                  checked={isSeries}
+                  onCheckedChange={setIsSeries}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Create Button */}
+          <Button
+            onClick={() => {
+              // TODO: Generate story with these inputs
+              console.log({ 
+                charactersDescription, 
+                storyDescription, 
+                length, 
+                difficulty, 
+                storyLanguage,
+                isSeries,
+                endingType: isSeries ? 'C' : null, // Cliffhanger for series
+                episodeNumber: isSeries ? 1 : null
+              });
+            }}
+            disabled={!canCreate}
+            className="w-full h-14 text-lg font-baloo btn-primary-kid"
+          >
+            {isSeries ? (
+              <>
+                <BookOpen className="h-5 w-5 mr-2" />
+                {t.seriesMode} - {t.episode} 1
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5 mr-2" />
+                {t.createStory}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

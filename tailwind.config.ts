@@ -92,22 +92,30 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "wiggle": {
-          "0%, 100%": { transform: "rotate(-1deg) scale(1)" },
-          "25%": { transform: "rotate(1deg) scale(1.02)" },
-          "50%": { transform: "rotate(-1deg) scale(1)" },
-          "75%": { transform: "rotate(1deg) scale(1.02)" },
+        "scroll-up": {
+          "0%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(-33.33%)" },
         },
-        "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.4)" },
-          "50%": { boxShadow: "0 0 20px 4px hsl(var(--primary) / 0.3)" },
+        "scroll-down": {
+          "0%": { transform: "translateY(-33.33%)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        "scroll-left": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-33.33%)" },
+        },
+        "scroll-right": {
+          "0%": { transform: "translateX(-33.33%)" },
+          "100%": { transform: "translateX(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "wiggle": "wiggle 2s ease-in-out infinite",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "scroll-up": "scroll-up 30s linear infinite",
+        "scroll-down": "scroll-down 30s linear infinite",
+        "scroll-left": "scroll-left 40s linear infinite",
+        "scroll-right": "scroll-right 40s linear infinite",
       },
     },
   },
