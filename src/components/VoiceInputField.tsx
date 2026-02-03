@@ -1,10 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mic, MicOff, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface VoiceInputFieldProps {
@@ -16,6 +15,19 @@ interface VoiceInputFieldProps {
   multiline?: boolean;
 }
 
+// Map language codes to speech recognition language codes
+const getRecognitionLang = (lang: string): string => {
+  const langMap: Record<string, string> = {
+    de: "de-DE",
+    fr: "fr-FR",
+    en: "en-US",
+    es: "es-ES",
+    nl: "nl-NL",
+    it: "it-IT",
+  };
+  return langMap[lang] || "de-DE";
+};
+
 const VoiceInputField = ({
   label,
   value,
@@ -25,38 +37,83 @@ const VoiceInputField = ({
   multiline = false,
 }: VoiceInputFieldProps) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Check if SpeechRecognition is available
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       
-      // Try to use webm format, fall back to whatever is supported
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
-        ? 'audio/webm' 
-        : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : '';
-      
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+      if (!SpeechRecognitionAPI) {
+        toast.error(
+          language === "de" ? "Spracherkennung nicht unterstützt" :
+          language === "fr" ? "Reconnaissance vocale non supportée" :
+          "Speech recognition not supported"
+        );
+        return;
+      }
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
+      // Request microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = getRecognitionLang(language);
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interim = "";
+        let final = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript;
+          } else {
+            interim += transcript;
+          }
+        }
+
+        // Update interim display
+        setInterimTranscript(interim);
+
+        // Append final results to the value
+        if (final) {
+          const newValue = value ? `${value} ${final}`.trim() : final;
+          onChange(newValue);
         }
       };
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' });
-        stream.getTracks().forEach(track => track.stop());
-        await transcribeAudio(audioBlob);
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error !== "aborted") {
+          toast.error(
+            language === "de" ? "Spracherkennung fehlgeschlagen" :
+            language === "fr" ? "Échec de la reconnaissance vocale" :
+            "Speech recognition failed"
+          );
+        }
+        setIsRecording(false);
+        setInterimTranscript("");
       };
 
-      mediaRecorder.start();
+      recognition.onend = () => {
+        setIsRecording(false);
+        setInterimTranscript("");
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
       setIsRecording(true);
     } catch (error) {
       console.error("Error accessing microphone:", error);
@@ -69,65 +126,34 @@ const VoiceInputField = ({
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (recognitionRef.current && isRecording) {
+      recognitionRef.current.stop();
       setIsRecording(false);
-    }
-  };
-
-  const transcribeAudio = async (audioBlob: Blob) => {
-    setIsTranscribing(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
-      formData.append("language", language);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/speech-to-text`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Transcription failed");
-      }
-
-      const data = await response.json();
-      
-      if (data.text) {
-        // Append to existing value if there's already text
-        const newValue = value ? `${value} ${data.text}` : data.text;
-        onChange(newValue);
-      }
-    } catch (error) {
-      console.error("Transcription error:", error);
-      toast.error(
-        language === "de" ? "Transkription fehlgeschlagen" :
-        language === "fr" ? "Échec de la transcription" :
-        "Transcription failed"
-      );
-    } finally {
-      setIsTranscribing(false);
+      setInterimTranscript("");
     }
   };
 
   const InputComponent = multiline ? Textarea : Input;
+
+  // Display value with interim transcript
+  const displayValue = isRecording && interimTranscript 
+    ? `${value}${value ? " " : ""}${interimTranscript}`
+    : value;
 
   return (
     <div className="space-y-2">
       {label && <Label className="text-base font-medium">{label}</Label>}
       <div className="flex gap-2">
         <InputComponent
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={displayValue}
+          onChange={(e) => {
+            if (!isRecording) {
+              onChange(e.target.value);
+            }
+          }}
           placeholder={placeholder}
           className={multiline ? "min-h-[100px] text-base" : "text-base"}
+          readOnly={isRecording}
         />
         <Button
           type="button"
@@ -135,11 +161,8 @@ const VoiceInputField = ({
           size="icon"
           className="flex-shrink-0 h-10 w-10"
           onClick={isRecording ? stopRecording : startRecording}
-          disabled={isTranscribing}
         >
-          {isTranscribing ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : isRecording ? (
+          {isRecording ? (
             <MicOff className="h-5 w-5" />
           ) : (
             <Mic className="h-5 w-5" />
