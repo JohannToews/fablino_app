@@ -10,7 +10,6 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { Language } from "@/lib/translations";
 import VoiceInputField from "@/components/VoiceInputField";
-import ImageCarousel from "@/components/ImageCarousel";
 import HorizontalImageCarousel from "@/components/HorizontalImageCarousel";
 
 // Character images
@@ -226,31 +225,20 @@ const CreateStoryPage = () => {
       </div>
 
       <div className="relative">
-        {/* Characters Section with Carousels */}
+        {/* Characters Section with Horizontal Carousel Behind */}
         <div className="relative py-6">
-          {/* Left Carousel - Hidden on mobile */}
-          <div className="absolute left-0 top-0 bottom-0 w-32 md:w-40 hidden md:block z-10">
-            <ImageCarousel 
+          {/* Horizontal Character Carousel - Behind the card */}
+          <div className="absolute inset-0 flex items-center z-0 overflow-hidden">
+            <HorizontalImageCarousel 
               images={characterImages} 
-              direction="up" 
-              speed={35}
+              direction="left" 
+              speed={50}
               imageSize="medium"
-              className="h-full"
-            />
-          </div>
-          
-          {/* Right Carousel - Hidden on mobile */}
-          <div className="absolute right-0 top-0 bottom-0 w-32 md:w-40 hidden md:block z-10">
-            <ImageCarousel 
-              images={[...characterImages].reverse()} 
-              direction="down" 
-              speed={40}
-              imageSize="medium"
-              className="h-full"
+              className="w-full"
             />
           </div>
 
-          {/* Main Content */}
+          {/* Main Content - Characters Card */}
           <div className="container max-w-xl mx-auto px-4 relative z-10">
             <Card className="border-2 border-primary/20 bg-card/95 backdrop-blur-sm shadow-lg">
               <CardHeader className="pb-2">
@@ -269,20 +257,20 @@ const CreateStoryPage = () => {
           </div>
         </div>
 
-        {/* Story Description Section with Horizontal Carousel */}
+        {/* Story Description Section with Horizontal Carousel Behind */}
         <div className="relative py-6">
-          {/* Top Horizontal Carousel */}
-          <div className="mb-4">
+          {/* Horizontal Settings Carousel - Behind the card */}
+          <div className="absolute inset-0 flex items-center z-0 overflow-hidden">
             <HorizontalImageCarousel 
               images={settingImages} 
-              direction="left" 
-              speed={50}
+              direction="right" 
+              speed={45}
               imageSize="large"
               className="w-full"
             />
           </div>
 
-          {/* Main Content */}
+          {/* Main Content - Story Description Card */}
           <div className="container max-w-xl mx-auto px-4 relative z-10">
             <Card className="border-2 border-accent/20 bg-card/95 backdrop-blur-sm shadow-lg">
               <CardHeader className="pb-2">
@@ -298,17 +286,6 @@ const CreateStoryPage = () => {
                 />
               </CardContent>
             </Card>
-          </div>
-
-          {/* Bottom Horizontal Carousel */}
-          <div className="mt-4">
-            <HorizontalImageCarousel 
-              images={[...settingImages].reverse()} 
-              direction="right" 
-              speed={45}
-              imageSize="large"
-              className="w-full"
-            />
           </div>
         </div>
 
