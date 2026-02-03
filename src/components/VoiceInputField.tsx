@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mic, MicOff, Loader2 } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceInputFieldProps {
@@ -29,6 +29,65 @@ const getRecognitionLang = (lang: string): string => {
   return langMap[lang] || "de-DE";
 };
 
+// Error messages per language
+const errorMessages: Record<string, {
+  noSupport: string;
+  noMic: string;
+  noSpeech: string;
+  error: string;
+  recording: string;
+}> = {
+  de: {
+    noSupport: "Spracherkennung nicht unterstützt",
+    noMic: "Mikrofon nicht verfügbar",
+    noSpeech: "Ich habe nichts gehört. Versuch es nochmal!",
+    error: "Spracherkennung fehlgeschlagen",
+    recording: "🎤 Sprich jetzt...",
+  },
+  fr: {
+    noSupport: "Reconnaissance vocale non supportée",
+    noMic: "Microphone non disponible",
+    noSpeech: "Je n'ai rien entendu. Essaie encore!",
+    error: "Échec de la reconnaissance vocale",
+    recording: "🎤 Parle maintenant...",
+  },
+  en: {
+    noSupport: "Speech recognition not supported",
+    noMic: "Microphone not available",
+    noSpeech: "I didn't hear anything. Try again!",
+    error: "Speech recognition failed",
+    recording: "🎤 Speak now...",
+  },
+  es: {
+    noSupport: "Reconocimiento de voz no soportado",
+    noMic: "Micrófono no disponible",
+    noSpeech: "No escuché nada. ¡Intenta de nuevo!",
+    error: "Reconocimiento de voz fallido",
+    recording: "🎤 Habla ahora...",
+  },
+  nl: {
+    noSupport: "Spraakherkenning niet ondersteund",
+    noMic: "Microfoon niet beschikbaar",
+    noSpeech: "Ik hoorde niets. Probeer het opnieuw!",
+    error: "Spraakherkenning mislukt",
+    recording: "🎤 Spreek nu...",
+  },
+  it: {
+    noSupport: "Riconoscimento vocale non supportato",
+    noMic: "Microfono non disponibile",
+    noSpeech: "Non ho sentito niente. Riprova!",
+    error: "Riconoscimento vocale fallito",
+    recording: "🎤 Parla ora...",
+  },
+  bs: {
+    noSupport: "Prepoznavanje govora nije podržano",
+    noMic: "Mikrofon nije dostupan",
+    noSpeech: "Nisam ništa čuo/la. Pokušaj ponovo!",
+    error: "Prepoznavanje govora nije uspjelo",
+    recording: "🎤 Govori sada...",
+  },
+};
+
 const VoiceInputField = ({
   label,
   value,
@@ -40,98 +99,169 @@ const VoiceInputField = ({
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const shouldRestartRef = useRef(false);
+  
+  const msgs = errorMessages[language] || errorMessages.de;
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      shouldRestartRef.current = false;
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {
+          // Ignore
+        }
       }
     };
   }, []);
 
   const startRecording = async () => {
+    // Check if SpeechRecognition is available
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognitionAPI) {
+      toast.error(msgs.noSupport);
+      return;
+    }
+
+    // Request microphone permission explicitly (important for tablets/mobile)
     try {
-      // Check if SpeechRecognition is available
-      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
-      if (!SpeechRecognitionAPI) {
-        toast.error(
-          language === "de" ? "Spracherkennung nicht unterstützt" :
-          language === "fr" ? "Reconnaissance vocale non supportée" :
-          "Speech recognition not supported"
-        );
-        return;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the stream immediately - we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.error("Microphone permission error:", error);
+      toast.error(msgs.noMic);
+      return;
+    }
+
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        // Ignore abort errors
+      }
+    }
+
+    shouldRestartRef.current = true;
+    createAndStartRecognition();
+  };
+
+  const createAndStartRecognition = () => {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) return;
+
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = getRecognitionLang(language);
+    recognition.continuous = false; // Use non-continuous for better reliability
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log("Speech recognition started");
+      setIsRecording(true);
+      setInterimTranscript("");
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let finalTranscript = "";
+      let interimText = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimText += transcript;
+        }
       }
 
-      // Request microphone permission
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Update interim display
+      setInterimTranscript(interimText);
 
-      const recognition = new SpeechRecognitionAPI();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = getRecognitionLang(language);
+      // Append final results to the value
+      if (finalTranscript) {
+        const newValue = value ? `${value} ${finalTranscript}`.trim() : finalTranscript;
+        onChange(newValue);
+        setInterimTranscript("");
+      }
+    };
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = "";
-        let final = "";
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error("Speech recognition error:", event.error);
+      
+      if (event.error === "no-speech") {
+        // No speech detected - restart if still recording
+        if (shouldRestartRef.current) {
+          setTimeout(() => {
+            if (shouldRestartRef.current) {
+              createAndStartRecognition();
+            }
+          }, 100);
+        }
+        return;
+      }
+      
+      if (event.error === "aborted") {
+        // Silently handle aborted - usually from manual stop
+        return;
+      }
+      
+      if (event.error === "not-allowed") {
+        toast.error(msgs.noMic);
+      } else {
+        toast.error(msgs.error);
+      }
+      
+      shouldRestartRef.current = false;
+      setIsRecording(false);
+      setInterimTranscript("");
+    };
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            final += transcript;
-          } else {
-            interim += transcript;
+    recognition.onend = () => {
+      console.log("Speech recognition ended");
+      // Auto-restart if user hasn't stopped
+      if (shouldRestartRef.current) {
+        setTimeout(() => {
+          if (shouldRestartRef.current) {
+            createAndStartRecognition();
           }
-        }
-
-        // Update interim display
-        setInterimTranscript(interim);
-
-        // Append final results to the value
-        if (final) {
-          const newValue = value ? `${value} ${final}`.trim() : final;
-          onChange(newValue);
-        }
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error("Speech recognition error:", event.error);
-        if (event.error !== "aborted") {
-          toast.error(
-            language === "de" ? "Spracherkennung fehlgeschlagen" :
-            language === "fr" ? "Échec de la reconnaissance vocale" :
-            "Speech recognition failed"
-          );
-        }
+        }, 100);
+      } else {
         setIsRecording(false);
         setInterimTranscript("");
-      };
+      }
+    };
 
-      recognition.onend = () => {
+    recognitionRef.current = recognition;
+    
+    // Small delay for tablets to ensure audio context is ready
+    setTimeout(() => {
+      try {
+        recognition.start();
+      } catch (e) {
+        console.error("Failed to start recognition:", e);
+        toast.error(msgs.error);
         setIsRecording(false);
-        setInterimTranscript("");
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      toast.error(
-        language === "de" ? "Mikrofon nicht verfügbar" :
-        language === "fr" ? "Microphone non disponible" :
-        "Microphone not available"
-      );
-    }
+        shouldRestartRef.current = false;
+      }
+    }, 100);
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current && isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-      setInterimTranscript("");
+    shouldRestartRef.current = false;
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore stop errors
+      }
     }
+    setIsRecording(false);
+    setInterimTranscript("");
   };
 
   const InputComponent = multiline ? Textarea : Input;
@@ -172,9 +302,7 @@ const VoiceInputField = ({
       </div>
       {isRecording && (
         <p className="text-sm text-primary animate-pulse">
-          {language === "de" ? "🎤 Aufnahme läuft..." :
-           language === "fr" ? "🎤 Enregistrement..." :
-           "🎤 Recording..."}
+          {msgs.recording}
         </p>
       )}
     </div>
