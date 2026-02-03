@@ -9,6 +9,93 @@ import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import PageHeader from "@/components/PageHeader";
 
+// Translations for results page
+const resultsTranslations: Record<string, {
+  title: string;
+  totalPoints: string;
+  pointsToNext: string;
+  stories: string;
+  storiesRead: string;
+  quiz: string;
+  quizPassed: string;
+  vocabulary: string;
+  wordsLearned: string;
+  learnedHint: string;
+  readStory: string;
+  takeQuiz: string;
+}> = {
+  de: {
+    title: "Meine Ergebnisse",
+    totalPoints: "Gesamtpunkte",
+    pointsToNext: "Noch {n} Punkte bis zum nächsten Level",
+    stories: "Geschichten",
+    storiesRead: "{n} Geschichten gelesen",
+    quiz: "Quiz",
+    quizPassed: "{n} Quiz bestanden",
+    vocabulary: "Wortschatz",
+    wordsLearned: "Wörter gelernt",
+    learnedHint: "(3x richtig = gelernt)",
+    readStory: "Geschichte lesen",
+    takeQuiz: "Quiz machen",
+  },
+  fr: {
+    title: "Mes Résultats",
+    totalPoints: "Points totaux",
+    pointsToNext: "Encore {n} points pour le niveau suivant",
+    stories: "Histoires",
+    storiesRead: "{n} histoires lues",
+    quiz: "Quiz",
+    quizPassed: "{n} quiz réussis",
+    vocabulary: "Vocabulaire",
+    wordsLearned: "mots appris",
+    learnedHint: "(3x correct de suite = appris)",
+    readStory: "Lire une histoire",
+    takeQuiz: "Faire un quiz",
+  },
+  en: {
+    title: "My Results",
+    totalPoints: "Total Points",
+    pointsToNext: "{n} more points to next level",
+    stories: "Stories",
+    storiesRead: "{n} stories read",
+    quiz: "Quiz",
+    quizPassed: "{n} quizzes passed",
+    vocabulary: "Vocabulary",
+    wordsLearned: "words learned",
+    learnedHint: "(3x correct in a row = learned)",
+    readStory: "Read a story",
+    takeQuiz: "Take a quiz",
+  },
+  es: {
+    title: "Mis Resultados",
+    totalPoints: "Puntos totales",
+    pointsToNext: "{n} puntos más para el siguiente nivel",
+    stories: "Historias",
+    storiesRead: "{n} historias leídas",
+    quiz: "Quiz",
+    quizPassed: "{n} quiz aprobados",
+    vocabulary: "Vocabulario",
+    wordsLearned: "palabras aprendidas",
+    learnedHint: "(3x correcto seguido = aprendido)",
+    readStory: "Leer una historia",
+    takeQuiz: "Hacer un quiz",
+  },
+  nl: {
+    title: "Mijn Resultaten",
+    totalPoints: "Totale punten",
+    pointsToNext: "Nog {n} punten voor het volgende niveau",
+    stories: "Verhalen",
+    storiesRead: "{n} verhalen gelezen",
+    quiz: "Quiz",
+    quizPassed: "{n} quizzen geslaagd",
+    vocabulary: "Woordenschat",
+    wordsLearned: "woorden geleerd",
+    learnedHint: "(3x correct achter elkaar = geleerd)",
+    readStory: "Verhaal lezen",
+    takeQuiz: "Quiz doen",
+  },
+};
+
 interface UserResult {
   id: string;
   activity_type: string;
@@ -159,6 +246,7 @@ const ResultsPage = () => {
 
   const levelInfo = getLevel(totalPoints);
   const isMaxLevel = levels.length > 0 && levelInfo.level === levels[levels.length - 1]?.level_number;
+  const t = resultsTranslations[kidAppLanguage] || resultsTranslations.de;
 
   if (isLoading) {
     return (
@@ -172,7 +260,7 @@ const ResultsPage = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-      <PageHeader title="Mes Résultats" backTo="/" />
+      <PageHeader title={t.title} backTo="/" />
 
       <div className="container max-w-4xl p-4 md:p-8">
         {/* Kid Profile Selector */}
@@ -216,7 +304,7 @@ const ResultsPage = () => {
               {totalPoints}
             </p>
             <p className="text-lg text-muted-foreground mb-3">
-              Points totaux {selectedProfile && `- ${selectedProfile.name}`}
+              {t.totalPoints} {selectedProfile && `- ${selectedProfile.name}`}
             </p>
             
             {/* Level Badge */}
@@ -229,7 +317,7 @@ const ResultsPage = () => {
             {!isMaxLevel && (
               <div className="mt-3">
                 <p className="text-xs text-muted-foreground mb-1">
-                  Encore {levelInfo.nextLevel - totalPoints} points pour le niveau suivant
+                  {t.pointsToNext.replace('{n}', String(levelInfo.nextLevel - totalPoints))}
                 </p>
                 <div className="w-full bg-muted rounded-full h-2 max-w-xs mx-auto">
                   <div 
@@ -250,11 +338,11 @@ const ResultsPage = () => {
               <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-2">
                 <BookOpen className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-lg font-baloo">Histoires</CardTitle>
+              <CardTitle className="text-lg font-baloo">{t.stories}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-primary mb-1">{storyPoints}</p>
-              <p className="text-sm text-muted-foreground">{storiesRead} histoires lues</p>
+              <p className="text-sm text-muted-foreground">{t.storiesRead.replace('{n}', String(storiesRead))}</p>
             </CardContent>
           </Card>
 
@@ -264,11 +352,11 @@ const ResultsPage = () => {
               <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center mb-2">
                 <Brain className="h-6 w-6 text-secondary" />
               </div>
-              <CardTitle className="text-lg font-baloo">Quiz</CardTitle>
+              <CardTitle className="text-lg font-baloo">{t.quiz}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-secondary mb-1">{quizPoints}</p>
-              <p className="text-sm text-muted-foreground">{quizzesPassed} quiz réussis</p>
+              <p className="text-sm text-muted-foreground">{t.quizPassed.replace('{n}', String(quizzesPassed))}</p>
             </CardContent>
           </Card>
         </div>
@@ -278,18 +366,18 @@ const ResultsPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-purple-600" />
-              Vocabulaire
+              {t.vocabulary}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-4xl font-bold text-purple-700">{wordsLearned}</p>
-                <p className="text-muted-foreground">mots appris</p>
+                <p className="text-muted-foreground">{t.wordsLearned}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">
-                  (3x correct de suite = appris)
+                  {t.learnedHint}
                 </p>
               </div>
             </div>
@@ -303,7 +391,7 @@ const ResultsPage = () => {
             className="btn-primary-kid"
           >
             <BookOpen className="h-5 w-5 mr-2" />
-            Lire une histoire
+            {t.readStory}
           </Button>
           <Button
             onClick={() => navigate("/quiz")}
@@ -311,7 +399,7 @@ const ResultsPage = () => {
             className="btn-kid"
           >
             <Brain className="h-5 w-5 mr-2" />
-            Faire un quiz
+            {t.takeQuiz}
           </Button>
         </div>
       </div>
