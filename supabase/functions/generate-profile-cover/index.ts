@@ -58,21 +58,34 @@ async function callLovableAIImageAPI(apiKey: string, prompt: string): Promise<st
 function getAgeStyleFromSchoolClass(schoolClass: string): { ageDescription: string; styleModifier: string; characterStyle: string } {
   const lowerClass = schoolClass?.toLowerCase() || "";
   
-  // Early primary (P1-P3, Klasse 3-4, Grade 3-4) - Ages ~6-9
-  if (lowerClass.includes("p1") || lowerClass.includes("p2") || lowerClass.includes("p3") ||
+  // Very early primary (P1-P2, Klasse 1-2, Grade 1-2) - Ages ~6-8
+  if (lowerClass.includes("p1") || lowerClass.includes("p2") ||
+      lowerClass.includes("1. klasse") || lowerClass.includes("2. klasse") ||
+      lowerClass.includes("grade 1") || lowerClass.includes("grade 2") ||
+      lowerClass.includes("1º primaria") || lowerClass.includes("2º primaria") ||
+      lowerClass.includes("groep 3") || lowerClass.includes("groep 4")) {
+    return {
+      ageDescription: "young child (around 6-8 years old)",
+      styleModifier: "very cute, playful, whimsical style with rounded shapes and friendly proportions",
+      characterStyle: "adorable young child with big expressive eyes, rosy cheeks, and a cheerful innocent expression"
+    };
+  }
+  
+  // Early primary (P3-P4, Klasse 3-4, Grade 3-4) - Ages ~8-10
+  if (lowerClass.includes("p3") || lowerClass.includes("p4") ||
       lowerClass.includes("3. klasse") || lowerClass.includes("4. klasse") ||
       lowerClass.includes("grade 3") || lowerClass.includes("grade 4") ||
       lowerClass.includes("3º primaria") || lowerClass.includes("4º primaria") ||
       lowerClass.includes("groep 5") || lowerClass.includes("groep 6")) {
     return {
-      ageDescription: "young child (around 7-9 years old)",
-      styleModifier: "cute, playful, whimsical style with rounded shapes and friendly proportions",
-      characterStyle: "adorable child with big expressive eyes, rosy cheeks, and a cheerful innocent expression"
+      ageDescription: "child (around 8-10 years old)",
+      styleModifier: "cute, playful style with balanced proportions",
+      characterStyle: "cheerful child with expressive eyes, friendly smile, and curious expression"
     };
   }
   
-  // Late primary (P4-P6, Klasse 5-6, Grade 5-6) - Ages ~9-12
-  if (lowerClass.includes("p4") || lowerClass.includes("p5") || lowerClass.includes("p6") ||
+  // Late primary (P5-P6, Klasse 5-6, Grade 5-6) - Ages ~10-12
+  if (lowerClass.includes("p5") || lowerClass.includes("p6") ||
       lowerClass.includes("5. klasse") || lowerClass.includes("6. klasse") ||
       lowerClass.includes("grade 5") || lowerClass.includes("grade 6") ||
       lowerClass.includes("5º primaria") || lowerClass.includes("6º primaria") ||
