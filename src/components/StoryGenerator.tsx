@@ -93,6 +93,13 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   // System prompt is loaded from database (read-only in generator)
 
   const handleGenerate = async () => {
+    if (!user?.id) {
+      toast.error(adminLang === 'de' ? "Bitte melde dich erneut an" : 
+                  adminLang === 'fr' ? "Veuillez vous reconnecter" :
+                  "Please log in again");
+      return;
+    }
+
     if (!description.trim()) {
       toast.error(adminLang === 'de' ? "Bitte gib eine kurze Beschreibung ein" : 
                   adminLang === 'fr' ? "Veuillez entrer une courte description" :

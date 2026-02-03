@@ -305,6 +305,10 @@ const CreateStoryPage = () => {
   };
 
   const handleCreateStory = async () => {
+    if (!user?.id) {
+      toast.error(t.error || "Please log in again");
+      return;
+    }
     if (!canCreate) return;
 
     setIsGenerating(true);

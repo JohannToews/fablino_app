@@ -129,7 +129,11 @@ const StorySelectPage = () => {
 
   // Generate next episode for a series
   const handleGenerateNextEpisode = async (series: { seriesId: string; episodes: Story[] }) => {
-    if (!user || !selectedProfile) return;
+    if (!user?.id) {
+      toast.error("Bitte melde dich erneut an");
+      return;
+    }
+    if (!selectedProfile) return;
     
     const lastEpisode = series.episodes[series.episodes.length - 1];
     if (!lastEpisode) return;

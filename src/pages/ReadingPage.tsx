@@ -380,6 +380,10 @@ const ReadingPage = () => {
 
   // Handle series continuation
   const handleContinueSeries = async () => {
+    if (!user?.id) {
+      toast.error("Bitte melde dich erneut an");
+      return;
+    }
     if (!story || !story.series_id) return;
 
     setIsGeneratingContinuation(true);
