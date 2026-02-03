@@ -1076,30 +1076,33 @@ const ReadingPage = () => {
                   onClose={() => setShowFeedbackDialog(false)}
                   onSubmit={async () => {
                     setShowFeedbackDialog(false);
+                    
+                    // ALWAYS save story_completed immediately when clicking "Fertig gelesen"
+                    const { data: pointData } = await supabase
+                      .from("point_settings")
+                      .select("points")
+                      .eq("category", "story")
+                      .eq("difficulty", story?.difficulty || "medium")
+                      .maybeSingle();
+                    
+                    const storyPoints = pointData?.points || 10;
+                    
+                    await supabase.from("user_results").insert({
+                      activity_type: "story_completed",
+                      reference_id: id,
+                      difficulty: story?.difficulty || "medium",
+                      points_earned: storyPoints,
+                      user_id: user?.id,
+                      kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
+                    });
+                    
+                    const lang = story?.text_language || 'fr';
+                    toast.success(`${readingLabels[lang]?.storyCompleted || readingLabels.fr.storyCompleted} 🏆 (+${storyPoints} points)`);
+                    
+                    // Show quiz for bonus points if there are questions, otherwise navigate back
                     if (hasQuestions) {
                       setShowQuiz(true);
                     } else {
-                      // Save story completed (no questions to answer)
-                      const { data: pointData } = await supabase
-                        .from("point_settings")
-                        .select("points")
-                        .eq("category", "story")
-                        .eq("difficulty", story?.difficulty || "medium")
-                        .maybeSingle();
-                      
-                      const storyPoints = pointData?.points || 10;
-                      
-                      await supabase.from("user_results").insert({
-                        activity_type: "story_completed",
-                        reference_id: id,
-                        difficulty: story?.difficulty || "medium",
-                        points_earned: storyPoints,
-                        user_id: user?.id,
-                        kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
-                      });
-                      
-                      const lang = story?.text_language || 'fr';
-                      toast.success(`${readingLabels[lang]?.storyCompleted || readingLabels.fr.storyCompleted} 🏆 (+${storyPoints} points)`);
                       navigate("/stories");
                     }
                   }}
@@ -1131,9 +1134,6 @@ const ReadingPage = () => {
                       setQuizResult({ correctCount, totalCount });
                       setQuizCompleted(true);
                       
-                      // Determine if passed (>= 50%)
-                      const isPassed = totalCount === 0 || (correctCount / totalCount) >= 0.5;
-                      
                       // Load point value for questions
                       const { data: pointData } = await supabase
                         .from("point_settings")
@@ -1145,11 +1145,10 @@ const ReadingPage = () => {
                       const pointsPerQuestion = pointData?.points || 3;
                       const earnedPoints = correctCount * pointsPerQuestion;
                       
-                      // Always save the result, but mark as completed only if passed
-                      if (isPassed) {
-                        // Save story_completed for tracking
+                      // Save quiz result as bonus points (story_completed was already saved)
+                      if (earnedPoints > 0) {
                         await supabase.from("user_results").insert({
-                          activity_type: "story_completed",
+                          activity_type: "quiz_completed",
                           reference_id: id,
                           difficulty: story?.difficulty || "medium",
                           points_earned: earnedPoints,
