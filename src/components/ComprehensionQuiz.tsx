@@ -239,10 +239,26 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
   const [textAnswer, setTextAnswer] = useState("");
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const shouldRestartRef = useRef(false);
+  const accumulatedTranscriptRef = useRef("");
 
   useEffect(() => {
     loadQuestions();
   }, [storyId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      shouldRestartRef.current = false;
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {
+          // Ignore
+        }
+      }
+    };
+  }, []);
 
   const loadQuestions = async () => {
     const { data, error } = await supabase
@@ -262,9 +278,9 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
 
   const startRecording = async () => {
     // Check for browser support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     
-    if (!SpeechRecognition) {
+    if (!SpeechRecognitionAPI) {
       toast.error(t.noSpeechSupport);
       return;
     }
@@ -289,17 +305,26 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       }
     }
 
-    const recognition = new SpeechRecognition();
+    shouldRestartRef.current = true;
+    accumulatedTranscriptRef.current = "";
+    setTranscript("");
+    setCurrentFeedback(null);
+    createAndStartRecognition();
+  };
+
+  const createAndStartRecognition = () => {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) return;
+
+    const recognition = new SpeechRecognitionAPI();
     recognition.lang = speechLocale;
-    recognition.continuous = false;
+    recognition.continuous = false; // Use non-continuous for better reliability with auto-restart
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
       console.log("Speech recognition started");
       setIsRecording(true);
-      setTranscript("");
-      setCurrentFeedback(null);
     };
 
     recognition.onresult = (event) => {
@@ -315,27 +340,65 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
         }
       }
 
-      console.log("Speech result:", finalTranscript || interimTranscript);
-      setTranscript(finalTranscript || interimTranscript);
+      // Append final results to accumulated transcript
+      if (finalTranscript) {
+        accumulatedTranscriptRef.current = accumulatedTranscriptRef.current 
+          ? `${accumulatedTranscriptRef.current} ${finalTranscript}`.trim()
+          : finalTranscript;
+        setTranscript(accumulatedTranscriptRef.current);
+      } else if (interimTranscript) {
+        // Show accumulated + interim
+        const display = accumulatedTranscriptRef.current 
+          ? `${accumulatedTranscriptRef.current} ${interimTranscript}`.trim()
+          : interimTranscript;
+        setTranscript(display);
+      }
     };
 
     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
-      setIsRecording(false);
+      
       if (event.error === "no-speech") {
-        toast.error(t.noSpeechHeard);
-      } else if (event.error === "not-allowed") {
+        // No speech detected - just restart silently if still recording
+        if (shouldRestartRef.current) {
+          setTimeout(() => {
+            if (shouldRestartRef.current) {
+              createAndStartRecognition();
+            }
+          }, 100);
+        }
+        return;
+      }
+      
+      if (event.error === "aborted") {
+        // Silently handle aborted - usually from manual stop
+        return;
+      }
+      
+      if (event.error === "not-allowed") {
         toast.error(t.micPermission);
-      } else if (event.error === "aborted") {
-        // Silently handle aborted - usually from stopping
       } else {
         toast.error(t.evalError);
       }
+      
+      shouldRestartRef.current = false;
+      setIsRecording(false);
     };
 
     recognition.onend = () => {
       console.log("Speech recognition ended");
-      setIsRecording(false);
+      // Auto-restart if user hasn't stopped
+      if (shouldRestartRef.current) {
+        setTimeout(() => {
+          if (shouldRestartRef.current) {
+            createAndStartRecognition();
+          }
+        }, 100);
+      } else {
+        setIsRecording(false);
+        // Keep the accumulated transcript
+        setTranscript(accumulatedTranscriptRef.current);
+      }
     };
 
     recognitionRef.current = recognition;
@@ -348,11 +411,13 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
         console.error("Failed to start recognition:", e);
         toast.error(t.startError);
         setIsRecording(false);
+        shouldRestartRef.current = false;
       }
     }, 100);
   };
 
   const stopRecording = () => {
+    shouldRestartRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -360,6 +425,9 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
         // Ignore stop errors
       }
     }
+    setIsRecording(false);
+    // Keep the accumulated transcript for evaluation
+    setTranscript(accumulatedTranscriptRef.current);
   };
 
   const evaluateAnswer = async (answerOverride?: string) => {
@@ -414,6 +482,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       setTranscript("");
       setTextAnswer("");
       setCurrentFeedback(null);
+      accumulatedTranscriptRef.current = "";
     } else {
       // Quiz complete - count correct answers
       const correctCount = results.filter(r => r.result === "correct").length;
