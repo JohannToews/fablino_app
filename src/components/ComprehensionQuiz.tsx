@@ -5,6 +5,180 @@ import { Input } from "@/components/ui/input";
 import { Mic, MicOff, Loader2, CheckCircle2, XCircle, CircleDot, ChevronRight, Keyboard } from "lucide-react";
 import { toast } from "sonner";
 
+// Localized labels for comprehension quiz
+const quizLabels: Record<string, {
+  speak: string;
+  write: string;
+  speakNow: string;
+  tapToAnswer: string;
+  yourAnswer: string;
+  typeHere: string;
+  thinking: string;
+  checkAnswer: string;
+  bravo: string;
+  almost: string;
+  notQuite: string;
+  nextQuestion: string;
+  finish: string;
+  noQuestions: string;
+  continue: string;
+  noSpeechSupport: string;
+  micPermission: string;
+  sayAnswerFirst: string;
+  evalError: string;
+  noSpeechHeard: string;
+  startError: string;
+}> = {
+  de: {
+    speak: "Sprechen",
+    write: "Schreiben",
+    speakNow: "Sprich jetzt... (tippe zum Stoppen)",
+    tapToAnswer: "Tippe zum Antworten",
+    yourAnswer: "Deine Antwort:",
+    typeHere: "Schreibe deine Antwort hier...",
+    thinking: "Ich denke nach...",
+    checkAnswer: "Antwort prüfen",
+    bravo: "Bravo! 🎉",
+    almost: "Fast! 👍",
+    notQuite: "Nicht ganz 😊",
+    nextQuestion: "Nächste Frage",
+    finish: "Fertig",
+    noQuestions: "Keine Fragen für diese Geschichte",
+    continue: "Weiter",
+    noSpeechSupport: "Dein Browser unterstützt keine Spracherkennung",
+    micPermission: "Erlaube Mikrofon-Zugriff zum Sprechen",
+    sayAnswerFirst: "Sag zuerst deine Antwort!",
+    evalError: "Fehler bei der Auswertung",
+    noSpeechHeard: "Ich habe nichts gehört. Versuch es nochmal!",
+    startError: "Fehler beim Starten. Versuch es nochmal!",
+  },
+  fr: {
+    speak: "Parler",
+    write: "Écrire",
+    speakNow: "Parle maintenant... (appuie pour arrêter)",
+    tapToAnswer: "Appuie pour répondre",
+    yourAnswer: "Ta réponse:",
+    typeHere: "Écris ta réponse ici...",
+    thinking: "Je réfléchis...",
+    checkAnswer: "Vérifier ma réponse",
+    bravo: "Bravo! 🎉",
+    almost: "Presque! 👍",
+    notQuite: "Pas tout à fait 😊",
+    nextQuestion: "Question suivante",
+    finish: "Terminer",
+    noQuestions: "Pas de questions pour cette histoire",
+    continue: "Continuer",
+    noSpeechSupport: "Ton navigateur ne supporte pas la reconnaissance vocale",
+    micPermission: "Autorise l'accès au microphone pour parler",
+    sayAnswerFirst: "Dis ta réponse d'abord!",
+    evalError: "Erreur lors de l'évaluation",
+    noSpeechHeard: "Je n'ai rien entendu. Essaie encore!",
+    startError: "Erreur lors du démarrage. Réessaie!",
+  },
+  en: {
+    speak: "Speak",
+    write: "Write",
+    speakNow: "Speak now... (tap to stop)",
+    tapToAnswer: "Tap to answer",
+    yourAnswer: "Your answer:",
+    typeHere: "Type your answer here...",
+    thinking: "Thinking...",
+    checkAnswer: "Check my answer",
+    bravo: "Well done! 🎉",
+    almost: "Almost! 👍",
+    notQuite: "Not quite 😊",
+    nextQuestion: "Next question",
+    finish: "Finish",
+    noQuestions: "No questions for this story",
+    continue: "Continue",
+    noSpeechSupport: "Your browser doesn't support speech recognition",
+    micPermission: "Allow microphone access to speak",
+    sayAnswerFirst: "Say your answer first!",
+    evalError: "Error during evaluation",
+    noSpeechHeard: "I didn't hear anything. Try again!",
+    startError: "Error starting. Try again!",
+  },
+  es: {
+    speak: "Hablar",
+    write: "Escribir",
+    speakNow: "Habla ahora... (toca para parar)",
+    tapToAnswer: "Toca para responder",
+    yourAnswer: "Tu respuesta:",
+    typeHere: "Escribe tu respuesta aquí...",
+    thinking: "Pensando...",
+    checkAnswer: "Verificar mi respuesta",
+    bravo: "¡Bravo! 🎉",
+    almost: "¡Casi! 👍",
+    notQuite: "No del todo 😊",
+    nextQuestion: "Siguiente pregunta",
+    finish: "Terminar",
+    noQuestions: "No hay preguntas para esta historia",
+    continue: "Continuar",
+    noSpeechSupport: "Tu navegador no soporta reconocimiento de voz",
+    micPermission: "Permite acceso al micrófono para hablar",
+    sayAnswerFirst: "¡Di tu respuesta primero!",
+    evalError: "Error en la evaluación",
+    noSpeechHeard: "No escuché nada. ¡Intenta de nuevo!",
+    startError: "Error al iniciar. ¡Intenta de nuevo!",
+  },
+  nl: {
+    speak: "Spreken",
+    write: "Schrijven",
+    speakNow: "Spreek nu... (tik om te stoppen)",
+    tapToAnswer: "Tik om te antwoorden",
+    yourAnswer: "Jouw antwoord:",
+    typeHere: "Typ je antwoord hier...",
+    thinking: "Ik denk na...",
+    checkAnswer: "Controleer mijn antwoord",
+    bravo: "Goed gedaan! 🎉",
+    almost: "Bijna! 👍",
+    notQuite: "Niet helemaal 😊",
+    nextQuestion: "Volgende vraag",
+    finish: "Klaar",
+    noQuestions: "Geen vragen voor dit verhaal",
+    continue: "Doorgaan",
+    noSpeechSupport: "Je browser ondersteunt geen spraakherkenning",
+    micPermission: "Sta microfoontoegang toe om te spreken",
+    sayAnswerFirst: "Zeg eerst je antwoord!",
+    evalError: "Fout bij evaluatie",
+    noSpeechHeard: "Ik hoorde niets. Probeer het opnieuw!",
+    startError: "Fout bij starten. Probeer opnieuw!",
+  },
+  it: {
+    speak: "Parlare",
+    write: "Scrivere",
+    speakNow: "Parla ora... (tocca per fermare)",
+    tapToAnswer: "Tocca per rispondere",
+    yourAnswer: "La tua risposta:",
+    typeHere: "Scrivi la tua risposta qui...",
+    thinking: "Sto pensando...",
+    checkAnswer: "Verifica la mia risposta",
+    bravo: "Bravo! 🎉",
+    almost: "Quasi! 👍",
+    notQuite: "Non proprio 😊",
+    nextQuestion: "Prossima domanda",
+    finish: "Fine",
+    noQuestions: "Nessuna domanda per questa storia",
+    continue: "Continua",
+    noSpeechSupport: "Il tuo browser non supporta il riconoscimento vocale",
+    micPermission: "Consenti l'accesso al microfono per parlare",
+    sayAnswerFirst: "Di' prima la tua risposta!",
+    evalError: "Errore nella valutazione",
+    noSpeechHeard: "Non ho sentito niente. Riprova!",
+    startError: "Errore all'avvio. Riprova!",
+  },
+};
+
+// Map language code to speech recognition locale
+const speechLocales: Record<string, string> = {
+  de: "de-DE",
+  fr: "fr-FR",
+  en: "en-US",
+  es: "es-ES",
+  nl: "nl-NL",
+  it: "it-IT",
+};
+
 interface Question {
   id: string;
   question: string;
@@ -27,6 +201,8 @@ interface ComprehensionQuizProps {
 }
 
 const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage = "fr", onComplete }: ComprehensionQuizProps) => {
+  const t = quizLabels[storyLanguage] || quizLabels.fr;
+  const speechLocale = speechLocales[storyLanguage] || "fr-FR";
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +241,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      toast.error("Ton navigateur ne supporte pas la reconnaissance vocale");
+      toast.error(t.noSpeechSupport);
       return;
     }
 
@@ -76,7 +252,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       stream.getTracks().forEach(track => track.stop());
     } catch (err) {
       console.error("Microphone permission error:", err);
-      toast.error("Autorise l'accès au microphone pour parler");
+      toast.error(t.micPermission);
       return;
     }
 
@@ -90,7 +266,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "fr-FR";
+    recognition.lang = speechLocale;
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -123,13 +299,13 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       console.error("Speech recognition error:", event.error);
       setIsRecording(false);
       if (event.error === "no-speech") {
-        toast.error("Je n'ai rien entendu. Essaie encore!");
+        toast.error(t.noSpeechHeard);
       } else if (event.error === "not-allowed") {
-        toast.error("Autorise l'accès au microphone pour parler");
+        toast.error(t.micPermission);
       } else if (event.error === "aborted") {
         // Silently handle aborted - usually from stopping
       } else {
-        toast.error("Erreur de reconnaissance vocale");
+        toast.error(t.evalError);
       }
     };
 
@@ -146,7 +322,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
         recognition.start();
       } catch (e) {
         console.error("Failed to start recognition:", e);
-        toast.error("Erreur lors du démarrage. Réessaie!");
+        toast.error(t.startError);
         setIsRecording(false);
       }
     }, 100);
@@ -164,7 +340,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
 
   const evaluateAnswer = async () => {
     if (!transcript.trim()) {
-      toast.error("Dis ta réponse d'abord!");
+      toast.error(t.sayAnswerFirst);
       return;
     }
 
@@ -183,7 +359,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
 
       if (error) {
         console.error("Evaluation error:", error);
-        toast.error("Erreur lors de l'évaluation");
+        toast.error(t.evalError);
         setIsEvaluating(false);
         return;
       }
@@ -199,7 +375,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       setCurrentFeedback({ result: data.result, feedback: data.feedback });
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Erreur lors de l'évaluation");
+      toast.error(t.evalError);
     }
 
     setIsEvaluating(false);
@@ -256,9 +432,9 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
   if (questions.length === 0) {
     return (
       <div className="text-center p-8">
-        <p className="text-muted-foreground">Pas de questions pour cette histoire</p>
+        <p className="text-muted-foreground">{t.noQuestions}</p>
         <Button onClick={() => onComplete(0, 0)} className="btn-accent-kid mt-4">
-          Continuer
+          {t.continue}
         </Button>
       </div>
     );
@@ -302,7 +478,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
               className="flex items-center gap-2"
             >
               <Mic className="h-4 w-4" />
-              Parler
+              {t.speak}
             </Button>
             <Button
               variant={useTextInput ? "default" : "outline"}
@@ -311,7 +487,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
               className="flex items-center gap-2"
             >
               <Keyboard className="h-4 w-4" />
-              Écrire
+              {t.write}
             </Button>
           </div>
 
@@ -333,13 +509,13 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
                 )}
               </Button>
               <p className="text-muted-foreground text-sm">
-                {isRecording ? "Parle maintenant... (appuie pour arrêter)" : "Appuie pour répondre"}
+                {isRecording ? t.speakNow : t.tapToAnswer}
               </p>
 
               {/* Transcript display */}
               {transcript && (
                 <div className="w-full bg-card rounded-xl p-4 border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Ta réponse:</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t.yourAnswer}</p>
                   <p className="text-lg">{transcript}</p>
                 </div>
               )}
@@ -350,13 +526,13 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
                 <Input
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
-                  placeholder="Écris ta réponse ici..."
+                  placeholder={t.typeHere}
                   className="text-lg py-6"
                   disabled={isEvaluating}
                 />
                 {textAnswer && (
                   <div className="w-full bg-card rounded-xl p-4 border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Ta réponse:</p>
+                    <p className="text-sm text-muted-foreground mb-1">{t.yourAnswer}</p>
                     <p className="text-lg">{textAnswer}</p>
                   </div>
                 )}
@@ -381,12 +557,12 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
               {isEvaluating ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Je réfléchis...
+                  {t.thinking}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-5 w-5" />
-                  Vérifier ma réponse
+                  {t.checkAnswer}
                 </>
               )}
             </Button>
@@ -401,9 +577,9 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
             {getResultIcon(currentFeedback.result)}
             <div className="flex-1">
               <p className="text-lg font-medium mb-2">
-                {currentFeedback.result === "correct" && "Bravo! 🎉"}
-                {currentFeedback.result === "partial" && "Presque! 👍"}
-                {currentFeedback.result === "incorrect" && "Pas tout à fait 😊"}
+                {currentFeedback.result === "correct" && t.bravo}
+                {currentFeedback.result === "partial" && t.almost}
+                {currentFeedback.result === "incorrect" && t.notQuite}
               </p>
               <p className="text-muted-foreground">{currentFeedback.feedback}</p>
             </div>
@@ -415,13 +591,13 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
           >
             {currentIndex < questions.length - 1 ? (
               <>
-                Question suivante
+                {t.nextQuestion}
                 <ChevronRight className="h-5 w-5" />
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-5 w-5" />
-                Terminer
+                {t.finish}
               </>
             )}
           </Button>
