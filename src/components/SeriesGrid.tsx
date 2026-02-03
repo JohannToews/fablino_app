@@ -35,12 +35,13 @@ const seriesLabels: Record<string, {
   nextEpisode: string; 
   noSeries: string;
   generating: string;
+  readFirst: string;
 }> = {
-  de: { episode: "Episode", nextEpisode: "Nächste Episode", noSeries: "Noch keine Serien", generating: "Wird erstellt..." },
-  fr: { episode: "Épisode", nextEpisode: "Prochain épisode", noSeries: "Pas encore de séries", generating: "Création..." },
-  en: { episode: "Episode", nextEpisode: "Next Episode", noSeries: "No series yet", generating: "Creating..." },
-  es: { episode: "Episodio", nextEpisode: "Siguiente episodio", noSeries: "Aún no hay series", generating: "Creando..." },
-  nl: { episode: "Aflevering", nextEpisode: "Volgende aflevering", noSeries: "Nog geen series", generating: "Maken..." },
+  de: { episode: "Episode", nextEpisode: "Nächste Episode", noSeries: "Noch keine Serien", generating: "Wird erstellt...", readFirst: "Erst lesen" },
+  fr: { episode: "Épisode", nextEpisode: "Prochain épisode", noSeries: "Pas encore de séries", generating: "Création...", readFirst: "Lire d'abord" },
+  en: { episode: "Episode", nextEpisode: "Next Episode", noSeries: "No series yet", generating: "Creating...", readFirst: "Read first" },
+  es: { episode: "Episodio", nextEpisode: "Siguiente episodio", noSeries: "Aún no hay series", generating: "Creando...", readFirst: "Leer primero" },
+  nl: { episode: "Aflevering", nextEpisode: "Volgende aflevering", noSeries: "Nog geen series", generating: "Maken...", readFirst: "Eerst lezen" },
 };
 
 const statusLabels: Record<string, { toRead: string; completed: string }> = {
@@ -94,6 +95,8 @@ const SeriesGrid = ({
         const lastEpisode = series.episodes[series.episodes.length - 1];
         const canContinue = lastEpisode?.ending_type === 'C';
         const isGenerating = isGeneratingForSeries === series.seriesId;
+        const lastEpisodeCompleted = storyStatuses.get(lastEpisode?.id || '') || false;
+        const canGenerateNext = canContinue && lastEpisodeCompleted;
 
         return (
           <div 
@@ -174,15 +177,28 @@ const SeriesGrid = ({
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onGenerateNextEpisode(series);
+                      if (canGenerateNext) {
+                        onGenerateNextEpisode(series);
+                      }
                     }}
-                    disabled={isGenerating}
-                    className="aspect-square w-full h-auto rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 flex flex-col items-center justify-center gap-1 transition-all"
+                    disabled={isGenerating || !lastEpisodeCompleted}
+                    className={`aspect-square w-full h-auto rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all ${
+                      lastEpisodeCompleted 
+                        ? 'border-primary/30 hover:border-primary hover:bg-primary/5' 
+                        : 'border-muted-foreground/20 cursor-not-allowed opacity-60'
+                    }`}
                   >
                     {isGenerating ? (
                       <>
                         <Loader2 className="h-6 w-6 text-primary animate-spin" />
                         <span className="text-xs text-primary">{labels.generating}</span>
+                      </>
+                    ) : !lastEpisodeCompleted ? (
+                      <>
+                        <Plus className="h-6 w-6 text-muted-foreground/40" />
+                        <span className="text-xs text-muted-foreground/60">
+                          {labels.readFirst}
+                        </span>
                       </>
                     ) : (
                       <>
