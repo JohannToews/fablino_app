@@ -484,7 +484,7 @@ const FeedbackStatsPage = () => {
     const { data: comprehensionResults } = await supabase
       .from("user_results")
       .select("reference_id, total_questions, correct_answers")
-      .eq("activity_type", "comprehension");
+      .eq("activity_type", "story_completed");
 
     const comprehensionPerStory = new Map<string, { answered: number; total: number }>();
     comprehensionResults?.forEach(r => {
