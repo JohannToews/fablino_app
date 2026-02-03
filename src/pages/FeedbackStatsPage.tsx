@@ -95,6 +95,9 @@ const translations: Record<Language, {
   questionsAnswered: string;
   yes: string;
   no: string;
+  answered: string;
+  notAnswered: string;
+  noQuestions: string;
 }> = {
   de: {
     title: "Story-Statistiken",
@@ -143,6 +146,9 @@ const translations: Record<Language, {
     questionsAnswered: "Fragen",
     yes: "Ja",
     no: "Nein",
+    answered: "Beantwortet",
+    notAnswered: "Nicht beantwortet",
+    noQuestions: "Keine Fragen",
   },
   fr: {
     title: "Statistiques des histoires",
@@ -191,6 +197,9 @@ const translations: Record<Language, {
     questionsAnswered: "Questions",
     yes: "Oui",
     no: "Non",
+    answered: "Répondu",
+    notAnswered: "Non répondu",
+    noQuestions: "Pas de questions",
   },
   en: {
     title: "Story Statistics",
@@ -239,6 +248,9 @@ const translations: Record<Language, {
     questionsAnswered: "Questions",
     yes: "Yes",
     no: "No",
+    answered: "Answered",
+    notAnswered: "Not answered",
+    noQuestions: "No questions",
   },
   es: {
     title: "Estadísticas de historias",
@@ -287,6 +299,9 @@ const translations: Record<Language, {
     questionsAnswered: "Preguntas",
     yes: "Sí",
     no: "No",
+    answered: "Respondido",
+    notAnswered: "Sin responder",
+    noQuestions: "Sin preguntas",
   },
   nl: {
     title: "Verhaal Statistieken",
@@ -335,6 +350,9 @@ const translations: Record<Language, {
     questionsAnswered: "Vragen",
     yes: "Ja",
     no: "Nee",
+    answered: "Beantwoord",
+    notAnswered: "Niet beantwoord",
+    noQuestions: "Geen vragen",
   },
   it: {
     title: "Statistiche delle storie",
@@ -383,6 +401,9 @@ const translations: Record<Language, {
     questionsAnswered: "Domande",
     yes: "Sì",
     no: "No",
+    answered: "Risposto",
+    notAnswered: "Non risposto",
+    noQuestions: "Nessuna domanda",
   },
 };
 
@@ -401,6 +422,8 @@ const FeedbackStatsPage = () => {
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterTitle, setFilterTitle] = useState<string>("");
+  const [filterJaiFini, setFilterJaiFini] = useState<string>("all");
+  const [filterQuestionsAnswered, setFilterQuestionsAnswered] = useState<string>("all");
 
   // Filter states for feedback
   const [filterFeedbackKid, setFilterFeedbackKid] = useState<string>("all");
@@ -562,9 +585,14 @@ const FeedbackStatsPage = () => {
       if (filterStatus === "deleted" && !story.is_deleted) return false;
       if (filterStatus === "active" && story.is_deleted) return false;
       if (filterTitle && !story.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
+      if (filterJaiFini === "yes" && !story.has_feedback) return false;
+      if (filterJaiFini === "no" && story.has_feedback) return false;
+      if (filterQuestionsAnswered === "answered" && story.questions_answered === 0) return false;
+      if (filterQuestionsAnswered === "not_answered" && (story.questions_answered > 0 || story.questions_total === 0)) return false;
+      if (filterQuestionsAnswered === "no_questions" && story.questions_total > 0) return false;
       return true;
     });
-  }, [stories, filterUser, filterKid, filterTextType, filterDifficulty, filterStatus, filterTitle]);
+  }, [stories, filterUser, filterKid, filterTextType, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuestionsAnswered]);
 
   // Filtered ratings
   const filteredRatings = useMemo(() => {
@@ -775,7 +803,7 @@ const FeedbackStatsPage = () => {
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Filter</span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <Input
                     placeholder={t.storyTitle}
                     value={filterTitle}
@@ -835,6 +863,27 @@ const FeedbackStatsPage = () => {
                       <SelectItem value="unread">{t.unread}</SelectItem>
                       <SelectItem value="active">{t.active}</SelectItem>
                       <SelectItem value="deleted">{t.deleted}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterJaiFini} onValueChange={setFilterJaiFini}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.jaiFini} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="yes">{t.yes}</SelectItem>
+                      <SelectItem value="no">{t.no}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterQuestionsAnswered} onValueChange={setFilterQuestionsAnswered}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.questionsAnswered} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="answered">{t.answered}</SelectItem>
+                      <SelectItem value="not_answered">{t.notAnswered}</SelectItem>
+                      <SelectItem value="no_questions">{t.noQuestions}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
