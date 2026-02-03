@@ -158,7 +158,7 @@ const Index = () => {
         <div className={`absolute bottom-40 left-1/4 w-24 h-24 ${paletteColors.accent} rounded-full blur-2xl animate-bounce-soft`} style={{ animationDelay: "1s" }} />
       </div>
 
-      <div className="relative container max-w-4xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center min-h-screen">
+      <div className={`relative container max-w-4xl mx-auto px-4 ${hasMultipleProfiles ? 'py-4 md:py-6' : 'py-8 md:py-12'} flex flex-col items-center min-h-screen`}>
         {/* Top Right Icons */}
         <div className="absolute top-4 right-4 flex items-center gap-2">
           {user?.role === 'admin' && (
@@ -189,37 +189,37 @@ const Index = () => {
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           {/* Logo / Title */}
-          <div className="mb-6 flex items-center gap-2">
+          <div className={`${hasMultipleProfiles ? 'mb-3' : 'mb-6'} flex items-center gap-2`}>
             <Star className="h-8 w-8 text-primary animate-sparkle" />
             <Star className="h-6 w-6 text-cotton-candy animate-sparkle" style={{ animationDelay: "0.3s" }} />
             <Star className="h-8 w-8 text-primary animate-sparkle" style={{ animationDelay: "0.6s" }} />
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-baloo font-bold text-foreground mb-4 tracking-tight">
+          <h1 className={`${hasMultipleProfiles ? 'text-4xl md:text-5xl mb-2' : 'text-5xl md:text-7xl mb-4'} font-baloo font-bold text-foreground tracking-tight`}>
             {childName ? `${t.greeting} ${childName}!` : t.appName}
           </h1>
           
-          <p className="text-xl md:text-2xl text-muted-foreground mb-6 font-nunito">
+          <p className={`${hasMultipleProfiles ? 'text-lg md:text-xl mb-3' : 'text-xl md:text-2xl mb-6'} text-muted-foreground font-nunito`}>
             {t.subtitle}
           </p>
 
-          {/* Profile Selector - show when multiple kids */}
+          {/* Profile Selector - compact horizontal when multiple kids */}
           {hasMultipleProfiles && (
-            <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="flex items-center justify-center gap-2 mb-4">
               {kidProfiles.map((profile) => (
                 <button
                   key={profile.id}
                   onClick={() => setSelectedProfileId(profile.id)}
                   className={`
-                    flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-200
+                    flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200
                     ${selectedProfileId === profile.id 
-                      ? 'bg-primary/20 ring-2 ring-primary scale-105' 
-                      : 'bg-card/60 hover:bg-card/80 hover:scale-102'
+                      ? 'bg-primary/20 ring-2 ring-primary' 
+                      : 'bg-card/60 hover:bg-card/80'
                     }
                   `}
                 >
                   <div className={`
-                    w-14 h-14 rounded-full overflow-hidden border-2 
+                    w-8 h-8 rounded-full overflow-hidden border-2 flex-shrink-0
                     ${selectedProfileId === profile.id ? 'border-primary' : 'border-border'}
                   `}>
                     {profile.cover_image_url ? (
@@ -230,12 +230,12 @@ const Index = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <Users className="w-6 h-6 text-muted-foreground" />
+                        <Users className="w-4 h-4 text-muted-foreground" />
                       </div>
                     )}
                   </div>
                   <span className={`
-                    text-sm font-medium
+                    text-sm font-medium whitespace-nowrap
                     ${selectedProfileId === profile.id ? 'text-primary' : 'text-muted-foreground'}
                   `}>
                     {profile.name}
@@ -245,13 +245,13 @@ const Index = () => {
             </div>
           )}
 
-          {/* Hero Image - wide aspect ratio for tablet */}
-          <div className="relative w-full max-w-2xl mb-6">
+          {/* Hero Image - smaller when multiple profiles */}
+          <div className={`relative w-full ${hasMultipleProfiles ? 'max-w-md mb-4' : 'max-w-2xl mb-6'}`}>
             <div className={`absolute inset-0 ${paletteColors.primary} rounded-2xl blur-2xl transform scale-105`} />
             <img
               src={displayImage}
               alt="Magical reading adventure"
-              className="relative w-full h-auto max-h-[30vh] rounded-2xl shadow-card object-cover"
+              className={`relative w-full h-auto rounded-2xl shadow-card object-cover ${hasMultipleProfiles ? 'max-h-[20vh]' : 'max-h-[30vh]'}`}
             />
           </div>
 
