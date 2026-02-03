@@ -167,6 +167,29 @@ const quizLabels: Record<string, {
     noSpeechHeard: "Non ho sentito niente. Riprova!",
     startError: "Errore all'avvio. Riprova!",
   },
+  bs: {
+    speak: "Govori",
+    write: "Piši",
+    speakNow: "Govori sada... (dodirni za zaustavljanje)",
+    tapToAnswer: "Dodirni za odgovor",
+    yourAnswer: "Tvoj odgovor:",
+    typeHere: "Napiši svoj odgovor ovdje...",
+    thinking: "Razmišljam...",
+    checkAnswer: "Provjeri moj odgovor",
+    bravo: "Bravo! 🎉",
+    almost: "Skoro! 👍",
+    notQuite: "Ne baš 😊",
+    nextQuestion: "Sljedeće pitanje",
+    finish: "Završi",
+    noQuestions: "Nema pitanja za ovu priču",
+    continue: "Nastavi",
+    noSpeechSupport: "Tvoj pretraživač ne podržava prepoznavanje govora",
+    micPermission: "Dozvoli pristup mikrofonu za govor",
+    sayAnswerFirst: "Prvo reci svoj odgovor!",
+    evalError: "Greška pri procjeni",
+    noSpeechHeard: "Nisam ništa čuo/la. Pokušaj ponovo!",
+    startError: "Greška pri pokretanju. Pokušaj ponovo!",
+  },
 };
 
 // Map language code to speech recognition locale
@@ -177,6 +200,7 @@ const speechLocales: Record<string, string> = {
   es: "es-ES",
   nl: "nl-NL",
   it: "it-IT",
+  bs: "bs-BA",
 };
 
 interface Question {

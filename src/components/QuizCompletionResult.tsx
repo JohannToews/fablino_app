@@ -58,6 +58,13 @@ const quizResultLabels: Record<string, {
     failedMessage: "Devi rispondere correttamente ad almeno il 50% delle domande.",
     continue: "Continua",
   },
+  bs: {
+    passed: "Priča uspješno završena! ✅",
+    failed: "Priča nije položena",
+    passedMessage: "Odlično! Savladao/la si ovu priču!",
+    failedMessage: "Moraš tačno odgovoriti na najmanje 50% pitanja.",
+    continue: "Nastavi",
+  },
 };
 
 const QuizCompletionResult = ({ 

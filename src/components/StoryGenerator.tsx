@@ -159,6 +159,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
       fr: { very_short: "Très court (150-200 mots)", short: "Court (250-300 mots)", medium: "Moyen (300-350 mots)", long: "Long (350-450 mots)", very_long: "Très long (500-600 mots)" },
       es: { very_short: "Muy corto (150-200 palabras)", short: "Corto (250-300 palabras)", medium: "Medio (300-350 palabras)", long: "Largo (350-450 palabras)", very_long: "Muy largo (500-600 palabras)" },
       nl: { very_short: "Zeer kort (150-200 woorden)", short: "Kort (250-300 woorden)", medium: "Gemiddeld (300-350 woorden)", long: "Lang (350-450 woorden)", very_long: "Zeer lang (500-600 woorden)" },
+      bs: { very_short: "Vrlo kratko (150-200 riječi)", short: "Kratko (250-300 riječi)", medium: "Srednje (300-350 riječi)", long: "Dugo (350-450 riječi)", very_long: "Vrlo dugo (500-600 riječi)" },
     };
     return labels[adminLang]?.[val as keyof typeof labels.de] || val;
   };
@@ -201,6 +202,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
                 <SelectItem value="ES">🇪🇸 Español</SelectItem>
                 <SelectItem value="NL">🇳🇱 Nederlands</SelectItem>
                 <SelectItem value="IT">🇮🇹 Italiano</SelectItem>
+                <SelectItem value="BS">🇧🇦 Bosanski</SelectItem>
               </SelectContent>
             </Select>
           </div>

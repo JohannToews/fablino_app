@@ -128,6 +128,22 @@ const readingLabels: Record<string, {
     generatingContinuation: "Creazione del seguito...",
     episode: "Episodio",
   },
+  bs: {
+    thinking: "Razmišljam...",
+    noExplanation: "Objašnjenje nije pronađeno.",
+    retry: "Pokušaj ponovo",
+    save: "Sačuvaj",
+    saved: "Sačuvano!",
+    explain: "Objasni",
+    touchWord: "Dodirni riječ da saznaš njeno značenje",
+    finishedReading: "Završio/la sam čitanje",
+    listeningMode: "Slušaj priču...",
+    comprehensionQuestions: "Pitanja razumijevanja",
+    storyCompleted: "Super! Završio/la si čitanje!",
+    continueStory: "Šta se dalje dešava?",
+    generatingContinuation: "Kreiranje nastavka...",
+    episode: "Epizoda",
+  },
 };
 
 interface Story {

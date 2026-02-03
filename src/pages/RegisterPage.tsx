@@ -268,6 +268,7 @@ const RegisterPage = () => {
                   <SelectItem value="es">🇪🇸 Español</SelectItem>
                   <SelectItem value="nl">🇳🇱 Nederlands</SelectItem>
                   <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+                  <SelectItem value="bs">🇧🇦 Bosanski</SelectItem>
                 </SelectContent>
               </Select>
             </div>

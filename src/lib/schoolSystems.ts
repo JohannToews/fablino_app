@@ -84,4 +84,18 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
       "Grade 10",
     ] 
   },
+  bs: { 
+    name: "Bosanski", 
+    classes: [
+      "1. razred",
+      "2. razred",
+      "3. razred",
+      "4. razred",
+      "5. razred",
+      "6. razred",
+      "7. razred",
+      "8. razred",
+      "9. razred",
+    ] 
+  },
 };

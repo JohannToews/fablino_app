@@ -99,6 +99,17 @@ const translations: Record<Language, {
     thankYou: "Grazie per il tuo feedback!",
     listening: "Sto ascoltando...",
   },
+  bs: {
+    title: "Kako ti se svidjela priča?",
+    description: "Tvoj feedback nam pomaže da stvaramo bolje priče!",
+    qualityLabel: "Kvalitet priče",
+    commentLabel: "Komentar (opcionalno)",
+    commentPlaceholder: "Šta ti se svidjelo ili nije svidjelo?",
+    skip: "Preskoči",
+    submit: "Pošalji",
+    thankYou: "Hvala na tvom feedbacku!",
+    listening: "Slušam...",
+  },
 };
 
 // Language code mapping for speech recognition
@@ -109,6 +120,7 @@ const languageToLocale: Record<string, string> = {
   es: "es-ES",
   nl: "nl-NL",
   it: "it-IT",
+  bs: "bs-BA",
 };
 
 const StoryFeedbackDialog = ({

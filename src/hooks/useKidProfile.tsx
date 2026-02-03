@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode, useCallback 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it';
+export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs';
 
 export interface KidProfile {
   id: string;
@@ -19,7 +19,7 @@ export interface KidProfile {
 export const getKidLanguage = (schoolSystem: string | undefined): KidLanguage => {
   if (!schoolSystem) return 'fr';
   const lang = schoolSystem.toLowerCase();
-  if (['de', 'fr', 'en', 'es', 'nl', 'it'].includes(lang)) {
+  if (['de', 'fr', 'en', 'es', 'nl', 'it', 'bs'].includes(lang)) {
     return lang as KidLanguage;
   }
   return 'fr';

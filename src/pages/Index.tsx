@@ -114,6 +114,21 @@ const homeTranslations: Record<Language, {
     appName: 'LeggiMagia',
     newBadge: 'Nuovo',
   },
+  bs: {
+    greeting: 'Zdravo',
+    subtitle: 'Nauči čitati s radošću! ✨',
+    readStory: 'Pročitaj priču',
+    readStoryDesc: 'Čitaj i uči nove riječi',
+    createOwnStory: 'Moja priča',
+    createOwnStoryDesc: 'Ispričaj svoju ideju!',
+    wordQuiz: 'Kviz riječi',
+    wordQuizDesc: 'Testiraj svoj vokabular',
+    myResults: 'Moji rezultati',
+    myResultsDesc: 'Bodovi i napredak',
+    footer: 'Napravljeno s ❤️ za male čitače',
+    appName: 'ČitajMagija',
+    newBadge: 'Novo',
+  },
 };
 
 const Index = () => {

@@ -94,6 +94,20 @@ const resultsTranslations: Record<string, {
     readStory: "Verhaal lezen",
     takeQuiz: "Quiz doen",
   },
+  bs: {
+    title: "Moji rezultati",
+    totalPoints: "Ukupno bodova",
+    pointsToNext: "Još {n} bodova do sljedećeg nivoa",
+    stories: "Priče",
+    storiesRead: "{n} priča pročitano",
+    quiz: "Kviz",
+    quizPassed: "{n} kvizova položeno",
+    vocabulary: "Vokabular",
+    wordsLearned: "riječi naučeno",
+    learnedHint: "(3x tačno zaredom = naučeno)",
+    readStory: "Čitaj priču",
+    takeQuiz: "Riješi kviz",
+  },
 };
 
 interface UserResult {

@@ -42,6 +42,7 @@ const seriesLabels: Record<string, {
   en: { episode: "Episode", nextEpisode: "Next Episode", noSeries: "No series yet", generating: "Creating...", readFirst: "Read first" },
   es: { episode: "Episodio", nextEpisode: "Siguiente episodio", noSeries: "Aún no hay series", generating: "Creando...", readFirst: "Leer primero" },
   nl: { episode: "Aflevering", nextEpisode: "Volgende aflevering", noSeries: "Nog geen series", generating: "Maken...", readFirst: "Eerst lezen" },
+  bs: { episode: "Epizoda", nextEpisode: "Sljedeća epizoda", noSeries: "Još nema serija", generating: "Kreiranje...", readFirst: "Prvo pročitaj" },
 };
 
 const statusLabels: Record<string, { toRead: string; completed: string }> = {
@@ -50,6 +51,7 @@ const statusLabels: Record<string, { toRead: string; completed: string }> = {
   en: { toRead: "To read", completed: "Completed" },
   es: { toRead: "Por leer", completed: "Completada" },
   nl: { toRead: "Te lezen", completed: "Voltooid" },
+  bs: { toRead: "Za čitanje", completed: "Završeno" },
 };
 
 const SeriesGrid = ({ 

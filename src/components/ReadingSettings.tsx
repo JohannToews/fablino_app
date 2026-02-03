@@ -51,6 +51,13 @@ const settingsLabels: Record<string, {
     medium: "Medio",
     large: "Grande",
   },
+  bs: {
+    fontSize: "Veličina fonta",
+    lineSpacing: "Razmak redova",
+    small: "Malo",
+    medium: "Srednje",
+    large: "Veliko",
+  },
 };
 
 export type FontSizeLevel = 1 | 2 | 3;

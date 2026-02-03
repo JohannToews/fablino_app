@@ -24,6 +24,7 @@ const getRecognitionLang = (lang: string): string => {
     es: "es-ES",
     nl: "nl-NL",
     it: "it-IT",
+    bs: "bs-BA",
   };
   return langMap[lang] || "de-DE";
 };

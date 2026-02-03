@@ -33,6 +33,7 @@ const difficultyLabels: Record<string, Record<string, string>> = {
   en: { easy: "Easy", medium: "Medium", difficult: "Hard" },
   es: { easy: "Fácil", medium: "Medio", difficult: "Difícil" },
   nl: { easy: "Makkelijk", medium: "Gemiddeld", difficult: "Moeilijk" },
+  bs: { easy: "Lako", medium: "Srednje", difficult: "Teško" },
 };
 
 // Tab labels in different languages
@@ -42,6 +43,7 @@ const tabLabels: Record<string, { fiction: string; nonFiction: string; series: s
   en: { fiction: "Stories", nonFiction: "Non-Fiction", series: "Series" },
   es: { fiction: "Historias", nonFiction: "No Ficción", series: "Series" },
   nl: { fiction: "Verhalen", nonFiction: "Non-Fictie", series: "Series" },
+  bs: { fiction: "Priče", nonFiction: "Poučni tekstovi", series: "Serije" },
 };
 
 // Status labels in different languages
@@ -51,6 +53,7 @@ const statusLabels: Record<string, { toRead: string; completed: string }> = {
   en: { toRead: "To read", completed: "Completed" },
   es: { toRead: "Por leer", completed: "Completada" },
   nl: { toRead: "Te lezen", completed: "Voltooid" },
+  bs: { toRead: "Za čitanje", completed: "Završeno" },
 };
 
 const StorySelectPage = () => {
