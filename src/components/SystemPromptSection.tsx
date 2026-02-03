@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Save, Loader2, FileText, RefreshCw, BookOpen, HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Save, Loader2, FileText, RefreshCw, BookOpen, HelpCircle, ChevronDown, ChevronRight, CheckCircle } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface SystemPromptSectionProps {
@@ -43,14 +43,17 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [continuationPrompt, setContinuationPrompt] = useState("");
   const [wordExplanationPrompt, setWordExplanationPrompt] = useState("");
+  const [consistencyCheckPrompt, setConsistencyCheckPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
   const [isSavingWordExplanation, setIsSavingWordExplanation] = useState(false);
+  const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     system: false,
     continuation: false,
     wordExplanation: false,
+    consistencyCheck: false,
   });
 
   useEffect(() => {
@@ -62,12 +65,14 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_${language}`;
     const continuationKey = `system_prompt_continuation_${language}`;
     const wordExplanationKey = `system_prompt_word_explanation_${language}`;
+    const consistencyCheckKey = `system_prompt_consistency_check_${language}`;
     
     // Load all prompts in parallel
-    const [promptResult, continuationResult, wordExplanationResult] = await Promise.all([
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle()
+      supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", consistencyCheckKey).maybeSingle()
     ]);
 
     if (promptResult.data && !promptResult.error) {
@@ -94,6 +99,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     } else {
       // Use default prompt if none saved
       setWordExplanationPrompt(DEFAULT_WORD_EXPLANATION_PROMPT);
+    }
+
+    if (consistencyCheckResult.data && !consistencyCheckResult.error) {
+      setConsistencyCheckPrompt(consistencyCheckResult.data.value);
     }
     
     setIsLoading(false);
@@ -195,6 +204,39 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                   "Error saving");
     } finally {
       setIsSavingWordExplanation(false);
+    }
+  };
+
+  const saveConsistencyCheckPrompt = async () => {
+    setIsSavingConsistencyCheck(true);
+    const promptKey = `system_prompt_consistency_check_${language}`;
+    
+    try {
+      const { error } = await supabase.functions.invoke("manage-users", {
+        body: {
+          action: "updateSystemPrompt",
+          promptKey,
+          promptValue: consistencyCheckPrompt,
+        },
+      });
+
+      if (error) {
+        console.error("Error saving consistency check prompt:", error);
+        toast.error(language === 'de' ? "Fehler beim Speichern" : 
+                    language === 'fr' ? "Erreur lors de la sauvegarde" :
+                    "Error saving");
+      } else {
+        toast.success(language === 'de' ? "Consistency-Check Prompt gespeichert" : 
+                      language === 'fr' ? "Prompt de vérification sauvegardé" :
+                      "Consistency check prompt saved");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error(language === 'de' ? "Fehler beim Speichern" : 
+                  language === 'fr' ? "Erreur lors de la sauvegarde" :
+                  "Error saving");
+    } finally {
+      setIsSavingConsistencyCheck(false);
     }
   };
 
@@ -464,6 +506,83 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       ? 'Note: La réponse doit être retournée en JSON avec "correctedWord" et "explanation".'
                       : 'Note: The response must be returned as JSON with "correctedWord" and "explanation".'}
                   </p>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Consistency Check Prompt */}
+      <Collapsible open={openSections.consistencyCheck} onOpenChange={() => toggleSection('consistencyCheck')}>
+        <Card className="border-2 border-green-500/30">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.consistencyCheck ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  {language === 'de' ? 'Consistency-Check Prompt' : 
+                   language === 'fr' ? 'Prompt de Vérification de Cohérence' : 
+                   'Consistency Check Prompt'}
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({getLanguageLabel()})
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <p className="text-sm text-muted-foreground">
+                {language === 'de' 
+                  ? 'Dieser Prompt wird verwendet, um generierte Texte auf Konsistenz und Qualität zu prüfen. Definiere hier die Kriterien für die Überprüfung.'
+                  : language === 'fr'
+                  ? 'Ce prompt est utilisé pour vérifier la cohérence et la qualité des textes générés. Définissez ici les critères de vérification.'
+                  : 'This prompt is used to check generated texts for consistency and quality. Define the verification criteria here.'}
+              </p>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={consistencyCheckPrompt}
+                    onChange={(e) => setConsistencyCheckPrompt(e.target.value)}
+                    className="min-h-[250px] text-sm font-mono leading-relaxed"
+                    placeholder={language === 'de' 
+                      ? "Consistency-Check Prompt hier eingeben..." 
+                      : language === 'fr' 
+                      ? "Entrez le prompt de vérification ici..."
+                      : "Enter consistency check prompt here..."}
+                  />
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={saveConsistencyCheckPrompt}
+                      disabled={isSavingConsistencyCheck}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingConsistencyCheck ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 
+                           language === 'fr' ? 'Sauvegarde...' : 
+                           'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 
+                           language === 'fr' ? 'Sauvegarder' : 
+                           'Save'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </>
               )}
             </CardContent>
