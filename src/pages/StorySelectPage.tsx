@@ -95,12 +95,19 @@ const StorySelectPage = () => {
       // Load completion status for all stories
       const storyIds = storiesData.map(s => s.id);
       if (storyIds.length > 0) {
-        const { data: results } = await supabase
+        let resultsQuery = supabase
           .from("user_results")
           .select("reference_id")
           .eq("user_id", user.id)
           .eq("activity_type", "story_completed")
           .in("reference_id", storyIds);
+        
+        // Filter by kid profile if selected
+        if (selectedProfileId) {
+          resultsQuery = resultsQuery.eq("kid_profile_id", selectedProfileId);
+        }
+        
+        const { data: results } = await resultsQuery;
         
         const statusMap = new Map<string, boolean>();
         results?.forEach(r => {

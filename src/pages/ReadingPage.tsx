@@ -1095,7 +1095,7 @@ const ReadingPage = () => {
                         difficulty: story?.difficulty || "medium",
                         points_earned: storyPoints,
                         user_id: user?.id,
-                        kid_profile_id: selectedProfile?.id || null,
+                        kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
                       });
                       
                       const lang = story?.text_language || 'fr';
@@ -1156,7 +1156,7 @@ const ReadingPage = () => {
                           correct_answers: correctCount,
                           total_questions: totalCount,
                           user_id: user?.id,
-                          kid_profile_id: selectedProfile?.id || null,
+                          kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
                         });
                       }
                     }}
