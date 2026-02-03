@@ -4,27 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Trash2, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { Language } from "@/lib/translations";
 import VoiceInputField from "@/components/VoiceInputField";
 
-interface Character {
-  id: string;
-  name: string;
-  description: string;
-}
-
 // Translations for the create story page
 const createStoryTranslations: Record<Language, {
   title: string;
   back: string;
-  characterName: string;
-  characterNamePlaceholder: string;
-  addCharacter: string;
-  characterDescription: string;
-  characterDescriptionPlaceholder: string;
+  charactersTitle: string;
+  charactersPlaceholder: string;
   storyDescription: string;
   storyDescriptionPlaceholder: string;
   length: string;
@@ -38,17 +29,12 @@ const createStoryTranslations: Record<Language, {
   long: string;
   veryLong: string;
   createStory: string;
-  removeCharacter: string;
-  describeCharacter: string;
 }> = {
   de: {
     title: "Eigene Geschichte erstellen",
     back: "Zurück",
-    characterName: "Name der Hauptperson",
-    characterNamePlaceholder: "z.B. Max, Luna, Finn...",
-    addCharacter: "Weitere Person hinzufügen",
-    characterDescription: "Beschreibe die Hauptpersonen",
-    characterDescriptionPlaceholder: "Wie stehen sie zueinander? (Geschwister, Eltern, Freunde, andere bekannte Menschen...)",
+    charactersTitle: "Hauptpersonen",
+    charactersPlaceholder: "Beschreibe die Hauptpersonen und wie sie zueinander stehen (Geschwister, Eltern, Freunde, bekannte Menschen...)",
     storyDescription: "Worum soll es in der Geschichte gehen?",
     storyDescriptionPlaceholder: "Beschreibe kurz deine Idee (Monster und Superhelden, Fantasiegeschichten, Herausforderungen des Alltags...)",
     length: "Länge",
@@ -62,17 +48,12 @@ const createStoryTranslations: Record<Language, {
     long: "Lang (350-450 Wörter)",
     veryLong: "Sehr lang (500-600 Wörter)",
     createStory: "Geschichte erstellen",
-    removeCharacter: "Entfernen",
-    describeCharacter: "Willst du diese Person beschreiben?",
   },
   fr: {
     title: "Créer ta propre histoire",
     back: "Retour",
-    characterName: "Nom du personnage principal",
-    characterNamePlaceholder: "ex. Max, Luna, Finn...",
-    addCharacter: "Ajouter un autre personnage",
-    characterDescription: "Décris les personnages principaux",
-    characterDescriptionPlaceholder: "Quelle est leur relation? (Frères et sœurs, parents, amis, autres connaissances...)",
+    charactersTitle: "Personnages principaux",
+    charactersPlaceholder: "Décris les personnages principaux et leur relation (frères et sœurs, parents, amis, connaissances...)",
     storyDescription: "De quoi doit parler l'histoire?",
     storyDescriptionPlaceholder: "Décris brièvement ton idée (Monstres et super-héros, histoires fantastiques, défis du quotidien...)",
     length: "Longueur",
@@ -86,17 +67,12 @@ const createStoryTranslations: Record<Language, {
     long: "Long (350-450 mots)",
     veryLong: "Très long (500-600 mots)",
     createStory: "Créer l'histoire",
-    removeCharacter: "Supprimer",
-    describeCharacter: "Veux-tu décrire ce personnage?",
   },
   en: {
     title: "Create Your Own Story",
     back: "Back",
-    characterName: "Main Character Name",
-    characterNamePlaceholder: "e.g. Max, Luna, Finn...",
-    addCharacter: "Add Another Character",
-    characterDescription: "Describe the main characters",
-    characterDescriptionPlaceholder: "How are they related? (Siblings, parents, friends, other acquaintances...)",
+    charactersTitle: "Main Characters",
+    charactersPlaceholder: "Describe the main characters and their relationships (siblings, parents, friends, acquaintances...)",
     storyDescription: "What should the story be about?",
     storyDescriptionPlaceholder: "Briefly describe your idea (Monsters and superheroes, fantasy stories, everyday challenges...)",
     length: "Length",
@@ -110,17 +86,12 @@ const createStoryTranslations: Record<Language, {
     long: "Long (350-450 words)",
     veryLong: "Very long (500-600 words)",
     createStory: "Create Story",
-    removeCharacter: "Remove",
-    describeCharacter: "Do you want to describe this character?",
   },
   es: {
     title: "Crea tu propia historia",
     back: "Volver",
-    characterName: "Nombre del personaje principal",
-    characterNamePlaceholder: "ej. Max, Luna, Finn...",
-    addCharacter: "Añadir otro personaje",
-    characterDescription: "Describe los personajes principales",
-    characterDescriptionPlaceholder: "¿Cuál es su relación? (Hermanos, padres, amigos, otros conocidos...)",
+    charactersTitle: "Personajes principales",
+    charactersPlaceholder: "Describe los personajes principales y su relación (hermanos, padres, amigos, conocidos...)",
     storyDescription: "¿De qué debe tratar la historia?",
     storyDescriptionPlaceholder: "Describe brevemente tu idea (Monstruos y superhéroes, historias fantásticas, desafíos cotidianos...)",
     length: "Longitud",
@@ -134,17 +105,12 @@ const createStoryTranslations: Record<Language, {
     long: "Largo (350-450 palabras)",
     veryLong: "Muy largo (500-600 palabras)",
     createStory: "Crear historia",
-    removeCharacter: "Eliminar",
-    describeCharacter: "¿Quieres describir este personaje?",
   },
   nl: {
     title: "Maak je eigen verhaal",
     back: "Terug",
-    characterName: "Naam van het hoofdpersonage",
-    characterNamePlaceholder: "bijv. Max, Luna, Finn...",
-    addCharacter: "Nog een personage toevoegen",
-    characterDescription: "Beschrijf de hoofdpersonages",
-    characterDescriptionPlaceholder: "Wat is hun relatie? (Broers en zussen, ouders, vrienden, andere bekenden...)",
+    charactersTitle: "Hoofdpersonages",
+    charactersPlaceholder: "Beschrijf de hoofdpersonages en hun relatie (broers en zussen, ouders, vrienden, bekenden...)",
     storyDescription: "Waar moet het verhaal over gaan?",
     storyDescriptionPlaceholder: "Beschrijf kort je idee (Monsters en superhelden, fantasieverhalen, dagelijkse uitdagingen...)",
     length: "Lengte",
@@ -158,17 +124,12 @@ const createStoryTranslations: Record<Language, {
     long: "Lang (350-450 woorden)",
     veryLong: "Zeer lang (500-600 woorden)",
     createStory: "Verhaal maken",
-    removeCharacter: "Verwijderen",
-    describeCharacter: "Wil je dit personage beschrijven?",
   },
   it: {
     title: "Crea la tua storia",
     back: "Indietro",
-    characterName: "Nome del personaggio principale",
-    characterNamePlaceholder: "es. Max, Luna, Finn...",
-    addCharacter: "Aggiungi un altro personaggio",
-    characterDescription: "Descrivi i personaggi principali",
-    characterDescriptionPlaceholder: "Qual è la loro relazione? (Fratelli, genitori, amici, altri conoscenti...)",
+    charactersTitle: "Personaggi principali",
+    charactersPlaceholder: "Descrivi i personaggi principali e la loro relazione (fratelli, genitori, amici, conoscenti...)",
     storyDescription: "Di cosa dovrebbe parlare la storia?",
     storyDescriptionPlaceholder: "Descrivi brevemente la tua idea (Mostri e supereroi, storie fantastiche, sfide quotidiane...)",
     length: "Lunghezza",
@@ -182,8 +143,6 @@ const createStoryTranslations: Record<Language, {
     long: "Lungo (350-450 parole)",
     veryLong: "Molto lungo (500-600 parole)",
     createStory: "Crea storia",
-    removeCharacter: "Rimuovi",
-    describeCharacter: "Vuoi descrivere questo personaggio?",
   },
 };
 
@@ -196,32 +155,12 @@ const CreateStoryPage = () => {
   // Get language from school system
   const storyLanguage = selectedProfile?.school_system || "de";
 
-  const [characters, setCharacters] = useState<Character[]>([
-    { id: crypto.randomUUID(), name: "", description: "" }
-  ]);
+  const [charactersDescription, setCharactersDescription] = useState("");
   const [storyDescription, setStoryDescription] = useState("");
   const [length, setLength] = useState("medium");
   const [difficulty, setDifficulty] = useState("medium");
 
-  const addCharacter = () => {
-    if (characters.length < 3) {
-      setCharacters([...characters, { id: crypto.randomUUID(), name: "", description: "" }]);
-    }
-  };
-
-  const removeCharacter = (id: string) => {
-    if (characters.length > 1) {
-      setCharacters(characters.filter(c => c.id !== id));
-    }
-  };
-
-  const updateCharacter = (id: string, field: keyof Character, value: string) => {
-    setCharacters(characters.map(c => 
-      c.id === id ? { ...c, [field]: value } : c
-    ));
-  };
-
-  const canCreate = characters.some(c => c.name.trim()) && storyDescription.trim();
+  const canCreate = charactersDescription.trim() && storyDescription.trim();
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
@@ -240,61 +179,20 @@ const CreateStoryPage = () => {
 
       <div className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Characters Section */}
-        {characters.map((character, index) => (
-          <Card key={character.id} className="border-2 border-primary/20">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-baloo">
-                  {t.characterName} {characters.length > 1 ? `#${index + 1}` : ""}
-                </CardTitle>
-                {characters.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeCharacter(character.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    {t.removeCharacter}
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Character Name */}
-              <VoiceInputField
-                value={character.name}
-                onChange={(value) => updateCharacter(character.id, "name", value)}
-                placeholder={t.characterNamePlaceholder}
-                language={storyLanguage}
-              />
-
-              {/* Character Description - only show if name is filled */}
-              {character.name.trim() && (
-                <VoiceInputField
-                  label={t.characterDescription}
-                  value={character.description}
-                  onChange={(value) => updateCharacter(character.id, "description", value)}
-                  placeholder={t.characterDescriptionPlaceholder}
-                  language={storyLanguage}
-                  multiline
-                />
-              )}
-            </CardContent>
-          </Card>
-        ))}
-
-        {/* Add Character Button */}
-        {characters.length < 3 && (
-          <Button
-            variant="outline"
-            onClick={addCharacter}
-            className="w-full border-dashed border-2"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t.addCharacter}
-          </Button>
-        )}
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VoiceInputField
+              value={charactersDescription}
+              onChange={setCharactersDescription}
+              placeholder={t.charactersPlaceholder}
+              language={storyLanguage}
+              multiline
+            />
+          </CardContent>
+        </Card>
 
         {/* Story Description */}
         <Card className="border-2 border-accent/20">
@@ -355,7 +253,7 @@ const CreateStoryPage = () => {
         <Button
           onClick={() => {
             // TODO: Generate story with these inputs
-            console.log({ characters, storyDescription, length, difficulty, storyLanguage });
+            console.log({ charactersDescription, storyDescription, length, difficulty, storyLanguage });
           }}
           disabled={!canCreate}
           className="w-full h-14 text-lg font-baloo btn-primary-kid"
