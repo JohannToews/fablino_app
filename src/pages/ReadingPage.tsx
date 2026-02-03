@@ -444,14 +444,69 @@ const ReadingPage = () => {
       }
 
       if (data?.title && data?.content) {
-      // Helper to upload base64 image
-      const uploadBase64Image = async (base64: string, prefix: string): Promise<string | null> => {
+      // FIRST: Save the story to database (without images)
+      console.log("Saving story to database FIRST (without images)...");
+      console.log("Insert data:", {
+        title: data.title,
+        contentLength: data.content?.length,
+        difficulty: story.difficulty,
+        user_id: user.id,
+        kid_profile_id: story.kid_profile_id,
+        episode_number: nextEpisodeNumber,
+        series_id: story.series_id,
+      });
+      
+      const { data: newStory, error: storyError } = await supabase
+        .from("stories")
+        .insert({
+          title: data.title,
+          content: data.content,
+          difficulty: story.difficulty,
+          text_type: story.text_type || "fiction",
+          text_language: story.text_language,
+          prompt: story.prompt,
+          cover_image_url: null, // Will update after upload
+          story_images: null,     // Will update after upload
+          user_id: user.id,
+          kid_profile_id: story.kid_profile_id,
+          ending_type: "C",
+          episode_number: nextEpisodeNumber,
+          series_id: story.series_id,
+        })
+        .select()
+        .single();
+
+      console.log("Story save result - error:", storyError);
+      console.log("Story save result - newStory:", newStory?.id);
+
+      if (storyError) {
+        console.error("Error saving continuation:", storyError);
+        toast.error("Fehler beim Speichern: " + storyError.message);
+        return;
+      }
+
+      // Helper to upload base64 image - with robust error handling
+      const uploadBase64Image = async (base64: string | undefined | null, prefix: string): Promise<string | null> => {
+        if (!base64 || typeof base64 !== 'string') {
+          console.log(`${prefix}: No valid base64 data provided`);
+          return null;
+        }
         try {
-          console.log(`Uploading ${prefix} image...`);
+          console.log(`Uploading ${prefix} image (length: ${base64.length})...`);
           let b64Data = base64;
-          if (b64Data.startsWith('data:')) {
+          // Remove data URL prefix if present
+          if (b64Data.includes(',')) {
             b64Data = b64Data.split(',')[1];
           }
+          // Remove any whitespace
+          b64Data = b64Data.replace(/\s/g, '');
+          
+          // Validate base64
+          if (!b64Data || b64Data.length === 0) {
+            console.error(`${prefix}: Empty base64 after processing`);
+            return null;
+          }
+          
           const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
           const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.png`;
           const { error: uploadError } = await supabase.storage
@@ -470,62 +525,37 @@ const ReadingPage = () => {
         return null;
       };
 
-      // Upload cover image if available
-      let coverUrl = null;
-      if (data.coverImageBase64) {
-        console.log("Uploading cover image...");
-        coverUrl = await uploadBase64Image(data.coverImageBase64, "cover");
-      }
-
-      // Upload story images if available
-      const storyImageUrls: string[] = [];
-      if (data.storyImages && Array.isArray(data.storyImages)) {
-        console.log(`Uploading ${data.storyImages.length} story images...`);
-        for (let i = 0; i < data.storyImages.length; i++) {
-          const url = await uploadBase64Image(data.storyImages[i], `story-${i}`);
-          if (url) storyImageUrls.push(url);
+      // THEN: Upload images in background (non-blocking)
+      try {
+        let coverUrl = null;
+        if (data.coverImageBase64) {
+          console.log("Uploading cover image...");
+          coverUrl = await uploadBase64Image(data.coverImageBase64, "cover");
         }
-      }
 
-      console.log("Saving story to database...");
-      console.log("Insert data:", {
-        title: data.title,
-        contentLength: data.content?.length,
-        difficulty: story.difficulty,
-        user_id: user.id,
-        kid_profile_id: story.kid_profile_id,
-        episode_number: nextEpisodeNumber,
-        series_id: story.series_id,
-      });
-      
-      // Save continuation story
-      const { data: newStory, error: storyError } = await supabase
-        .from("stories")
-        .insert({
-          title: data.title,
-          content: data.content,
-          difficulty: story.difficulty,
-          text_type: story.text_type || "fiction",
-          text_language: story.text_language,
-          prompt: story.prompt,
-          cover_image_url: coverUrl,
-          story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
-          user_id: user.id,
-          kid_profile_id: story.kid_profile_id,
-          ending_type: "C",
-          episode_number: nextEpisodeNumber,
-          series_id: story.series_id,
-        })
-        .select()
-        .single();
+        const storyImageUrls: string[] = [];
+        if (data.storyImages && Array.isArray(data.storyImages)) {
+          console.log(`Uploading ${data.storyImages.length} story images...`);
+          for (let i = 0; i < data.storyImages.length; i++) {
+            const url = await uploadBase64Image(data.storyImages[i], `story-${i}`);
+            if (url) storyImageUrls.push(url);
+          }
+        }
 
-      console.log("Story save result - error:", storyError);
-      console.log("Story save result - newStory:", newStory?.id);
-
-      if (storyError) {
-        console.error("Error saving continuation:", storyError);
-        toast.error("Fehler beim Speichern: " + storyError.message);
-        return;
+        // Update story with image URLs
+        if (coverUrl || storyImageUrls.length > 0) {
+          console.log("Updating story with image URLs...");
+          await supabase
+            .from("stories")
+            .update({
+              cover_image_url: coverUrl,
+              story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
+            })
+            .eq("id", newStory.id);
+        }
+      } catch (imgError) {
+        console.error("Error uploading images (story already saved):", imgError);
+        // Don't fail - story is already saved
       }
 
         // Save comprehension questions if available
