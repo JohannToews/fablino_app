@@ -2,6 +2,8 @@ import { useState, useEffect, createContext, useContext, ReactNode, useCallback 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it';
+
 export interface KidProfile {
   id: string;
   name: string;
@@ -13,6 +15,16 @@ export interface KidProfile {
   image_style: string | null;
 }
 
+// Derive app language from school_system
+export const getKidLanguage = (schoolSystem: string | undefined): KidLanguage => {
+  if (!schoolSystem) return 'fr';
+  const lang = schoolSystem.toLowerCase();
+  if (['de', 'fr', 'en', 'es', 'nl', 'it'].includes(lang)) {
+    return lang as KidLanguage;
+  }
+  return 'fr';
+};
+
 interface KidProfileContextType {
   kidProfiles: KidProfile[];
   selectedProfileId: string | null;
@@ -21,6 +33,7 @@ interface KidProfileContextType {
   hasMultipleProfiles: boolean;
   isLoading: boolean;
   refreshProfiles: () => Promise<void>;
+  kidAppLanguage: KidLanguage;
 }
 
 const KidProfileContext = createContext<KidProfileContextType | undefined>(undefined);
@@ -84,6 +97,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
 
   const selectedProfile = kidProfiles.find(p => p.id === selectedProfileId) || null;
   const hasMultipleProfiles = kidProfiles.length > 1;
+  const kidAppLanguage = getKidLanguage(selectedProfile?.school_system);
 
   return (
     <KidProfileContext.Provider value={{
@@ -94,6 +108,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       hasMultipleProfiles,
       isLoading,
       refreshProfiles: loadKidProfiles,
+      kidAppLanguage,
     }}>
       {children}
     </KidProfileContext.Provider>

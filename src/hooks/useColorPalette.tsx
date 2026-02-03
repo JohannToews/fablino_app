@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useKidProfile } from "@/hooks/useKidProfile";
 
 // 5 distinct design palettes
 export const PALETTE_COLORS: Record<string, { primary: string; accent: string; bg: string }> = {
@@ -20,31 +18,9 @@ export interface ColorPaletteData {
 }
 
 export const useColorPalette = (): ColorPaletteData => {
-  const { user } = useAuth();
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadPalette = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("kid_profiles")
-        .select("color_palette")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (data?.color_palette) {
-        setPalette(data.color_palette);
-      }
-      setIsLoading(false);
-    };
-
-    loadPalette();
-  }, [user]);
+  const { selectedProfile, isLoading } = useKidProfile();
+  
+  const palette = selectedProfile?.color_palette || DEFAULT_PALETTE;
 
   return {
     palette,

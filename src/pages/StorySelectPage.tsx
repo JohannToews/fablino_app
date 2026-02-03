@@ -52,8 +52,8 @@ const StorySelectPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
-  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
-  const appLang = (user?.appLanguage || 'fr') as Language;
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
+  const appLang = kidAppLanguage;
   const t = useTranslations(appLang);
   const [stories, setStories] = useState<Story[]>([]);
   const [storyStatuses, setStoryStatuses] = useState<Map<string, boolean>>(new Map());

@@ -44,7 +44,7 @@ interface Story {
 const VocabularyQuizPage = () => {
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
-  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
+  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
   const navigate = useNavigate();
   const [allWords, setAllWords] = useState<QuizWord[]>([]);
   const [words, setWords] = useState<QuizWord[]>([]);
