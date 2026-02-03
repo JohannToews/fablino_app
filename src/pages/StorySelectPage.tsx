@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Sparkles, BookText, GraduationCap, CheckCircle2, Users } from "lucide-react";
+import { BookOpen, BookText, GraduationCap, CheckCircle2, Users, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useTranslations, Language } from "@/lib/translations";
+import { useTranslations } from "@/lib/translations";
+import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
+import SeriesGrid from "@/components/SeriesGrid";
 
 interface Story {
   id: string;
@@ -19,6 +21,9 @@ interface Story {
   difficulty: string | null;
   text_type: string | null;
   kid_profile_id: string | null;
+  series_id: string | null;
+  episode_number: number | null;
+  ending_type: string | null;
 }
 
 // Difficulty labels in different languages
@@ -31,12 +36,12 @@ const difficultyLabels: Record<string, Record<string, string>> = {
 };
 
 // Tab labels in different languages
-const tabLabels: Record<string, { fiction: string; nonFiction: string }> = {
-  de: { fiction: "Geschichten", nonFiction: "Sachgeschichten" },
-  fr: { fiction: "Histoires", nonFiction: "Documentaires" },
-  en: { fiction: "Stories", nonFiction: "Non-Fiction" },
-  es: { fiction: "Historias", nonFiction: "No Ficción" },
-  nl: { fiction: "Verhalen", nonFiction: "Non-Fictie" },
+const tabLabels: Record<string, { fiction: string; nonFiction: string; series: string }> = {
+  de: { fiction: "Geschichten", nonFiction: "Sachgeschichten", series: "Serien" },
+  fr: { fiction: "Histoires", nonFiction: "Documentaires", series: "Séries" },
+  en: { fiction: "Stories", nonFiction: "Non-Fiction", series: "Series" },
+  es: { fiction: "Historias", nonFiction: "No Ficción", series: "Series" },
+  nl: { fiction: "Verhalen", nonFiction: "Non-Fictie", series: "Series" },
 };
 
 // Status labels in different languages
@@ -58,6 +63,7 @@ const StorySelectPage = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [storyStatuses, setStoryStatuses] = useState<Map<string, boolean>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingForSeries, setIsGeneratingForSeries] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -71,7 +77,7 @@ const StorySelectPage = () => {
     // Build query - filter strictly by kid_profile_id
     let query = supabase
       .from("stories")
-      .select("*")
+      .select("id, title, content, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
       .eq("user_id", user.id)
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
@@ -108,9 +114,115 @@ const StorySelectPage = () => {
     setIsLoading(false);
   };
 
+  // Generate next episode for a series
+  const handleGenerateNextEpisode = async (series: { seriesId: string; episodes: Story[] }) => {
+    if (!user || !selectedProfile) return;
+    
+    const lastEpisode = series.episodes[series.episodes.length - 1];
+    if (!lastEpisode) return;
+    
+    setIsGeneratingForSeries(series.seriesId);
+    
+    try {
+      // Get app settings for continuation prompt
+      const { data: settings } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "continuation_prompt")
+        .single();
+      
+      const continuationPrompt = settings?.value || "";
+      
+      // Build context from previous episode
+      const previousContext = `Vorherige Episode "${lastEpisode.title}": ${lastEpisode.content.substring(0, 1500)}...`;
+      
+      // Call generate-story function
+      const { data, error } = await supabase.functions.invoke("generate-story", {
+        body: {
+          length: "medium",
+          difficulty: lastEpisode.difficulty || "medium",
+          description: `${continuationPrompt}\n\n${previousContext}`,
+          textLanguage: appLang.toUpperCase(),
+          endingType: "C", // Continue as cliffhanger
+          episodeNumber: (lastEpisode.episode_number || 1) + 1,
+          seriesId: series.seriesId,
+        },
+      });
+      
+      if (error) throw error;
+      
+      // Upload cover image if present
+      let coverImageUrl = null;
+      if (data.coverImageBase64) {
+        const imageData = Uint8Array.from(atob(data.coverImageBase64), c => c.charCodeAt(0));
+        const fileName = `${crypto.randomUUID()}.png`;
+        const { error: uploadError } = await supabase.storage
+          .from("story-images")
+          .upload(fileName, imageData, { contentType: "image/png" });
+        
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from("story-images").getPublicUrl(fileName);
+          coverImageUrl = urlData.publicUrl;
+        }
+      }
+      
+      // Save the new episode
+      const { data: newStory, error: insertError } = await supabase
+        .from("stories")
+        .insert({
+          user_id: user.id,
+          kid_profile_id: selectedProfile.id,
+          title: data.title,
+          content: data.content,
+          cover_image_url: coverImageUrl,
+          difficulty: lastEpisode.difficulty || "medium",
+          text_type: lastEpisode.text_type || "fiction",
+          text_language: appLang,
+          ending_type: "C",
+          episode_number: (lastEpisode.episode_number || 1) + 1,
+          series_id: series.seriesId,
+        })
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      
+      // Save comprehension questions
+      if (data.questions?.length > 0 && newStory) {
+        const questionsToInsert = data.questions.map((q: { question: string; expected_answer: string }, idx: number) => ({
+          story_id: newStory.id,
+          question: q.question,
+          expected_answer: q.expected_answer,
+          order_index: idx,
+        }));
+        await supabase.from("comprehension_questions").insert(questionsToInsert);
+      }
+      
+      // Save vocabulary words
+      if (data.vocabulary?.length > 0 && newStory) {
+        const wordsToInsert = data.vocabulary.map((w: { word: string; explanation: string }) => ({
+          story_id: newStory.id,
+          word: w.word,
+          explanation: w.explanation,
+        }));
+        await supabase.from("marked_words").insert(wordsToInsert);
+      }
+      
+      toast.success(appLang === 'de' ? 'Neue Episode erstellt!' : 'New episode created!');
+      loadStories(); // Refresh the list
+      
+    } catch (err) {
+      console.error("Error generating episode:", err);
+      toast.error(appLang === 'de' ? 'Fehler beim Erstellen der Episode' : 'Error creating episode');
+    } finally {
+      setIsGeneratingForSeries(null);
+    }
+  };
+
   // Filter stories by type
-  const fictionStories = stories.filter(s => !s.text_type || s.text_type === 'fiction');
-  const nonFictionStories = stories.filter(s => s.text_type === 'non-fiction');
+  const fictionStories = stories.filter(s => (!s.text_type || s.text_type === 'fiction') && !s.series_id);
+  const nonFictionStories = stories.filter(s => s.text_type === 'non-fiction' && !s.series_id);
+  const seriesStories = stories.filter(s => s.series_id !== null);
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
@@ -186,14 +298,26 @@ const StorySelectPage = () => {
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue="fiction" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 h-14 bg-card/80 backdrop-blur-sm rounded-2xl p-1">
+          <Tabs defaultValue={seriesStories.length > 0 ? "series" : "fiction"} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6 h-14 bg-card/80 backdrop-blur-sm rounded-2xl p-1">
+              <TabsTrigger 
+                value="series" 
+                className="flex items-center gap-2 text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Layers className="h-5 w-5" />
+                {tabLabels[appLang]?.series || tabLabels.de.series}
+                {seriesStories.length > 0 && (
+                  <span className="ml-1 bg-background/30 text-xs px-2 py-0.5 rounded-full">
+                    {new Set(seriesStories.map(s => s.series_id)).size}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger 
                 value="fiction" 
-                className="flex items-center gap-2 text-lg font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="flex items-center gap-2 text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <BookText className="h-5 w-5" />
-                {tabLabels[appLang]?.fiction || tabLabels.fr.fiction}
+                {tabLabels[appLang]?.fiction || tabLabels.de.fiction}
                 {fictionStories.length > 0 && (
                   <span className="ml-1 bg-background/30 text-xs px-2 py-0.5 rounded-full">
                     {fictionStories.length}
@@ -202,10 +326,10 @@ const StorySelectPage = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="non-fiction" 
-                className="flex items-center gap-2 text-lg font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="flex items-center gap-2 text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <GraduationCap className="h-5 w-5" />
-                {tabLabels[appLang]?.nonFiction || tabLabels.fr.nonFiction}
+                {tabLabels[appLang]?.nonFiction || tabLabels.de.nonFiction}
                 {nonFictionStories.length > 0 && (
                   <span className="ml-1 bg-background/30 text-xs px-2 py-0.5 rounded-full">
                     {nonFictionStories.length}
@@ -213,6 +337,17 @@ const StorySelectPage = () => {
                 )}
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="series">
+              <SeriesGrid 
+                stories={seriesStories} 
+                appLang={appLang} 
+                navigate={navigate} 
+                storyStatuses={storyStatuses}
+                onGenerateNextEpisode={handleGenerateNextEpisode}
+                isGeneratingForSeries={isGeneratingForSeries}
+              />
+            </TabsContent>
 
             <TabsContent value="fiction">
               <StoryGrid stories={fictionStories} appLang={appLang} navigate={navigate} storyStatuses={storyStatuses} />
