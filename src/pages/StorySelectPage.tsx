@@ -166,27 +166,41 @@ const StorySelectPage = () => {
       
       if (error) throw error;
       
-      // Upload cover image if present
-      let coverImageUrl = null;
-      if (data.coverImageBase64) {
+      // Helper to upload base64 image to storage
+      const uploadBase64Image = async (base64: string, prefix: string): Promise<string | null> => {
         try {
-          // Handle both raw base64 and data URL formats
-          let base64Data = data.coverImageBase64;
-          if (base64Data.startsWith('data:')) {
-            base64Data = base64Data.split(',')[1];
+          let b64Data = base64;
+          if (b64Data.startsWith('data:')) {
+            b64Data = b64Data.split(',')[1];
           }
-          const imageData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-          const fileName = `${crypto.randomUUID()}.png`;
+          const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+          const fileName = `${prefix}-${crypto.randomUUID()}.png`;
           const { error: uploadError } = await supabase.storage
             .from("story-images")
             .upload(fileName, imageData, { contentType: "image/png" });
           
           if (!uploadError) {
             const { data: urlData } = supabase.storage.from("story-images").getPublicUrl(fileName);
-            coverImageUrl = urlData.publicUrl;
+            return urlData.publicUrl;
           }
         } catch (imgErr) {
-          console.error("Error processing cover image:", imgErr);
+          console.error(`Error uploading ${prefix} image:`, imgErr);
+        }
+        return null;
+      };
+
+      // Upload cover image if present
+      let coverImageUrl = null;
+      if (data.coverImageBase64) {
+        coverImageUrl = await uploadBase64Image(data.coverImageBase64, "cover");
+      }
+      
+      // Upload story images if present
+      const storyImageUrls: string[] = [];
+      if (data.storyImages && Array.isArray(data.storyImages)) {
+        for (let i = 0; i < data.storyImages.length; i++) {
+          const url = await uploadBase64Image(data.storyImages[i], `story-${i}`);
+          if (url) storyImageUrls.push(url);
         }
       }
       
@@ -199,6 +213,7 @@ const StorySelectPage = () => {
           title: data.title,
           content: data.content,
           cover_image_url: coverImageUrl,
+          story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
           difficulty: lastEpisode.difficulty || "medium",
           text_type: lastEpisode.text_type || "fiction",
           text_language: appLang,
