@@ -156,6 +156,8 @@ const StorySelectPage = () => {
           difficulty: lastEpisode.difficulty || "medium",
           description: `${continuationPrompt}\n\n${previousContext}`,
           textLanguage: appLang.toUpperCase(),
+          schoolLevel: selectedProfile.school_class,
+          textType: lastEpisode.text_type || "fiction",
           endingType: "C", // Continue as cliffhanger
           episodeNumber: (lastEpisode.episode_number || 1) + 1,
           seriesId: series.seriesId,
