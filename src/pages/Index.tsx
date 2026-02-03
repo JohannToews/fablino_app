@@ -22,6 +22,7 @@ const homeTranslations: Record<Language, {
   myResultsDesc: string;
   footer: string;
   appName: string;
+  newBadge: string;
 }> = {
   de: {
     greeting: 'Hallo',
@@ -36,6 +37,7 @@ const homeTranslations: Record<Language, {
     myResultsDesc: 'Punkte und Fortschritt',
     footer: 'Mit ❤️ für kleine Leser gemacht',
     appName: 'LeseMagie',
+    newBadge: 'Neu',
   },
   fr: {
     greeting: 'Salut',
@@ -50,6 +52,7 @@ const homeTranslations: Record<Language, {
     myResultsDesc: 'Points et progrès',
     footer: 'Fait avec ❤️ pour les petits lecteurs',
     appName: 'LireMagie',
+    newBadge: 'Nouveau',
   },
   en: {
     greeting: 'Hello',
@@ -64,6 +67,7 @@ const homeTranslations: Record<Language, {
     myResultsDesc: 'Points and progress',
     footer: 'Made with ❤️ for little readers',
     appName: 'ReadMagic',
+    newBadge: 'New',
   },
   es: {
     greeting: 'Hola',
@@ -78,6 +82,7 @@ const homeTranslations: Record<Language, {
     myResultsDesc: 'Puntos y progreso',
     footer: 'Hecho con ❤️ para pequeños lectores',
     appName: 'LeerMagia',
+    newBadge: 'Nuevo',
   },
   nl: {
     greeting: 'Hallo',
@@ -92,6 +97,7 @@ const homeTranslations: Record<Language, {
     myResultsDesc: 'Punten en voortgang',
     footer: 'Gemaakt met ❤️ voor kleine lezers',
     appName: 'LeesMagie',
+    newBadge: 'Nieuw',
   },
   it: {
     greeting: 'Ciao',
@@ -106,6 +112,7 @@ const homeTranslations: Record<Language, {
     myResultsDesc: 'Punti e progressi',
     footer: 'Fatto con ❤️ per i piccoli lettori',
     appName: 'LeggiMagia',
+    newBadge: 'Nuovo',
   },
 };
 
@@ -252,8 +259,14 @@ const Index = () => {
             {/* Create Own Story - NEW */}
             <Card 
               onClick={() => navigate("/create-story")}
-              className="cursor-pointer border-2 border-cotton-candy/50 hover:border-cotton-candy hover:shadow-card transition-all duration-300 group touch-manipulation"
+              className="cursor-pointer border-2 border-cotton-candy/50 hover:border-cotton-candy hover:shadow-card transition-all duration-300 group touch-manipulation animate-wiggle animate-pulse-glow relative overflow-visible"
             >
+              {/* NEW Badge */}
+              <div className="absolute -top-2 -right-2 z-10">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg">
+                  ✨ {t.newBadge}
+                </span>
+              </div>
               <CardContent className="flex flex-col items-center p-4 md:p-6 text-center">
                 <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-cotton-candy/30 flex items-center justify-center mb-3 md:mb-4 group-hover:scale-110 transition-transform">
                   <Sparkles className="h-7 w-7 md:h-8 md:w-8 text-pink-500" />
