@@ -26,6 +26,7 @@ const readingLabels: Record<string, {
   finishedReading: string;
   listeningMode: string;
   comprehensionQuestions: string;
+  storyCompleted: string;
 }> = {
   de: {
     thinking: "Ich denke nach...",
@@ -38,6 +39,7 @@ const readingLabels: Record<string, {
     finishedReading: "Fertig gelesen",
     listeningMode: "Höre die Geschichte...",
     comprehensionQuestions: "Verständnisfragen",
+    storyCompleted: "Super! Du hast fertig gelesen!",
   },
   fr: {
     thinking: "Je réfléchis...",
@@ -50,6 +52,7 @@ const readingLabels: Record<string, {
     finishedReading: "J'ai fini de lire",
     listeningMode: "Écoute l'histoire...",
     comprehensionQuestions: "Questions de compréhension",
+    storyCompleted: "Super! Tu as fini de lire!",
   },
   en: {
     thinking: "Thinking...",
@@ -62,6 +65,7 @@ const readingLabels: Record<string, {
     finishedReading: "I finished reading",
     listeningMode: "Listen to the story...",
     comprehensionQuestions: "Comprehension questions",
+    storyCompleted: "Great! You finished reading!",
   },
   es: {
     thinking: "Pensando...",
@@ -74,6 +78,7 @@ const readingLabels: Record<string, {
     finishedReading: "Terminé de leer",
     listeningMode: "Escucha la historia...",
     comprehensionQuestions: "Preguntas de comprensión",
+    storyCompleted: "¡Genial! ¡Terminaste de leer!",
   },
   nl: {
     thinking: "Ik denk na...",
@@ -86,6 +91,7 @@ const readingLabels: Record<string, {
     finishedReading: "Ik ben klaar met lezen",
     listeningMode: "Luister naar het verhaal...",
     comprehensionQuestions: "Begripsvragen",
+    storyCompleted: "Super! Je bent klaar met lezen!",
   },
   it: {
     thinking: "Sto pensando...",
@@ -98,6 +104,7 @@ const readingLabels: Record<string, {
     finishedReading: "Ho finito di leggere",
     listeningMode: "Ascolta la storia...",
     comprehensionQuestions: "Domande di comprensione",
+    storyCompleted: "Fantastico! Hai finito di leggere!",
   },
 };
 
@@ -921,7 +928,8 @@ const ReadingPage = () => {
                         user_id: user?.id,
                       });
                       
-                      toast.success(`Super! Tu as fini de lire! 🏆 (+${storyPoints} points)`);
+                      const lang = story?.text_language || 'fr';
+                      toast.success(`${readingLabels[lang]?.storyCompleted || readingLabels.fr.storyCompleted} 🏆 (+${storyPoints} points)`);
                       navigate("/stories");
                     }
                   }}
@@ -933,7 +941,7 @@ const ReadingPage = () => {
                   kidName={selectedProfile?.name}
                   kidSchoolClass={selectedProfile?.school_class}
                   kidSchoolSystem={selectedProfile?.school_system}
-                  language={(user.appLanguage || 'fr') as Language}
+                  language={textLang as Language}
                 />
               )}
 
