@@ -43,6 +43,9 @@ interface StoryStats {
   is_read: boolean;
   words_requested: number;
   words_saved: number;
+  has_feedback: boolean;
+  questions_answered: number;
+  questions_total: number;
 }
 
 const translations: Record<Language, {
@@ -88,6 +91,10 @@ const translations: Record<Language, {
   words: string;
   filterPlaceholder: string;
   all: string;
+  jaiFini: string;
+  questionsAnswered: string;
+  yes: string;
+  no: string;
 }> = {
   de: {
     title: "Story-Statistiken",
@@ -132,6 +139,10 @@ const translations: Record<Language, {
     words: "Wörter",
     filterPlaceholder: "Filtern...",
     all: "Alle",
+    jaiFini: "J'ai fini",
+    questionsAnswered: "Fragen",
+    yes: "Ja",
+    no: "Nein",
   },
   fr: {
     title: "Statistiques des histoires",
@@ -176,6 +187,10 @@ const translations: Record<Language, {
     words: "Mots",
     filterPlaceholder: "Filtrer...",
     all: "Tous",
+    jaiFini: "J'ai fini",
+    questionsAnswered: "Questions",
+    yes: "Oui",
+    no: "Non",
   },
   en: {
     title: "Story Statistics",
@@ -220,6 +235,10 @@ const translations: Record<Language, {
     words: "Words",
     filterPlaceholder: "Filter...",
     all: "All",
+    jaiFini: "J'ai fini",
+    questionsAnswered: "Questions",
+    yes: "Yes",
+    no: "No",
   },
   es: {
     title: "Estadísticas de historias",
@@ -264,6 +283,10 @@ const translations: Record<Language, {
     words: "Palabras",
     filterPlaceholder: "Filtrar...",
     all: "Todos",
+    jaiFini: "J'ai fini",
+    questionsAnswered: "Preguntas",
+    yes: "Sí",
+    no: "No",
   },
   nl: {
     title: "Verhaal Statistieken",
@@ -308,6 +331,10 @@ const translations: Record<Language, {
     words: "Woorden",
     filterPlaceholder: "Filteren...",
     all: "Alle",
+    jaiFini: "J'ai fini",
+    questionsAnswered: "Vragen",
+    yes: "Ja",
+    no: "Nee",
   },
   it: {
     title: "Statistiche delle storie",
@@ -352,6 +379,10 @@ const translations: Record<Language, {
     words: "Parole",
     filterPlaceholder: "Filtra...",
     all: "Tutti",
+    jaiFini: "J'ai fini",
+    questionsAnswered: "Domande",
+    yes: "Sì",
+    no: "No",
   },
 };
 
@@ -394,6 +425,9 @@ const FeedbackStatsPage = () => {
       setRatings(ratingsData);
     }
 
+    // Get story IDs that have feedback (J'ai fini clicked)
+    const feedbackStoryIds = new Set(ratingsData?.map(r => r.story_id).filter(Boolean) || []);
+
     // Load stories with kid profiles
     const { data: storiesData } = await supabase
       .from("stories")
@@ -422,6 +456,32 @@ const FeedbackStatsPage = () => {
       .eq("activity_type", "story_completed");
 
     const readStoryIds = new Set(resultsData?.map(r => r.reference_id) || []);
+
+    // Load comprehension results (questions answered per story)
+    const { data: comprehensionResults } = await supabase
+      .from("user_results")
+      .select("reference_id, total_questions, correct_answers")
+      .eq("activity_type", "comprehension");
+
+    const comprehensionPerStory = new Map<string, { answered: number; total: number }>();
+    comprehensionResults?.forEach(r => {
+      if (r.reference_id && r.total_questions) {
+        comprehensionPerStory.set(r.reference_id, {
+          answered: r.total_questions, // All questions answered if quiz completed
+          total: r.total_questions,
+        });
+      }
+    });
+
+    // Load comprehension questions count per story (for stories without results)
+    const { data: questionsData } = await supabase
+      .from("comprehension_questions")
+      .select("story_id");
+
+    const questionsPerStory = new Map<string, number>();
+    questionsData?.forEach(q => {
+      questionsPerStory.set(q.story_id, (questionsPerStory.get(q.story_id) || 0) + 1);
+    });
 
     // Load marked words per story
     const { data: markedWordsData } = await supabase
@@ -454,6 +514,9 @@ const FeedbackStatsPage = () => {
     if (storiesData) {
       const mappedStories: StoryStats[] = storiesData.map((story: any) => {
         const wordStats = wordsPerStory.get(story.id) || { requested: 0, saved: 0 };
+        const comprehensionStats = comprehensionPerStory.get(story.id);
+        const totalQuestions = questionsPerStory.get(story.id) || 0;
+        
         return {
           id: story.id,
           title: story.title,
@@ -471,6 +534,9 @@ const FeedbackStatsPage = () => {
           is_read: readStoryIds.has(story.id),
           words_requested: wordStats.requested,
           words_saved: wordStats.saved,
+          has_feedback: feedbackStoryIds.has(story.id),
+          questions_answered: comprehensionStats?.answered || 0,
+          questions_total: comprehensionStats?.total || totalQuestions,
         };
       });
       setStories(mappedStories);
@@ -796,6 +862,8 @@ const FeedbackStatsPage = () => {
                           <TableHead>{t.textType}</TableHead>
                           <TableHead>{t.difficulty}</TableHead>
                           <TableHead>{t.words}</TableHead>
+                          <TableHead>{t.jaiFini}</TableHead>
+                          <TableHead>{t.questionsAnswered}</TableHead>
                           <TableHead>{t.status}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -846,6 +914,28 @@ const FeedbackStatsPage = () => {
                                   {story.words_saved}
                                 </span>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {story.has_feedback ? (
+                                <Badge className="bg-mint/20 text-mint border-mint">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  {t.yes}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  {t.no}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {story.questions_total > 0 ? (
+                                <Badge variant={story.questions_answered > 0 ? "default" : "outline"}>
+                                  {story.questions_answered}/{story.questions_total}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col gap-1">
