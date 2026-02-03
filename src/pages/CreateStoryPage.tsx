@@ -47,10 +47,10 @@ const createStoryTranslations: Record<Language, {
     characterName: "Name der Hauptperson",
     characterNamePlaceholder: "z.B. Max, Luna, Finn...",
     addCharacter: "Weitere Person hinzufügen",
-    characterDescription: "Beschreibe {name}",
-    characterDescriptionPlaceholder: "Wie ist {name}? Beschreibe die Art und den Charakter...",
+    characterDescription: "Beschreibe die Hauptpersonen",
+    characterDescriptionPlaceholder: "Wie stehen sie zueinander? (Geschwister, Eltern, Freunde, andere bekannte Menschen...)",
     storyDescription: "Worum soll es in der Geschichte gehen?",
-    storyDescriptionPlaceholder: "Beschreibe kurz, worum es in der Geschichte gehen soll...",
+    storyDescriptionPlaceholder: "Beschreibe kurz deine Idee (Monster und Superhelden, Fantasiegeschichten, Herausforderungen des Alltags...)",
     length: "Länge",
     difficulty: "Schwierigkeitsgrad",
     easy: "Einfach",
@@ -71,10 +71,10 @@ const createStoryTranslations: Record<Language, {
     characterName: "Nom du personnage principal",
     characterNamePlaceholder: "ex. Max, Luna, Finn...",
     addCharacter: "Ajouter un autre personnage",
-    characterDescription: "Décris {name}",
-    characterDescriptionPlaceholder: "Comment est {name}? Décris sa personnalité...",
+    characterDescription: "Décris les personnages principaux",
+    characterDescriptionPlaceholder: "Quelle est leur relation? (Frères et sœurs, parents, amis, autres connaissances...)",
     storyDescription: "De quoi doit parler l'histoire?",
-    storyDescriptionPlaceholder: "Décris brièvement le sujet de l'histoire...",
+    storyDescriptionPlaceholder: "Décris brièvement ton idée (Monstres et super-héros, histoires fantastiques, défis du quotidien...)",
     length: "Longueur",
     difficulty: "Difficulté",
     easy: "Facile",
@@ -95,10 +95,10 @@ const createStoryTranslations: Record<Language, {
     characterName: "Main Character Name",
     characterNamePlaceholder: "e.g. Max, Luna, Finn...",
     addCharacter: "Add Another Character",
-    characterDescription: "Describe {name}",
-    characterDescriptionPlaceholder: "How is {name}? Describe their personality...",
+    characterDescription: "Describe the main characters",
+    characterDescriptionPlaceholder: "How are they related? (Siblings, parents, friends, other acquaintances...)",
     storyDescription: "What should the story be about?",
-    storyDescriptionPlaceholder: "Briefly describe what the story should be about...",
+    storyDescriptionPlaceholder: "Briefly describe your idea (Monsters and superheroes, fantasy stories, everyday challenges...)",
     length: "Length",
     difficulty: "Difficulty",
     easy: "Easy",
@@ -119,10 +119,10 @@ const createStoryTranslations: Record<Language, {
     characterName: "Nombre del personaje principal",
     characterNamePlaceholder: "ej. Max, Luna, Finn...",
     addCharacter: "Añadir otro personaje",
-    characterDescription: "Describe a {name}",
-    characterDescriptionPlaceholder: "¿Cómo es {name}? Describe su personalidad...",
+    characterDescription: "Describe los personajes principales",
+    characterDescriptionPlaceholder: "¿Cuál es su relación? (Hermanos, padres, amigos, otros conocidos...)",
     storyDescription: "¿De qué debe tratar la historia?",
-    storyDescriptionPlaceholder: "Describe brevemente de qué debe tratar la historia...",
+    storyDescriptionPlaceholder: "Describe brevemente tu idea (Monstruos y superhéroes, historias fantásticas, desafíos cotidianos...)",
     length: "Longitud",
     difficulty: "Dificultad",
     easy: "Fácil",
@@ -143,10 +143,10 @@ const createStoryTranslations: Record<Language, {
     characterName: "Naam van het hoofdpersonage",
     characterNamePlaceholder: "bijv. Max, Luna, Finn...",
     addCharacter: "Nog een personage toevoegen",
-    characterDescription: "Beschrijf {name}",
-    characterDescriptionPlaceholder: "Hoe is {name}? Beschrijf hun persoonlijkheid...",
+    characterDescription: "Beschrijf de hoofdpersonages",
+    characterDescriptionPlaceholder: "Wat is hun relatie? (Broers en zussen, ouders, vrienden, andere bekenden...)",
     storyDescription: "Waar moet het verhaal over gaan?",
-    storyDescriptionPlaceholder: "Beschrijf kort waar het verhaal over moet gaan...",
+    storyDescriptionPlaceholder: "Beschrijf kort je idee (Monsters en superhelden, fantasieverhalen, dagelijkse uitdagingen...)",
     length: "Lengte",
     difficulty: "Moeilijkheid",
     easy: "Makkelijk",
@@ -167,10 +167,10 @@ const createStoryTranslations: Record<Language, {
     characterName: "Nome del personaggio principale",
     characterNamePlaceholder: "es. Max, Luna, Finn...",
     addCharacter: "Aggiungi un altro personaggio",
-    characterDescription: "Descrivi {name}",
-    characterDescriptionPlaceholder: "Com'è {name}? Descrivi la sua personalità...",
+    characterDescription: "Descrivi i personaggi principali",
+    characterDescriptionPlaceholder: "Qual è la loro relazione? (Fratelli, genitori, amici, altri conoscenti...)",
     storyDescription: "Di cosa dovrebbe parlare la storia?",
-    storyDescriptionPlaceholder: "Descrivi brevemente di cosa dovrebbe parlare la storia...",
+    storyDescriptionPlaceholder: "Descrivi brevemente la tua idea (Mostri e supereroi, storie fantastiche, sfide quotidiane...)",
     length: "Lunghezza",
     difficulty: "Difficoltà",
     easy: "Facile",
@@ -273,10 +273,10 @@ const CreateStoryPage = () => {
               {/* Character Description - only show if name is filled */}
               {character.name.trim() && (
                 <VoiceInputField
-                  label={t.characterDescription.replace("{name}", character.name || "...")}
+                  label={t.characterDescription}
                   value={character.description}
                   onChange={(value) => updateCharacter(character.id, "description", value)}
-                  placeholder={t.characterDescriptionPlaceholder.replace("{name}", character.name || "...")}
+                  placeholder={t.characterDescriptionPlaceholder}
                   language={storyLanguage}
                   multiline
                 />
