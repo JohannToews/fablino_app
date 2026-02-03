@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Sparkles, BookOpen } from "lucide-react";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { Language } from "@/lib/translations";
@@ -29,6 +30,9 @@ const createStoryTranslations: Record<Language, {
   long: string;
   veryLong: string;
   createStory: string;
+  seriesMode: string;
+  seriesDescription: string;
+  episode: string;
 }> = {
   de: {
     title: "Eigene Geschichte erstellen",
@@ -48,6 +52,9 @@ const createStoryTranslations: Record<Language, {
     long: "Lang (350-450 Wörter)",
     veryLong: "Sehr lang (500-600 Wörter)",
     createStory: "Geschichte erstellen",
+    seriesMode: "Serie erstellen",
+    seriesDescription: "Geschichte endet mit Cliffhanger und kann fortgesetzt werden",
+    episode: "Episode",
   },
   fr: {
     title: "Créer ta propre histoire",
@@ -67,6 +74,9 @@ const createStoryTranslations: Record<Language, {
     long: "Long (350-450 mots)",
     veryLong: "Très long (500-600 mots)",
     createStory: "Créer l'histoire",
+    seriesMode: "Créer une série",
+    seriesDescription: "L'histoire se termine par un cliffhanger et peut être continuée",
+    episode: "Épisode",
   },
   en: {
     title: "Create Your Own Story",
@@ -86,6 +96,9 @@ const createStoryTranslations: Record<Language, {
     long: "Long (350-450 words)",
     veryLong: "Very long (500-600 words)",
     createStory: "Create Story",
+    seriesMode: "Create series",
+    seriesDescription: "Story ends with a cliffhanger and can be continued",
+    episode: "Episode",
   },
   es: {
     title: "Crea tu propia historia",
@@ -105,6 +118,9 @@ const createStoryTranslations: Record<Language, {
     long: "Largo (350-450 palabras)",
     veryLong: "Muy largo (500-600 palabras)",
     createStory: "Crear historia",
+    seriesMode: "Crear serie",
+    seriesDescription: "La historia termina con un cliffhanger y puede continuarse",
+    episode: "Episodio",
   },
   nl: {
     title: "Maak je eigen verhaal",
@@ -124,6 +140,9 @@ const createStoryTranslations: Record<Language, {
     long: "Lang (350-450 woorden)",
     veryLong: "Zeer lang (500-600 woorden)",
     createStory: "Verhaal maken",
+    seriesMode: "Serie maken",
+    seriesDescription: "Verhaal eindigt met een cliffhanger en kan worden voortgezet",
+    episode: "Aflevering",
   },
   it: {
     title: "Crea la tua storia",
@@ -143,6 +162,9 @@ const createStoryTranslations: Record<Language, {
     long: "Lungo (350-450 parole)",
     veryLong: "Molto lungo (500-600 parole)",
     createStory: "Crea storia",
+    seriesMode: "Crea serie",
+    seriesDescription: "La storia finisce con un cliffhanger e può essere continuata",
+    episode: "Episodio",
   },
 };
 
@@ -159,6 +181,7 @@ const CreateStoryPage = () => {
   const [storyDescription, setStoryDescription] = useState("");
   const [length, setLength] = useState("medium");
   const [difficulty, setDifficulty] = useState("medium");
+  const [isSeries, setIsSeries] = useState(false);
 
   const canCreate = charactersDescription.trim() && storyDescription.trim();
 
@@ -246,6 +269,26 @@ const CreateStoryPage = () => {
                 </Select>
               </div>
             </div>
+
+            {/* Series Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/10 border border-accent/20">
+              <div className="flex items-center gap-3">
+                <BookOpen className="h-5 w-5 text-accent" />
+                <div>
+                  <Label htmlFor="series-mode" className="font-medium cursor-pointer">
+                    {t.seriesMode}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t.seriesDescription}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="series-mode"
+                checked={isSeries}
+                onCheckedChange={setIsSeries}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -253,13 +296,31 @@ const CreateStoryPage = () => {
         <Button
           onClick={() => {
             // TODO: Generate story with these inputs
-            console.log({ charactersDescription, storyDescription, length, difficulty, storyLanguage });
+            console.log({ 
+              charactersDescription, 
+              storyDescription, 
+              length, 
+              difficulty, 
+              storyLanguage,
+              isSeries,
+              endingType: isSeries ? 'C' : null, // Cliffhanger for series
+              episodeNumber: isSeries ? 1 : null
+            });
           }}
           disabled={!canCreate}
           className="w-full h-14 text-lg font-baloo btn-primary-kid"
         >
-          <Sparkles className="h-5 w-5 mr-2" />
-          {t.createStory}
+          {isSeries ? (
+            <>
+              <BookOpen className="h-5 w-5 mr-2" />
+              {t.seriesMode} - {t.episode} 1
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5 mr-2" />
+              {t.createStory}
+            </>
+          )}
         </Button>
       </div>
     </div>

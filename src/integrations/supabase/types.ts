@@ -224,10 +224,13 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           difficulty: string | null
+          ending_type: Database["public"]["Enums"]["ending_type"] | null
+          episode_number: number | null
           id: string
           is_deleted: boolean
           kid_profile_id: string | null
           prompt: string | null
+          series_id: string | null
           story_images: string[] | null
           text_language: string | null
           text_type: string | null
@@ -240,10 +243,13 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           difficulty?: string | null
+          ending_type?: Database["public"]["Enums"]["ending_type"] | null
+          episode_number?: number | null
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
           prompt?: string | null
+          series_id?: string | null
           story_images?: string[] | null
           text_language?: string | null
           text_type?: string | null
@@ -256,10 +262,13 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           difficulty?: string | null
+          ending_type?: Database["public"]["Enums"]["ending_type"] | null
+          episode_number?: number | null
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
           prompt?: string | null
+          series_id?: string | null
           story_images?: string[] | null
           text_language?: string | null
           text_type?: string | null
@@ -273,6 +282,13 @@ export type Database = {
             columns: ["kid_profile_id"]
             isOneToOne: false
             referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
           {
@@ -481,6 +497,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "standard"
+      ending_type: "A" | "B" | "C"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -609,6 +626,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "standard"],
+      ending_type: ["A", "B", "C"],
     },
   },
 } as const
