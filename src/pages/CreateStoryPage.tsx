@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Sparkles, BookOpen } from "lucide-react";
+import { ArrowLeft, Sparkles, BookOpen, Loader2 } from "lucide-react";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
+import { useAuth } from "@/hooks/useAuth";
 import { Language } from "@/lib/translations";
 import VoiceInputField from "@/components/VoiceInputField";
 import HorizontalImageCarousel from "@/components/HorizontalImageCarousel";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Character images - diverse representation
 import boyImg from "@/assets/characters/boy.jpg";
@@ -66,6 +69,9 @@ const createStoryTranslations: Record<Language, {
   seriesMode: string;
   seriesDescription: string;
   episode: string;
+  generating: string;
+  success: string;
+  error: string;
 }> = {
   de: {
     title: "Eigene Geschichte erstellen",
@@ -79,15 +85,18 @@ const createStoryTranslations: Record<Language, {
     easy: "Einfach",
     medium: "Mittel",
     hard: "Schwer",
-    veryShort: "Sehr kurz (150-200 Wörter)",
-    short: "Kurz (250-300 Wörter)",
-    mediumLength: "Mittel (300-350 Wörter)",
-    long: "Lang (350-450 Wörter)",
-    veryLong: "Sehr lang (500-600 Wörter)",
+    veryShort: "Sehr kurz",
+    short: "Kurz",
+    mediumLength: "Mittel",
+    long: "Lang",
+    veryLong: "Sehr lang",
     createStory: "Geschichte erstellen",
     seriesMode: "Serie erstellen",
     seriesDescription: "Geschichte endet mit Cliffhanger und kann fortgesetzt werden",
     episode: "Episode",
+    generating: "Geschichte wird erstellt...",
+    success: "Geschichte erstellt!",
+    error: "Fehler beim Erstellen der Geschichte",
   },
   fr: {
     title: "Créer ta propre histoire",
@@ -101,15 +110,18 @@ const createStoryTranslations: Record<Language, {
     easy: "Facile",
     medium: "Moyen",
     hard: "Difficile",
-    veryShort: "Très court (150-200 mots)",
-    short: "Court (250-300 mots)",
-    mediumLength: "Moyen (300-350 mots)",
-    long: "Long (350-450 mots)",
-    veryLong: "Très long (500-600 mots)",
+    veryShort: "Très court",
+    short: "Court",
+    mediumLength: "Moyen",
+    long: "Long",
+    veryLong: "Très long",
     createStory: "Créer l'histoire",
     seriesMode: "Créer une série",
     seriesDescription: "L'histoire se termine par un cliffhanger et peut être continuée",
     episode: "Épisode",
+    generating: "Création de l'histoire...",
+    success: "Histoire créée!",
+    error: "Erreur lors de la création",
   },
   en: {
     title: "Create Your Own Story",
@@ -123,15 +135,18 @@ const createStoryTranslations: Record<Language, {
     easy: "Easy",
     medium: "Medium",
     hard: "Hard",
-    veryShort: "Very short (150-200 words)",
-    short: "Short (250-300 words)",
-    mediumLength: "Medium (300-350 words)",
-    long: "Long (350-450 words)",
-    veryLong: "Very long (500-600 words)",
+    veryShort: "Very short",
+    short: "Short",
+    mediumLength: "Medium",
+    long: "Long",
+    veryLong: "Very long",
     createStory: "Create Story",
     seriesMode: "Create series",
     seriesDescription: "Story ends with a cliffhanger and can be continued",
     episode: "Episode",
+    generating: "Creating story...",
+    success: "Story created!",
+    error: "Error creating story",
   },
   es: {
     title: "Crea tu propia historia",
@@ -145,15 +160,18 @@ const createStoryTranslations: Record<Language, {
     easy: "Fácil",
     medium: "Medio",
     hard: "Difícil",
-    veryShort: "Muy corto (150-200 palabras)",
-    short: "Corto (250-300 palabras)",
-    mediumLength: "Medio (300-350 palabras)",
-    long: "Largo (350-450 palabras)",
-    veryLong: "Muy largo (500-600 palabras)",
+    veryShort: "Muy corto",
+    short: "Corto",
+    mediumLength: "Medio",
+    long: "Largo",
+    veryLong: "Muy largo",
     createStory: "Crear historia",
     seriesMode: "Crear serie",
     seriesDescription: "La historia termina con un cliffhanger y puede continuarse",
     episode: "Episodio",
+    generating: "Creando historia...",
+    success: "¡Historia creada!",
+    error: "Error al crear la historia",
   },
   nl: {
     title: "Maak je eigen verhaal",
@@ -167,15 +185,18 @@ const createStoryTranslations: Record<Language, {
     easy: "Makkelijk",
     medium: "Gemiddeld",
     hard: "Moeilijk",
-    veryShort: "Zeer kort (150-200 woorden)",
-    short: "Kort (250-300 woorden)",
-    mediumLength: "Gemiddeld (300-350 woorden)",
-    long: "Lang (350-450 woorden)",
-    veryLong: "Zeer lang (500-600 woorden)",
+    veryShort: "Zeer kort",
+    short: "Kort",
+    mediumLength: "Gemiddeld",
+    long: "Lang",
+    veryLong: "Zeer lang",
     createStory: "Verhaal maken",
     seriesMode: "Serie maken",
     seriesDescription: "Verhaal eindigt met een cliffhanger en kan worden voortgezet",
     episode: "Aflevering",
+    generating: "Verhaal wordt gemaakt...",
+    success: "Verhaal gemaakt!",
+    error: "Fout bij het maken van het verhaal",
   },
   it: {
     title: "Crea la tua storia",
@@ -189,21 +210,25 @@ const createStoryTranslations: Record<Language, {
     easy: "Facile",
     medium: "Medio",
     hard: "Difficile",
-    veryShort: "Molto corto (150-200 parole)",
-    short: "Corto (250-300 parole)",
-    mediumLength: "Medio (300-350 parole)",
-    long: "Lungo (350-450 parole)",
-    veryLong: "Molto lungo (500-600 parole)",
+    veryShort: "Molto corto",
+    short: "Corto",
+    mediumLength: "Medio",
+    long: "Lungo",
+    veryLong: "Molto lungo",
     createStory: "Crea storia",
     seriesMode: "Crea serie",
     seriesDescription: "La storia finisce con un cliffhanger e può essere continuata",
     episode: "Episodio",
+    generating: "Creazione della storia...",
+    success: "Storia creata!",
+    error: "Errore durante la creazione",
   },
 };
 
 const CreateStoryPage = () => {
   const navigate = useNavigate();
   const { kidAppLanguage, selectedProfile } = useKidProfile();
+  const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const t = createStoryTranslations[kidAppLanguage] || createStoryTranslations.de;
 
@@ -215,13 +240,171 @@ const CreateStoryPage = () => {
   const [length, setLength] = useState("medium");
   const [difficulty, setDifficulty] = useState("medium");
   const [isSeries, setIsSeries] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [customSystemPrompt, setCustomSystemPrompt] = useState("");
 
-  const canCreate = charactersDescription.trim() && storyDescription.trim();
+  const canCreate = charactersDescription.trim() && storyDescription.trim() && !isGenerating;
+
+  // Load system prompt
+  useEffect(() => {
+    const loadSystemPrompt = async () => {
+      const promptKey = `system_prompt_${kidAppLanguage}`;
+      
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", promptKey)
+        .maybeSingle();
+
+      if (data) {
+        setCustomSystemPrompt(data.value);
+      } else {
+        // Fallback to German
+        const { data: fallbackData } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "system_prompt_de")
+          .maybeSingle();
+        
+        if (fallbackData) {
+          setCustomSystemPrompt(fallbackData.value);
+        }
+      }
+    };
+    loadSystemPrompt();
+  }, [kidAppLanguage]);
 
   // Get a filter color based on the palette for monochromatic effect
   const getFilterColor = () => {
-    // Use a muted version of the primary color from palette
     return "hsl(var(--primary) / 0.6)";
+  };
+
+  const handleCreateStory = async () => {
+    if (!canCreate) return;
+
+    setIsGenerating(true);
+    toast.info(t.generating + " ✨📖");
+
+    try {
+      // Combine characters and story description into a single prompt
+      const fullDescription = `Hauptpersonen: ${charactersDescription}\n\nGeschichte: ${storyDescription}`;
+
+      // Call the generate-story edge function
+      const { data, error } = await supabase.functions.invoke("generate-story", {
+        body: {
+          length,
+          difficulty,
+          description: fullDescription,
+          textType: "fiction",
+          textLanguage: storyLanguage.toUpperCase(),
+          customSystemPrompt,
+          // Series mode parameters
+          endingType: isSeries ? "C" : null,
+          episodeNumber: isSeries ? 1 : null,
+        },
+      });
+
+      if (error) {
+        console.error("Generation error:", error);
+        toast.error(t.error);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.title && data?.content) {
+        // Upload cover image if available
+        let coverUrl = null;
+        if (data.coverImageBase64) {
+          const base64Data = data.coverImageBase64.replace(/^data:image\/\w+;base64,/, "");
+          const fileName = `${Date.now()}-cover.png`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("covers")
+            .upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), {
+              contentType: "image/png",
+            });
+          
+          if (!uploadError && uploadData) {
+            const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
+            coverUrl = urlData.publicUrl;
+          }
+        }
+
+        // Save story to database
+        const { data: storyData, error: storyError } = await supabase
+          .from("stories")
+          .insert({
+            title: data.title,
+            content: data.content,
+            difficulty,
+            text_type: "fiction",
+            text_language: storyLanguage.toLowerCase(),
+            prompt: fullDescription,
+            cover_image_url: coverUrl,
+            story_images: data.storyImages || [],
+            user_id: user?.id,
+            kid_profile_id: selectedProfile?.id,
+            ending_type: isSeries ? "C" : null,
+            episode_number: isSeries ? 1 : null,
+          })
+          .select()
+          .single();
+
+        if (storyError) {
+          console.error("Error saving story:", storyError);
+          toast.error(t.error);
+          return;
+        }
+
+        // If series, update series_id to point to itself (first episode)
+        if (isSeries && storyData) {
+          await supabase
+            .from("stories")
+            .update({ series_id: storyData.id })
+            .eq("id", storyData.id);
+        }
+
+        // Save comprehension questions if available
+        if (data.questions && data.questions.length > 0 && storyData) {
+          const questionsToInsert = data.questions.map((q: { question: string; expectedAnswer: string }, idx: number) => ({
+            story_id: storyData.id,
+            question: q.question,
+            expected_answer: q.expectedAnswer,
+            order_index: idx,
+          }));
+
+          await supabase.from("comprehension_questions").insert(questionsToInsert);
+        }
+
+        // Save vocabulary words if available
+        if (data.vocabulary && data.vocabulary.length > 0 && storyData) {
+          const wordsToInsert = data.vocabulary.map((v: { word: string; explanation: string }) => ({
+            story_id: storyData.id,
+            word: v.word,
+            explanation: v.explanation,
+            difficulty: "medium",
+          }));
+
+          await supabase.from("marked_words").insert(wordsToInsert);
+        }
+
+        toast.success(t.success + " 🎉");
+        
+        // Navigate to reading page with the new story
+        navigate(`/reading/${storyData.id}`);
+      } else {
+        toast.error(t.error);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error(t.error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -229,7 +412,7 @@ const CreateStoryPage = () => {
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} disabled={isGenerating}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg md:text-xl font-baloo font-bold flex items-center gap-2">
@@ -314,7 +497,7 @@ const CreateStoryPage = () => {
                 {/* Length */}
                 <div className="space-y-1">
                   <Label className="text-sm">{t.length}</Label>
-                  <Select value={length} onValueChange={setLength}>
+                  <Select value={length} onValueChange={setLength} disabled={isGenerating}>
                     <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
@@ -331,7 +514,7 @@ const CreateStoryPage = () => {
                 {/* Difficulty */}
                 <div className="space-y-1">
                   <Label className="text-sm">{t.difficulty}</Label>
-                  <Select value={difficulty} onValueChange={setDifficulty}>
+                  <Select value={difficulty} onValueChange={setDifficulty} disabled={isGenerating}>
                     <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
@@ -361,6 +544,7 @@ const CreateStoryPage = () => {
                   id="series-mode"
                   checked={isSeries}
                   onCheckedChange={setIsSeries}
+                  disabled={isGenerating}
                 />
               </div>
             </CardContent>
@@ -368,23 +552,16 @@ const CreateStoryPage = () => {
 
           {/* Create Button */}
           <Button
-            onClick={() => {
-              // TODO: Generate story with these inputs
-              console.log({ 
-                charactersDescription, 
-                storyDescription, 
-                length, 
-                difficulty, 
-                storyLanguage,
-                isSeries,
-                endingType: isSeries ? 'C' : null, // Cliffhanger for series
-                episodeNumber: isSeries ? 1 : null
-              });
-            }}
+            onClick={handleCreateStory}
             disabled={!canCreate}
             className="w-full h-12 text-base md:text-lg font-baloo btn-primary-kid"
           >
-            {isSeries ? (
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 md:h-5 md:w-5 mr-2 animate-spin" />
+                {t.generating}
+              </>
+            ) : isSeries ? (
               <>
                 <BookOpen className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                 {t.seriesMode} - {t.episode} 1
