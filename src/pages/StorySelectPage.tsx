@@ -176,12 +176,14 @@ const StorySelectPage = () => {
           const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
           const fileName = `${prefix}-${crypto.randomUUID()}.png`;
           const { error: uploadError } = await supabase.storage
-            .from("story-images")
+            .from("covers")
             .upload(fileName, imageData, { contentType: "image/png" });
           
           if (!uploadError) {
-            const { data: urlData } = supabase.storage.from("story-images").getPublicUrl(fileName);
+            const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
             return urlData.publicUrl;
+          } else {
+            console.error(`Upload error for ${prefix}:`, uploadError);
           }
         } catch (imgErr) {
           console.error(`Error uploading ${prefix} image:`, imgErr);
