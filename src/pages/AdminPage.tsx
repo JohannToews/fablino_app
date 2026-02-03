@@ -376,7 +376,7 @@ const AdminPage = () => {
 
       {/* Tab Navigation - Native App Style */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className={`flex-none grid mx-4 mt-3 h-12 bg-muted/50 ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+        <TabsList className={`flex-none grid mx-4 mt-3 h-12 bg-muted/50 ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
           <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t.kidProfile}</span>
@@ -385,10 +385,12 @@ const AdminPage = () => {
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">{t.newStory}</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2 text-sm font-medium">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.settings}</span>
-          </TabsTrigger>
+          {user?.role === 'admin' && (
+            <TabsTrigger value="settings" className="flex items-center gap-2 text-sm font-medium">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">{t.settings}</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="account" className="flex items-center gap-2 text-sm font-medium">
             <CreditCard className="h-4 w-4" />
             <span className="hidden sm:inline">{t.account}</span>
