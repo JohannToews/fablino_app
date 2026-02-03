@@ -195,6 +195,7 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
                 <Table>
                   <TableHeader className="sticky top-0 bg-background">
                     <TableRow>
+                      <TableHead>{language === 'de' ? 'Datum' : language === 'fr' ? 'Date' : 'Date'}</TableHead>
                       <TableHead>{language === 'de' ? 'Benutzer' : language === 'fr' ? 'Utilisateur' : 'User'}</TableHead>
                       <TableHead>{language === 'de' ? 'Story-Titel' : language === 'fr' ? 'Titre' : 'Story Title'}</TableHead>
                       <TableHead>{language === 'de' ? 'Länge' : language === 'fr' ? 'Longueur' : 'Length'}</TableHead>
@@ -211,6 +212,9 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
                   <TableBody>
                     {results.map((result) => (
                       <TableRow key={result.id}>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDate(result.created_at)}
+                        </TableCell>
                         <TableCell className="font-medium">
                           {result.user_id ? users[result.user_id] || '—' : '—'}
                         </TableCell>
