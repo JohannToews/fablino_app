@@ -104,11 +104,11 @@ const Index = () => {
     selectedProfileId, 
     selectedProfile, 
     setSelectedProfileId, 
-    hasMultipleProfiles 
+    hasMultipleProfiles,
+    kidAppLanguage,
   } = useKidProfile();
 
-  const appLang = (user?.appLanguage || 'fr') as Language;
-  const t = homeTranslations[appLang] || homeTranslations.fr;
+  const t = homeTranslations[kidAppLanguage] || homeTranslations.fr;
 
   const displayImage = selectedProfile?.cover_image_url || heroImage;
   const childName = selectedProfile?.name;
@@ -129,7 +129,7 @@ const Index = () => {
             <button
               onClick={() => navigate("/feedback-stats")}
               className="p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
-              title={appLang === 'de' ? 'Story-Statistiken' : appLang === 'fr' ? 'Statistiques' : 'Statistics'}
+              title={kidAppLanguage === 'de' ? 'Story-Statistiken' : kidAppLanguage === 'fr' ? 'Statistiques' : 'Statistics'}
             >
               <BarChart3 className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -137,7 +137,7 @@ const Index = () => {
           <button
             onClick={() => navigate("/words")}
             className="p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-muted transition-colors"
-            title={appLang === 'de' ? 'Wörter verwalten' : appLang === 'fr' ? 'Gérer les mots' : 'Manage words'}
+            title={kidAppLanguage === 'de' ? 'Wörter verwalten' : kidAppLanguage === 'fr' ? 'Gérer les mots' : 'Manage words'}
           >
             <Hand className="h-5 w-5 text-muted-foreground" />
           </button>

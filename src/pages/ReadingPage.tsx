@@ -58,7 +58,7 @@ const isStopWord = (word: string): boolean => {
 const ReadingPage = () => {
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
-  const { selectedProfile } = useKidProfile();
+  const { selectedProfile, kidAppLanguage } = useKidProfile();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
