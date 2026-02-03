@@ -8,6 +8,7 @@ import ComprehensionQuiz from "@/components/ComprehensionQuiz";
 import QuizCompletionResult from "@/components/QuizCompletionResult";
 import StoryAudioPlayer from "@/components/StoryAudioPlayer";
 import StoryFeedbackDialog from "@/components/StoryFeedbackDialog";
+import ReadingSettings, { FontSizeLevel, LineSpacingLevel, getReadingTextClasses } from "@/components/ReadingSettings";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
@@ -197,6 +198,9 @@ const ReadingPage = () => {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   // Story prompt (from generator if available)
   const [storyPrompt, setStoryPrompt] = useState<string | undefined>(undefined);
+  // Reading settings (font size and line spacing)
+  const [fontSize, setFontSize] = useState<FontSizeLevel>(2);
+  const [lineSpacing, setLineSpacing] = useState<LineSpacingLevel>(2);
 
   // Get text language from story for UI labels and explanations
   const textLang = story?.text_language || 'fr';
@@ -764,6 +768,17 @@ const ReadingPage = () => {
               </div>
             )}
 
+            {/* Reading Settings */}
+            <div className="mb-4">
+              <ReadingSettings
+                fontSize={fontSize}
+                lineSpacing={lineSpacing}
+                onFontSizeChange={setFontSize}
+                onLineSpacingChange={setLineSpacing}
+                language={textLang}
+              />
+            </div>
+
             {/* Reading Card - only show when not in listening mode or always show */}
             <div className={`bg-card rounded-2xl p-6 md:p-10 shadow-card relative ${isListeningMode && user?.username === 'papa' ? 'opacity-50' : ''}`}>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
@@ -880,7 +895,7 @@ const ReadingPage = () => {
               
               <div 
                 ref={textContainerRef}
-                className="reading-text select-text"
+                className={`reading-text select-text ${getReadingTextClasses(fontSize, lineSpacing)}`}
               >
                 {renderFormattedText()}
               </div>
