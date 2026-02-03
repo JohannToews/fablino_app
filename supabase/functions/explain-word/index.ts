@@ -5,7 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const PROMPT_TEMPLATE = (word: string, context?: string) => `Tu es un dictionnaire vivant pour enfants français de 8 ans.
+// Language-specific prompts
+const PROMPTS: Record<string, (word: string, context?: string) => string> = {
+  fr: (word: string, context?: string) => `Tu es un dictionnaire vivant pour enfants français de 8 ans.
 
 Le mot ou l'expression à expliquer: "${word}"
 ${context ? `Contexte de la phrase: "${context}"` : ''}
@@ -27,10 +29,140 @@ EXEMPLES PARFAITS:
 - "courageux" → "Quelqu'un qui n'a pas peur"
 - "dévorer" → "Manger très vite avec appétit"
 - "magnifique" → "Très très beau"
-- "château" (si écrit "chateau") → corrigé: "château"
 
 RÉPONDS UNIQUEMENT en JSON valide:
-{"correctedWord": "mot_corrigé_ou_original", "explanation": "explication courte"}`;
+{"correctedWord": "mot_corrigé_ou_original", "explanation": "explication courte"}`,
+
+  de: (word: string, context?: string) => `Du bist ein lebendiges Wörterbuch für 8-jährige Kinder.
+
+Das zu erklärende Wort oder Ausdruck: "${word}"
+${context ? `Kontext des Satzes: "${context}"` : ''}
+
+AUFGABE:
+1. Falls das Wort falsch geschrieben ist, korrigiere es
+2. Gib eine EINFACHE und KLARE Erklärung in maximal 8 Wörtern
+
+STRENGE REGELN:
+1. Maximal 8 Wörter für die Erklärung, nicht mehr
+2. Verwende sehr einfache Wörter, die ein 8-jähriges Kind kennt
+3. Keine Satzzeichen am Ende (kein Punkt, kein Komma)
+4. Keine Wiederholung des zu erklärenden Wortes
+5. Bei Verben: erkläre die Handlung
+6. Bei Nomen: sage konkret, was es ist
+7. Bei Adjektiven: gib ein einfaches Synonym oder beschreibe es
+
+PERFEKTE BEISPIELE:
+- "mutig" → "Jemand der keine Angst hat"
+- "verschlingen" → "Sehr schnell und gierig essen"
+- "wunderschön" → "Ganz besonders schön"
+
+ANTWORTE NUR mit gültigem JSON:
+{"correctedWord": "korrigiertes_oder_originales_wort", "explanation": "kurze erklärung"}`,
+
+  en: (word: string, context?: string) => `You are a living dictionary for 8-year-old children.
+
+The word or expression to explain: "${word}"
+${context ? `Sentence context: "${context}"` : ''}
+
+MISSION:
+1. If the word is misspelled, correct it
+2. Give a SIMPLE and CLEAR explanation in maximum 8 words
+
+STRICT RULES:
+1. Maximum 8 words for the explanation, no more
+2. Use very simple words that an 8-year-old child knows
+3. No punctuation at the end (no period, no comma)
+4. No repetition of the word to explain
+5. For verbs: explain the action
+6. For nouns: say concretely what it is
+7. For adjectives: give a simple synonym or describe
+
+PERFECT EXAMPLES:
+- "brave" → "Someone who is not afraid"
+- "devour" → "Eat very fast and hungrily"
+- "magnificent" → "Very very beautiful"
+
+RESPOND ONLY with valid JSON:
+{"correctedWord": "corrected_or_original_word", "explanation": "short explanation"}`,
+
+  es: (word: string, context?: string) => `Eres un diccionario viviente para niños de 8 años.
+
+La palabra o expresión a explicar: "${word}"
+${context ? `Contexto de la frase: "${context}"` : ''}
+
+MISIÓN:
+1. Si la palabra está mal escrita, corrígela
+2. Da una explicación SIMPLE y CLARA en máximo 8 palabras
+
+REGLAS ESTRICTAS:
+1. Máximo 8 palabras para la explicación, no más
+2. Usa palabras muy simples que un niño de 8 años conoce
+3. Sin puntuación al final (ni punto, ni coma)
+4. Sin repetir la palabra a explicar
+5. Para verbos: explica la acción
+6. Para sustantivos: di concretamente qué es
+7. Para adjetivos: da un sinónimo simple o describe
+
+EJEMPLOS PERFECTOS:
+- "valiente" → "Alguien que no tiene miedo"
+- "devorar" → "Comer muy rápido con hambre"
+- "magnífico" → "Muy muy bonito"
+
+RESPONDE SOLO con JSON válido:
+{"correctedWord": "palabra_corregida_u_original", "explanation": "explicación corta"}`,
+
+  nl: (word: string, context?: string) => `Je bent een levend woordenboek voor kinderen van 8 jaar.
+
+Het te verklaren woord of uitdrukking: "${word}"
+${context ? `Zinscontext: "${context}"` : ''}
+
+OPDRACHT:
+1. Als het woord verkeerd gespeld is, corrigeer het
+2. Geef een EENVOUDIGE en DUIDELIJKE uitleg in maximaal 8 woorden
+
+STRENGE REGELS:
+1. Maximaal 8 woorden voor de uitleg, niet meer
+2. Gebruik zeer eenvoudige woorden die een kind van 8 kent
+3. Geen leestekens aan het einde (geen punt, geen komma)
+4. Geen herhaling van het te verklaren woord
+5. Bij werkwoorden: leg de actie uit
+6. Bij zelfstandige naamwoorden: zeg concreet wat het is
+7. Bij bijvoeglijke naamwoorden: geef een eenvoudig synoniem of beschrijf
+
+PERFECTE VOORBEELDEN:
+- "dapper" → "Iemand die niet bang is"
+- "verslinden" → "Heel snel en gretig eten"
+- "prachtig" → "Heel erg mooi"
+
+ANTWOORD ALLEEN met geldige JSON:
+{"correctedWord": "gecorrigeerd_of_origineel_woord", "explanation": "korte uitleg"}`,
+
+  it: (word: string, context?: string) => `Sei un dizionario vivente per bambini di 8 anni.
+
+La parola o espressione da spiegare: "${word}"
+${context ? `Contesto della frase: "${context}"` : ''}
+
+MISSIONE:
+1. Se la parola è scritta male, correggila
+2. Dai una spiegazione SEMPLICE e CHIARA in massimo 8 parole
+
+REGOLE STRETTE:
+1. Massimo 8 parole per la spiegazione, non di più
+2. Usa parole molto semplici che un bambino di 8 anni conosce
+3. Nessuna punteggiatura alla fine (né punto, né virgola)
+4. Nessuna ripetizione della parola da spiegare
+5. Per i verbi: spiega l'azione
+6. Per i nomi: di' concretamente cos'è
+7. Per gli aggettivi: dai un sinonimo semplice o descrivi
+
+ESEMPI PERFETTI:
+- "coraggioso" → "Qualcuno che non ha paura"
+- "divorare" → "Mangiare molto velocemente e avidamente"
+- "magnifico" → "Molto molto bello"
+
+RISPONDI SOLO con JSON valido:
+{"correctedWord": "parola_corretta_o_originale", "explanation": "spiegazione breve"}`
+};
 
 // Helper: sleep for exponential backoff
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -139,7 +271,7 @@ serve(async (req) => {
   }
 
   try {
-    const { word, context } = await req.json();
+    const { word, context, language = 'fr' } = await req.json();
     
     if (!word || typeof word !== 'string') {
       return new Response(
@@ -158,7 +290,9 @@ serve(async (req) => {
       );
     }
 
-    const prompt = PROMPT_TEMPLATE(word, context);
+    // Get language-specific prompt or fallback to French
+    const promptFn = PROMPTS[language] || PROMPTS.fr;
+    const prompt = promptFn(word, context);
     let rawText: string | null = null;
 
     // Try primary (Gemini) first

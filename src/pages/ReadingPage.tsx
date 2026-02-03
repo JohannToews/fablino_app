@@ -14,6 +14,93 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import PageHeader from "@/components/PageHeader";
 import { Language } from "@/lib/translations";
 
+// UI labels for word explanation popup in different languages
+const readingLabels: Record<string, {
+  thinking: string;
+  noExplanation: string;
+  retry: string;
+  save: string;
+  saved: string;
+  explain: string;
+  touchWord: string;
+  finishedReading: string;
+  listeningMode: string;
+  comprehensionQuestions: string;
+}> = {
+  de: {
+    thinking: "Ich denke nach...",
+    noExplanation: "Keine Erklärung gefunden.",
+    retry: "Erneut versuchen",
+    save: "Speichern",
+    saved: "Gespeichert!",
+    explain: "Erklären",
+    touchWord: "Tippe auf ein Wort, um seine Bedeutung zu erfahren",
+    finishedReading: "Fertig gelesen",
+    listeningMode: "Höre die Geschichte...",
+    comprehensionQuestions: "Verständnisfragen",
+  },
+  fr: {
+    thinking: "Je réfléchis...",
+    noExplanation: "Pas d'explication trouvée.",
+    retry: "Réessayer",
+    save: "Sauvegarder",
+    saved: "Sauvegardé!",
+    explain: "Expliquer",
+    touchWord: "Touche un mot pour découvrir sa signification",
+    finishedReading: "J'ai fini de lire",
+    listeningMode: "Écoute l'histoire...",
+    comprehensionQuestions: "Questions de compréhension",
+  },
+  en: {
+    thinking: "Thinking...",
+    noExplanation: "No explanation found.",
+    retry: "Try again",
+    save: "Save",
+    saved: "Saved!",
+    explain: "Explain",
+    touchWord: "Tap a word to discover its meaning",
+    finishedReading: "I finished reading",
+    listeningMode: "Listen to the story...",
+    comprehensionQuestions: "Comprehension questions",
+  },
+  es: {
+    thinking: "Pensando...",
+    noExplanation: "No se encontró explicación.",
+    retry: "Reintentar",
+    save: "Guardar",
+    saved: "¡Guardado!",
+    explain: "Explicar",
+    touchWord: "Toca una palabra para descubrir su significado",
+    finishedReading: "Terminé de leer",
+    listeningMode: "Escucha la historia...",
+    comprehensionQuestions: "Preguntas de comprensión",
+  },
+  nl: {
+    thinking: "Ik denk na...",
+    noExplanation: "Geen uitleg gevonden.",
+    retry: "Opnieuw proberen",
+    save: "Opslaan",
+    saved: "Opgeslagen!",
+    explain: "Uitleggen",
+    touchWord: "Tik op een woord om de betekenis te ontdekken",
+    finishedReading: "Ik ben klaar met lezen",
+    listeningMode: "Luister naar het verhaal...",
+    comprehensionQuestions: "Begripsvragen",
+  },
+  it: {
+    thinking: "Sto pensando...",
+    noExplanation: "Nessuna spiegazione trovata.",
+    retry: "Riprova",
+    save: "Salva",
+    saved: "Salvato!",
+    explain: "Spiega",
+    touchWord: "Tocca una parola per scoprire il suo significato",
+    finishedReading: "Ho finito di leggere",
+    listeningMode: "Ascolta la storia...",
+    comprehensionQuestions: "Domande di comprensione",
+  },
+};
+
 interface Story {
   id: string;
   title: string;
@@ -103,6 +190,9 @@ const ReadingPage = () => {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   // Story prompt (from generator if available)
   const [storyPrompt, setStoryPrompt] = useState<string | undefined>(undefined);
+
+  // Get text language from story for UI labels and explanations
+  const textLang = story?.text_language || 'fr';
 
   useEffect(() => {
     if (id) {
@@ -233,8 +323,10 @@ const ReadingPage = () => {
 
   const fetchExplanation = async (text: string): Promise<string | null> => {
     try {
+      // Use story's text_language for the explanation
+      const textLang = story?.text_language || 'fr';
       const { data, error } = await supabase.functions.invoke("explain-word", {
-        body: { word: text },
+        body: { word: text, language: textLang },
       });
 
       if (error) {
@@ -639,7 +731,7 @@ const ReadingPage = () => {
             <div className={`bg-card rounded-2xl p-6 md:p-10 shadow-card relative ${isListeningMode && user?.username === 'papa' ? 'opacity-50' : ''}`}>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <Sparkles className="h-4 w-4" />
-                <span>{isListeningMode && user?.username === 'papa' ? "Écoute l'histoire..." : "Touche un mot ou sélectionne plusieurs mots"}</span>
+                <span>{isListeningMode && user?.username === 'papa' ? (readingLabels[textLang]?.listeningMode || readingLabels.fr.listeningMode) : (readingLabels[textLang]?.touchWord || readingLabels.fr.touchWord)}</span>
               </div>
               
               {/* Floating button for phrase selection - optimized for touch */}
@@ -663,7 +755,7 @@ const ReadingPage = () => {
                     className="btn-primary-kid shadow-lg flex items-center gap-2 text-base py-3 px-5 min-h-[52px] min-w-[140px] touch-manipulation"
                   >
                     <MessageCircleQuestion className="h-5 w-5" />
-                    Expliquer
+                    {readingLabels[textLang]?.explain || readingLabels.fr.explain}
                   </Button>
                 </div>
               )}
@@ -694,11 +786,11 @@ const ReadingPage = () => {
                     {isExplaining ? (
                       <div className="flex items-center gap-3 text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Je réfléchis...</span>
+                        <span>{readingLabels[textLang]?.thinking || readingLabels.fr.thinking}</span>
                       </div>
                     ) : explanationError ? (
                       <div className="space-y-3">
-                        <p className="text-destructive text-sm">Pas d'explication trouvée.</p>
+                        <p className="text-destructive text-sm">{readingLabels[textLang]?.noExplanation || readingLabels.fr.noExplanation}</p>
                         <Button
                           onClick={handleRetry}
                           variant="outline"
@@ -706,7 +798,7 @@ const ReadingPage = () => {
                           className="w-full flex items-center gap-2"
                         >
                           <RotateCcw className="h-4 w-4" />
-                          Réessayer
+                          {readingLabels[textLang]?.retry || readingLabels.fr.retry}
                         </Button>
                       </div>
                     ) : (
@@ -720,14 +812,14 @@ const ReadingPage = () => {
                             className="w-full btn-secondary-kid flex items-center gap-2"
                           >
                             <Save className="h-4 w-4" />
-                            Sauvegarder
+                            {readingLabels[textLang]?.save || readingLabels.fr.save}
                           </Button>
                         )}
                         
                         {isSaved && (
                           <div className="flex items-center gap-2 text-secondary font-medium text-sm">
                             <CheckCircle2 className="h-4 w-4" />
-                            Sauvegardé!
+                            {readingLabels[textLang]?.saved || readingLabels.fr.saved}
                           </div>
                         )}
                       </div>
@@ -754,7 +846,7 @@ const ReadingPage = () => {
                   className="btn-accent-kid flex items-center gap-3 text-lg py-4 px-8 min-h-[56px] touch-manipulation"
                 >
                   <CheckCircle2 className="h-6 w-6" />
-                  J'ai fini de lire
+                  {readingLabels[textLang]?.finishedReading || readingLabels.fr.finishedReading}
                 </Button>
               </div>
 
@@ -807,7 +899,7 @@ const ReadingPage = () => {
                 <div className="mt-8 pt-8 border-t-2 border-primary/30">
                   <div className="flex items-center gap-3 mb-6">
                     <HelpCircle className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-baloo font-bold">Questions de compréhension</h2>
+                    <h2 className="text-2xl font-baloo font-bold">{readingLabels[textLang]?.comprehensionQuestions || readingLabels.fr.comprehensionQuestions}</h2>
                   </div>
                   <ComprehensionQuiz 
                     storyId={id!}
@@ -886,18 +978,18 @@ const ReadingPage = () => {
                   {isExplaining ? (
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Je réfléchis...</span>
+                      <span>{readingLabels[textLang]?.thinking || readingLabels.fr.thinking}</span>
                     </div>
                   ) : explanationError ? (
                     <div className="space-y-4">
-                      <p className="text-destructive">Pas d'explication trouvée.</p>
+                      <p className="text-destructive">{readingLabels[textLang]?.noExplanation || readingLabels.fr.noExplanation}</p>
                       <Button
                         onClick={handleRetry}
                         variant="outline"
                         className="w-full flex items-center gap-2"
                       >
                         <RotateCcw className="h-4 w-4" />
-                        Réessayer
+                        {readingLabels[textLang]?.retry || readingLabels.fr.retry}
                       </Button>
                     </div>
                   ) : (
@@ -910,14 +1002,14 @@ const ReadingPage = () => {
                           className="w-full btn-secondary-kid flex items-center gap-2"
                         >
                           <Save className="h-5 w-5" />
-                          Sauvegarder
+                          {readingLabels[textLang]?.save || readingLabels.fr.save}
                         </Button>
                       )}
                       
                       {isSaved && (
                         <div className="flex items-center gap-2 text-secondary font-medium">
                           <CheckCircle2 className="h-5 w-5" />
-                          Sauvegardé!
+                          {readingLabels[textLang]?.saved || readingLabels.fr.saved}
                         </div>
                       )}
                     </div>
@@ -927,7 +1019,7 @@ const ReadingPage = () => {
                 <div className="explanation-panel text-center py-12">
                   <Sparkles className="h-12 w-12 text-primary/40 mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    Touche un mot pour découvrir sa signification
+                    {readingLabels[textLang]?.touchWord || readingLabels.fr.touchWord}
                   </p>
                 </div>
               )}
