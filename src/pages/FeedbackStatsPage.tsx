@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Star, Loader2, TrendingDown, BarChart3, BookOpen, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked } from "lucide-react";
 import { format } from "date-fns";
 import { Language } from "@/lib/translations";
 
@@ -39,6 +41,8 @@ interface StoryStats {
   kid_school_system?: string;
   username?: string;
   is_read: boolean;
+  words_requested: number;
+  words_saved: number;
 }
 
 const translations: Record<Language, {
@@ -50,6 +54,8 @@ const translations: Record<Language, {
   storiesRead: string;
   avgRating: string;
   mostCommonIssue: string;
+  wordsRequested: string;
+  wordsSaved: string;
   storyTitle: string;
   child: string;
   user: string;
@@ -79,6 +85,9 @@ const translations: Record<Language, {
   deleted: string;
   language: string;
   length: string;
+  words: string;
+  filterPlaceholder: string;
+  all: string;
 }> = {
   de: {
     title: "Story-Statistiken",
@@ -89,6 +98,8 @@ const translations: Record<Language, {
     storiesRead: "Gelesen",
     avgRating: "Durchschnitt",
     mostCommonIssue: "Häufigstes Problem",
+    wordsRequested: "Wörter angefragt",
+    wordsSaved: "Wörter gespeichert",
     storyTitle: "Titel",
     child: "Kind",
     user: "Benutzer",
@@ -118,6 +129,9 @@ const translations: Record<Language, {
     deleted: "Gelöscht",
     language: "Sprache",
     length: "Länge",
+    words: "Wörter",
+    filterPlaceholder: "Filtern...",
+    all: "Alle",
   },
   fr: {
     title: "Statistiques des histoires",
@@ -128,6 +142,8 @@ const translations: Record<Language, {
     storiesRead: "Lues",
     avgRating: "Moyenne",
     mostCommonIssue: "Problème le plus fréquent",
+    wordsRequested: "Mots demandés",
+    wordsSaved: "Mots sauvegardés",
     storyTitle: "Titre",
     child: "Enfant",
     user: "Utilisateur",
@@ -157,6 +173,9 @@ const translations: Record<Language, {
     deleted: "Supprimé",
     language: "Langue",
     length: "Longueur",
+    words: "Mots",
+    filterPlaceholder: "Filtrer...",
+    all: "Tous",
   },
   en: {
     title: "Story Statistics",
@@ -167,6 +186,8 @@ const translations: Record<Language, {
     storiesRead: "Read",
     avgRating: "Average",
     mostCommonIssue: "Most Common Issue",
+    wordsRequested: "Words Requested",
+    wordsSaved: "Words Saved",
     storyTitle: "Title",
     child: "Child",
     user: "User",
@@ -196,6 +217,9 @@ const translations: Record<Language, {
     deleted: "Deleted",
     language: "Language",
     length: "Length",
+    words: "Words",
+    filterPlaceholder: "Filter...",
+    all: "All",
   },
   es: {
     title: "Estadísticas de historias",
@@ -206,6 +230,8 @@ const translations: Record<Language, {
     storiesRead: "Leídas",
     avgRating: "Promedio",
     mostCommonIssue: "Problema más común",
+    wordsRequested: "Palabras solicitadas",
+    wordsSaved: "Palabras guardadas",
     storyTitle: "Título",
     child: "Niño",
     user: "Usuario",
@@ -235,6 +261,9 @@ const translations: Record<Language, {
     deleted: "Eliminado",
     language: "Idioma",
     length: "Longitud",
+    words: "Palabras",
+    filterPlaceholder: "Filtrar...",
+    all: "Todos",
   },
   nl: {
     title: "Verhaal Statistieken",
@@ -245,6 +274,8 @@ const translations: Record<Language, {
     storiesRead: "Gelezen",
     avgRating: "Gemiddelde",
     mostCommonIssue: "Meest voorkomend probleem",
+    wordsRequested: "Woorden gevraagd",
+    wordsSaved: "Woorden opgeslagen",
     storyTitle: "Titel",
     child: "Kind",
     user: "Gebruiker",
@@ -274,6 +305,9 @@ const translations: Record<Language, {
     deleted: "Verwijderd",
     language: "Taal",
     length: "Lengte",
+    words: "Woorden",
+    filterPlaceholder: "Filteren...",
+    all: "Alle",
   },
   it: {
     title: "Statistiche delle storie",
@@ -284,6 +318,8 @@ const translations: Record<Language, {
     storiesRead: "Lette",
     avgRating: "Media",
     mostCommonIssue: "Problema più comune",
+    wordsRequested: "Parole richieste",
+    wordsSaved: "Parole salvate",
     storyTitle: "Titolo",
     child: "Bambino",
     user: "Utente",
@@ -313,6 +349,9 @@ const translations: Record<Language, {
     deleted: "Eliminato",
     language: "Lingua",
     length: "Lunghezza",
+    words: "Parole",
+    filterPlaceholder: "Filtra...",
+    all: "Tutti",
   },
 };
 
@@ -323,6 +362,19 @@ const FeedbackStatsPage = () => {
   const [stories, setStories] = useState<StoryStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("stories");
+
+  // Filter states for stories
+  const [filterUser, setFilterUser] = useState<string>("all");
+  const [filterKid, setFilterKid] = useState<string>("all");
+  const [filterTextType, setFilterTextType] = useState<string>("all");
+  const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterTitle, setFilterTitle] = useState<string>("");
+
+  // Filter states for feedback
+  const [filterFeedbackKid, setFilterFeedbackKid] = useState<string>("all");
+  const [filterRating, setFilterRating] = useState<string>("all");
+  const [filterWeakestPart, setFilterWeakestPart] = useState<string>("all");
 
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
@@ -342,7 +394,7 @@ const FeedbackStatsPage = () => {
       setRatings(ratingsData);
     }
 
-    // Load stories with kid profiles and check read status
+    // Load stories with kid profiles
     const { data: storiesData } = await supabase
       .from("stories")
       .select(`
@@ -371,6 +423,22 @@ const FeedbackStatsPage = () => {
 
     const readStoryIds = new Set(resultsData?.map(r => r.reference_id) || []);
 
+    // Load marked words per story
+    const { data: markedWordsData } = await supabase
+      .from("marked_words")
+      .select("story_id, explanation");
+
+    // Count words per story (requested = has entry, saved = has explanation)
+    const wordsPerStory = new Map<string, { requested: number; saved: number }>();
+    markedWordsData?.forEach(w => {
+      const current = wordsPerStory.get(w.story_id) || { requested: 0, saved: 0 };
+      current.requested++;
+      if (w.explanation) {
+        current.saved++;
+      }
+      wordsPerStory.set(w.story_id, current);
+    });
+
     // Load user profiles to get usernames
     const { data: usersData } = await supabase.functions.invoke("manage-users", {
       body: { action: "list" },
@@ -384,31 +452,70 @@ const FeedbackStatsPage = () => {
     }
 
     if (storiesData) {
-      const mappedStories: StoryStats[] = storiesData.map((story: any) => ({
-        id: story.id,
-        title: story.title,
-        prompt: story.prompt,
-        difficulty: story.difficulty,
-        text_type: story.text_type,
-        is_deleted: story.is_deleted || false,
-        created_at: story.created_at,
-        user_id: story.user_id,
-        kid_profile_id: story.kid_profile_id,
-        kid_name: story.kid_profiles?.name,
-        kid_school_class: story.kid_profiles?.school_class,
-        kid_school_system: story.kid_profiles?.school_system,
-        username: story.user_id ? usersMap.get(story.user_id) : undefined,
-        is_read: readStoryIds.has(story.id),
-      }));
+      const mappedStories: StoryStats[] = storiesData.map((story: any) => {
+        const wordStats = wordsPerStory.get(story.id) || { requested: 0, saved: 0 };
+        return {
+          id: story.id,
+          title: story.title,
+          prompt: story.prompt,
+          difficulty: story.difficulty,
+          text_type: story.text_type,
+          is_deleted: story.is_deleted || false,
+          created_at: story.created_at,
+          user_id: story.user_id,
+          kid_profile_id: story.kid_profile_id,
+          kid_name: story.kid_profiles?.name,
+          kid_school_class: story.kid_profiles?.school_class,
+          kid_school_system: story.kid_profiles?.school_system,
+          username: story.user_id ? usersMap.get(story.user_id) : undefined,
+          is_read: readStoryIds.has(story.id),
+          words_requested: wordStats.requested,
+          words_saved: wordStats.saved,
+        };
+      });
       setStories(mappedStories);
     }
 
     setIsLoading(false);
   };
 
+  // Get unique values for filters
+  const uniqueUsers = useMemo(() => [...new Set(stories.map(s => s.username).filter(Boolean))], [stories]);
+  const uniqueKids = useMemo(() => [...new Set(stories.map(s => s.kid_name).filter(Boolean))], [stories]);
+  const uniqueFeedbackKids = useMemo(() => [...new Set(ratings.map(r => r.kid_name).filter(Boolean))], [ratings]);
+
+  // Filtered stories
+  const filteredStories = useMemo(() => {
+    return stories.filter(story => {
+      if (filterUser !== "all" && story.username !== filterUser) return false;
+      if (filterKid !== "all" && story.kid_name !== filterKid) return false;
+      if (filterTextType !== "all" && story.text_type !== filterTextType) return false;
+      if (filterDifficulty !== "all" && story.difficulty !== filterDifficulty) return false;
+      if (filterStatus === "read" && !story.is_read) return false;
+      if (filterStatus === "unread" && story.is_read) return false;
+      if (filterStatus === "deleted" && !story.is_deleted) return false;
+      if (filterStatus === "active" && story.is_deleted) return false;
+      if (filterTitle && !story.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
+      return true;
+    });
+  }, [stories, filterUser, filterKid, filterTextType, filterDifficulty, filterStatus, filterTitle]);
+
+  // Filtered ratings
+  const filteredRatings = useMemo(() => {
+    return ratings.filter(rating => {
+      if (filterFeedbackKid !== "all" && rating.kid_name !== filterFeedbackKid) return false;
+      if (filterRating !== "all" && rating.quality_rating !== parseInt(filterRating)) return false;
+      if (filterWeakestPart !== "all" && rating.weakest_part !== filterWeakestPart) return false;
+      return true;
+    });
+  }, [ratings, filterFeedbackKid, filterRating, filterWeakestPart]);
+
   const avgRating = ratings.length > 0
     ? (ratings.reduce((sum, r) => sum + r.quality_rating, 0) / ratings.length).toFixed(1)
     : "0";
+
+  const totalWordsRequested = stories.reduce((sum, s) => sum + s.words_requested, 0);
+  const totalWordsSaved = stories.reduce((sum, s) => sum + s.words_saved, 0);
 
   const getMostCommonIssue = () => {
     const issues: Record<string, number> = {};
@@ -492,7 +599,7 @@ const FeedbackStatsPage = () => {
         <p className="text-muted-foreground mb-6">{t.subtitle}</p>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -517,7 +624,34 @@ const FeedbackStatsPage = () => {
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-mint" />
                 <span className="text-2xl font-bold">{storiesRead}</span>
-                <span className="text-muted-foreground text-sm">/ {stories.length}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t.wordsRequested}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-sky-500" />
+                <span className="text-2xl font-bold">{totalWordsRequested}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t.wordsSaved}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <BookMarked className="h-5 w-5 text-violet-500" />
+                <span className="text-2xl font-bold">{totalWordsSaved}</span>
               </div>
             </CardContent>
           </Card>
@@ -532,7 +666,6 @@ const FeedbackStatsPage = () => {
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5 fill-sunshine text-sunshine" />
                 <span className="text-2xl font-bold">{avgRating}</span>
-                <span className="text-muted-foreground">/ 5</span>
               </div>
             </CardContent>
           </Card>
@@ -546,7 +679,7 @@ const FeedbackStatsPage = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-5 w-5 text-cotton-candy" />
-                <span className="text-lg font-medium">
+                <span className="text-sm font-medium truncate">
                   {mostCommonIssue ? translateReason(mostCommonIssue) : "-"}
                 </span>
               </div>
@@ -559,17 +692,90 @@ const FeedbackStatsPage = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="stories" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
-              {t.storiesTab}
+              {t.storiesTab} ({filteredStories.length})
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <Star className="h-4 w-4" />
-              {t.feedbackTab}
+              {t.feedbackTab} ({filteredRatings.length})
             </TabsTrigger>
           </TabsList>
 
           {/* Stories Tab */}
           <TabsContent value="stories">
-            {stories.length === 0 ? (
+            {/* Filters */}
+            <Card className="mb-4">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Filter</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                  <Input
+                    placeholder={t.storyTitle}
+                    value={filterTitle}
+                    onChange={(e) => setFilterTitle(e.target.value)}
+                    className="h-9"
+                  />
+                  <Select value={filterUser} onValueChange={setFilterUser}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.user} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      {uniqueUsers.map(u => (
+                        <SelectItem key={u} value={u!}>{u}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterKid} onValueChange={setFilterKid}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.child} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      {uniqueKids.map(k => (
+                        <SelectItem key={k} value={k!}>{k}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterTextType} onValueChange={setFilterTextType}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.textType} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="fiction">{t.fiction}</SelectItem>
+                      <SelectItem value="non-fiction">{t.nonFiction}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.difficulty} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="easy">{t.easy}</SelectItem>
+                      <SelectItem value="medium">{t.medium}</SelectItem>
+                      <SelectItem value="difficult">{t.hard}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.status} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="read">{t.read}</SelectItem>
+                      <SelectItem value="unread">{t.unread}</SelectItem>
+                      <SelectItem value="active">{t.active}</SelectItem>
+                      <SelectItem value="deleted">{t.deleted}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {filteredStories.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">{t.noData}</p>
@@ -589,11 +795,12 @@ const FeedbackStatsPage = () => {
                           <TableHead>{t.prompt}</TableHead>
                           <TableHead>{t.textType}</TableHead>
                           <TableHead>{t.difficulty}</TableHead>
+                          <TableHead>{t.words}</TableHead>
                           <TableHead>{t.status}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {stories.map((story) => (
+                        {filteredStories.map((story) => (
                           <TableRow key={story.id} className={story.is_deleted ? "opacity-50" : ""}>
                             <TableCell className="whitespace-nowrap">
                               {format(new Date(story.created_at), "dd.MM.yyyy")}
@@ -629,6 +836,18 @@ const FeedbackStatsPage = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
+                              <div className="flex flex-col text-sm">
+                                <span className="flex items-center gap-1">
+                                  <MessageSquare className="h-3 w-3 text-sky-500" />
+                                  {story.words_requested}
+                                </span>
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <BookMarked className="h-3 w-3 text-violet-500" />
+                                  {story.words_saved}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <div className="flex flex-col gap-1">
                                 {story.is_read ? (
                                   <Badge className="bg-mint/20 text-mint border-mint">
@@ -661,7 +880,52 @@ const FeedbackStatsPage = () => {
 
           {/* Feedback Tab */}
           <TabsContent value="feedback">
-            {ratings.length === 0 ? (
+            {/* Filters */}
+            <Card className="mb-4">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Filter</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <Select value={filterFeedbackKid} onValueChange={setFilterFeedbackKid}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.child} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      {uniqueFeedbackKids.map(k => (
+                        <SelectItem key={k} value={k!}>{k}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterRating} onValueChange={setFilterRating}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.rating} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      {[1, 2, 3, 4, 5].map(r => (
+                        <SelectItem key={r} value={r.toString()}>{r} ⭐</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterWeakestPart} onValueChange={setFilterWeakestPart}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.weakestPart} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="beginning">{t.beginning}</SelectItem>
+                      <SelectItem value="development">{t.development}</SelectItem>
+                      <SelectItem value="ending">{t.ending}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {filteredRatings.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">{t.noData}</p>
@@ -684,7 +948,7 @@ const FeedbackStatsPage = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {ratings.map((rating) => (
+                        {filteredRatings.map((rating) => (
                           <TableRow key={rating.id}>
                             <TableCell className="whitespace-nowrap">
                               {format(new Date(rating.created_at), "dd.MM.yyyy HH:mm")}
