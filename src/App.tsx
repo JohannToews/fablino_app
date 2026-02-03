@@ -15,6 +15,7 @@ import VocabularyManagePage from "./pages/VocabularyManagePage";
 import ResultsPage from "./pages/ResultsPage";
 import FeedbackStatsPage from "./pages/FeedbackStatsPage";
 import LoginPage from "./pages/LoginPage";
+import CreateStoryPage from "./pages/CreateStoryPage";
 // Registration disabled - users are created by admin only
 import NotFound from "./pages/NotFound";
 
@@ -68,6 +69,11 @@ const App = () => (
             <Route path="/feedback-stats" element={
               <ProtectedRoute>
                 <FeedbackStatsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-story" element={
+              <ProtectedRoute>
+                <CreateStoryPage />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
