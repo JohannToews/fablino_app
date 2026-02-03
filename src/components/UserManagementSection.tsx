@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Trash2, Users, RefreshCw, UserPlus, Shield, User } from "lucide-react";
+import { Loader2, Trash2, Users, RefreshCw, UserPlus, Shield, User, ChevronDown, ChevronRight } from "lucide-react";
 import { Language, useTranslations } from "@/lib/translations";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -34,6 +35,7 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingLangId, setUpdatingLangId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   
   // New user form
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -233,39 +235,47 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   };
 
   return (
-    <Card className="border-2 border-orange-500/30">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xl">
-            <Users className="h-5 w-5 text-orange-500" />
-            {language === 'de' ? 'Benutzerverwaltung' : 
-             language === 'es' ? 'Gestión de usuarios' :
-             language === 'nl' ? 'Gebruikersbeheer' :
-             language === 'fr' ? 'Gestion des utilisateurs' :
-             'User Management'}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCreateForm(!showCreateForm)}
-            >
-              <UserPlus className="h-4 w-4 mr-1" />
-              {language === 'de' ? 'Neu' : language === 'fr' ? 'Nouveau' : 'New'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadUsers}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Create User Form */}
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card className="border-2 border-orange-500/30">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xl">
+                {isOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                <Users className="h-5 w-5 text-orange-500" />
+                {language === 'de' ? 'Benutzerverwaltung' : 
+                 language === 'es' ? 'Gestión de usuarios' :
+                 language === 'nl' ? 'Gebruikersbeheer' :
+                 language === 'fr' ? 'Gestion des utilisateurs' :
+                 'User Management'}
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({users.length})
+                </span>
+              </div>
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="space-y-4 pt-0">
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); setShowCreateForm(!showCreateForm); }}
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                {language === 'de' ? 'Neu' : language === 'fr' ? 'Nouveau' : 'New'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); loadUsers(); }}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+            {/* Create User Form */}
         {showCreateForm && (
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-4 space-y-4">
@@ -517,8 +527,10 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
             </Table>
           </div>
         )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };
 
