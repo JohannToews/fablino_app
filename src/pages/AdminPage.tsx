@@ -25,6 +25,7 @@ interface Story {
   content: string;
   cover_image_url: string | null;
   user_id: string | null;
+  kid_profile_id: string | null;
 }
 
 interface GeneratedQuestion {
@@ -87,12 +88,27 @@ const AdminPage = () => {
     
     const { data } = await supabase
       .from("stories")
-      .select("*")
+      .select("id, title, content, cover_image_url, user_id, kid_profile_id")
       .eq("user_id", user.id)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false });
     
     if (data) {
       setStories(data);
+    }
+  };
+
+  const updateStoryKidProfile = async (storyId: string, kidProfileId: string | null) => {
+    const { error } = await supabase
+      .from("stories")
+      .update({ kid_profile_id: kidProfileId })
+      .eq("id", storyId);
+    
+    if (error) {
+      toast.error(adminLang === 'de' ? 'Zuordnung fehlgeschlagen' : 'Assignment failed');
+    } else {
+      toast.success(adminLang === 'de' ? 'Kind zugeordnet' : 'Child assigned');
+      loadStories();
     }
   };
 
@@ -652,38 +668,67 @@ const AdminPage = () => {
                         </p>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {stories.map((story) => (
-                            <div
-                              key={story.id}
-                              className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50"
-                            >
-                              {story.cover_image_url ? (
-                                <img
-                                  src={story.cover_image_url}
-                                  alt={story.title}
-                                  className="h-14 w-14 object-cover rounded-lg flex-none"
-                                />
-                              ) : (
-                                <div className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center flex-none">
-                                  <Image className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-baloo font-bold text-sm truncate">{story.title}</h3>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {story.content.substring(0, 50)}...
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteStory(story.id)}
-                                className="text-destructive hover:bg-destructive/10 flex-none h-8 w-8"
+                          {stories.map((story) => {
+                            const assignedKid = kidProfiles.find(p => p.id === story.kid_profile_id);
+                            return (
+                              <div
+                                key={story.id}
+                                className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50"
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
+                                {story.cover_image_url ? (
+                                  <img
+                                    src={story.cover_image_url}
+                                    alt={story.title}
+                                    className="h-14 w-14 object-cover rounded-lg flex-none"
+                                  />
+                                ) : (
+                                  <div className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center flex-none">
+                                    <Image className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-baloo font-bold text-sm truncate">{story.title}</h3>
+                                  <Select
+                                    value={story.kid_profile_id || "none"}
+                                    onValueChange={(value) => updateStoryKidProfile(story.id, value === "none" ? null : value)}
+                                  >
+                                    <SelectTrigger className="h-7 text-xs w-full mt-1">
+                                      <SelectValue>
+                                        {assignedKid ? (
+                                          <span className="flex items-center gap-1">
+                                            <Users className="h-3 w-3" />
+                                            {assignedKid.name}
+                                          </span>
+                                        ) : (
+                                          <span className="text-muted-foreground">
+                                            {adminLang === 'de' ? 'Kind zuordnen...' : 'Assign child...'}
+                                          </span>
+                                        )}
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">
+                                        {adminLang === 'de' ? '— Kein Kind —' : '— No child —'}
+                                      </SelectItem>
+                                      {kidProfiles.map((profile) => (
+                                        <SelectItem key={profile.id} value={profile.id}>
+                                          {profile.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteStory(story.id)}
+                                  className="text-destructive hover:bg-destructive/10 flex-none h-8 w-8"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </CardContent>
