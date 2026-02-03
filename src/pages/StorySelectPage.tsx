@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ const statusLabels: Record<string, { toRead: string; completed: string }> = {
 
 const StorySelectPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
@@ -65,11 +66,12 @@ const StorySelectPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingForSeries, setIsGeneratingForSeries] = useState<string | null>(null);
 
+  // Reload data when navigating to this page (location.key changes on each navigation)
   useEffect(() => {
     if (user) {
       loadStories();
     }
-  }, [user, selectedProfileId]);
+  }, [user, selectedProfileId, location.key]);
 
   const loadStories = async () => {
     if (!user) return;
@@ -95,24 +97,25 @@ const StorySelectPage = () => {
       // Load completion status for all stories
       const storyIds = storiesData.map(s => s.id);
       if (storyIds.length > 0) {
-        let resultsQuery = supabase
+        // Query for completions - include both kid-specific and legacy (null kid_profile_id) completions
+        const { data: results } = await supabase
           .from("user_results")
-          .select("reference_id")
+          .select("reference_id, kid_profile_id")
           .eq("user_id", user.id)
           .eq("activity_type", "story_completed")
           .in("reference_id", storyIds);
         
-        // Filter by kid profile if selected
-        if (selectedProfileId) {
-          resultsQuery = resultsQuery.eq("kid_profile_id", selectedProfileId);
-        }
-        
-        const { data: results } = await resultsQuery;
-        
         const statusMap = new Map<string, boolean>();
         results?.forEach(r => {
           if (r.reference_id) {
-            statusMap.set(r.reference_id, true);
+            // Match if kid_profile_id matches OR if it's a legacy completion (null)
+            // OR if no profile is selected
+            const matches = !selectedProfileId || 
+                           r.kid_profile_id === selectedProfileId || 
+                           r.kid_profile_id === null;
+            if (matches) {
+              statusMap.set(r.reference_id, true);
+            }
           }
         });
         setStoryStatuses(statusMap);
