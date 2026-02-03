@@ -81,7 +81,7 @@ const createStoryTranslations: Record<Language, {
     storyDescription: "Worum soll es in der Geschichte gehen?",
     storyDescriptionPlaceholder: "Beschreibe kurz deine Idee (Monster und Superhelden, Fantasiegeschichten, Herausforderungen des Alltags...)",
     length: "Länge",
-    difficulty: "Schwierigkeitsgrad",
+    difficulty: "Schwierigkeit",
     easy: "Einfach",
     medium: "Mittel",
     hard: "Schwer",
@@ -431,7 +431,7 @@ const CreateStoryPage = () => {
               images={characterImages} 
               direction="left" 
               speed={60}
-              imageSize="small"
+              imageSize="medium"
               className="w-full"
               filterColor={getFilterColor()}
             />
@@ -464,7 +464,7 @@ const CreateStoryPage = () => {
               images={settingImages} 
               direction="right" 
               speed={55}
-              imageSize="small"
+              imageSize="medium"
               className="w-full"
               filterColor={getFilterColor()}
             />
