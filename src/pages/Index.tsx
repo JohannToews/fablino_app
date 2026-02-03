@@ -259,7 +259,7 @@ const Index = () => {
             {/* Create Own Story - NEW */}
             <Card 
               onClick={() => navigate("/create-story")}
-              className="cursor-pointer border-2 border-pink-400 hover:border-pink-500 hover:shadow-card transition-all duration-300 group touch-manipulation animate-pulse-glow relative overflow-visible bg-gradient-to-br from-pink-50/50 to-rose-50/30"
+              className="cursor-pointer border-2 border-pink-400 hover:border-pink-500 hover:shadow-card transition-all duration-300 group touch-manipulation relative overflow-visible"
             >
               {/* NEW Badge */}
               <div className="absolute -top-2 -right-2 z-10">
