@@ -225,7 +225,9 @@ export type Database = {
           created_at: string
           difficulty: string | null
           id: string
+          is_deleted: boolean
           kid_profile_id: string | null
+          prompt: string | null
           story_images: string[] | null
           text_type: string | null
           title: string
@@ -238,7 +240,9 @@ export type Database = {
           created_at?: string
           difficulty?: string | null
           id?: string
+          is_deleted?: boolean
           kid_profile_id?: string | null
+          prompt?: string | null
           story_images?: string[] | null
           text_type?: string | null
           title: string
@@ -251,7 +255,9 @@ export type Database = {
           created_at?: string
           difficulty?: string | null
           id?: string
+          is_deleted?: boolean
           kid_profile_id?: string | null
+          prompt?: string | null
           story_images?: string[] | null
           text_type?: string | null
           title?: string

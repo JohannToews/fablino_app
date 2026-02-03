@@ -45,6 +45,7 @@ interface GeneratedStory {
   storyImages?: string[]; // Additional progress images (base64)
   difficulty?: string; // The difficulty level selected during generation
   textType?: string; // fiction or non-fiction
+  prompt?: string; // The user's generation prompt
 }
 
 const AdminPage = () => {
@@ -64,6 +65,7 @@ const AdminPage = () => {
   const [generatedVocabulary, setGeneratedVocabulary] = useState<GeneratedVocabulary[]>([]);
   const [generatedDifficulty, setGeneratedDifficulty] = useState<string>("medium");
   const [generatedTextType, setGeneratedTextType] = useState<string>("fiction");
+  const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -188,7 +190,7 @@ const AdminPage = () => {
       }
     }
 
-    // Insert story with user_id, kid_profile_id, story_images, difficulty, and text_type
+    // Insert story with user_id, kid_profile_id, story_images, difficulty, text_type, and prompt
     const { data: insertedStory, error } = await supabase.from("stories").insert({
       title,
       content,
@@ -198,6 +200,7 @@ const AdminPage = () => {
       story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
       difficulty: generatedDifficulty,
       text_type: generatedTextType,
+      prompt: generatedPrompt || null,
     }).select().single();
 
     if (error || !insertedStory) {
@@ -493,6 +496,9 @@ const AdminPage = () => {
                       }
                       if (story.textType) {
                         setGeneratedTextType(story.textType);
+                      }
+                      if (story.prompt) {
+                        setGeneratedPrompt(story.prompt);
                       }
                       if (story.questions && story.questions.length > 0) {
                         setGeneratedQuestions(story.questions);
