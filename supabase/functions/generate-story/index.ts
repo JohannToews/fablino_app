@@ -427,7 +427,7 @@ serve(async (req) => {
   }
 
   try {
-    const { length, difficulty, description, schoolLevel, textType, textLanguage, globalLanguage, customSystemPrompt } = await req.json();
+    const { length, difficulty, description, schoolLevel, textType, textLanguage, globalLanguage, customSystemPrompt, endingType, episodeNumber, seriesId } = await req.json();
 
     // Determine how many images to generate based on length
     const imageCountMap: Record<string, number> = {
@@ -541,8 +541,17 @@ Typische Techniken zur Texterweiterung:
       ? `${customSystemPrompt}\n${dynamicContext}`
       : dynamicContext;
 
-    const userPrompt = `Erstelle ${textType === "non-fiction" ? "einen Sachtext" : "eine Geschichte"} basierend auf dieser Beschreibung: "${description}"
+    // Build series continuation context if applicable
+    const seriesContext = episodeNumber && episodeNumber > 1 
+      ? `\n\n**SERIEN-KONTEXT:**
+- Dies ist Episode ${episodeNumber} einer fortlaufenden Serie
+- Führe die Geschichte nahtlos fort, behalte dieselben Charaktere und den Stil bei
+- Der Text in "description" enthält den Kontext der vorherigen Episode
+- Das Ende sollte ${endingType === 'C' ? 'ein Cliffhanger sein, der Spannung für die nächste Episode aufbaut' : endingType === 'B' ? 'offen sein' : 'abgeschlossen sein'}`
+      : '';
 
+    const userPrompt = `Erstelle ${textType === "non-fiction" ? "einen Sachtext" : "eine Geschichte"} basierend auf dieser Beschreibung: "${description}"
+${seriesContext}
 **WICHTIG:** 
 - Der gesamte Text muss auf ${targetLanguage} sein!
 - Der Text MUSS mindestens **${minWordCount} Wörter** haben! Zähle deine Wörter und erweitere wenn nötig!
