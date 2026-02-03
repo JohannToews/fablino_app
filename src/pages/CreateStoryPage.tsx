@@ -1,176 +1,166 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Book, Star } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
-import SelectableTile from "@/components/create-story/SelectableTile";
-import TileGrid from "@/components/create-story/TileGrid";
-import SectionHeader from "@/components/create-story/SectionHeader";
-import SegmentButton from "@/components/create-story/SegmentButton";
-import CustomInputDialog from "@/components/create-story/CustomInputDialog";
-import { storyCreatorTranslations } from "@/components/create-story/storyCreatorTranslations";
+import { Language } from "@/lib/translations";
+import VoiceInputField from "@/components/VoiceInputField";
 
-// Character options with emojis
-const characterOptions = [
-  { id: "boy", icon: "👦" },
-  { id: "girl", icon: "👧" },
-  { id: "dog", icon: "🐕" },
-  { id: "hero", icon: "🦸" },
-  { id: "wizard", icon: "🧙" },
-  { id: "family", icon: "👨‍👩‍👧" },
-  { id: "robot", icon: "🤖" },
-  { id: "other", icon: "➕" },
-];
-
-// Location options
-const locationOptions = [
-  { id: "home", icon: "🏠" },
-  { id: "school", icon: "🏫" },
-  { id: "forest", icon: "🌳" },
-  { id: "castle", icon: "🏰" },
-  { id: "space", icon: "🚀" },
-  { id: "beach", icon: "🏖️" },
-  { id: "dream", icon: "🌙" },
-  { id: "other", icon: "➕" },
-];
-
-// Theme options
-const themeOptions = [
-  { id: "adventure", icon: "🔍" },
-  { id: "dragon", icon: "🐉" },
-  { id: "surprise", icon: "🎁" },
-  { id: "mystery", icon: "👻" },
-  { id: "race", icon: "🏆" },
-  { id: "magic", icon: "💫" },
-  { id: "circus", icon: "🎪" },
-  { id: "other", icon: "➕" },
-];
-
-interface SelectedCharacter {
-  id: string;
-  name?: string;
-  customLabel?: string;
-}
+// Translations for the create story page
+const createStoryTranslations: Record<Language, {
+  title: string;
+  back: string;
+  charactersTitle: string;
+  charactersPlaceholder: string;
+  storyDescription: string;
+  storyDescriptionPlaceholder: string;
+  length: string;
+  difficulty: string;
+  easy: string;
+  medium: string;
+  hard: string;
+  veryShort: string;
+  short: string;
+  mediumLength: string;
+  long: string;
+  veryLong: string;
+  createStory: string;
+}> = {
+  de: {
+    title: "Eigene Geschichte erstellen",
+    back: "Zurück",
+    charactersTitle: "Hauptpersonen",
+    charactersPlaceholder: "Beschreibe die Hauptpersonen und wie sie zueinander stehen (Geschwister, Eltern, Freunde, bekannte Menschen...)",
+    storyDescription: "Worum soll es in der Geschichte gehen?",
+    storyDescriptionPlaceholder: "Beschreibe kurz deine Idee (Monster und Superhelden, Fantasiegeschichten, Herausforderungen des Alltags...)",
+    length: "Länge",
+    difficulty: "Schwierigkeitsgrad",
+    easy: "Einfach",
+    medium: "Mittel",
+    hard: "Schwer",
+    veryShort: "Sehr kurz (150-200 Wörter)",
+    short: "Kurz (250-300 Wörter)",
+    mediumLength: "Mittel (300-350 Wörter)",
+    long: "Lang (350-450 Wörter)",
+    veryLong: "Sehr lang (500-600 Wörter)",
+    createStory: "Geschichte erstellen",
+  },
+  fr: {
+    title: "Créer ta propre histoire",
+    back: "Retour",
+    charactersTitle: "Personnages principaux",
+    charactersPlaceholder: "Décris les personnages principaux et leur relation (frères et sœurs, parents, amis, connaissances...)",
+    storyDescription: "De quoi doit parler l'histoire?",
+    storyDescriptionPlaceholder: "Décris brièvement ton idée (Monstres et super-héros, histoires fantastiques, défis du quotidien...)",
+    length: "Longueur",
+    difficulty: "Difficulté",
+    easy: "Facile",
+    medium: "Moyen",
+    hard: "Difficile",
+    veryShort: "Très court (150-200 mots)",
+    short: "Court (250-300 mots)",
+    mediumLength: "Moyen (300-350 mots)",
+    long: "Long (350-450 mots)",
+    veryLong: "Très long (500-600 mots)",
+    createStory: "Créer l'histoire",
+  },
+  en: {
+    title: "Create Your Own Story",
+    back: "Back",
+    charactersTitle: "Main Characters",
+    charactersPlaceholder: "Describe the main characters and their relationships (siblings, parents, friends, acquaintances...)",
+    storyDescription: "What should the story be about?",
+    storyDescriptionPlaceholder: "Briefly describe your idea (Monsters and superheroes, fantasy stories, everyday challenges...)",
+    length: "Length",
+    difficulty: "Difficulty",
+    easy: "Easy",
+    medium: "Medium",
+    hard: "Hard",
+    veryShort: "Very short (150-200 words)",
+    short: "Short (250-300 words)",
+    mediumLength: "Medium (300-350 words)",
+    long: "Long (350-450 words)",
+    veryLong: "Very long (500-600 words)",
+    createStory: "Create Story",
+  },
+  es: {
+    title: "Crea tu propia historia",
+    back: "Volver",
+    charactersTitle: "Personajes principales",
+    charactersPlaceholder: "Describe los personajes principales y su relación (hermanos, padres, amigos, conocidos...)",
+    storyDescription: "¿De qué debe tratar la historia?",
+    storyDescriptionPlaceholder: "Describe brevemente tu idea (Monstruos y superhéroes, historias fantásticas, desafíos cotidianos...)",
+    length: "Longitud",
+    difficulty: "Dificultad",
+    easy: "Fácil",
+    medium: "Medio",
+    hard: "Difícil",
+    veryShort: "Muy corto (150-200 palabras)",
+    short: "Corto (250-300 palabras)",
+    mediumLength: "Medio (300-350 palabras)",
+    long: "Largo (350-450 palabras)",
+    veryLong: "Muy largo (500-600 palabras)",
+    createStory: "Crear historia",
+  },
+  nl: {
+    title: "Maak je eigen verhaal",
+    back: "Terug",
+    charactersTitle: "Hoofdpersonages",
+    charactersPlaceholder: "Beschrijf de hoofdpersonages en hun relatie (broers en zussen, ouders, vrienden, bekenden...)",
+    storyDescription: "Waar moet het verhaal over gaan?",
+    storyDescriptionPlaceholder: "Beschrijf kort je idee (Monsters en superhelden, fantasieverhalen, dagelijkse uitdagingen...)",
+    length: "Lengte",
+    difficulty: "Moeilijkheid",
+    easy: "Makkelijk",
+    medium: "Gemiddeld",
+    hard: "Moeilijk",
+    veryShort: "Zeer kort (150-200 woorden)",
+    short: "Kort (250-300 woorden)",
+    mediumLength: "Gemiddeld (300-350 woorden)",
+    long: "Lang (350-450 woorden)",
+    veryLong: "Zeer lang (500-600 woorden)",
+    createStory: "Verhaal maken",
+  },
+  it: {
+    title: "Crea la tua storia",
+    back: "Indietro",
+    charactersTitle: "Personaggi principali",
+    charactersPlaceholder: "Descrivi i personaggi principali e la loro relazione (fratelli, genitori, amici, conoscenti...)",
+    storyDescription: "Di cosa dovrebbe parlare la storia?",
+    storyDescriptionPlaceholder: "Descrivi brevemente la tua idea (Mostri e supereroi, storie fantastiche, sfide quotidiane...)",
+    length: "Lunghezza",
+    difficulty: "Difficoltà",
+    easy: "Facile",
+    medium: "Medio",
+    hard: "Difficile",
+    veryShort: "Molto corto (150-200 parole)",
+    short: "Corto (250-300 parole)",
+    mediumLength: "Medio (300-350 parole)",
+    long: "Lungo (350-450 parole)",
+    veryLong: "Molto lungo (500-600 parole)",
+    createStory: "Crea storia",
+  },
+};
 
 const CreateStoryPage = () => {
   const navigate = useNavigate();
-  const { kidAppLanguage } = useKidProfile();
+  const { kidAppLanguage, selectedProfile } = useKidProfile();
   const { colors: paletteColors } = useColorPalette();
-  const t = storyCreatorTranslations[kidAppLanguage] || storyCreatorTranslations.de;
+  const t = createStoryTranslations[kidAppLanguage] || createStoryTranslations.de;
 
-  // State
-  const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [customLocation, setCustomLocation] = useState<string>("");
-  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
-  const [customTheme, setCustomTheme] = useState<string>("");
+  // Get language from school system
+  const storyLanguage = selectedProfile?.school_system || "de";
+
+  const [charactersDescription, setCharactersDescription] = useState("");
+  const [storyDescription, setStoryDescription] = useState("");
   const [length, setLength] = useState("medium");
-  const [difficulty, setDifficulty] = useState("easy");
+  const [difficulty, setDifficulty] = useState("medium");
 
-  // Dialog state
-  const [characterDialogOpen, setCharacterDialogOpen] = useState(false);
-  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
-  const [themeDialogOpen, setThemeDialogOpen] = useState(false);
-
-  // Handlers
-  const toggleCharacter = (id: string) => {
-    if (id === "other") {
-      setCharacterDialogOpen(true);
-      return;
-    }
-    
-    setSelectedCharacters((prev) => {
-      const exists = prev.find((c) => c.id === id);
-      if (exists) {
-        return prev.filter((c) => c.id !== id);
-      }
-      if (prev.length >= 3) return prev; // Max 3 characters
-      return [...prev, { id }];
-    });
-  };
-
-  const updateCharacterName = (id: string, name: string) => {
-    setSelectedCharacters((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, name } : c))
-    );
-  };
-
-  const addCustomCharacter = (label: string) => {
-    if (selectedCharacters.length >= 3) return;
-    const customId = `custom-${Date.now()}`;
-    setSelectedCharacters((prev) => [...prev, { id: customId, customLabel: label }]);
-  };
-
-  const selectLocation = (id: string) => {
-    if (id === "other") {
-      setLocationDialogOpen(true);
-      return;
-    }
-    setSelectedLocation(id);
-    setCustomLocation("");
-  };
-
-  const addCustomLocation = (label: string) => {
-    setCustomLocation(label);
-    setSelectedLocation("custom");
-  };
-
-  const toggleTheme = (id: string) => {
-    if (id === "other") {
-      setThemeDialogOpen(true);
-      return;
-    }
-    
-    setSelectedThemes((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((t) => t !== id);
-      }
-      if (prev.length >= 2) return prev; // Max 2 themes
-      return [...prev, id];
-    });
-  };
-
-  const addCustomTheme = (label: string) => {
-    if (selectedThemes.length >= 2) return;
-    setCustomTheme(label);
-    setSelectedThemes((prev) => [...prev.filter(t => t !== "custom"), "custom"]);
-  };
-
-  // Can create story?
-  const canCreate = selectedCharacters.length > 0 && (selectedLocation || customLocation) && selectedThemes.length > 0;
-
-  // Get label for option
-  const getCharacterLabel = (id: string) => {
-    const custom = selectedCharacters.find(c => c.id === id && c.customLabel);
-    if (custom?.customLabel) return custom.customLabel;
-    return t[id as keyof typeof t] as string || id;
-  };
-
-  const getLocationLabel = (id: string) => {
-    if (id === "custom") return customLocation;
-    return t[id as keyof typeof t] as string || id;
-  };
-
-  const getThemeLabel = (id: string) => {
-    if (id === "custom") return customTheme;
-    return t[id as keyof typeof t] as string || id;
-  };
-
-  // Length options with icons
-  const lengthOptions = [
-    { value: "short", label: <><Book className="h-4 w-4" /><span className="sr-only">{t.short}</span></> },
-    { value: "medium", label: <><Book className="h-5 w-5" /><span className="sr-only">{t.medium}</span></> },
-    { value: "long", label: <><Book className="h-6 w-6" /><span className="sr-only">{t.long}</span></> },
-  ];
-
-  // Difficulty options with stars
-  const difficultyOptions = [
-    { value: "easy", label: <Star className="h-4 w-4 fill-current" /> },
-    { value: "medium", label: <div className="flex gap-0.5"><Star className="h-4 w-4 fill-current" /><Star className="h-4 w-4 fill-current" /></div> },
-    { value: "difficult", label: <div className="flex gap-0.5"><Star className="h-4 w-4 fill-current" /><Star className="h-4 w-4 fill-current" /><Star className="h-4 w-4 fill-current" /></div> },
-  ];
+  const canCreate = charactersDescription.trim() && storyDescription.trim();
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
@@ -187,196 +177,91 @@ const CreateStoryPage = () => {
         </div>
       </div>
 
-      <div className="container max-w-2xl mx-auto px-4 py-6 space-y-8">
+      <div className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Characters Section */}
-        <section className="bg-card/50 rounded-3xl p-4 shadow-soft">
-          <SectionHeader icon="🎭" title={t.charactersTitle} />
-          <TileGrid>
-            {characterOptions.map((opt) => {
-              const isCustom = opt.id.startsWith("custom-");
-              const selected = selectedCharacters.some((c) => c.id === opt.id);
-              return (
-                <SelectableTile
-                  key={opt.id}
-                  icon={opt.icon}
-                  label={getCharacterLabel(opt.id)}
-                  selected={selected}
-                  onClick={() => toggleCharacter(opt.id)}
-                  disabled={!selected && selectedCharacters.length >= 3 && opt.id !== "other"}
-                />
-              );
-            })}
-            {/* Show custom characters */}
-            {selectedCharacters
-              .filter((c) => c.id.startsWith("custom-"))
-              .map((c) => (
-                <SelectableTile
-                  key={c.id}
-                  icon="✨"
-                  label={c.customLabel || ""}
-                  selected={true}
-                  onClick={() => setSelectedCharacters((prev) => prev.filter((x) => x.id !== c.id))}
-                />
-              ))}
-          </TileGrid>
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VoiceInputField
+              value={charactersDescription}
+              onChange={setCharactersDescription}
+              placeholder={t.charactersPlaceholder}
+              language={storyLanguage}
+              multiline
+            />
+          </CardContent>
+        </Card>
 
-          {/* Name inputs for selected characters */}
-          {selectedCharacters.filter(c => !c.id.startsWith("custom-")).length > 0 && (
-            <div className="mt-4 space-y-2">
-              {selectedCharacters.filter(c => !c.id.startsWith("custom-")).map((char) => (
-                <div key={char.id} className="flex items-center gap-2 bg-background/50 rounded-xl p-2">
-                  <span className="text-lg">
-                    {characterOptions.find((o) => o.id === char.id)?.icon}
-                  </span>
-                  <Input
-                    placeholder={t.namePlaceholder}
-                    value={char.name || ""}
-                    onChange={(e) => updateCharacterName(char.id, e.target.value)}
-                    className="flex-1 bg-transparent border-none text-sm h-8"
-                  />
-                </div>
-              ))}
+        {/* Story Description */}
+        <Card className="border-2 border-accent/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-baloo">{t.storyDescription}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VoiceInputField
+              value={storyDescription}
+              onChange={setStoryDescription}
+              placeholder={t.storyDescriptionPlaceholder}
+              language={storyLanguage}
+              multiline
+            />
+          </CardContent>
+        </Card>
+
+        {/* Settings */}
+        <Card className="border-2 border-muted">
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Length */}
+              <div className="space-y-2">
+                <Label>{t.length}</Label>
+                <Select value={length} onValueChange={setLength}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="very_short">{t.veryShort}</SelectItem>
+                    <SelectItem value="short">{t.short}</SelectItem>
+                    <SelectItem value="medium">{t.mediumLength}</SelectItem>
+                    <SelectItem value="long">{t.long}</SelectItem>
+                    <SelectItem value="very_long">{t.veryLong}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Difficulty */}
+              <div className="space-y-2">
+                <Label>{t.difficulty}</Label>
+                <Select value={difficulty} onValueChange={setDifficulty}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">{t.easy}</SelectItem>
+                    <SelectItem value="medium">{t.medium}</SelectItem>
+                    <SelectItem value="difficult">{t.hard}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
-        </section>
-
-        {/* Location Section */}
-        <section className="bg-card/50 rounded-3xl p-4 shadow-soft">
-          <SectionHeader icon="🌍" title={t.locationTitle} />
-          <TileGrid>
-            {locationOptions.map((opt) => (
-              <SelectableTile
-                key={opt.id}
-                icon={opt.icon}
-                label={getLocationLabel(opt.id)}
-                selected={selectedLocation === opt.id}
-                onClick={() => selectLocation(opt.id)}
-              />
-            ))}
-            {/* Show custom location if set */}
-            {customLocation && (
-              <SelectableTile
-                icon="📍"
-                label={customLocation}
-                selected={selectedLocation === "custom"}
-                onClick={() => {
-                  setCustomLocation("");
-                  setSelectedLocation(null);
-                }}
-              />
-            )}
-          </TileGrid>
-        </section>
-
-        {/* Theme Section */}
-        <section className="bg-card/50 rounded-3xl p-4 shadow-soft">
-          <SectionHeader icon="⚡" title={t.themeTitle} />
-          <TileGrid>
-            {themeOptions.map((opt) => (
-              <SelectableTile
-                key={opt.id}
-                icon={opt.icon}
-                label={getThemeLabel(opt.id)}
-                selected={selectedThemes.includes(opt.id)}
-                onClick={() => toggleTheme(opt.id)}
-                disabled={!selectedThemes.includes(opt.id) && selectedThemes.length >= 2 && opt.id !== "other"}
-              />
-            ))}
-            {/* Show custom theme if set */}
-            {customTheme && (
-              <SelectableTile
-                icon="🌟"
-                label={customTheme}
-                selected={selectedThemes.includes("custom")}
-                onClick={() => {
-                  setCustomTheme("");
-                  setSelectedThemes((prev) => prev.filter((t) => t !== "custom"));
-                }}
-              />
-            )}
-          </TileGrid>
-        </section>
-
-        {/* Settings Section */}
-        <section className="bg-card/50 rounded-3xl p-4 shadow-soft">
-          <div className="flex flex-wrap items-center justify-center gap-6">
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">{t.length}</span>
-              <SegmentButton
-                options={lengthOptions}
-                value={length}
-                onChange={setLength}
-              />
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">{t.difficulty}</span>
-              <SegmentButton
-                options={difficultyOptions}
-                value={difficulty}
-                onChange={setDifficulty}
-              />
-            </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
         {/* Create Button */}
         <Button
           onClick={() => {
-            // Build the story prompt from selections
-            const characterDescriptions = selectedCharacters.map((c) => {
-              if (c.customLabel) return c.customLabel;
-              const label = t[c.id as keyof typeof t] as string;
-              return c.name ? `${label} namens ${c.name}` : label;
-            }).join(", ");
-            
-            const locationDesc = customLocation || (t[selectedLocation as keyof typeof t] as string);
-            
-            const themeDescs = selectedThemes.map((th) => 
-              th === "custom" ? customTheme : (t[th as keyof typeof t] as string)
-            ).join(" und ");
-
-            console.log({
-              characters: characterDescriptions,
-              location: locationDesc,
-              themes: themeDescs,
-              length,
-              difficulty,
-            });
-            // TODO: Navigate to story generation with these params
+            // TODO: Generate story with these inputs
+            console.log({ charactersDescription, storyDescription, length, difficulty, storyLanguage });
           }}
           disabled={!canCreate}
-          className="w-full h-16 text-xl font-baloo bg-gradient-to-r from-primary to-accent text-primary-foreground hover:brightness-105 shadow-lg rounded-2xl"
+          className="w-full h-14 text-lg font-baloo btn-primary-kid"
         >
-          <Sparkles className="h-6 w-6 mr-2" />
+          <Sparkles className="h-5 w-5 mr-2" />
           {t.createStory}
         </Button>
       </div>
-
-      {/* Custom Input Dialogs */}
-      <CustomInputDialog
-        open={characterDialogOpen}
-        onOpenChange={setCharacterDialogOpen}
-        title={t.customCharacterTitle}
-        placeholder={t.customCharacterPlaceholder}
-        onSubmit={addCustomCharacter}
-        submitLabel={t.add}
-      />
-      <CustomInputDialog
-        open={locationDialogOpen}
-        onOpenChange={setLocationDialogOpen}
-        title={t.customLocationTitle}
-        placeholder={t.customLocationPlaceholder}
-        onSubmit={addCustomLocation}
-        submitLabel={t.add}
-      />
-      <CustomInputDialog
-        open={themeDialogOpen}
-        onOpenChange={setThemeDialogOpen}
-        title={t.customThemeTitle}
-        placeholder={t.customThemePlaceholder}
-        onSubmit={addCustomTheme}
-        submitLabel={t.add}
-      />
     </div>
   );
 };
