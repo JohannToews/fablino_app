@@ -27,6 +27,8 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
   de: { 
     name: "Deutsch", 
     classes: [
+      "1. Klasse",
+      "2. Klasse",
       "3. Klasse",
       "4. Klasse",
       "5. Klasse",
@@ -40,6 +42,8 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
   es: { 
     name: "Español", 
     classes: [
+      "1º Primaria",
+      "2º Primaria",
       "3º Primaria",
       "4º Primaria",
       "5º Primaria",
@@ -53,6 +57,8 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
   nl: { 
     name: "Nederlands", 
     classes: [
+      "Groep 3",
+      "Groep 4",
       "Groep 5",
       "Groep 6",
       "Groep 7",
@@ -66,6 +72,8 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
   en: { 
     name: "English", 
     classes: [
+      "Grade 1",
+      "Grade 2",
       "Grade 3",
       "Grade 4",
       "Grade 5",
