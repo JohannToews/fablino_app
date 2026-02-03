@@ -169,15 +169,24 @@ const StorySelectPage = () => {
       // Upload cover image if present
       let coverImageUrl = null;
       if (data.coverImageBase64) {
-        const imageData = Uint8Array.from(atob(data.coverImageBase64), c => c.charCodeAt(0));
-        const fileName = `${crypto.randomUUID()}.png`;
-        const { error: uploadError } = await supabase.storage
-          .from("story-images")
-          .upload(fileName, imageData, { contentType: "image/png" });
-        
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from("story-images").getPublicUrl(fileName);
-          coverImageUrl = urlData.publicUrl;
+        try {
+          // Handle both raw base64 and data URL formats
+          let base64Data = data.coverImageBase64;
+          if (base64Data.startsWith('data:')) {
+            base64Data = base64Data.split(',')[1];
+          }
+          const imageData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+          const fileName = `${crypto.randomUUID()}.png`;
+          const { error: uploadError } = await supabase.storage
+            .from("story-images")
+            .upload(fileName, imageData, { contentType: "image/png" });
+          
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from("story-images").getPublicUrl(fileName);
+            coverImageUrl = urlData.publicUrl;
+          }
+        } catch (imgErr) {
+          console.error("Error processing cover image:", imgErr);
         }
       }
       
