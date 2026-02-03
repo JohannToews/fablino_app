@@ -4,11 +4,40 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, Rocket, TreePine, Mountain, Waves, Sun, Snowflake, Castle, Cloud } from "lucide-react";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { Language } from "@/lib/translations";
 import VoiceInputField from "@/components/VoiceInputField";
+import FloatingIcons from "@/components/FloatingIcons";
+
+// Character icons as emojis (more playful for kids)
+const characterIcons = [
+  <span key="boy" className="text-lg">👦</span>,
+  <span key="girl" className="text-lg">👧</span>,
+  <span key="grandma" className="text-lg">👵</span>,
+  <span key="grandpa" className="text-lg">👴</span>,
+  <span key="hero" className="text-lg">🦸</span>,
+  <span key="robot" className="text-lg">🤖</span>,
+  <span key="frog" className="text-lg">🐸</span>,
+  <span key="horse" className="text-lg">🐴</span>,
+  <span key="cat" className="text-lg">🐱</span>,
+  <span key="dog" className="text-lg">🐕</span>,
+];
+
+// Scenario icons - mix of Lucide and emojis
+const scenarioIcons = [
+  <Rocket key="rocket" className="h-4 w-4 text-primary" />,
+  <TreePine key="forest" className="h-4 w-4 text-secondary" />,
+  <Mountain key="mountain" className="h-4 w-4 text-muted-foreground" />,
+  <Waves key="sea" className="h-4 w-4 text-accent" />,
+  <span key="pool" className="text-lg">🏊</span>,
+  <Snowflake key="snow" className="h-4 w-4 text-primary" />,
+  <Castle key="castle" className="h-4 w-4 text-secondary" />,
+  <span key="space" className="text-lg">🌌</span>,
+  <Sun key="sun" className="h-4 w-4 text-accent" />,
+  <Cloud key="cloud" className="h-4 w-4 text-muted-foreground" />,
+];
 
 // Translations for the create story page
 const createStoryTranslations: Record<Language, {
@@ -177,38 +206,42 @@ const CreateStoryPage = () => {
         </div>
       </div>
 
-      <div className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="container max-w-2xl mx-auto px-4 py-6 space-y-8">
         {/* Characters Section */}
-        <Card className="border-2 border-primary/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <VoiceInputField
-              value={charactersDescription}
-              onChange={setCharactersDescription}
-              placeholder={t.charactersPlaceholder}
-              language={storyLanguage}
-              multiline
-            />
-          </CardContent>
-        </Card>
+        <FloatingIcons icons={characterIcons}>
+          <Card className="border-2 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-baloo">{t.charactersTitle}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VoiceInputField
+                value={charactersDescription}
+                onChange={setCharactersDescription}
+                placeholder={t.charactersPlaceholder}
+                language={storyLanguage}
+                multiline
+              />
+            </CardContent>
+          </Card>
+        </FloatingIcons>
 
         {/* Story Description */}
-        <Card className="border-2 border-accent/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-baloo">{t.storyDescription}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <VoiceInputField
-              value={storyDescription}
-              onChange={setStoryDescription}
-              placeholder={t.storyDescriptionPlaceholder}
-              language={storyLanguage}
-              multiline
-            />
-          </CardContent>
-        </Card>
+        <FloatingIcons icons={scenarioIcons}>
+          <Card className="border-2 border-accent/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-baloo">{t.storyDescription}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VoiceInputField
+                value={storyDescription}
+                onChange={setStoryDescription}
+                placeholder={t.storyDescriptionPlaceholder}
+                language={storyLanguage}
+                multiline
+              />
+            </CardContent>
+          </Card>
+        </FloatingIcons>
 
         {/* Settings */}
         <Card className="border-2 border-muted">
