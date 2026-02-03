@@ -338,8 +338,10 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
     }
   };
 
-  const evaluateAnswer = async () => {
-    if (!transcript.trim()) {
+  const evaluateAnswer = async (answerOverride?: string) => {
+    const answerToEvaluate = answerOverride || transcript;
+    
+    if (!answerToEvaluate.trim()) {
       toast.error(t.sayAnswerFirst);
       return;
     }
@@ -352,7 +354,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
         body: {
           question: currentQuestion.question,
           expectedAnswer: currentQuestion.expected_answer,
-          childAnswer: transcript,
+          childAnswer: answerToEvaluate,
           language: storyLanguage,
         },
       });
@@ -368,11 +370,12 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
         questionId: currentQuestion.id,
         result: data.result,
         feedback: data.feedback,
-        childAnswer: transcript,
+        childAnswer: answerToEvaluate,
       };
 
       setResults([...results, result]);
       setCurrentFeedback({ result: data.result, feedback: data.feedback });
+      setTranscript(answerToEvaluate);
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.evalError);
@@ -545,8 +548,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
             <Button
               onClick={() => {
                 if (useTextInput) {
-                  setTranscript(textAnswer);
-                  setTimeout(evaluateAnswer, 100);
+                  evaluateAnswer(textAnswer);
                 } else {
                   evaluateAnswer();
                 }
