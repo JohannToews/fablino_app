@@ -414,22 +414,55 @@ const ReadingPage = () => {
         return;
       }
 
+      if (data?.error) {
+        console.error("API error:", data.error);
+        toast.error(data.error);
+        return;
+      }
+
+      if (!user?.id) {
+        console.error("User not authenticated");
+        toast.error("Bitte melde dich erneut an");
+        return;
+      }
+
       if (data?.title && data?.content) {
+        // Helper to upload base64 image
+        const uploadBase64Image = async (base64: string, prefix: string): Promise<string | null> => {
+          try {
+            let b64Data = base64;
+            if (b64Data.startsWith('data:')) {
+              b64Data = b64Data.split(',')[1];
+            }
+            const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+            const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.png`;
+            const { error: uploadError } = await supabase.storage
+              .from("covers")
+              .upload(fileName, imageData, { contentType: "image/png" });
+            
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
+              return urlData.publicUrl;
+            }
+            console.error(`Upload error for ${prefix}:`, uploadError);
+          } catch (imgErr) {
+            console.error(`Error uploading ${prefix} image:`, imgErr);
+          }
+          return null;
+        };
+
         // Upload cover image if available
         let coverUrl = null;
         if (data.coverImageBase64) {
-          const base64Data = data.coverImageBase64.replace(/^data:image\/\w+;base64,/, "");
-          const fileName = `${Date.now()}-cover.png`;
-          
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("covers")
-            .upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), {
-              contentType: "image/png",
-            });
-          
-          if (!uploadError && uploadData) {
-            const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
-            coverUrl = urlData.publicUrl;
+          coverUrl = await uploadBase64Image(data.coverImageBase64, "cover");
+        }
+
+        // Upload story images if available
+        const storyImageUrls: string[] = [];
+        if (data.storyImages && Array.isArray(data.storyImages)) {
+          for (let i = 0; i < data.storyImages.length; i++) {
+            const url = await uploadBase64Image(data.storyImages[i], `story-${i}`);
+            if (url) storyImageUrls.push(url);
           }
         }
 
@@ -444,8 +477,8 @@ const ReadingPage = () => {
             text_language: story.text_language,
             prompt: story.prompt,
             cover_image_url: coverUrl,
-            story_images: data.storyImages || [],
-            user_id: user?.id,
+            story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
+            user_id: user.id,
             kid_profile_id: story.kid_profile_id,
             ending_type: "C",
             episode_number: nextEpisodeNumber,
@@ -456,7 +489,7 @@ const ReadingPage = () => {
 
         if (storyError) {
           console.error("Error saving continuation:", storyError);
-          toast.error("Fehler beim Speichern");
+          toast.error("Fehler beim Speichern: " + storyError.message);
           return;
         }
 
@@ -470,6 +503,18 @@ const ReadingPage = () => {
           }));
 
           await supabase.from("comprehension_questions").insert(questionsToInsert);
+        }
+
+        // Save vocabulary words if available
+        if (data.vocabulary && data.vocabulary.length > 0 && newStory) {
+          const wordsToInsert = data.vocabulary.map((v: { word: string; explanation: string }) => ({
+            story_id: newStory.id,
+            word: v.word,
+            explanation: v.explanation,
+            difficulty: "medium",
+          }));
+
+          await supabase.from("marked_words").insert(wordsToInsert);
         }
 
         toast.success(`Episode ${nextEpisodeNumber} erstellt! 🎉`);
