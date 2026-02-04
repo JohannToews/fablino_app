@@ -17,7 +17,10 @@ import {
   storyTypeSelectionTranslations,
   characterSelectionTranslations,
   settingSelectionTranslations,
+  StoryLength,
+  StoryDifficulty,
 } from "@/components/story-creation/types";
+import { StorySettings } from "@/components/story-creation/StoryTypeSelectionScreen";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -83,6 +86,7 @@ const CreateStoryPage = () => {
   // Wizard state
   const [currentScreen, setCurrentScreen] = useState<WizardScreen>("story-type");
   const [selectedStoryType, setSelectedStoryType] = useState<StoryType | null>(null);
+  const [storySettings, setStorySettings] = useState<StorySettings | null>(null);
   const [humorLevel, setHumorLevel] = useState<number | undefined>(undefined);
   const [educationalTopic, setEducationalTopic] = useState<EducationalTopic | undefined>(undefined);
   const [customTopic, setCustomTopic] = useState<string | undefined>(undefined);
@@ -241,11 +245,13 @@ const CreateStoryPage = () => {
   // Handle story type selection complete
   const handleStoryTypeComplete = async (
     storyType: StoryType, 
+    settings: StorySettings,
     humor?: number, 
     topic?: EducationalTopic, 
     customTopicText?: string
   ) => {
     setSelectedStoryType(storyType);
+    setStorySettings(settings);
     setHumorLevel(humor);
     setEducationalTopic(topic);
     setCustomTopic(customTopicText);

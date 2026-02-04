@@ -260,8 +260,25 @@ export type EducationalTopic =
   | "science" 
   | "other";
 
+export type StoryLength = "short" | "medium" | "long";
+export type StoryDifficulty = "easy" | "medium" | "hard";
+
 export interface StoryTypeSelectionTranslations {
   header: string;
+  // Story settings (length, difficulty, series)
+  settingsHeader: string;
+  lengthLabel: string;
+  lengthShort: string;
+  lengthMedium: string;
+  lengthLong: string;
+  difficultyLabel: string;
+  difficultyEasy: string;
+  difficultyMedium: string;
+  difficultyHard: string;
+  seriesLabel: string;
+  seriesYes: string;
+  seriesNo: string;
+  // Story types
   educational: string;
   educationalSubtext: string;
   adventure: string;
@@ -293,6 +310,18 @@ export interface StoryTypeSelectionTranslations {
 export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelectionTranslations> = {
   de: {
     header: "Was für eine Geschichte möchtest du?",
+    settingsHeader: "Einstellungen",
+    lengthLabel: "Länge",
+    lengthShort: "Kurz",
+    lengthMedium: "Mittel",
+    lengthLong: "Lang",
+    difficultyLabel: "Schwierigkeit",
+    difficultyEasy: "Leicht",
+    difficultyMedium: "Mittel",
+    difficultyHard: "Schwer",
+    seriesLabel: "Serie",
+    seriesYes: "Ja",
+    seriesNo: "Nein",
     educational: "Ich will was lernen",
     educationalSubtext: "Sachgeschichte",
     adventure: "Abenteuer",
@@ -321,6 +350,18 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
   },
   fr: {
     header: "Quel type d'histoire veux-tu?",
+    settingsHeader: "Paramètres",
+    lengthLabel: "Longueur",
+    lengthShort: "Court",
+    lengthMedium: "Moyen",
+    lengthLong: "Long",
+    difficultyLabel: "Difficulté",
+    difficultyEasy: "Facile",
+    difficultyMedium: "Moyen",
+    difficultyHard: "Difficile",
+    seriesLabel: "Série",
+    seriesYes: "Oui",
+    seriesNo: "Non",
     educational: "Je veux apprendre",
     educationalSubtext: "Histoire éducative",
     adventure: "Aventure",
@@ -349,6 +390,18 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
   },
   en: {
     header: "What kind of story do you want?",
+    settingsHeader: "Settings",
+    lengthLabel: "Length",
+    lengthShort: "Short",
+    lengthMedium: "Medium",
+    lengthLong: "Long",
+    difficultyLabel: "Difficulty",
+    difficultyEasy: "Easy",
+    difficultyMedium: "Medium",
+    difficultyHard: "Hard",
+    seriesLabel: "Series",
+    seriesYes: "Yes",
+    seriesNo: "No",
     educational: "I want to learn",
     educationalSubtext: "Educational story",
     adventure: "Adventure",
@@ -377,6 +430,18 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
   },
   es: {
     header: "¿Qué tipo de historia quieres?",
+    settingsHeader: "Configuración",
+    lengthLabel: "Longitud",
+    lengthShort: "Corto",
+    lengthMedium: "Medio",
+    lengthLong: "Largo",
+    difficultyLabel: "Dificultad",
+    difficultyEasy: "Fácil",
+    difficultyMedium: "Medio",
+    difficultyHard: "Difícil",
+    seriesLabel: "Serie",
+    seriesYes: "Sí",
+    seriesNo: "No",
     educational: "Quiero aprender",
     educationalSubtext: "Historia educativa",
     adventure: "Aventura",
@@ -405,6 +470,18 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
   },
   nl: {
     header: "Wat voor verhaal wil je?",
+    settingsHeader: "Instellingen",
+    lengthLabel: "Lengte",
+    lengthShort: "Kort",
+    lengthMedium: "Gemiddeld",
+    lengthLong: "Lang",
+    difficultyLabel: "Moeilijkheid",
+    difficultyEasy: "Makkelijk",
+    difficultyMedium: "Gemiddeld",
+    difficultyHard: "Moeilijk",
+    seriesLabel: "Serie",
+    seriesYes: "Ja",
+    seriesNo: "Nee",
     educational: "Ik wil leren",
     educationalSubtext: "Educatief verhaal",
     adventure: "Avontuur",
@@ -433,6 +510,18 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
   },
   it: {
     header: "Che tipo di storia vuoi?",
+    settingsHeader: "Impostazioni",
+    lengthLabel: "Lunghezza",
+    lengthShort: "Breve",
+    lengthMedium: "Medio",
+    lengthLong: "Lungo",
+    difficultyLabel: "Difficoltà",
+    difficultyEasy: "Facile",
+    difficultyMedium: "Medio",
+    difficultyHard: "Difficile",
+    seriesLabel: "Serie",
+    seriesYes: "Sì",
+    seriesNo: "No",
     educational: "Voglio imparare",
     educationalSubtext: "Storia educativa",
     adventure: "Avventura",
@@ -461,6 +550,18 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
   },
   bs: {
     header: "Kakvu priču želiš?",
+    settingsHeader: "Postavke",
+    lengthLabel: "Dužina",
+    lengthShort: "Kratko",
+    lengthMedium: "Srednje",
+    lengthLong: "Dugo",
+    difficultyLabel: "Težina",
+    difficultyEasy: "Lako",
+    difficultyMedium: "Srednje",
+    difficultyHard: "Teško",
+    seriesLabel: "Serija",
+    seriesYes: "Da",
+    seriesNo: "Ne",
     educational: "Želim učiti",
     educationalSubtext: "Obrazovna priča",
     adventure: "Avantura",

@@ -3,8 +3,10 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import CharacterTile from "./CharacterTile";
-import { StoryType, EducationalTopic, StoryTypeSelectionTranslations } from "./types";
+import { StoryType, EducationalTopic, StoryTypeSelectionTranslations, StoryLength, StoryDifficulty } from "./types";
 import { cn } from "@/lib/utils";
 
 // Story type images
@@ -21,9 +23,21 @@ import monumentsImg from "@/assets/story-types/monuments.jpg";
 import countriesImg from "@/assets/story-types/countries.jpg";
 import scienceImg from "@/assets/story-types/science.jpg";
 
+export interface StorySettings {
+  length: StoryLength;
+  difficulty: StoryDifficulty;
+  isSeries: boolean;
+}
+
 interface StoryTypeSelectionScreenProps {
   translations: StoryTypeSelectionTranslations;
-  onComplete: (storyType: StoryType, humorLevel?: number, educationalTopic?: EducationalTopic, customTopic?: string) => void;
+  onComplete: (
+    storyType: StoryType,
+    settings: StorySettings,
+    humorLevel?: number,
+    educationalTopic?: EducationalTopic,
+    customTopic?: string
+  ) => void;
   onBack: () => void;
 }
 
@@ -39,6 +53,11 @@ const StoryTypeSelectionScreen = ({
   const [selectedTopic, setSelectedTopic] = useState<EducationalTopic | null>(null);
   const [customTopic, setCustomTopic] = useState("");
   const [humorLevel, setHumorLevel] = useState(5);
+  
+  // Story settings
+  const [storyLength, setStoryLength] = useState<StoryLength>("medium");
+  const [storyDifficulty, setStoryDifficulty] = useState<StoryDifficulty>("medium");
+  const [isSeries, setIsSeries] = useState(false);
 
   const storyTypeTiles = [
     { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
@@ -98,14 +117,20 @@ const StoryTypeSelectionScreen = ({
   const handleContinue = () => {
     if (!selectedType) return;
     
+    const settings: StorySettings = {
+      length: storyLength,
+      difficulty: storyDifficulty,
+      isSeries,
+    };
+    
     if (selectedType === "educational") {
       if (!selectedTopic) return;
       // Pass customTopic for any topic (optional for most, required for "other")
-      onComplete(selectedType, undefined, selectedTopic, customTopic.trim() || undefined);
+      onComplete(selectedType, settings, undefined, selectedTopic, customTopic.trim() || undefined);
     } else if (selectedType === "funny") {
-      onComplete(selectedType, humorLevel);
+      onComplete(selectedType, settings, humorLevel);
     } else {
-      onComplete(selectedType);
+      onComplete(selectedType, settings);
     }
   };
 
@@ -155,6 +180,65 @@ const StoryTypeSelectionScreen = ({
       </div>
 
       <div className="container max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Story Settings (Length, Difficulty, Series) */}
+        {viewState === "main" && (
+          <div className="bg-card rounded-2xl p-5 border border-border space-y-5">
+            {/* Length Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">{translations.lengthLabel}</Label>
+              <div className="flex gap-2">
+                {(["short", "medium", "long"] as StoryLength[]).map((len) => (
+                  <Button
+                    key={len}
+                    variant={storyLength === len ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 h-10 rounded-xl font-medium",
+                      storyLength === len && "bg-primary text-primary-foreground"
+                    )}
+                    onClick={() => setStoryLength(len)}
+                  >
+                    {len === "short" ? translations.lengthShort : len === "medium" ? translations.lengthMedium : translations.lengthLong}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">{translations.difficultyLabel}</Label>
+              <div className="flex gap-2">
+                {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
+                  <Button
+                    key={diff}
+                    variant={storyDifficulty === diff ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 h-10 rounded-xl font-medium",
+                      storyDifficulty === diff && "bg-primary text-primary-foreground"
+                    )}
+                    onClick={() => setStoryDifficulty(diff)}
+                  >
+                    {diff === "easy" ? translations.difficultyEasy : diff === "medium" ? translations.difficultyMedium : translations.difficultyHard}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Series Toggle */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium text-muted-foreground">{translations.seriesLabel}</Label>
+              <div className="flex items-center gap-3">
+                <span className={cn("text-sm", !isSeries && "font-semibold text-foreground")}>{translations.seriesNo}</span>
+                <Switch
+                  checked={isSeries}
+                  onCheckedChange={setIsSeries}
+                />
+                <span className={cn("text-sm", isSeries && "font-semibold text-foreground")}>{translations.seriesYes}</span>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Main Story Type Grid */}
         {viewState === "main" && (
           <>
