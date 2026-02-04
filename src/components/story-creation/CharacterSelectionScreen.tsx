@@ -233,10 +233,10 @@ const CharacterSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className="min-h-screen pb-24 md:pb-28">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -251,9 +251,9 @@ const CharacterSelectionScreen = ({
       </div>
 
       {/* Main Content */}
-      <div className="container max-w-lg mx-auto px-4 py-6">
+      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
         {viewState === "main" && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 md:gap-3">
             {mainTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
@@ -262,14 +262,15 @@ const CharacterSelectionScreen = ({
                 onClick={() => handleMainTileClick(tile.type)}
                 selected={isSelected(tile.type)}
                 badge={tile.badge}
+                size="small"
               />
             ))}
           </div>
         )}
 
         {viewState === "family" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 md:space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
               {familyTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
@@ -277,6 +278,7 @@ const CharacterSelectionScreen = ({
                   label={tile.label}
                   onClick={() => handleFamilyTileClick(tile.type)}
                   selected={isSelected(tile.type)}
+                  size="small"
                 />
               ))}
             </div>
@@ -284,7 +286,7 @@ const CharacterSelectionScreen = ({
             {/* Add More Button */}
             <Button
               variant="outline"
-              className="w-full h-14 rounded-xl border-dashed border-2"
+              className="w-full h-12 md:h-14 rounded-xl border-dashed border-2"
               onClick={() => openFamilyModal("other", translations.other)}
             >
               <Plus className="w-5 h-5 mr-2" />

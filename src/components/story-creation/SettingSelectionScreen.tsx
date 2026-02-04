@@ -113,10 +113,10 @@ const SettingSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className="min-h-screen pb-24 md:pb-28">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -126,17 +126,17 @@ const SettingSelectionScreen = ({
         </div>
       </div>
 
-      <div className="container max-w-lg mx-auto px-4 py-6 space-y-8">
+      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-4 md:space-y-6">
         {/* Part A: Location Selection */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-baloo font-semibold text-center">
+        <section className="space-y-2 md:space-y-3">
+          <h2 className="text-base md:text-lg font-baloo font-semibold text-center">
             {translations.locationHeader}
           </h2>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-xs md:text-sm text-muted-foreground text-center">
             {translations.maxLocations}
           </p>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2 md:gap-3">
             {locationTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
@@ -145,30 +145,31 @@ const SettingSelectionScreen = ({
                 onClick={() => handleLocationClick(tile.type)}
                 selected={selectedLocations.includes(tile.type)}
                 badge={tile.badge}
+                size="small"
               />
             ))}
           </div>
         </section>
 
         {/* Part B: Time Selection with Slider */}
-        <section className="space-y-6">
-          <h2 className="text-lg font-baloo font-semibold text-center">
+        <section className="space-y-3 md:space-y-4">
+          <h2 className="text-base md:text-lg font-baloo font-semibold text-center">
             {translations.timeHeader}
           </h2>
 
           {/* Selected Time Display */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="relative w-32 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-primary">
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative w-24 h-16 md:w-32 md:h-20 rounded-xl overflow-hidden shadow-lg border-2 border-primary">
               <img
                 src={selectedTimeData.image}
                 alt={selectedTimeData.label}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-1 right-1 text-lg">
+              <div className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-sm md:text-lg">
                 {selectedTimeData.emoji}
               </div>
             </div>
-            <span className="font-baloo text-base font-semibold text-primary">
+            <span className="font-baloo text-sm md:text-base font-semibold text-primary">
               {selectedTimeData.label}
             </span>
           </div>
@@ -176,13 +177,13 @@ const SettingSelectionScreen = ({
           {/* Timeline Slider with Image Markers */}
           <div className="px-2">
             {/* Image markers above slider */}
-            <div className="flex justify-between mb-3 px-1">
+            <div className="flex justify-between mb-2 md:mb-3 px-1">
               {timelineTiles.map((tile, index) => (
                 <button
                   key={tile.type}
                   onClick={() => setCurrentTimeIndex(index)}
                   className={cn(
-                    "relative w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden transition-all duration-200",
+                    "relative w-6 h-6 md:w-8 md:h-8 rounded-md md:rounded-lg overflow-hidden transition-all duration-200",
                     "hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary",
                     currentTimeIndex === index
                       ? "ring-2 ring-primary scale-110 shadow-md"
@@ -209,7 +210,7 @@ const SettingSelectionScreen = ({
             />
 
             {/* Labels for first and last */}
-            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+            <div className="flex justify-between mt-1.5 md:mt-2 text-[10px] md:text-xs text-muted-foreground">
               <span>{timelineTiles[0].emoji} {timelineTiles[0].label}</span>
               <span>{timelineTiles[timelineTiles.length - 1].label} {timelineTiles[timelineTiles.length - 1].emoji}</span>
             </div>
@@ -219,11 +220,11 @@ const SettingSelectionScreen = ({
 
       {/* Bottom Continue Button */}
       <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border pb-safe">
-        <div className="container max-w-lg mx-auto px-4 py-4">
+        <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
           <Button
             onClick={handleContinue}
             disabled={selectedLocations.length === 0}
-            className="w-full h-14 rounded-2xl text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
+            className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
           >
             {translations.continue} →
           </Button>
@@ -234,3 +235,4 @@ const SettingSelectionScreen = ({
 };
 
 export default SettingSelectionScreen;
+

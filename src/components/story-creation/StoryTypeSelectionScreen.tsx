@@ -166,10 +166,10 @@ const StoryTypeSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className="min-h-screen pb-24 md:pb-28">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -179,21 +179,21 @@ const StoryTypeSelectionScreen = ({
         </div>
       </div>
 
-      <div className="container max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Story Settings (Length, Difficulty, Series) */}
+      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-3 md:space-y-4">
+        {/* Story Settings (Length, Difficulty, Series) - Compact for tablets */}
         {viewState === "main" && (
-          <div className="bg-card rounded-2xl p-5 border border-border space-y-5">
+          <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border space-y-3 md:space-y-4">
             {/* Length Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground">{translations.lengthLabel}</Label>
-              <div className="flex gap-2">
+            <div className="flex items-center gap-3">
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{translations.lengthLabel}</Label>
+              <div className="flex gap-1.5 md:gap-2 flex-1">
                 {(["short", "medium", "long"] as StoryLength[]).map((len) => (
                   <Button
                     key={len}
                     variant={storyLength === len ? "default" : "outline"}
                     size="sm"
                     className={cn(
-                      "flex-1 h-10 rounded-xl font-medium",
+                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
                       storyLength === len && "bg-primary text-primary-foreground"
                     )}
                     onClick={() => setStoryLength(len)}
@@ -205,16 +205,16 @@ const StoryTypeSelectionScreen = ({
             </div>
 
             {/* Difficulty Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground">{translations.difficultyLabel}</Label>
-              <div className="flex gap-2">
+            <div className="flex items-center gap-3">
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{translations.difficultyLabel}</Label>
+              <div className="flex gap-1.5 md:gap-2 flex-1">
                 {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
                   <Button
                     key={diff}
                     variant={storyDifficulty === diff ? "default" : "outline"}
                     size="sm"
                     className={cn(
-                      "flex-1 h-10 rounded-xl font-medium",
+                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
                       storyDifficulty === diff && "bg-primary text-primary-foreground"
                     )}
                     onClick={() => setStoryDifficulty(diff)}
@@ -227,22 +227,23 @@ const StoryTypeSelectionScreen = ({
 
             {/* Series Toggle */}
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-muted-foreground">{translations.seriesLabel}</Label>
-              <div className="flex items-center gap-3">
-                <span className={cn("text-sm", !isSeries && "font-semibold text-foreground")}>{translations.seriesNo}</span>
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground">{translations.seriesLabel}</Label>
+              <div className="flex items-center gap-2 md:gap-3">
+                <span className={cn("text-xs md:text-sm", !isSeries && "font-semibold text-foreground")}>{translations.seriesNo}</span>
                 <Switch
                   checked={isSeries}
                   onCheckedChange={setIsSeries}
+                  className="scale-90 md:scale-100"
                 />
-                <span className={cn("text-sm", isSeries && "font-semibold text-foreground")}>{translations.seriesYes}</span>
+                <span className={cn("text-xs md:text-sm", isSeries && "font-semibold text-foreground")}>{translations.seriesYes}</span>
               </div>
             </div>
           </div>
         )}
-        {/* Main Story Type Grid */}
+        {/* Main Story Type Grid - 3 columns on tablet */}
         {viewState === "main" && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
               {storyTypeTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
@@ -251,20 +252,21 @@ const StoryTypeSelectionScreen = ({
                   onClick={() => handleTypeClick(tile.type)}
                   selected={selectedType === tile.type}
                   badge={tile.badge}
+                  size="small"
                 />
               ))}
             </div>
 
             {/* Humor Slider (appears when "funny" is selected) */}
             {selectedType === "funny" && (
-              <div className="animate-fade-in bg-card rounded-2xl p-6 border-2 border-primary/20 space-y-4">
-                <h3 className="text-lg font-baloo font-semibold text-center">
+              <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-primary/20 space-y-3">
+                <h3 className="text-base md:text-lg font-baloo font-semibold text-center">
                   {translations.humorSliderTitle}
                 </h3>
                 
                 {/* Current Emoji Display */}
                 <div className="flex justify-center">
-                  <span className="text-6xl animate-bounce">{getHumorEmoji()}</span>
+                  <span className="text-4xl md:text-5xl animate-bounce">{getHumorEmoji()}</span>
                 </div>
                 
                 {/* Slider */}
@@ -280,7 +282,7 @@ const StoryTypeSelectionScreen = ({
                 </div>
                 
                 {/* Labels */}
-                <div className="flex justify-between text-sm text-muted-foreground px-1">
+                <div className="flex justify-between text-xs md:text-sm text-muted-foreground px-1">
                   <span className="flex items-center gap-1">
                     😊 {translations.humorLow}
                   </span>
@@ -290,7 +292,7 @@ const StoryTypeSelectionScreen = ({
                 </div>
                 
                 {/* Current Level */}
-                <p className="text-center font-baloo font-medium text-primary">
+                <p className="text-center text-sm md:text-base font-baloo font-medium text-primary">
                   {getHumorLabel()} ({humorLevel}/10)
                 </p>
               </div>
@@ -301,7 +303,7 @@ const StoryTypeSelectionScreen = ({
         {/* Educational Topics Grid */}
         {viewState === "educational" && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
               {educationalTopicTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
@@ -309,14 +311,15 @@ const StoryTypeSelectionScreen = ({
                   label={tile.label}
                   onClick={() => handleTopicClick(tile.type)}
                   selected={selectedTopic === tile.type}
+                  size="small"
                 />
               ))}
             </div>
 
             {/* Custom Topic Input (appears when any topic is selected) */}
             {selectedTopic && (
-              <div className="animate-fade-in bg-card rounded-2xl p-6 border-2 border-primary/20 space-y-4">
-                <h3 className="text-lg font-baloo font-semibold text-center">
+              <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-primary/20 space-y-3">
+                <h3 className="text-base md:text-lg font-baloo font-semibold text-center">
                   {selectedTopic === "other" 
                     ? translations.other 
                     : translations.specifyTopic}
@@ -325,7 +328,7 @@ const StoryTypeSelectionScreen = ({
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
                   placeholder={getTopicPlaceholder(selectedTopic)}
-                  className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
+                  className="h-12 md:h-14 text-base md:text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
                   maxLength={100}
                 />
               </div>
@@ -336,12 +339,12 @@ const StoryTypeSelectionScreen = ({
 
       {/* Bottom Continue Button */}
       <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border pb-safe">
-        <div className="container max-w-lg mx-auto px-4 py-4">
+        <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
           <Button
             onClick={handleContinue}
             disabled={!canContinue()}
             className={cn(
-              "w-full h-14 rounded-2xl text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
+              "w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
             )}
           >
             {translations.continue} →

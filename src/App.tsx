@@ -16,6 +16,7 @@ import ResultsPage from "./pages/ResultsPage";
 import FeedbackStatsPage from "./pages/FeedbackStatsPage";
 import LoginPage from "./pages/LoginPage";
 import CreateStoryPage from "./pages/CreateStoryPage";
+import InstallPage from "./pages/InstallPage";
 // Registration disabled - users are created by admin only
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/install" element={<InstallPage />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />
