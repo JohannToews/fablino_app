@@ -264,25 +264,179 @@ const CreateStoryPage = () => {
     setSelectedAttributes(attributes);
     setCurrentScreen("setting");
   };
-
   // Handle setting selection complete
-  const handleSettingComplete = (
+  const handleSettingComplete = async (
     locations: LocationType[],
     timePeriod: TimePeriod
   ) => {
     setSelectedLocations(locations);
     setSelectedTime(timePeriod);
     
-    // All selections complete - ready for story generation
-    console.log("Story Type:", selectedStoryType, humorLevel ? `(Humor: ${humorLevel})` : "");
-    console.log("Characters:", selectedCharacters);
-    console.log("Attributes:", selectedAttributes);
-    console.log("Locations:", locations);
-    console.log("Time:", timePeriod);
+    // Generate the story with all collected data
+    await generateFictionStory(locations, timePeriod);
+  };
+
+  // Generate fiction story (adventure, detective, friendship, funny)
+  const generateFictionStory = async (
+    locations: LocationType[],
+    timePeriod: TimePeriod
+  ) => {
+    if (!user?.id) {
+      toast.error("Bitte melde dich erneut an");
+      navigate("/");
+      return;
+    }
+
+    setIsGenerating(true);
+    setCurrentScreen("generating");
+
+    // Build description from all wizard selections
+    const characterNames = selectedCharacters.map(c => c.name).join(", ");
+    const locationNames = locations.join(", ");
+    const attributeNames = selectedAttributes.join(", ");
     
-    toast.success("Alle Einstellungen fertig! 🎉");
+    const storyTypeLabels: Record<StoryType, Record<string, string>> = {
+      adventure: { de: "Abenteuergeschichte", fr: "Histoire d'aventure", en: "Adventure story" },
+      detective: { de: "Detektivgeschichte", fr: "Histoire de détective", en: "Detective story" },
+      friendship: { de: "Freundschaftsgeschichte", fr: "Histoire d'amitié", en: "Friendship story" },
+      funny: { de: "Lustige Geschichte", fr: "Histoire drôle", en: "Funny story" },
+      educational: { de: "Sachgeschichte", fr: "Histoire éducative", en: "Educational story" },
+      surprise: { de: "Überraschungsgeschichte", fr: "Histoire surprise", en: "Surprise story" },
+    };
     
-    // TODO: Call story generation API for non-educational stories
+    const storyTypeLabel = storyTypeLabels[selectedStoryType || "adventure"][kidAppLanguage] || storyTypeLabels[selectedStoryType || "adventure"].de;
+    
+    // Build rich description for the story generator
+    let description = `${storyTypeLabel} mit ${characterNames}`;
+    if (locationNames) description += ` in ${locationNames}`;
+    if (timePeriod !== "today") description += ` (Zeitepoche: ${timePeriod})`;
+    if (attributeNames) description += `. Besondere Elemente: ${attributeNames}`;
+    if (humorLevel && humorLevel > 50) description += `. Humor-Level: ${humorLevel}%`;
+
+    const difficulty = getDifficultyFromSchoolClass(selectedProfile?.school_class || "3");
+    const textLanguage = kidAppLanguage.toUpperCase();
+
+    toast.info(
+      kidAppLanguage === "de" ? "Geschichte wird erstellt... 📚" :
+      kidAppLanguage === "fr" ? "Création de l'histoire... 📚" :
+      "Creating story... 📚"
+    );
+
+    try {
+      const storyLength = storySettings?.length || "medium";
+      const storyDifficulty = storySettings?.difficulty || difficulty;
+      const isSeries = storySettings?.isSeries || false;
+      
+      const { data, error } = await supabase.functions.invoke("generate-story", {
+        body: {
+          length: storyLength,
+          difficulty: storyDifficulty,
+          description,
+          textType: "fiction",
+          textLanguage,
+          userId: user.id,
+          // Modular prompt system: CORE + KINDER-MODUL (+ SERIEN-MODUL if series)
+          source: 'kid',
+          isSeries,
+          storyType: selectedStoryType,
+          // Character and setting data for richer generation
+          characters: selectedCharacters.map(c => ({
+            name: c.name,
+            type: c.type,
+            age: c.age,
+            gender: c.gender,
+          })),
+          locations,
+          timePeriod,
+          specialAttributes: selectedAttributes,
+          humorLevel,
+          // Kid profile for personalization
+          kidName: selectedProfile?.name,
+          kidHobbies: selectedProfile?.hobbies,
+          // Series settings
+          endingType: isSeries ? 'C' : 'A', // Cliffhanger for series, closed for standalone
+        },
+      });
+
+      if (error) {
+        console.error("Generation error:", error);
+        toast.error(
+          kidAppLanguage === "de" ? "Fehler bei der Generierung" :
+          kidAppLanguage === "fr" ? "Erreur lors de la génération" :
+          "Error generating story"
+        );
+        setIsGenerating(false);
+        setCurrentScreen("story-type");
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        setIsGenerating(false);
+        setCurrentScreen("story-type");
+        return;
+      }
+
+      if (data?.title && data?.content) {
+        // Save the story to database
+        const { data: savedStory, error: saveError } = await supabase
+          .from("stories")
+          .insert({
+            title: data.title,
+            content: data.content,
+            cover_image_url: data.coverImageBase64 || null,
+            story_images: data.storyImages || null,
+            difficulty: storyDifficulty,
+            text_type: "fiction",
+            text_language: textLanguage.toLowerCase(),
+            prompt: description,
+            user_id: user.id,
+            kid_profile_id: selectedProfile?.id,
+            generation_status: "verified",
+            ending_type: isSeries ? 'C' : 'A',
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.error("Save error:", saveError);
+          toast.error(
+            kidAppLanguage === "de" ? "Geschichte erstellt, aber Speicherfehler" :
+            kidAppLanguage === "fr" ? "Histoire créée, mais erreur de sauvegarde" :
+            "Story created, but save error"
+          );
+          setIsGenerating(false);
+          setCurrentScreen("story-type");
+          return;
+        }
+
+        toast.success(
+          kidAppLanguage === "de" ? "Geschichte erstellt! 🎉" :
+          kidAppLanguage === "fr" ? "Histoire créée! 🎉" :
+          "Story created! 🎉"
+        );
+
+        // Navigate to reading page
+        navigate(`/read/${savedStory.id}`);
+      } else {
+        toast.error(
+          kidAppLanguage === "de" ? "Fehler bei der Generierung" :
+          kidAppLanguage === "fr" ? "Erreur lors de la génération" :
+          "Error generating story"
+        );
+        setIsGenerating(false);
+        setCurrentScreen("story-type");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error(
+        kidAppLanguage === "de" ? "Fehler bei der Generierung" :
+        kidAppLanguage === "fr" ? "Erreur lors de la génération" :
+        "Error generating story"
+      );
+      setIsGenerating(false);
+      setCurrentScreen("story-type");
+    }
   };
 
   // Handle back navigation
