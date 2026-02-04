@@ -17,6 +17,240 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const quizTranslations: Record<string, {
+  title: string;
+  noWordsTitle: string;
+  noWordsText: string;
+  toStories: string;
+  readyToPlay: string;
+  chooseStory: string;
+  allStories: string;
+  quizHasWords: string;
+  words: string;
+  toPass: string;
+  goodAnswers: string;
+  startQuiz: string;
+  nextQuestion: string;
+  question: string;
+  points: string;
+  whatMeans: string;
+  correct: string;
+  notQuite: string;
+  seeResult: string;
+  nextQuestionBtn: string;
+  quizPassed: string;
+  quizDone: string;
+  bravo: string;
+  needed: string;
+  learnedInfo: string;
+  newQuiz: string;
+  backToStories: string;
+}> = {
+  de: {
+    title: "Wörter-Quiz",
+    noWordsTitle: "Noch keine Wörter!",
+    noWordsText: "Lies zuerst eine Geschichte und tippe auf Wörter, um sie zu lernen.",
+    toStories: "Zu den Geschichten",
+    readyToPlay: "Bereit zu spielen",
+    chooseStory: "Geschichte wählen:",
+    allStories: "Alle Geschichten",
+    quizHasWords: "Dieses Quiz hat",
+    words: "Wörter",
+    toPass: "Zum Bestehen: ~80% richtige Antworten",
+    goodAnswers: "richtige Antworten",
+    startQuiz: "Quiz starten! 🚀",
+    nextQuestion: "Nächste Frage wird vorbereitet...",
+    question: "Frage",
+    points: "Punkte",
+    whatMeans: "Was bedeutet...",
+    correct: "🎉 Super! Das ist richtig!",
+    notQuite: "Nicht ganz! Die richtige Antwort ist oben markiert.",
+    seeResult: "Ergebnis ansehen",
+    nextQuestionBtn: "Nächste Frage →",
+    quizPassed: "Quiz bestanden! 🎉",
+    quizDone: "Quiz beendet!",
+    bravo: "Bravo! Du hast das Quiz bestanden! 🏆",
+    needed: "Du brauchtest {threshold} richtige Antworten zum Bestehen. (0 Punkte)",
+    learnedInfo: "Wörter, die 3x hintereinander richtig beantwortet wurden, sind als gelernt markiert!",
+    newQuiz: "Neues Quiz",
+    backToStories: "Zurück zu den Geschichten",
+  },
+  fr: {
+    title: "Quiz des Mots",
+    noWordsTitle: "Pas encore de mots!",
+    noWordsText: "Lis d'abord une histoire et touche les mots pour les apprendre.",
+    toStories: "Vers les histoires",
+    readyToPlay: "Prêt à jouer",
+    chooseStory: "Choisir une histoire:",
+    allStories: "Toutes les histoires",
+    quizHasWords: "Ce quiz a",
+    words: "mots",
+    toPass: "Pour réussir: ~80% de bonnes réponses",
+    goodAnswers: "bonnes réponses",
+    startQuiz: "Commencer le quiz! 🚀",
+    nextQuestion: "Prochaine question en préparation...",
+    question: "Question",
+    points: "Points",
+    whatMeans: "Que signifie...",
+    correct: "🎉 Super! C'est correct!",
+    notQuite: "Pas tout à fait! La bonne réponse est marquée au-dessus.",
+    seeResult: "Voir le résultat",
+    nextQuestionBtn: "Question suivante →",
+    quizPassed: "Quiz réussi! 🎉",
+    quizDone: "Quiz terminé!",
+    bravo: "Bravo! Tu as réussi le quiz! 🏆",
+    needed: "Il te fallait {threshold} bonnes réponses pour réussir. (0 points)",
+    learnedInfo: "Les mots répondus 3 fois correctement de suite sont marqués comme appris!",
+    newQuiz: "Nouveau quiz",
+    backToStories: "Retour aux histoires",
+  },
+  en: {
+    title: "Word Quiz",
+    noWordsTitle: "No words yet!",
+    noWordsText: "First read a story and tap on words to learn them.",
+    toStories: "Go to stories",
+    readyToPlay: "Ready to play",
+    chooseStory: "Choose a story:",
+    allStories: "All stories",
+    quizHasWords: "This quiz has",
+    words: "words",
+    toPass: "To pass: ~80% correct answers",
+    goodAnswers: "correct answers",
+    startQuiz: "Start quiz! 🚀",
+    nextQuestion: "Next question loading...",
+    question: "Question",
+    points: "Points",
+    whatMeans: "What does this mean...",
+    correct: "🎉 Great! That's correct!",
+    notQuite: "Not quite! The correct answer is marked above.",
+    seeResult: "See result",
+    nextQuestionBtn: "Next question →",
+    quizPassed: "Quiz passed! 🎉",
+    quizDone: "Quiz done!",
+    bravo: "Bravo! You passed the quiz! 🏆",
+    needed: "You needed {threshold} correct answers to pass. (0 points)",
+    learnedInfo: "Words answered correctly 3 times in a row are marked as learned!",
+    newQuiz: "New quiz",
+    backToStories: "Back to stories",
+  },
+  es: {
+    title: "Quiz de Palabras",
+    noWordsTitle: "¡Aún no hay palabras!",
+    noWordsText: "Primero lee una historia y toca las palabras para aprenderlas.",
+    toStories: "Ir a las historias",
+    readyToPlay: "Listo para jugar",
+    chooseStory: "Elegir una historia:",
+    allStories: "Todas las historias",
+    quizHasWords: "Este quiz tiene",
+    words: "palabras",
+    toPass: "Para aprobar: ~80% respuestas correctas",
+    goodAnswers: "respuestas correctas",
+    startQuiz: "¡Comenzar quiz! 🚀",
+    nextQuestion: "Preparando siguiente pregunta...",
+    question: "Pregunta",
+    points: "Puntos",
+    whatMeans: "¿Qué significa...",
+    correct: "🎉 ¡Genial! ¡Es correcto!",
+    notQuite: "¡No del todo! La respuesta correcta está marcada arriba.",
+    seeResult: "Ver resultado",
+    nextQuestionBtn: "Siguiente pregunta →",
+    quizPassed: "¡Quiz aprobado! 🎉",
+    quizDone: "¡Quiz terminado!",
+    bravo: "¡Bravo! ¡Has aprobado el quiz! 🏆",
+    needed: "Necesitabas {threshold} respuestas correctas para aprobar. (0 puntos)",
+    learnedInfo: "¡Las palabras respondidas correctamente 3 veces seguidas se marcan como aprendidas!",
+    newQuiz: "Nuevo quiz",
+    backToStories: "Volver a las historias",
+  },
+  nl: {
+    title: "Woordenquiz",
+    noWordsTitle: "Nog geen woorden!",
+    noWordsText: "Lees eerst een verhaal en tik op woorden om ze te leren.",
+    toStories: "Naar de verhalen",
+    readyToPlay: "Klaar om te spelen",
+    chooseStory: "Kies een verhaal:",
+    allStories: "Alle verhalen",
+    quizHasWords: "Deze quiz heeft",
+    words: "woorden",
+    toPass: "Om te slagen: ~80% goede antwoorden",
+    goodAnswers: "goede antwoorden",
+    startQuiz: "Start quiz! 🚀",
+    nextQuestion: "Volgende vraag wordt voorbereid...",
+    question: "Vraag",
+    points: "Punten",
+    whatMeans: "Wat betekent...",
+    correct: "🎉 Super! Dat is correct!",
+    notQuite: "Niet helemaal! Het juiste antwoord staat hierboven.",
+    seeResult: "Bekijk resultaat",
+    nextQuestionBtn: "Volgende vraag →",
+    quizPassed: "Quiz geslaagd! 🎉",
+    quizDone: "Quiz klaar!",
+    bravo: "Bravo! Je hebt de quiz gehaald! 🏆",
+    needed: "Je had {threshold} goede antwoorden nodig om te slagen. (0 punten)",
+    learnedInfo: "Woorden die 3x achter elkaar goed beantwoord zijn, worden als geleerd gemarkeerd!",
+    newQuiz: "Nieuwe quiz",
+    backToStories: "Terug naar verhalen",
+  },
+  it: {
+    title: "Quiz delle Parole",
+    noWordsTitle: "Nessuna parola ancora!",
+    noWordsText: "Prima leggi una storia e tocca le parole per impararle.",
+    toStories: "Vai alle storie",
+    readyToPlay: "Pronto a giocare",
+    chooseStory: "Scegli una storia:",
+    allStories: "Tutte le storie",
+    quizHasWords: "Questo quiz ha",
+    words: "parole",
+    toPass: "Per superare: ~80% risposte corrette",
+    goodAnswers: "risposte corrette",
+    startQuiz: "Inizia quiz! 🚀",
+    nextQuestion: "Prossima domanda in preparazione...",
+    question: "Domanda",
+    points: "Punti",
+    whatMeans: "Cosa significa...",
+    correct: "🎉 Super! È corretto!",
+    notQuite: "Non proprio! La risposta corretta è segnata sopra.",
+    seeResult: "Vedi risultato",
+    nextQuestionBtn: "Prossima domanda →",
+    quizPassed: "Quiz superato! 🎉",
+    quizDone: "Quiz terminato!",
+    bravo: "Bravo! Hai superato il quiz! 🏆",
+    needed: "Ti servivano {threshold} risposte corrette per superare. (0 punti)",
+    learnedInfo: "Le parole risposte correttamente 3 volte di seguito sono segnate come imparate!",
+    newQuiz: "Nuovo quiz",
+    backToStories: "Torna alle storie",
+  },
+  bs: {
+    title: "Kviz Riječi",
+    noWordsTitle: "Još nema riječi!",
+    noWordsText: "Prvo pročitaj priču i dodirni riječi da ih naučiš.",
+    toStories: "Idi na priče",
+    readyToPlay: "Spreman za igru",
+    chooseStory: "Izaberi priču:",
+    allStories: "Sve priče",
+    quizHasWords: "Ovaj kviz ima",
+    words: "riječi",
+    toPass: "Za prolaz: ~80% tačnih odgovora",
+    goodAnswers: "tačnih odgovora",
+    startQuiz: "Započni kviz! 🚀",
+    nextQuestion: "Priprema sljedećeg pitanja...",
+    question: "Pitanje",
+    points: "Bodovi",
+    whatMeans: "Šta znači...",
+    correct: "🎉 Super! To je tačno!",
+    notQuite: "Nije baš! Tačan odgovor je označen gore.",
+    seeResult: "Pogledaj rezultat",
+    nextQuestionBtn: "Sljedeće pitanje →",
+    quizPassed: "Kviz položen! 🎉",
+    quizDone: "Kviz završen!",
+    bravo: "Bravo! Položio/la si kviz! 🏆",
+    needed: "Trebalo ti je {threshold} tačnih odgovora za prolaz. (0 bodova)",
+    learnedInfo: "Riječi odgovorene 3 puta zaredom tačno označene su kao naučene!",
+    newQuiz: "Novi kviz",
+    backToStories: "Nazad na priče",
+  },
+};
+
 interface QuizWord {
   id: string;
   word: string;
@@ -64,6 +298,9 @@ const VocabularyQuizPage = () => {
   const [pointsEarned, setPointsEarned] = useState(0);
   const [quizPointValue, setQuizPointValue] = useState(2);
   const [scoreAnimation, setScoreAnimation] = useState(false);
+
+  // Get translations based on kid's school system language
+  const t = quizTranslations[kidAppLanguage] || quizTranslations.fr;
 
   // Confetti effect for correct answers
   const triggerConfetti = useCallback(() => {
@@ -418,20 +655,20 @@ const VocabularyQuizPage = () => {
   if (words.length === 0) {
     return (
       <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
-        <PageHeader title="Quiz des Mots" backTo="/stories" />
+        <PageHeader title={t.title} backTo="/stories" />
 
         <div className="container max-w-2xl p-8 text-center">
           <div className="bg-card rounded-2xl p-12 shadow-card">
             <Sparkles className="h-16 w-16 text-primary/40 mx-auto mb-6" />
-            <h2 className="text-2xl font-baloo mb-4">Pas encore de mots!</h2>
+            <h2 className="text-2xl font-baloo mb-4">{t.noWordsTitle}</h2>
             <p className="text-muted-foreground mb-8">
-              Lis d'abord une histoire et touche les mots pour les apprendre.
+              {t.noWordsText}
             </p>
             <Button
               onClick={() => navigate("/stories")}
               className="btn-primary-kid"
             >
-              Vers les histoires
+              {t.toStories}
             </Button>
           </div>
         </div>
@@ -442,16 +679,16 @@ const VocabularyQuizPage = () => {
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
       <PageHeader 
-        title="Quiz des Mots" 
+        title={t.title} 
         backTo="/stories"
         rightContent={
           currentQuestion && !quizComplete && (
             <>
               <span className="text-sm text-muted-foreground">
-                Question {questionIndex + 1} / {totalQuestions}
+                {t.question} {questionIndex + 1} / {totalQuestions}
               </span>
               <div className={`bg-primary/20 rounded-full px-4 py-1 transition-transform ${scoreAnimation ? 'animate-bounce scale-125' : ''}`}>
-                <span className="font-baloo font-bold text-primary">{score} Points</span>
+                <span className="font-baloo font-bold text-primary">{score} {t.points}</span>
               </div>
             </>
           )
@@ -494,21 +731,21 @@ const VocabularyQuizPage = () => {
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
             <Sparkles className="h-16 w-16 text-primary mx-auto mb-6 animate-sparkle" />
             <h2 className="text-3xl font-baloo mb-4">
-              Prêt à jouer{selectedProfile ? `, ${selectedProfile.name}` : ''}?
+              {t.readyToPlay}{selectedProfile ? `, ${selectedProfile.name}` : ''}?
             </h2>
             
             {/* Story selection */}
             <div className="my-6 flex flex-col items-center gap-4">
-              <label className="text-lg font-medium">Choisir une histoire:</label>
+              <label className="text-lg font-medium">{t.chooseStory}</label>
               <Select 
                 value={selectedStoryId} 
                 onValueChange={setSelectedStoryId}
               >
                 <SelectTrigger className="w-64 text-center text-lg">
-                  <SelectValue placeholder="Toutes les histoires" />
+                  <SelectValue placeholder={t.allStories} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-lg">Toutes les histoires</SelectItem>
+                  <SelectItem value="all" className="text-lg">{t.allStories}</SelectItem>
                   {stories.map(story => (
                     <SelectItem key={story.id} value={story.id} className="text-base">
                       {story.title}
@@ -520,10 +757,10 @@ const VocabularyQuizPage = () => {
             
             <div className="bg-primary/10 rounded-xl p-4 my-4">
               <p className="text-lg font-medium">
-                Ce quiz a <strong className="text-primary">{words.length}</strong> mots
+                {t.quizHasWords} <strong className="text-primary">{words.length}</strong> {t.words}
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Pour réussir: ~80% de bonnes réponses ({Math.ceil(words.length * 0.8)}/{words.length})
+                {t.toPass} ({Math.ceil(words.length * 0.8)}/{words.length})
               </p>
             </div>
 
@@ -532,7 +769,7 @@ const VocabularyQuizPage = () => {
               className="btn-primary-kid text-xl px-8 py-4 mt-4"
               disabled={words.length === 0}
             >
-              Commencer le quiz! 🚀
+              {t.startQuiz}
             </Button>
           </div>
         )}
@@ -543,12 +780,12 @@ const VocabularyQuizPage = () => {
             {isGeneratingQuiz ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                <p className="text-muted-foreground">Prochaine question en préparation...</p>
+                <p className="text-muted-foreground">{t.nextQuestion}</p>
               </div>
             ) : (
               <>
                 <div className="text-center mb-8">
-                  <p className="text-sm text-muted-foreground mb-2">Que signifie...</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t.whatMeans}</p>
                   <h2 className="text-4xl md:text-5xl font-baloo font-bold text-primary">
                     {currentQuestion.word}
                   </h2>
@@ -602,10 +839,10 @@ const VocabularyQuizPage = () => {
                   <div className="mt-8 text-center">
                     <div className={`mb-4 p-4 rounded-xl ${isCorrect ? "bg-mint" : "bg-cotton-candy"}`}>
                       {isCorrect ? (
-                        <p className="text-lg font-bold text-green-800">🎉 Super! C'est correct!</p>
+                        <p className="text-lg font-bold text-green-800">{t.correct}</p>
                       ) : (
                         <p className="text-lg font-bold text-red-800">
-                          Pas tout à fait! La bonne réponse est marquée au-dessus.
+                          {t.notQuite}
                         </p>
                       )}
                     </div>
@@ -613,7 +850,7 @@ const VocabularyQuizPage = () => {
                       onClick={nextQuestion}
                       className="btn-primary-kid"
                     >
-                      {questionIndex + 1 >= totalQuestions ? "Voir le résultat" : "Question suivante →"}
+                      {questionIndex + 1 >= totalQuestions ? t.seeResult : t.nextQuestionBtn}
                     </Button>
                   </div>
                 )}
@@ -627,7 +864,7 @@ const VocabularyQuizPage = () => {
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
             <Trophy className={`h-20 w-20 mx-auto mb-6 ${isPassed() ? "text-primary" : "text-muted-foreground"}`} />
             <h2 className="text-4xl font-baloo mb-4">
-              {isPassed() ? "Quiz réussi! 🎉" : "Quiz terminé!"}
+              {isPassed() ? t.quizPassed : t.quizDone}
             </h2>
             
             <div className={`rounded-2xl p-6 mb-8 ${isPassed() ? "bg-mint" : "bg-cotton-candy/30"}`}>
@@ -636,16 +873,16 @@ const VocabularyQuizPage = () => {
               </p>
               {isPassed() && (
                 <p className="text-2xl font-baloo text-green-700 mb-2">
-                  +{pointsEarned} points! 🎯
+                  +{pointsEarned} {t.points}! 🎯
                 </p>
               )}
               <p className="text-muted-foreground mb-2">
                 {isPassed() 
-                  ? "Bravo! Tu as réussi le quiz! 🏆" 
-                  : `Il te fallait ${getPassThreshold()} bonnes réponses pour réussir. (0 points)`}
+                  ? t.bravo 
+                  : t.needed.replace('{threshold}', String(getPassThreshold()))}
               </p>
               <p className="text-sm text-muted-foreground">
-                Les mots répondus 3 fois correctement de suite sont marqués comme appris!
+                {t.learnedInfo}
               </p>
             </div>
 
@@ -655,14 +892,14 @@ const VocabularyQuizPage = () => {
                 className="btn-primary-kid flex items-center gap-2"
               >
                 <RotateCcw className="h-5 w-5" />
-                Nouveau quiz
+                {t.newQuiz}
               </Button>
               <Button
                 onClick={() => navigate("/stories")}
                 variant="outline"
                 className="btn-kid"
               >
-                Retour aux histoires
+                {t.backToStories}
               </Button>
             </div>
           </div>
