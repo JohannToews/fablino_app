@@ -897,12 +897,14 @@ Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
   "content": "Der vollständige Text auf ${targetLanguage}. Verwende \\n für Absätze. MINDESTENS ${minWordCount} WÖRTER!",
   "questions": [
     {
-      "question": "Frage 1 auf ${targetLanguage}",
-      "expectedAnswer": "Erwartete Antwort auf ${targetLanguage}"
+      "question": "Frage 1 auf ${targetLanguage}?",
+      "correctAnswer": "Die korrekte Antwort",
+      "options": ["Die korrekte Antwort", "Falsche Option 1", "Falsche Option 2", "Falsche Option 3"]
     },
     {
-      "question": "Frage 2 auf ${targetLanguage}",
-      "expectedAnswer": "Erwartete Antwort auf ${targetLanguage}"
+      "question": "Frage 2 auf ${targetLanguage}?",
+      "correctAnswer": "Die korrekte Antwort",
+      "options": ["Falsche Option 1", "Die korrekte Antwort", "Falsche Option 2", "Falsche Option 3"]
     }
   ],
   "vocabulary": [
@@ -913,7 +915,14 @@ Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
   ]
 }
 
-Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
+**WICHTIG FÜR MULTIPLE-CHOICE FRAGEN:**
+- Jede Frage hat GENAU 4 Antwortoptionen
+- NUR EINE Option ist korrekt (correctAnswer)
+- Die 3 falschen Optionen (Distraktoren) müssen plausibel aber falsch sein
+- MISCHE die Position der korrekten Antwort (nicht immer an erster Stelle!)
+- Die correctAnswer muss EXAKT mit einer der options übereinstimmen
+
+Erstelle genau ${questionCount} Multiple-Choice Fragen mit der richtigen Mischung:
 - ~30% explizite Informationsfragen
 - ~40% Inferenzfragen (die wichtigste Kategorie!)
 - ~15% Vokabular im Kontext

@@ -207,6 +207,29 @@ const CreateStoryPage = () => {
           return;
         }
 
+        // Save comprehension questions if available
+        if (data.questions?.length > 0 && savedStory) {
+          const questionsToInsert = data.questions.map((q: { question: string; correctAnswer?: string; expectedAnswer?: string; options?: string[] }, idx: number) => ({
+            story_id: savedStory.id,
+            question: q.question,
+            expected_answer: q.correctAnswer || q.expectedAnswer || '',
+            options: q.options || [],
+            order_index: idx,
+          }));
+          await supabase.from("comprehension_questions").insert(questionsToInsert);
+        }
+
+        // Save vocabulary words if available
+        if (data.vocabulary?.length > 0 && savedStory) {
+          const wordsToInsert = data.vocabulary.map((v: { word: string; explanation: string }) => ({
+            story_id: savedStory.id,
+            word: v.word,
+            explanation: v.explanation,
+            difficulty: "medium",
+          }));
+          await supabase.from("marked_words").insert(wordsToInsert);
+        }
+
         toast.success(
           kidAppLanguage === "de" ? "Geschichte erstellt! 🎉" :
           kidAppLanguage === "fr" ? "Histoire créée! 🎉" :
@@ -418,6 +441,29 @@ const CreateStoryPage = () => {
           setIsGenerating(false);
           setCurrentScreen("story-type");
           return;
+        }
+
+        // Save comprehension questions if available
+        if (data.questions?.length > 0 && savedStory) {
+          const questionsToInsert = data.questions.map((q: { question: string; correctAnswer?: string; expectedAnswer?: string; options?: string[] }, idx: number) => ({
+            story_id: savedStory.id,
+            question: q.question,
+            expected_answer: q.correctAnswer || q.expectedAnswer || '',
+            options: q.options || [],
+            order_index: idx,
+          }));
+          await supabase.from("comprehension_questions").insert(questionsToInsert);
+        }
+
+        // Save vocabulary words if available
+        if (data.vocabulary?.length > 0 && savedStory) {
+          const wordsToInsert = data.vocabulary.map((v: { word: string; explanation: string }) => ({
+            story_id: savedStory.id,
+            word: v.word,
+            explanation: v.explanation,
+            difficulty: "medium",
+          }));
+          await supabase.from("marked_words").insert(wordsToInsert);
         }
 
         toast.success(
