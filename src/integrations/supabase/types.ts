@@ -127,6 +127,36 @@ export type Database = {
           },
         ]
       }
+      image_cache: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string
+          last_used_at: string | null
+          prompt_hash: string
+          prompt_text: string
+          use_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url: string
+          last_used_at?: string | null
+          prompt_hash: string
+          prompt_text: string
+          use_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          last_used_at?: string | null
+          prompt_hash?: string
+          prompt_text?: string
+          use_count?: number | null
+        }
+        Relationships: []
+      }
       kid_profiles: {
         Row: {
           color_palette: string
@@ -275,17 +305,21 @@ export type Database = {
       stories: {
         Row: {
           content: string
+          cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
           difficulty: string | null
           ending_type: Database["public"]["Enums"]["ending_type"] | null
           episode_number: number | null
+          generation_status: string | null
+          generation_time_ms: number | null
           id: string
           is_deleted: boolean
           kid_profile_id: string | null
           prompt: string | null
           series_id: string | null
           story_images: string[] | null
+          story_images_status: string | null
           text_language: string | null
           text_type: string | null
           title: string
@@ -294,17 +328,21 @@ export type Database = {
         }
         Insert: {
           content: string
+          cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
           difficulty?: string | null
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
+          generation_status?: string | null
+          generation_time_ms?: number | null
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
           prompt?: string | null
           series_id?: string | null
           story_images?: string[] | null
+          story_images_status?: string | null
           text_language?: string | null
           text_type?: string | null
           title: string
@@ -313,17 +351,21 @@ export type Database = {
         }
         Update: {
           content?: string
+          cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
           difficulty?: string | null
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
+          generation_status?: string | null
+          generation_time_ms?: number | null
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
           prompt?: string | null
           series_id?: string | null
           story_images?: string[] | null
+          story_images_status?: string | null
           text_language?: string | null
           text_type?: string | null
           title?: string

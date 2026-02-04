@@ -20,6 +20,64 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Helper function to create a hash for image prompt caching
+async function hashPrompt(prompt: string): Promise<string> {
+  const normalized = prompt.toLowerCase().replace(/\s+/g, ' ').trim();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Helper function to get cached image
+async function getCachedImage(supabase: any, prompt: string): Promise<string | null> {
+  try {
+    const promptHash = await hashPrompt(prompt);
+    const { data } = await supabase
+      .from('image_cache')
+      .select('image_url')
+      .eq('prompt_hash', promptHash)
+      .single();
+    
+    if (data?.image_url) {
+      console.log(`Cache HIT for prompt hash: ${promptHash}`);
+      // Update usage stats
+      await supabase
+        .from('image_cache')
+        .update({ 
+          last_used_at: new Date().toISOString(),
+          use_count: (data.use_count || 1) + 1
+        })
+        .eq('prompt_hash', promptHash);
+      return data.image_url;
+    }
+    console.log(`Cache MISS for prompt hash: ${promptHash}`);
+    return null;
+  } catch (error) {
+    console.log('Error checking image cache:', error);
+    return null;
+  }
+}
+
+// Helper function to cache image
+async function cacheImage(supabase: any, prompt: string, imageUrl: string): Promise<void> {
+  try {
+    const promptHash = await hashPrompt(prompt);
+    await supabase
+      .from('image_cache')
+      .upsert({
+        prompt_hash: promptHash,
+        prompt_text: prompt.substring(0, 500), // Store first 500 chars for debugging
+        image_url: imageUrl,
+        last_used_at: new Date().toISOString()
+      }, { onConflict: 'prompt_hash' });
+    console.log(`Cached image for prompt hash: ${promptHash}`);
+  } catch (error) {
+    console.log('Error caching image:', error);
+  }
+}
+
 // Extract a generated image data URL (or b64) from Lovable AI Gateway response
 function extractGatewayImageUrl(data: any): string | null {
   const img = data?.choices?.[0]?.message?.images?.[0];
@@ -556,13 +614,58 @@ async function callGeminiImageEditAPI(
   return null;
 }
 
+// Generate a single image with caching support
+async function generateImageWithCache(
+  supabase: any,
+  geminiKey: string,
+  lovableKey: string,
+  prompt: string,
+  useEdit: boolean = false,
+  referenceImage?: string
+): Promise<string | null> {
+  // Check cache first
+  const cached = await getCachedImage(supabase, prompt);
+  if (cached) {
+    return cached;
+  }
+
+  // Generate new image
+  let imageUrl: string | null = null;
+  
+  if (useEdit && referenceImage) {
+    imageUrl = await callGeminiImageEditAPI(geminiKey, prompt, referenceImage);
+    if (!imageUrl) {
+      imageUrl = await callLovableImageEdit(lovableKey, prompt, referenceImage);
+    }
+  } else {
+    imageUrl = await callGeminiImageAPI(geminiKey, prompt);
+    if (!imageUrl) {
+      imageUrl = await callLovableImageGenerate(lovableKey, prompt);
+    }
+  }
+
+  // Cache the result if successful
+  if (imageUrl) {
+    await cacheImage(supabase, prompt, imageUrl);
+  }
+
+  return imageUrl;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
     const { length, difficulty, description, schoolLevel, textType, textLanguage, globalLanguage, customSystemPrompt, endingType, episodeNumber, seriesId, userId } = await req.json();
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Determine how many images to generate based on length
     const imageCountMap: Record<string, number> = {
@@ -728,7 +831,7 @@ Erstelle genau ${questionCount} Fragen mit der richtigen Mischung:
 
 Wähle genau 10 Vokabelwörter aus.`;
 
-    console.log("Generating story with Gemini API directly:", {
+    console.log("Generating story with Lovable AI Gateway:", {
       targetLanguage,
       schoolLevel,
       difficulty: difficultyLabel,
@@ -738,7 +841,7 @@ Wähle genau 10 Vokabelwörter aus.`;
       questionCount
     });
 
-    // Generate the story using direct Gemini API
+    // Generate the story using Lovable AI Gateway
     let story: { title: string; content: string; questions: any[]; vocabulary: any[] } = {
       title: "",
       content: "",
@@ -815,111 +918,22 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     }
 
-    // ================== CONSISTENCY CHECK ==================
-    // Perform automatic quality check on the generated story
+    const storyGenerationTime = Date.now() - startTime;
+    console.log(`Story text generated in ${storyGenerationTime}ms`);
+
+    // ================== PARALLEL: CONSISTENCY CHECK + IMAGES ==================
+    // Start consistency check and image generation in PARALLEL
+    
     const adminLangMap: Record<string, string> = { DE: 'de', FR: 'fr', EN: 'en' };
     const adminLanguage = adminLangMap[textLanguage] || 'de';
     
-    const consistencyCheckPrompt = await getConsistencyCheckPrompt(adminLanguage);
-    
-    // Track consistency check results
-    let totalIssuesFound = 0;
-    let totalIssuesCorrected = 0;
-    let allIssueDetails: string[] = [];
-    
-    if (consistencyCheckPrompt) {
-      console.log("Starting consistency check...");
-      
-      // Build series context for the check (if this is a continuation)
-      const seriesContext = episodeNumber && episodeNumber > 1 && description
-        ? { previousEpisode: description, episodeNumber }
-        : undefined;
-      
-      let correctionAttempts = 0;
-      const maxCorrectionAttempts = 2;
-      
-      while (correctionAttempts < maxCorrectionAttempts) {
-        const checkResult = await performConsistencyCheck(
-          LOVABLE_API_KEY,
-          story,
-          consistencyCheckPrompt,
-          seriesContext
-        );
-        
-        if (!checkResult.hasIssues) {
-          console.log(`Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
-          break;
-        }
-        
-        // Track issues found in this check
-        totalIssuesFound += checkResult.issues.length;
-        allIssueDetails.push(...checkResult.issues);
-        
-        correctionAttempts++;
-        console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
-        console.log("Issues:", checkResult.issues);
-        
-        // Attempt to correct the story
-        const correctedStory = await correctStory(
-          LOVABLE_API_KEY,
-          story,
-          checkResult.issues,
-          checkResult.suggestedFixes,
-          targetLanguage
-        );
-        
-        // Only update if correction actually changed something
-        if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
-          story = correctedStory;
-          totalIssuesCorrected += checkResult.issues.length;
-          console.log("Story corrected, re-checking...");
-        } else {
-          console.log("No changes made in correction, stopping");
-          break;
-        }
-      }
-      
-      if (correctionAttempts >= maxCorrectionAttempts) {
-        console.log("Max correction attempts reached, proceeding with current version");
-      }
-      
-      // Save consistency check results to database
-      if (totalIssuesFound > 0 || true) { // Always track, even with 0 issues
-        try {
-          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-          const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-          const supabase = createClient(supabaseUrl, supabaseKey);
-          
-          await supabase.from("consistency_check_results").insert({
-            story_title: story.title,
-            story_length: length,
-            difficulty: difficulty,
-            issues_found: totalIssuesFound,
-            issues_corrected: totalIssuesCorrected,
-            issue_details: allIssueDetails,
-            user_id: userId || null,
-          });
-          console.log("Consistency check results saved to database");
-        } catch (dbErr) {
-          console.error("Error saving consistency check results:", dbErr);
-        }
-      }
-    } else {
-      console.log("No consistency check prompt configured, skipping check");
-    }
-    // ================== END CONSISTENCY CHECK ==================
-
-    // Generate cover image based on description and school level
+    // Prepare image generation parameters
     const effectiveSchoolLevel = schoolLevel || "CE2";
-    console.log("Generating cover image with Gemini Imagen for:", description, "school level:", effectiveSchoolLevel);
-    
-    // Map school level to art style - different styles for fiction vs non-fiction
     const schoolLevelLower = effectiveSchoolLevel.toLowerCase();
     let artStyle: string;
     let targetAudience: string;
     
     if (textType === "non-fiction") {
-      // Non-fiction: Use documentary/educational illustration styles
       if (schoolLevelLower.includes("cp") || schoolLevelLower.includes("1e") || schoolLevelLower.includes("ce1") || schoolLevelLower.includes("2e") || schoolLevelLower.includes("grade 2") || schoolLevelLower.includes("groep 4") || schoolLevelLower.includes("2. klasse") || schoolLevelLower.includes("2º")) {
         artStyle = "Clean educational illustration style, accurate and informative, friendly but realistic depictions, clear visual hierarchy, similar to quality children's encyclopedia or National Geographic Kids.";
         targetAudience = "early primary school children (ages 6-7)";
@@ -934,7 +948,6 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         targetAudience = "upper primary school children (ages 10-11)";
       }
     } else {
-      // Fiction: Use imaginative, story-driven styles
       if (schoolLevelLower.includes("cp") || schoolLevelLower.includes("1e") || schoolLevelLower.includes("ce1") || schoolLevelLower.includes("2e") || schoolLevelLower.includes("grade 2") || schoolLevelLower.includes("groep 4") || schoolLevelLower.includes("2. klasse") || schoolLevelLower.includes("2º")) {
         artStyle = "Colorful cartoon style, friendly characters with expressive faces, slightly more detailed backgrounds, similar to Disney Junior or Paw Patrol style.";
         targetAudience = "early primary school children (ages 6-7)";
@@ -949,22 +962,20 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         targetAudience = "upper primary school children (ages 10-11)";
       }
     }
-    
-    // Generate detailed character descriptions from the story for consistency
+
+    // Generate character description for image consistency
     let characterDescription = "";
-    
     try {
       const characterDescriptionPrompt = `Analysiere diese Geschichte und erstelle eine kurze, präzise visuelle Beschreibung der Hauptcharaktere (Aussehen, Kleidung, besondere Merkmale). Maximal 100 Wörter. Antwort auf Englisch für den Bildgenerator.`;
-      
       const characterContext = `Geschichte: "${story.title}"\n${story.content.substring(0, 500)}...`;
-      
       characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
       console.log("Character description generated:", characterDescription.substring(0, 100));
     } catch (err) {
       console.error("Error generating character description:", err);
     }
 
-    const imagePrompt = `A captivating book cover illustration for a ${textType === "non-fiction" ? "non-fiction educational book" : "children's story"}. 
+    // Build cover image prompt
+    const coverPrompt = `A captivating book cover illustration for a ${textType === "non-fiction" ? "non-fiction educational book" : "children's story"}. 
 Theme: ${description}. 
 Story title: "${story.title}"
 ${characterDescription ? `Main characters: ${characterDescription}` : ""}
@@ -972,36 +983,12 @@ Art Style: ${artStyle}
 Target audience: ${targetAudience}.
 Requirements: No text on the image, high quality ${textType === "non-fiction" ? "educational and informative" : "imaginative and engaging"} illustration.
 IMPORTANT: Create distinctive, memorable character designs that can be recognized in follow-up illustrations.`;
-    
-    // Generate cover image using Gemini's image generation
-    console.log("Calling Gemini Image API for cover...");
-    let coverImageBase64 = await callGeminiImageAPI(GEMINI_API_KEY, imagePrompt);
-    if (!coverImageBase64) {
-      console.log("Cover image via Gemini failed; falling back to Lovable image gateway...");
-      coverImageBase64 = await callLovableImageGenerate(LOVABLE_API_KEY, imagePrompt);
-    }
-    
-    if (coverImageBase64) {
-      console.log("Cover image generated successfully via Gemini");
-    } else {
-      console.log("Cover image generation failed or returned null");
-    }
 
-    // Generate additional progress images for medium/long stories
-    const storyImages: string[] = [];
+    // Prepare progress image prompts
+    const storyParts = story.content.split('\n\n').filter((p: string) => p.trim().length > 0);
+    const partCount = storyParts.length;
     
-    if (totalImageCount > 1 && coverImageBase64) {
-      console.log(`Generating ${totalImageCount - 1} additional progress image(s) with character consistency...`);
-      
-      // Create progress image prompts based on story content
-      const progressImagePrompts: string[] = [];
-      
-      // Split story into parts to create relevant image prompts
-      const storyParts = story.content.split('\n\n').filter((p: string) => p.trim().length > 0);
-      const partCount = storyParts.length;
-      
-      // Base style reference for consistency
-      const styleReference = `
+    const styleReference = `
 CRITICAL - VISUAL CONSISTENCY REQUIREMENTS:
 - Use EXACTLY the same art style as the cover image: ${artStyle}
 - Keep the SAME character designs, faces, clothing, and distinctive features as the cover
@@ -1009,12 +996,13 @@ CRITICAL - VISUAL CONSISTENCY REQUIREMENTS:
 - Characters must be immediately recognizable from the cover image
 ${characterDescription ? `- Character reference: ${characterDescription}` : ""}
 `;
-      
-      if (totalImageCount >= 2 && partCount > 1) {
-        // First progress image - middle of the story
-        const middleIndex = Math.floor(partCount / 2);
-        const middleContext = storyParts[middleIndex]?.substring(0, 200) || description;
-        progressImagePrompts.push(`Continue the visual story from the cover image. Scene from the middle of the story: "${middleContext}".
+
+    const progressPrompts: string[] = [];
+    
+    if (totalImageCount >= 2 && partCount > 1) {
+      const middleIndex = Math.floor(partCount / 2);
+      const middleContext = storyParts[middleIndex]?.substring(0, 200) || description;
+      progressPrompts.push(`Continue the visual story from the cover image. Scene from the middle of the story: "${middleContext}".
 
 ${styleReference}
 
@@ -1022,13 +1010,12 @@ Art Style: ${textType === "non-fiction" ? "Simplified documentary sketch style" 
 The image should maintain the same characters but with reduced visual intensity - think soft colors and gentle washes.
 Target audience: ${targetAudience}. No text. 
 The characters MUST look exactly like they do on the cover - same faces, hair, clothing, proportions.`);
-      }
-      
-      if (totalImageCount >= 3 && partCount > 2) {
-        // Second progress image - near the end
-        const nearEndIndex = Math.floor(partCount * 0.75);
-        const nearEndContext = storyParts[nearEndIndex]?.substring(0, 200) || description;
-        progressImagePrompts.push(`Continue the visual story. Scene near the end: "${nearEndContext}".
+    }
+    
+    if (totalImageCount >= 3 && partCount > 2) {
+      const nearEndIndex = Math.floor(partCount * 0.75);
+      const nearEndContext = storyParts[nearEndIndex]?.substring(0, 200) || description;
+      progressPrompts.push(`Continue the visual story. Scene near the end: "${nearEndContext}".
 
 ${styleReference}
 
@@ -1036,32 +1023,144 @@ Art Style: ${textType === "non-fiction" ? "Simple line-art sketch with minimal c
 Very understated visual style - muted colors, intentionally reduced saturation.
 Target audience: ${targetAudience}. No text. 
 CRITICAL: The characters MUST be the exact same as in the cover image - identical faces, features, and clothing.`);
+    }
+
+    // ================== PARALLEL EXECUTION ==================
+    console.log("Starting PARALLEL execution: consistency check + image generation...");
+
+    // Track consistency check results
+    let totalIssuesFound = 0;
+    let totalIssuesCorrected = 0;
+    let allIssueDetails: string[] = [];
+    let coverImageBase64: string | null = null;
+    const storyImages: string[] = [];
+
+    // Create parallel tasks
+    const consistencyCheckTask = async () => {
+      const consistencyCheckPrompt = await getConsistencyCheckPrompt(adminLanguage);
+      
+      if (!consistencyCheckPrompt) {
+        console.log("No consistency check prompt configured, skipping check");
+        return;
       }
       
-      // Generate progress images sequentially (parallel bursts tend to trigger rate limits)
-      for (let index = 0; index < progressImagePrompts.length; index++) {
-        const prompt = progressImagePrompts[index];
-        try {
-          // Small spacing between image requests to reduce throttling
-          if (index > 0) await sleep(700);
+      console.log("Starting consistency check...");
+      const seriesContextForCheck = episodeNumber && episodeNumber > 1 && description
+        ? { previousEpisode: description, episodeNumber }
+        : undefined;
+      
+      let correctionAttempts = 0;
+      const maxCorrectionAttempts = 2;
+      
+      while (correctionAttempts < maxCorrectionAttempts) {
+        const checkResult = await performConsistencyCheck(
+          LOVABLE_API_KEY,
+          story,
+          consistencyCheckPrompt,
+          seriesContextForCheck
+        );
+        
+        if (!checkResult.hasIssues) {
+          console.log(`Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
+          break;
+        }
+        
+        totalIssuesFound += checkResult.issues.length;
+        allIssueDetails.push(...checkResult.issues);
+        
+        correctionAttempts++;
+        console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
+        
+        const correctedStory = await correctStory(
+          LOVABLE_API_KEY,
+          story,
+          checkResult.issues,
+          checkResult.suggestedFixes,
+          targetLanguage
+        );
+        
+        if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
+          story = correctedStory;
+          totalIssuesCorrected += checkResult.issues.length;
+          console.log("Story corrected, re-checking...");
+        } else {
+          console.log("No changes made in correction, stopping");
+          break;
+        }
+      }
+      
+      // Save consistency check results
+      try {
+        await supabase.from("consistency_check_results").insert({
+          story_title: story.title,
+          story_length: length,
+          difficulty: difficulty,
+          issues_found: totalIssuesFound,
+          issues_corrected: totalIssuesCorrected,
+          issue_details: allIssueDetails,
+          user_id: userId || null,
+        });
+        console.log("Consistency check results saved");
+      } catch (dbErr) {
+        console.error("Error saving consistency check results:", dbErr);
+      }
+    };
 
-          console.log(`Generating progress image ${index + 1} with Gemini...`);
-          let progressImage = await callGeminiImageEditAPI(GEMINI_API_KEY, prompt, coverImageBase64);
+    const coverImageTask = async () => {
+      console.log("Generating cover image...");
+      coverImageBase64 = await generateImageWithCache(
+        supabase,
+        GEMINI_API_KEY,
+        LOVABLE_API_KEY,
+        coverPrompt
+      );
+      if (coverImageBase64) {
+        console.log("Cover image generated successfully");
+      } else {
+        console.log("Cover image generation failed");
+      }
+    };
 
-          if (!progressImage) {
-            console.log(`Progress image ${index + 1} via Gemini failed; falling back to Lovable image gateway...`);
-            progressImage = await callLovableImageEdit(LOVABLE_API_KEY, prompt, coverImageBase64);
-          }
+    // Execute cover image and consistency check in PARALLEL
+    await Promise.all([
+      consistencyCheckTask(),
+      coverImageTask()
+    ]);
 
-          if (progressImage) {
-            console.log(`Progress image ${index + 1} generated successfully`);
-            storyImages.push(progressImage);
-          }
-        } catch (imgError) {
-          console.error(`Error generating progress image ${index + 1}:`, imgError);
+    // Now generate progress images in PARALLEL (they need cover as reference)
+    if (coverImageBase64 && progressPrompts.length > 0) {
+      console.log(`Generating ${progressPrompts.length} progress image(s) in PARALLEL...`);
+      
+      const progressImageTasks = progressPrompts.map(async (prompt, index) => {
+        console.log(`Starting progress image ${index + 1}...`);
+        const image = await generateImageWithCache(
+          supabase,
+          GEMINI_API_KEY,
+          LOVABLE_API_KEY,
+          prompt,
+          true, // useEdit
+          coverImageBase64!
+        );
+        if (image) {
+          console.log(`Progress image ${index + 1} generated`);
+        }
+        return image;
+      });
+
+      const progressResults = await Promise.all(progressImageTasks);
+      
+      // Filter out nulls and add to storyImages
+      for (const img of progressResults) {
+        if (img) {
+          storyImages.push(img);
         }
       }
     }
+
+    // ================== END PARALLEL EXECUTION ==================
+
+    const totalTime = Date.now() - startTime;
+    console.log(`Total generation time: ${totalTime}ms (story: ${storyGenerationTime}ms, images+check: ${totalTime - storyGenerationTime}ms)`);
 
     // Final word count log
     const finalWordCount = countWords(story.content);
@@ -1073,7 +1172,6 @@ CRITICAL: The characters MUST be the exact same as in the cover image - identica
         ? "some_progress_images_failed"
         : null;
 
-    // Log vocabulary selection
     console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
 
     return new Response(JSON.stringify({
@@ -1081,6 +1179,7 @@ CRITICAL: The characters MUST be the exact same as in the cover image - identica
       coverImageBase64,
       storyImages,
       imageWarning,
+      generationTimeMs: totalTime,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
