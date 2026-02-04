@@ -22,7 +22,7 @@ import {
 } from "@/components/story-creation/types";
 import { StorySettings } from "@/components/story-creation/StoryTypeSelectionScreen";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import StoryGenerationProgress from "@/components/story-creation/StoryGenerationProgress";
 
 // Screen states for the wizard
 type WizardScreen = "story-type" | "characters" | "setting" | "generating";
@@ -510,19 +510,7 @@ const CreateStoryPage = () => {
   if (currentScreen === "generating" || isGenerating) {
     return (
       <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
-        <div className="text-center space-y-6 p-8">
-          <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
-          <h2 className="text-2xl font-baloo font-bold text-foreground">
-            {kidAppLanguage === "de" ? "Deine Geschichte wird erstellt..." :
-             kidAppLanguage === "fr" ? "Ton histoire est en cours de création..." :
-             "Your story is being created..."}
-          </h2>
-          <p className="text-muted-foreground">
-            {kidAppLanguage === "de" ? "Das dauert nur einen Moment 📚✨" :
-             kidAppLanguage === "fr" ? "Cela ne prend qu'un instant 📚✨" :
-             "This only takes a moment 📚✨"}
-          </p>
-        </div>
+        <StoryGenerationProgress language={kidAppLanguage} />
       </div>
     );
   }
