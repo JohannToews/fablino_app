@@ -129,6 +129,12 @@ const StorySelectPage = () => {
 
   // Generate next episode for a series
   const handleGenerateNextEpisode = async (series: { seriesId: string; episodes: Story[] }) => {
+    // Prevent double-clicks - check if already generating
+    if (isGeneratingForSeries) {
+      console.log("Already generating, ignoring duplicate click");
+      return;
+    }
+    
     if (!user?.id) {
       toast.error("Bitte melde dich erneut an");
       return;
@@ -137,6 +143,23 @@ const StorySelectPage = () => {
     
     const lastEpisode = series.episodes[series.episodes.length - 1];
     if (!lastEpisode) return;
+    
+    const nextEpisodeNumber = (lastEpisode.episode_number || series.episodes.length) + 1;
+    
+    // Check if episode with this number already exists in database (race condition protection)
+    const { data: existingEpisode } = await supabase
+      .from("stories")
+      .select("id")
+      .eq("series_id", series.seriesId)
+      .eq("episode_number", nextEpisodeNumber)
+      .maybeSingle();
+    
+    if (existingEpisode) {
+      console.log("Episode already exists, reloading stories");
+      toast.info("Diese Episode existiert bereits");
+      loadStories();
+      return;
+    }
     
     setIsGeneratingForSeries(series.seriesId);
     
@@ -150,7 +173,6 @@ const StorySelectPage = () => {
       });
       
       const fullSeriesContext = episodeContexts.join('\n\n');
-      const nextEpisodeNumber = (lastEpisode.episode_number || series.episodes.length) + 1;
       
       // Determine ending type based on episode number (max 5 episodes typically)
       // Episode 5 should be final (ending type A), others are cliffhangers (C)
