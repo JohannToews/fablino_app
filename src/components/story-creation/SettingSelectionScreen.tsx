@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import CharacterTile from "./CharacterTile";
 import { LocationType, TimePeriod, SettingSelectionTranslations } from "./types";
@@ -41,8 +42,6 @@ const SettingSelectionScreen = ({
   onBack,
 }: SettingSelectionScreenProps) => {
   const [selectedLocations, setSelectedLocations] = useState<LocationType[]>([]);
-  const [selectedTime, setSelectedTime] = useState<TimePeriod>("today");
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentTimeIndex, setCurrentTimeIndex] = useState(7); // "today" is index 7
 
   const locationTiles = [
@@ -68,6 +67,9 @@ const SettingSelectionScreen = ({
     { type: "farfuture" as TimePeriod, image: farfutureImg, label: translations.farfuture, emoji: "🚀" },
   ];
 
+  const selectedTime = timelineTiles[currentTimeIndex].type;
+  const selectedTimeData = timelineTiles[currentTimeIndex];
+
   const handleLocationClick = (type: LocationType) => {
     if (type === "surprise") {
       // Random selection
@@ -79,9 +81,8 @@ const SettingSelectionScreen = ({
       setSelectedLocations(randomLocations);
       
       // Random time
-      const randomTime = timelineTiles[Math.floor(Math.random() * timelineTiles.length)].type;
-      setSelectedTime(randomTime);
-      setCurrentTimeIndex(timelineTiles.findIndex(t => t.type === randomTime));
+      const randomTimeIndex = Math.floor(Math.random() * timelineTiles.length);
+      setCurrentTimeIndex(randomTimeIndex);
       
       toast.success("🎲 Zufällig ausgewählt!");
       return;
@@ -99,34 +100,8 @@ const SettingSelectionScreen = ({
     });
   };
 
-  const handleTimeSelect = (type: TimePeriod, index: number) => {
-    setSelectedTime(type);
-    setCurrentTimeIndex(index);
-    scrollToIndex(index);
-  };
-
-  const scrollToIndex = (index: number) => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    
-    const itemWidth = 140; // min-w-[140px]
-    const containerWidth = container.offsetWidth;
-    const scrollPosition = (index * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
-    
-    container.scrollTo({
-      left: scrollPosition,
-      behavior: "smooth"
-    });
-  };
-
-  const handlePrevTime = () => {
-    const newIndex = Math.max(0, currentTimeIndex - 1);
-    handleTimeSelect(timelineTiles[newIndex].type, newIndex);
-  };
-
-  const handleNextTime = () => {
-    const newIndex = Math.min(timelineTiles.length - 1, currentTimeIndex + 1);
-    handleTimeSelect(timelineTiles[newIndex].type, newIndex);
+  const handleSliderChange = (value: number[]) => {
+    setCurrentTimeIndex(value[0]);
   };
 
   const handleContinue = () => {
@@ -136,11 +111,6 @@ const SettingSelectionScreen = ({
     }
     onComplete(selectedLocations, selectedTime);
   };
-
-  // Initial scroll to center "today"
-  useEffect(() => {
-    setTimeout(() => scrollToIndex(currentTimeIndex), 100);
-  }, []);
 
   return (
     <div className="min-h-screen pb-32">
@@ -180,109 +150,69 @@ const SettingSelectionScreen = ({
           </div>
         </section>
 
-        {/* Part B: Time Selection */}
-        <section className="space-y-4">
+        {/* Part B: Time Selection with Slider */}
+        <section className="space-y-6">
           <h2 className="text-lg font-baloo font-semibold text-center">
             {translations.timeHeader}
           </h2>
 
-          {/* Timeline Carousel */}
-          <div className="relative">
-            {/* Navigation Arrows */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrevTime}
-              disabled={currentTimeIndex === 0}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm rounded-full shadow-md"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNextTime}
-              disabled={currentTimeIndex === timelineTiles.length - 1}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm rounded-full shadow-md"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
+          {/* Selected Time Display */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative w-32 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-primary">
+              <img
+                src={selectedTimeData.image}
+                alt={selectedTimeData.label}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-1 right-1 text-lg">
+                {selectedTimeData.emoji}
+              </div>
+            </div>
+            <span className="font-baloo text-base font-semibold text-primary">
+              {selectedTimeData.label}
+            </span>
+          </div>
 
-            {/* Scrollable Container */}
-            <div
-              ref={scrollContainerRef}
-              className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-10 py-2"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
+          {/* Timeline Slider with Image Markers */}
+          <div className="px-2">
+            {/* Image markers above slider */}
+            <div className="flex justify-between mb-3 px-1">
               {timelineTiles.map((tile, index) => (
                 <button
                   key={tile.type}
-                  onClick={() => handleTimeSelect(tile.type, index)}
+                  onClick={() => setCurrentTimeIndex(index)}
                   className={cn(
-                    "flex-shrink-0 min-w-[120px] snap-center flex flex-col items-center gap-2 p-3 rounded-2xl",
-                    "transition-all duration-300 ease-out",
-                    "hover:scale-105 active:scale-95",
-                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                    selectedTime === tile.type
-                      ? "scale-110 border-2 border-primary bg-primary/5 shadow-lg"
-                      : "border-2 border-transparent opacity-60 hover:opacity-100"
+                    "relative w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden transition-all duration-200",
+                    "hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary",
+                    currentTimeIndex === index
+                      ? "ring-2 ring-primary scale-110 shadow-md"
+                      : "opacity-50 hover:opacity-80"
                   )}
                 >
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden">
-                    <img
-                      src={tile.image}
-                      alt={tile.label}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-1 right-1 text-lg">
-                      {tile.emoji}
-                    </div>
-                    {selectedTime === tile.type && (
-                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <svg
-                            className="w-4 h-4 text-primary-foreground"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <span className={cn(
-                    "font-baloo text-xs md:text-sm text-center font-medium whitespace-nowrap",
-                    selectedTime === tile.type ? "text-primary" : "text-foreground"
-                  )}>
-                    {tile.label}
-                  </span>
+                  <img
+                    src={tile.image}
+                    alt={tile.label}
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Dot Indicators */}
-          <div className="flex justify-center gap-1.5">
-            {timelineTiles.map((tile, index) => (
-              <button
-                key={tile.type}
-                onClick={() => handleTimeSelect(tile.type, index)}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-200",
-                  currentTimeIndex === index
-                    ? "bg-primary w-4"
-                    : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                )}
-              />
-            ))}
+            {/* Slider */}
+            <Slider
+              value={[currentTimeIndex]}
+              onValueChange={handleSliderChange}
+              min={0}
+              max={timelineTiles.length - 1}
+              step={1}
+              className="w-full"
+            />
+
+            {/* Labels for first and last */}
+            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+              <span>{timelineTiles[0].emoji} {timelineTiles[0].label}</span>
+              <span>{timelineTiles[timelineTiles.length - 1].label} {timelineTiles[timelineTiles.length - 1].emoji}</span>
+            </div>
           </div>
         </section>
       </div>
