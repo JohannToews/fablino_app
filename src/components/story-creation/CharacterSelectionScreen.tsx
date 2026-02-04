@@ -90,7 +90,15 @@ const CharacterSelectionScreen = ({
   const handleMainTileClick = (type: CharacterType) => {
     switch (type) {
       case "me":
-        openNameModal("me", translations.me);
+        // Direct selection - name comes from kid profile
+        const meCharacter: SelectedCharacter = {
+          id: `me-${Date.now()}`,
+          type: "me",
+          name: translations.me, // Will be replaced with actual kid name from profile
+          label: translations.me,
+        };
+        setSelectedCharacters((prev) => [...prev, meCharacter]);
+        toast.success(`✓ ${translations.me} ${translations.nameSaved}`);
         break;
       case "family":
         setViewState("family");
@@ -118,7 +126,22 @@ const CharacterSelectionScreen = ({
       opa: translations.opa,
       other: translations.other,
     };
-    openFamilyModal(type, labels[type]);
+    
+    // For mama, papa, oma, opa - direct selection with 1 click
+    if (type !== "other") {
+      const familyCharacter: SelectedCharacter = {
+        id: `${type}-${Date.now()}`,
+        type: type,
+        name: labels[type],
+        label: labels[type],
+      };
+      setSelectedCharacters((prev) => [...prev, familyCharacter]);
+      toast.success(`✓ ${labels[type]} ${translations.nameSaved}`);
+      setViewState("main");
+    } else {
+      // "Other" still opens name modal
+      openFamilyModal(type, labels[type]);
+    }
   };
 
   const handleSaveName = useCallback((name: string) => {
