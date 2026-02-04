@@ -119,29 +119,6 @@ const CreateStoryPage = () => {
     const difficulty = getDifficultyFromSchoolClass(selectedProfile?.school_class || "3");
     const textLanguage = kidAppLanguage.toUpperCase();
 
-    // Load system prompt from app_settings
-    let customSystemPrompt = "";
-    const promptKey = `system_prompt_${kidAppLanguage}`;
-    const { data: promptData } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", promptKey)
-      .maybeSingle();
-    
-    if (promptData?.value) {
-      customSystemPrompt = promptData.value;
-    } else {
-      // Fallback to German
-      const { data: fallbackData } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "system_prompt_de")
-        .maybeSingle();
-      if (fallbackData?.value) {
-        customSystemPrompt = fallbackData.value;
-      }
-    }
-
     toast.info(
       kidAppLanguage === "de" ? "Geschichte wird erstellt... 📚" :
       kidAppLanguage === "fr" ? "Création de l'histoire... 📚" :
@@ -149,16 +126,24 @@ const CreateStoryPage = () => {
     );
 
     try {
+      // Use story settings from wizard if available, otherwise defaults
+      const storyLength = storySettings?.length || "medium";
+      const storyDifficulty = storySettings?.difficulty || difficulty;
+      
       const { data, error } = await supabase.functions.invoke("generate-story", {
         body: {
-          length: "medium",
-          difficulty,
+          length: storyLength,
+          difficulty: storyDifficulty,
           description,
           textType: "non-fiction",
           textLanguage,
-          customSystemPrompt,
           userId: user.id,
-          kidProfileId: selectedProfile?.id,
+          // Modular prompt system: CORE + KINDER-MODUL
+          source: 'kid',
+          isSeries: storySettings?.isSeries || false,
+          storyType: "educational",
+          kidName: selectedProfile?.name,
+          kidHobbies: selectedProfile?.hobbies,
         },
       });
 
@@ -182,6 +167,10 @@ const CreateStoryPage = () => {
       }
 
       if (data?.title && data?.content) {
+        // Use story settings from wizard if available
+        const storyLength = storySettings?.length || "medium";
+        const storyDifficulty = storySettings?.difficulty || difficulty;
+        
         // Save the story to database
         const { data: savedStory, error: saveError } = await supabase
           .from("stories")
@@ -190,7 +179,7 @@ const CreateStoryPage = () => {
             content: data.content,
             cover_image_url: data.coverImageBase64 || null,
             story_images: data.storyImages || null,
-            difficulty,
+            difficulty: storyDifficulty,
             text_type: "non-fiction",
             text_language: textLanguage.toLowerCase(),
             prompt: description,
