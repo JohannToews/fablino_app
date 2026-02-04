@@ -442,14 +442,14 @@ const StorySelectPage = () => {
   );
 };
 
-// Section header labels
-const sectionLabels: Record<string, { toRead: string; completed: string }> = {
-  de: { toRead: "📖 Noch zu lesen", completed: "✅ Bereits gelesen" },
-  fr: { toRead: "📖 À lire", completed: "✅ Déjà lues" },
-  en: { toRead: "📖 To read", completed: "✅ Already read" },
-  es: { toRead: "📖 Por leer", completed: "✅ Ya leídas" },
-  nl: { toRead: "📖 Te lezen", completed: "✅ Al gelezen" },
-  bs: { toRead: "📖 Za čitanje", completed: "✅ Već pročitano" },
+// Sub-tab labels for read/unread
+const subTabLabels: Record<string, { toRead: string; completed: string }> = {
+  de: { toRead: "Noch zu lesen", completed: "Bereits gelesen" },
+  fr: { toRead: "À lire", completed: "Déjà lues" },
+  en: { toRead: "To read", completed: "Already read" },
+  es: { toRead: "Por leer", completed: "Ya leídas" },
+  nl: { toRead: "Te lezen", completed: "Al gelezen" },
+  bs: { toRead: "Za čitanje", completed: "Već pročitano" },
 };
 
 // Single story card component
@@ -464,7 +464,7 @@ const StoryCard = ({
   navigate: (path: string) => void; 
   isCompleted: boolean;
 }) => {
-  const statusLabel = statusLabels[appLang] || statusLabels.fr;
+  const statusLabel = statusLabels[appLang] || statusLabels.de;
   
   return (
     <div
@@ -505,7 +505,7 @@ const StoryCard = ({
                   : 'bg-red-500 hover:bg-red-600'
             } text-white`}
           >
-            {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
+            {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.de[story.difficulty] || story.difficulty}
           </Badge>
         )}
       </div>
@@ -516,7 +516,7 @@ const StoryCard = ({
   );
 };
 
-// Extracted StoryGrid component for reuse - now with separate sections
+// Extracted StoryGrid component with sub-tabs for read/unread
 const StoryGrid = ({ 
   stories, 
   appLang, 
@@ -528,6 +528,12 @@ const StoryGrid = ({
   navigate: (path: string) => void;
   storyStatuses: Map<string, boolean>;
 }) => {
+  const labels = subTabLabels[appLang] || subTabLabels.de;
+  
+  // Separate stories into unread and completed
+  const unreadStories = stories.filter(s => !storyStatuses.get(s.id));
+  const completedStories = stories.filter(s => storyStatuses.get(s.id));
+
   if (stories.length === 0) {
     return (
       <div className="text-center py-12">
@@ -543,21 +549,44 @@ const StoryGrid = ({
     );
   }
 
-  const labels = sectionLabels[appLang] || sectionLabels.de;
-  
-  // Separate stories into unread and completed
-  const unreadStories = stories.filter(s => !storyStatuses.get(s.id));
-  const completedStories = stories.filter(s => storyStatuses.get(s.id));
-
   return (
-    <div className="space-y-8">
-      {/* Unread stories section */}
-      {unreadStories.length > 0 && (
-        <div>
-          <h3 className="text-xl font-baloo font-bold text-foreground mb-4 flex items-center gap-2">
-            {labels.toRead}
-            <span className="text-sm font-normal text-muted-foreground">({unreadStories.length})</span>
-          </h3>
+    <Tabs defaultValue="unread" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-6 h-12 bg-muted/50 rounded-xl p-1">
+        <TabsTrigger 
+          value="unread" 
+          className="flex items-center gap-2 text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+        >
+          <BookOpen className="h-4 w-4" />
+          {labels.toRead}
+          <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {unreadStories.length}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger 
+          value="completed" 
+          className="flex items-center gap-2 text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          {labels.completed}
+          <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {completedStories.length}
+          </span>
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="unread">
+        {unreadStories.length === 0 ? (
+          <div className="text-center py-12 bg-card/50 rounded-xl">
+            <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
+            <p className="text-lg text-muted-foreground">
+              {appLang === 'de' ? 'Alle Geschichten gelesen! 🎉' :
+               appLang === 'fr' ? 'Toutes les histoires lues! 🎉' :
+               appLang === 'es' ? '¡Todas las historias leídas! 🎉' :
+               appLang === 'nl' ? 'Alle verhalen gelezen! 🎉' :
+               'All stories read! 🎉'}
+            </p>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {unreadStories.map((story) => (
               <StoryCard 
@@ -569,17 +598,23 @@ const StoryGrid = ({
               />
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </TabsContent>
 
-      {/* Completed stories section */}
-      {completedStories.length > 0 && (
-        <div>
-          <h3 className="text-xl font-baloo font-bold text-muted-foreground mb-4 flex items-center gap-2">
-            {labels.completed}
-            <span className="text-sm font-normal">({completedStories.length})</span>
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80">
+      <TabsContent value="completed">
+        {completedStories.length === 0 ? (
+          <div className="text-center py-12 bg-card/50 rounded-xl">
+            <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-lg text-muted-foreground">
+              {appLang === 'de' ? 'Noch keine Geschichten gelesen' :
+               appLang === 'fr' ? 'Aucune histoire lue' :
+               appLang === 'es' ? 'Ninguna historia leída' :
+               appLang === 'nl' ? 'Nog geen verhalen gelezen' :
+               'No stories read yet'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {completedStories.map((story) => (
               <StoryCard 
                 key={story.id} 
@@ -590,23 +625,9 @@ const StoryGrid = ({
               />
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Empty state for unread (all completed) */}
-      {unreadStories.length === 0 && completedStories.length > 0 && (
-        <div className="text-center py-6 bg-card/50 rounded-xl">
-          <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
-          <p className="text-muted-foreground">
-            {appLang === 'de' ? 'Alle Geschichten gelesen! 🎉' :
-             appLang === 'fr' ? 'Toutes les histoires lues! 🎉' :
-             appLang === 'es' ? '¡Todas las historias leídas! 🎉' :
-             appLang === 'nl' ? 'Alle verhalen gelezen! 🎉' :
-             'All stories read! 🎉'}
-          </p>
-        </div>
-      )}
-    </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 };
 
