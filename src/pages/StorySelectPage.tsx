@@ -442,7 +442,81 @@ const StorySelectPage = () => {
   );
 };
 
-// Extracted StoryGrid component for reuse
+// Section header labels
+const sectionLabels: Record<string, { toRead: string; completed: string }> = {
+  de: { toRead: "📖 Noch zu lesen", completed: "✅ Bereits gelesen" },
+  fr: { toRead: "📖 À lire", completed: "✅ Déjà lues" },
+  en: { toRead: "📖 To read", completed: "✅ Already read" },
+  es: { toRead: "📖 Por leer", completed: "✅ Ya leídas" },
+  nl: { toRead: "📖 Te lezen", completed: "✅ Al gelezen" },
+  bs: { toRead: "📖 Za čitanje", completed: "✅ Već pročitano" },
+};
+
+// Single story card component
+const StoryCard = ({ 
+  story, 
+  appLang, 
+  navigate, 
+  isCompleted 
+}: { 
+  story: Story; 
+  appLang: string; 
+  navigate: (path: string) => void; 
+  isCompleted: boolean;
+}) => {
+  const statusLabel = statusLabels[appLang] || statusLabels.fr;
+  
+  return (
+    <div
+      onClick={() => navigate(`/read/${story.id}`)}
+      className="card-story group"
+    >
+      <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
+        {story.cover_image_url ? (
+          <img
+            src={story.cover_image_url}
+            alt={story.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
+            <BookOpen className="h-16 w-16 text-primary/50" />
+          </div>
+        )}
+        {/* Status badge */}
+        <Badge 
+          className={`absolute top-2 left-2 text-xs font-bold flex items-center gap-1 ${
+            isCompleted 
+              ? 'bg-green-500 hover:bg-green-600 text-white' 
+              : 'bg-amber-500 hover:bg-amber-600 text-white'
+          }`}
+        >
+          {isCompleted && <CheckCircle2 className="h-3 w-3" />}
+          {isCompleted ? statusLabel.completed : statusLabel.toRead}
+        </Badge>
+        {/* Difficulty badge */}
+        {story.difficulty && (
+          <Badge 
+            className={`absolute top-2 right-2 text-xs font-bold ${
+              story.difficulty === 'easy' 
+                ? 'bg-green-500 hover:bg-green-600' 
+                : story.difficulty === 'medium' 
+                  ? 'bg-amber-500 hover:bg-amber-600' 
+                  : 'bg-red-500 hover:bg-red-600'
+            } text-white`}
+          >
+            {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
+          </Badge>
+        )}
+      </div>
+      <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
+        {story.title}
+      </h3>
+    </div>
+  );
+};
+
+// Extracted StoryGrid component for reuse - now with separate sections
 const StoryGrid = ({ 
   stories, 
   appLang, 
@@ -469,63 +543,69 @@ const StoryGrid = ({
     );
   }
 
-  const statusLabel = statusLabels[appLang] || statusLabels.fr;
+  const labels = sectionLabels[appLang] || sectionLabels.de;
+  
+  // Separate stories into unread and completed
+  const unreadStories = stories.filter(s => !storyStatuses.get(s.id));
+  const completedStories = stories.filter(s => storyStatuses.get(s.id));
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {stories.map((story) => {
-        const isCompleted = storyStatuses.get(story.id) || false;
-        
-        return (
-          <div
-            key={story.id}
-            onClick={() => navigate(`/read/${story.id}`)}
-            className="card-story group"
-          >
-            <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
-              {story.cover_image_url ? (
-                <img
-                  src={story.cover_image_url}
-                  alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sunshine-light to-cotton-candy">
-                  <BookOpen className="h-16 w-16 text-primary/50" />
-                </div>
-              )}
-              {/* Status badge */}
-              <Badge 
-                className={`absolute top-2 left-2 text-xs font-bold flex items-center gap-1 ${
-                  isCompleted 
-                    ? 'bg-green-500 hover:bg-green-600 text-white' 
-                    : 'bg-amber-500 hover:bg-amber-600 text-white'
-                }`}
-              >
-                {isCompleted && <CheckCircle2 className="h-3 w-3" />}
-                {isCompleted ? statusLabel.completed : statusLabel.toRead}
-              </Badge>
-              {/* Difficulty badge */}
-              {story.difficulty && (
-                <Badge 
-                  className={`absolute top-2 right-2 text-xs font-bold ${
-                    story.difficulty === 'easy' 
-                      ? 'bg-green-500 hover:bg-green-600' 
-                      : story.difficulty === 'medium' 
-                        ? 'bg-amber-500 hover:bg-amber-600' 
-                        : 'bg-red-500 hover:bg-red-600'
-                  } text-white`}
-                >
-                  {difficultyLabels[appLang]?.[story.difficulty] || difficultyLabels.fr[story.difficulty] || story.difficulty}
-                </Badge>
-              )}
-            </div>
-            <h3 className="font-baloo text-xl font-bold text-center group-hover:text-primary transition-colors">
-              {story.title}
-            </h3>
+    <div className="space-y-8">
+      {/* Unread stories section */}
+      {unreadStories.length > 0 && (
+        <div>
+          <h3 className="text-xl font-baloo font-bold text-foreground mb-4 flex items-center gap-2">
+            {labels.toRead}
+            <span className="text-sm font-normal text-muted-foreground">({unreadStories.length})</span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {unreadStories.map((story) => (
+              <StoryCard 
+                key={story.id} 
+                story={story} 
+                appLang={appLang} 
+                navigate={navigate} 
+                isCompleted={false} 
+              />
+            ))}
           </div>
-        );
-      })}
+        </div>
+      )}
+
+      {/* Completed stories section */}
+      {completedStories.length > 0 && (
+        <div>
+          <h3 className="text-xl font-baloo font-bold text-muted-foreground mb-4 flex items-center gap-2">
+            {labels.completed}
+            <span className="text-sm font-normal">({completedStories.length})</span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80">
+            {completedStories.map((story) => (
+              <StoryCard 
+                key={story.id} 
+                story={story} 
+                appLang={appLang} 
+                navigate={navigate} 
+                isCompleted={true} 
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state for unread (all completed) */}
+      {unreadStories.length === 0 && completedStories.length > 0 && (
+        <div className="text-center py-6 bg-card/50 rounded-xl">
+          <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
+          <p className="text-muted-foreground">
+            {appLang === 'de' ? 'Alle Geschichten gelesen! 🎉' :
+             appLang === 'fr' ? 'Toutes les histoires lues! 🎉' :
+             appLang === 'es' ? '¡Todas las historias leídas! 🎉' :
+             appLang === 'nl' ? 'Alle verhalen gelezen! 🎉' :
+             'All stories read! 🎉'}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
