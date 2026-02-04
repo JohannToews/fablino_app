@@ -192,7 +192,7 @@ const CreateStoryPage = () => {
             prompt: description,
             user_id: user.id,
             kid_profile_id: selectedProfile?.id,
-            generation_status: "completed",
+            generation_status: "verified",
           })
           .select()
           .single();
