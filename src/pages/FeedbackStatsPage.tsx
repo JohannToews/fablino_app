@@ -15,6 +15,8 @@ import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Fi
 import { format } from "date-fns";
 import { Language } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 interface StoryRating {
   id: string;
   story_title: string;
@@ -492,6 +494,11 @@ const FeedbackStatsPage = () => {
 
   // Detail dialog state
   const [selectedRating, setSelectedRating] = useState<StoryRating | null>(null);
+  
+  // Selection states for deletion
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<string>>(new Set());
+  const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
+  
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
 
@@ -736,6 +743,49 @@ const FeedbackStatsPage = () => {
       ))}
     </div>
   );
+
+  // Feedback selection handlers
+  const toggleFeedbackSelection = (id: string) => {
+    setSelectedFeedbackIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllFeedback = () => {
+    if (selectedFeedbackIds.size === filteredRatings.length) {
+      setSelectedFeedbackIds(new Set());
+    } else {
+      setSelectedFeedbackIds(new Set(filteredRatings.map(r => r.id)));
+    }
+  };
+
+  const deleteSelectedFeedback = async () => {
+    if (selectedFeedbackIds.size === 0) return;
+    
+    setIsDeletingFeedback(true);
+    try {
+      const { error } = await supabase
+        .from("story_ratings")
+        .delete()
+        .in("id", Array.from(selectedFeedbackIds));
+      
+      if (error) throw error;
+      
+      setRatings(prev => prev.filter(r => !selectedFeedbackIds.has(r.id)));
+      setSelectedFeedbackIds(new Set());
+      toast.success(adminLang === 'de' ? 'Feedback gelöscht' : adminLang === 'fr' ? 'Feedback supprimé' : 'Feedback deleted');
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+      toast.error(adminLang === 'de' ? 'Fehler beim Löschen' : adminLang === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting');
+    }
+    setIsDeletingFeedback(false);
+  };
 
   const storiesRead = stories.filter(s => s.is_read).length;
 
@@ -1084,12 +1134,31 @@ const FeedbackStatsPage = () => {
 
           {/* Feedback Tab */}
           <TabsContent value="feedback">
-            {/* Filters */}
+            {/* Filters and Actions */}
             <Card className="mb-4">
               <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Filter</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filter</span>
+                  </div>
+                  {selectedFeedbackIds.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={deleteSelectedFeedback}
+                      disabled={isDeletingFeedback}
+                    >
+                      {isDeletingFeedback ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1" />
+                      )}
+                      {adminLang === 'de' ? `${selectedFeedbackIds.size} löschen` : 
+                       adminLang === 'fr' ? `Supprimer ${selectedFeedbackIds.size}` : 
+                       `Delete ${selectedFeedbackIds.size}`}
+                    </Button>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Select value={filterFeedbackKid} onValueChange={setFilterFeedbackKid}>
@@ -1131,6 +1200,12 @@ const FeedbackStatsPage = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-10">
+                            <Checkbox
+                              checked={filteredRatings.length > 0 && selectedFeedbackIds.size === filteredRatings.length}
+                              onCheckedChange={toggleAllFeedback}
+                            />
+                          </TableHead>
                           <TableHead>{t.date}</TableHead>
                           <TableHead>{t.child}</TableHead>
                           <TableHead>{t.storyTitle}</TableHead>
@@ -1141,7 +1216,13 @@ const FeedbackStatsPage = () => {
                       </TableHeader>
                       <TableBody>
                         {filteredRatings.map((rating) => (
-                          <TableRow key={rating.id}>
+                          <TableRow key={rating.id} className={selectedFeedbackIds.has(rating.id) ? "bg-muted/50" : ""}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedFeedbackIds.has(rating.id)}
+                                onCheckedChange={() => toggleFeedbackSelection(rating.id)}
+                              />
+                            </TableCell>
                             <TableCell className="whitespace-nowrap">
                               {format(new Date(rating.created_at), "dd.MM.yyyy HH:mm")}
                             </TableCell>

@@ -5,9 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Check, Eye } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, RefreshCw, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Check, Eye, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Language, useTranslations } from "@/lib/translations";
+import { toast } from "sonner";
 
 interface ConsistencyCheckResult {
   id: string;
@@ -36,6 +38,8 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
   const [users, setUsers] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -108,6 +112,49 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
   const checksWithIssues = results.filter(r => r.issues_found > 0).length;
   const correctionRate = totalIssuesFound > 0 ? Math.round((totalIssuesCorrected / totalIssuesFound) * 100) : 100;
 
+  // Selection handlers
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === results.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(results.map(r => r.id)));
+    }
+  };
+
+  const deleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("consistency_check_results")
+        .delete()
+        .in("id", Array.from(selectedIds));
+      
+      if (error) throw error;
+      
+      setResults(prev => prev.filter(r => !selectedIds.has(r.id)));
+      setSelectedIds(new Set());
+      toast.success(language === 'de' ? 'Einträge gelöscht' : language === 'fr' ? 'Entrées supprimées' : 'Entries deleted');
+    } catch (error) {
+      console.error("Error deleting consistency checks:", error);
+      toast.error(language === 'de' ? 'Fehler beim Löschen' : language === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting');
+    }
+    setIsDeleting(false);
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-2 border-green-500/30">
@@ -131,7 +178,25 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0">
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center">
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={deleteSelected}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-1" />
+                  )}
+                  {language === 'de' ? `${selectedIds.size} löschen` : 
+                   language === 'fr' ? `Supprimer ${selectedIds.size}` : 
+                   `Delete ${selectedIds.size}`}
+                </Button>
+              )}
+              <div className="flex-1" />
               <Button
                 variant="outline"
                 size="sm"
@@ -195,6 +260,12 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
                 <Table>
                   <TableHeader className="sticky top-0 bg-background">
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={results.length > 0 && selectedIds.size === results.length}
+                          onCheckedChange={toggleAll}
+                        />
+                      </TableHead>
                       <TableHead>{language === 'de' ? 'Datum' : language === 'fr' ? 'Date' : 'Date'}</TableHead>
                       <TableHead>{language === 'de' ? 'Benutzer' : language === 'fr' ? 'Utilisateur' : 'User'}</TableHead>
                       <TableHead>{language === 'de' ? 'Story-Titel' : language === 'fr' ? 'Titre' : 'Story Title'}</TableHead>
@@ -211,7 +282,13 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
                   </TableHeader>
                   <TableBody>
                     {results.map((result) => (
-                      <TableRow key={result.id}>
+                      <TableRow key={result.id} className={selectedIds.has(result.id) ? "bg-muted/50" : ""}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(result.id)}
+                            onCheckedChange={() => toggleSelection(result.id)}
+                          />
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatDate(result.created_at)}
                         </TableCell>
