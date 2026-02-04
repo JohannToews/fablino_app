@@ -963,6 +963,7 @@ const ReadingPage = () => {
                         text={word}
                         dataPosition={positionKey}
                         className={markingClass}
+                        language={textLang}
                       />
                     ) : (
                       <span 
@@ -982,6 +983,7 @@ const ReadingPage = () => {
                       dataPosition={positionKey}
                       onClick={(e) => handleWordClick(word, e)}
                       className={`word-highlight ${markingClass}`}
+                      language={textLang}
                     />
                   ) : (
                     <span
