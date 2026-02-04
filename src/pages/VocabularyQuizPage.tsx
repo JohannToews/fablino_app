@@ -297,6 +297,7 @@ const VocabularyQuizPage = () => {
   const [quizStarted, setQuizStarted] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
   const [quizPointValue, setQuizPointValue] = useState(2);
+  const [preGeneratedQuestions, setPreGeneratedQuestions] = useState<QuizQuestion[]>([]);
   const [scoreAnimation, setScoreAnimation] = useState(false);
 
   // Get translations based on kid's school system language
@@ -437,12 +438,10 @@ const VocabularyQuizPage = () => {
     setIsLoading(false);
   };
 
-  const generateQuizQuestion = async (word: QuizWord, retryCount = 0) => {
-    setIsGeneratingQuiz(true);
-    
-    // Get the story's text_language
+  // Generate a single quiz question (returns the question object)
+  const generateSingleQuestion = async (word: QuizWord): Promise<QuizQuestion> => {
     const wordLanguage = word.text_language || 'fr';
-
+    
     try {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
         body: { 
@@ -452,17 +451,8 @@ const VocabularyQuizPage = () => {
         },
       });
 
-      if (error) {
-        console.error("Quiz generation error:", error);
-        
-        // If rate limited, wait and retry up to 2 times
-        if (error.message?.includes("429") && retryCount < 2) {
-          toast.info("Chargement... un moment s'il te plaît");
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return generateQuizQuestion(word, retryCount + 1);
-        }
-        
-        // Use fallback options
+      if (error || !data?.wrongOptions) {
+        // Return fallback question
         const fallbackOptions = [
           word.explanation,
           "Un animal mignon",
@@ -470,54 +460,26 @@ const VocabularyQuizPage = () => {
           "Quelque chose de grand"
         ].sort(() => Math.random() - 0.5);
         
-        setCurrentQuestion({
+        return {
           wordId: word.id,
           word: word.word,
           correctAnswer: word.explanation,
           options: fallbackOptions,
-        });
-        setIsGeneratingQuiz(false);
-        return;
+        };
       }
 
-      if (data?.wrongOptions) {
-        // Check if using fallback
-        if (data.fallback) {
-          toast.info("Mode simplifié activé");
-        }
-        
-        // Use infinitive form if returned by the API, otherwise use original word
-        const displayWord = data.infinitive || word.word;
-        
-        // Shuffle options
-        const allOptions = [word.explanation, ...data.wrongOptions];
-        const shuffled = allOptions.sort(() => Math.random() - 0.5);
-        
-        setCurrentQuestion({
-          wordId: word.id,
-          word: displayWord,
-          correctAnswer: word.explanation,
-          options: shuffled,
-        });
-      } else {
-        // Fallback with simple wrong options
-        const fallbackOptions = [
-          word.explanation,
-          "Un animal mignon",
-          "Une couleur belle",
-          "Quelque chose de grand"
-        ].sort(() => Math.random() - 0.5);
-        
-        setCurrentQuestion({
-          wordId: word.id,
-          word: word.word,
-          correctAnswer: word.explanation,
-          options: fallbackOptions,
-        });
-      }
+      const displayWord = data.infinitive || word.word;
+      const allOptions = [word.explanation, ...data.wrongOptions];
+      const shuffled = allOptions.sort(() => Math.random() - 0.5);
+      
+      return {
+        wordId: word.id,
+        word: displayWord,
+        correctAnswer: word.explanation,
+        options: shuffled,
+      };
     } catch (err) {
       console.error("Error generating quiz:", err);
-      // Use fallback on any error
       const fallbackOptions = [
         word.explanation,
         "Un animal mignon",
@@ -525,35 +487,40 @@ const VocabularyQuizPage = () => {
         "Quelque chose de grand"
       ].sort(() => Math.random() - 0.5);
       
-      setCurrentQuestion({
+      return {
         wordId: word.id,
         word: word.word,
         correctAnswer: word.explanation,
         options: fallbackOptions,
-      });
+      };
     }
-
-    setIsGeneratingQuiz(false);
   };
 
-  const startQuiz = () => {
+  const startQuiz = async () => {
     if (words.length === 0) return;
     
-    // Use all available words
-    const actualQuestionCount = words.length;
+    setIsGeneratingQuiz(true);
+    setQuizStarted(true);
     
+    // Shuffle words and use all of them
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+    setQuizWords(shuffled);
+    
+    const actualQuestionCount = shuffled.length;
     setTotalQuestions(actualQuestionCount);
     setQuestionIndex(0);
     setScore(0);
     setQuizComplete(false);
     setSelectedAnswer(null);
     setIsCorrect(null);
-    setQuizStarted(true);
     
-    // Shuffle words and use all of them
-    const shuffled = [...words].sort(() => Math.random() - 0.5);
-    setQuizWords(shuffled);
-    generateQuizQuestion(shuffled[0]);
+    // Generate ALL questions in parallel (much faster!)
+    const questionPromises = shuffled.map(word => generateSingleQuestion(word));
+    const generatedQuestions = await Promise.all(questionPromises);
+    
+    setPreGeneratedQuestions(generatedQuestions);
+    setCurrentQuestion(generatedQuestions[0]);
+    setIsGeneratingQuiz(false);
   };
 
   const updateWordQuizHistory = async (wordId: string, isCorrectAnswer: boolean) => {
@@ -598,7 +565,7 @@ const VocabularyQuizPage = () => {
   const nextQuestion = async () => {
     const nextIndex = questionIndex + 1;
     
-    if (nextIndex >= totalQuestions || nextIndex >= quizWords.length) {
+    if (nextIndex >= totalQuestions || nextIndex >= preGeneratedQuestions.length) {
       setQuizComplete(true);
       // Save result if passed
       if (score >= getPassThreshold()) {
@@ -624,7 +591,8 @@ const VocabularyQuizPage = () => {
     setQuestionIndex(nextIndex);
     setSelectedAnswer(null);
     setIsCorrect(null);
-    generateQuizQuestion(quizWords[nextIndex]);
+    // Use pre-generated question (instant!)
+    setCurrentQuestion(preGeneratedQuestions[nextIndex]);
   };
 
   const getPassThreshold = () => {
@@ -639,6 +607,7 @@ const VocabularyQuizPage = () => {
     setQuizStarted(false);
     setCurrentQuestion(null);
     setQuizComplete(false);
+    setPreGeneratedQuestions([]);
     loadWordsAndStories(); // Reload words to get updated learned status
   };
 
