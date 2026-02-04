@@ -76,9 +76,22 @@ const StoryTypeSelectionScreen = ({
   };
 
   const handleTopicClick = (topic: EducationalTopic) => {
+    if (selectedTopic === topic) {
+      // Deselect if clicking same topic
+      return;
+    }
     setSelectedTopic(topic);
-    if (topic !== "other") {
-      setCustomTopic("");
+    setCustomTopic("");
+  };
+
+  const getTopicPlaceholder = (topic: EducationalTopic): string => {
+    switch (topic) {
+      case "nature": return translations.placeholderNature;
+      case "monuments": return translations.placeholderMonuments;
+      case "countries": return translations.placeholderCountries;
+      case "science": return translations.placeholderScience;
+      case "other": return translations.placeholderOther;
+      default: return "";
     }
   };
 
@@ -87,7 +100,8 @@ const StoryTypeSelectionScreen = ({
     
     if (selectedType === "educational") {
       if (!selectedTopic) return;
-      onComplete(selectedType, undefined, selectedTopic, selectedTopic === "other" ? customTopic : undefined);
+      // Pass customTopic for any topic (optional for most, required for "other")
+      onComplete(selectedType, undefined, selectedTopic, customTopic.trim() || undefined);
     } else if (selectedType === "funny") {
       onComplete(selectedType, humorLevel);
     } else {
@@ -215,17 +229,20 @@ const StoryTypeSelectionScreen = ({
               ))}
             </div>
 
-            {/* Custom Topic Input (appears when "other" is selected) */}
-            {selectedTopic === "other" && (
+            {/* Custom Topic Input (appears when any topic is selected) */}
+            {selectedTopic && (
               <div className="animate-fade-in bg-card rounded-2xl p-6 border-2 border-primary/20 space-y-4">
                 <h3 className="text-lg font-baloo font-semibold text-center">
-                  {translations.other}
+                  {selectedTopic === "other" 
+                    ? translations.other 
+                    : translations.specifyTopic}
                 </h3>
                 <Input
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
-                  placeholder="z.B. Dinosaurier, Raumfahrt, Musik..."
+                  placeholder={getTopicPlaceholder(selectedTopic)}
                   className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
+                  maxLength={100}
                 />
               </div>
             )}

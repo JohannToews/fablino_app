@@ -282,6 +282,12 @@ export interface StoryTypeSelectionTranslations {
   countriesCities: string;
   science: string;
   other: string;
+  specifyTopic: string;
+  placeholderNature: string;
+  placeholderMonuments: string;
+  placeholderCountries: string;
+  placeholderScience: string;
+  placeholderOther: string;
 }
 
 export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelectionTranslations> = {
@@ -306,6 +312,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Länder & Städte",
     science: "Wissenschaft",
     other: "Anderes Thema",
+    specifyTopic: "Was genau interessiert dich?",
+    placeholderNature: "z.B. Dinosaurier, Delfine, Regenwald...",
+    placeholderMonuments: "z.B. Pyramiden, Eiffelturm, Kolosseum...",
+    placeholderCountries: "z.B. Japan, Brasilien, Australien...",
+    placeholderScience: "z.B. Planeten, Vulkane, Roboter...",
+    placeholderOther: "z.B. Musik, Sport, Kochen...",
   },
   fr: {
     header: "Quel type d'histoire veux-tu?",
@@ -328,6 +340,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Pays & Villes",
     science: "Science",
     other: "Autre sujet",
+    specifyTopic: "Qu'est-ce qui t'intéresse exactement?",
+    placeholderNature: "ex. Dinosaures, Dauphins, Forêt tropicale...",
+    placeholderMonuments: "ex. Pyramides, Tour Eiffel, Colisée...",
+    placeholderCountries: "ex. Japon, Brésil, Australie...",
+    placeholderScience: "ex. Planètes, Volcans, Robots...",
+    placeholderOther: "ex. Musique, Sport, Cuisine...",
   },
   en: {
     header: "What kind of story do you want?",
@@ -350,6 +368,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Countries & Cities",
     science: "Science",
     other: "Other topic",
+    specifyTopic: "What exactly interests you?",
+    placeholderNature: "e.g. Dinosaurs, Dolphins, Rainforest...",
+    placeholderMonuments: "e.g. Pyramids, Eiffel Tower, Colosseum...",
+    placeholderCountries: "e.g. Japan, Brazil, Australia...",
+    placeholderScience: "e.g. Planets, Volcanoes, Robots...",
+    placeholderOther: "e.g. Music, Sports, Cooking...",
   },
   es: {
     header: "¿Qué tipo de historia quieres?",
@@ -372,6 +396,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Países & Ciudades",
     science: "Ciencia",
     other: "Otro tema",
+    specifyTopic: "¿Qué te interesa exactamente?",
+    placeholderNature: "ej. Dinosaurios, Delfines, Selva...",
+    placeholderMonuments: "ej. Pirámides, Torre Eiffel, Coliseo...",
+    placeholderCountries: "ej. Japón, Brasil, Australia...",
+    placeholderScience: "ej. Planetas, Volcanes, Robots...",
+    placeholderOther: "ej. Música, Deporte, Cocina...",
   },
   nl: {
     header: "Wat voor verhaal wil je?",
@@ -394,6 +424,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Landen & Steden",
     science: "Wetenschap",
     other: "Ander onderwerp",
+    specifyTopic: "Wat interesseert je precies?",
+    placeholderNature: "bijv. Dinosaurussen, Dolfijnen, Regenwoud...",
+    placeholderMonuments: "bijv. Piramides, Eiffeltoren, Colosseum...",
+    placeholderCountries: "bijv. Japan, Brazilië, Australië...",
+    placeholderScience: "bijv. Planeten, Vulkanen, Robots...",
+    placeholderOther: "bijv. Muziek, Sport, Koken...",
   },
   it: {
     header: "Che tipo di storia vuoi?",
@@ -416,6 +452,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Paesi & Città",
     science: "Scienza",
     other: "Altro argomento",
+    specifyTopic: "Cosa ti interessa esattamente?",
+    placeholderNature: "es. Dinosauri, Delfini, Foresta pluviale...",
+    placeholderMonuments: "es. Piramidi, Torre Eiffel, Colosseo...",
+    placeholderCountries: "es. Giappone, Brasile, Australia...",
+    placeholderScience: "es. Pianeti, Vulcani, Robot...",
+    placeholderOther: "es. Musica, Sport, Cucina...",
   },
   bs: {
     header: "Kakvu priču želiš?",
@@ -438,6 +480,12 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     countriesCities: "Zemlje & Gradovi",
     science: "Nauka",
     other: "Druga tema",
+    specifyTopic: "Šta te tačno zanima?",
+    placeholderNature: "npr. Dinosauri, Delfini, Prašuma...",
+    placeholderMonuments: "npr. Piramide, Eiffelov toranj, Koloseum...",
+    placeholderCountries: "npr. Japan, Brazil, Australija...",
+    placeholderScience: "npr. Planete, Vulkani, Roboti...",
+    placeholderOther: "npr. Muzika, Sport, Kuhanje...",
   },
 };
 
