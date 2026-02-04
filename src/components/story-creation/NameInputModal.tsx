@@ -28,6 +28,7 @@ const NameInputModal = ({
 }: NameInputModalProps) => {
   const [name, setName] = useState(existingName);
   const inputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -35,9 +36,18 @@ const NameInputModal = ({
       // Auto-focus after a small delay for animation
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 100);
+      }, 150);
     }
   }, [open, existingName]);
+
+  const handleInputFocus = () => {
+    // Scroll the modal into view when keyboard appears
+    setTimeout(() => {
+      contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Also ensure the input itself is visible
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  };
 
   const handleSave = () => {
     if (name.trim()) {
@@ -54,20 +64,27 @@ const NameInputModal = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="w-[80vw] max-w-[400px] rounded-2xl">
+      <DialogContent 
+        ref={contentRef}
+        className="w-[85vw] max-w-[400px] rounded-2xl top-[15%] translate-y-0 data-[state=open]:slide-in-from-top-[10%]"
+      >
         <DialogHeader>
-          <DialogTitle className="text-xl font-baloo text-center">
+          <DialogTitle className="text-lg md:text-xl font-baloo text-center">
             {translations.nameModalTitle} {characterLabel}?
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-2">
           <Input
             ref={inputRef}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={handleInputFocus}
             placeholder="Name..."
+            enterKeyHint="done"
+            autoComplete="off"
+            autoCorrect="off"
             className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
           />
 

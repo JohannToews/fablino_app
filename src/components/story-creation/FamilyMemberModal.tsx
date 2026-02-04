@@ -8,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CharacterSelectionTranslations, FamilyMember } from "./types";
-import { cn } from "@/lib/utils";
 
 interface FamilyMemberModalProps {
   open: boolean;
@@ -30,6 +29,7 @@ const FamilyMemberModal = ({
   const [useCustomName, setUseCustomName] = useState(false);
   const [customName, setCustomName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -40,9 +40,17 @@ const FamilyMemberModal = ({
 
   useEffect(() => {
     if (useCustomName) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [useCustomName]);
+
+  const handleInputFocus = () => {
+    // Scroll the modal into view when keyboard appears
+    setTimeout(() => {
+      contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  };
 
   const handleSaveDefault = () => {
     onSave(defaultLabel, true);
@@ -64,20 +72,23 @@ const FamilyMemberModal = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="w-[85vw] max-w-[400px] rounded-2xl">
+      <DialogContent 
+        ref={contentRef}
+        className="w-[85vw] max-w-[400px] rounded-2xl top-[15%] translate-y-0 data-[state=open]:slide-in-from-top-[10%]"
+      >
         <DialogHeader>
-          <DialogTitle className="text-xl font-baloo text-center">
+          <DialogTitle className="text-lg md:text-xl font-baloo text-center">
             {defaultLabel}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2">
           {!useCustomName ? (
             <>
               {/* Option 1: Use default name */}
               <Button
                 onClick={handleSaveDefault}
-                className="w-full h-14 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground font-baloo text-lg"
+                className="w-full h-14 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground font-baloo text-base md:text-lg"
               >
                 {translations.useDefaultName} "{defaultLabel}" {translations.save.toLowerCase()}
               </Button>
@@ -86,7 +97,7 @@ const FamilyMemberModal = ({
               <Button
                 variant="outline"
                 onClick={() => setUseCustomName(true)}
-                className="w-full h-14 rounded-xl border-2 border-dashed text-base"
+                className="w-full h-14 rounded-xl border-2 border-dashed text-sm md:text-base"
               >
                 ✏️ {translations.enterCustomName}
               </Button>
@@ -107,7 +118,11 @@ const FamilyMemberModal = ({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={handleInputFocus}
                 placeholder={`${translations.nameModalTitle} ${defaultLabel}?`}
+                enterKeyHint="done"
+                autoComplete="off"
+                autoCorrect="off"
                 className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
               />
 
