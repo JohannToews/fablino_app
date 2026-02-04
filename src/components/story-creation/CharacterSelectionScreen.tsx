@@ -127,17 +127,25 @@ const CharacterSelectionScreen = ({
       other: translations.other,
     };
     
-    // For mama, papa, oma, opa - direct selection with 1 click
+    // For mama, papa, oma, opa - toggle selection (multi-select)
     if (type !== "other") {
-      const familyCharacter: SelectedCharacter = {
-        id: `${type}-${Date.now()}`,
-        type: type,
-        name: labels[type],
-        label: labels[type],
-      };
-      setSelectedCharacters((prev) => [...prev, familyCharacter]);
-      toast.success(`✓ ${labels[type]} ${translations.nameSaved}`);
-      setViewState("main");
+      const existingIndex = selectedCharacters.findIndex((c) => c.type === type);
+      
+      if (existingIndex >= 0) {
+        // Already selected - remove it
+        setSelectedCharacters((prev) => prev.filter((c) => c.type !== type));
+      } else {
+        // Not selected - add it
+        const familyCharacter: SelectedCharacter = {
+          id: `${type}-${Date.now()}`,
+          type: type,
+          name: labels[type],
+          label: labels[type],
+        };
+        setSelectedCharacters((prev) => [...prev, familyCharacter]);
+        toast.success(`✓ ${labels[type]} ${translations.nameSaved}`);
+      }
+      // Stay in family view for multi-select
     } else {
       // "Other" still opens name modal
       openFamilyModal(type, labels[type]);
