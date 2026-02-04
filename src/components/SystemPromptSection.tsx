@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Save, Loader2, FileText, RefreshCw, BookOpen, HelpCircle, ChevronDown, ChevronRight, CheckCircle } from "lucide-react";
+import { Save, Loader2, FileText, RefreshCw, BookOpen, HelpCircle, ChevronDown, ChevronRight, CheckCircle, Wand2 } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface SystemPromptSectionProps {
@@ -44,16 +44,19 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [continuationPrompt, setContinuationPrompt] = useState("");
   const [wordExplanationPrompt, setWordExplanationPrompt] = useState("");
   const [consistencyCheckPrompt, setConsistencyCheckPrompt] = useState("");
+  const [storyCreationPrompt, setStoryCreationPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
   const [isSavingWordExplanation, setIsSavingWordExplanation] = useState(false);
   const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
+  const [isSavingStoryCreation, setIsSavingStoryCreation] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     system: false,
     continuation: false,
     wordExplanation: false,
     consistencyCheck: false,
+    storyCreation: false,
   });
 
   useEffect(() => {
@@ -66,13 +69,15 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const continuationKey = `system_prompt_continuation_${language}`;
     const wordExplanationKey = `system_prompt_word_explanation_${language}`;
     const consistencyCheckKey = `system_prompt_consistency_check_${language}`;
+    const storyCreationKey = `system_prompt_story_creation_${language}`;
     
     // Load all prompts in parallel
-    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult] = await Promise.all([
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, storyCreationResult] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", consistencyCheckKey).maybeSingle()
+      supabase.from("app_settings").select("value").eq("key", consistencyCheckKey).maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", storyCreationKey).maybeSingle()
     ]);
 
     if (promptResult.data && !promptResult.error) {
@@ -103,6 +108,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
     if (consistencyCheckResult.data && !consistencyCheckResult.error) {
       setConsistencyCheckPrompt(consistencyCheckResult.data.value);
+    }
+
+    if (storyCreationResult.data && !storyCreationResult.error) {
+      setStoryCreationPrompt(storyCreationResult.data.value);
     }
     
     setIsLoading(false);
@@ -237,6 +246,39 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                   "Error saving");
     } finally {
       setIsSavingConsistencyCheck(false);
+    }
+  };
+
+  const saveStoryCreationPrompt = async () => {
+    setIsSavingStoryCreation(true);
+    const promptKey = `system_prompt_story_creation_${language}`;
+    
+    try {
+      const { error } = await supabase.functions.invoke("manage-users", {
+        body: {
+          action: "updateSystemPrompt",
+          promptKey,
+          promptValue: storyCreationPrompt,
+        },
+      });
+
+      if (error) {
+        console.error("Error saving story creation prompt:", error);
+        toast.error(language === 'de' ? "Fehler beim Speichern" : 
+                    language === 'fr' ? "Erreur lors de la sauvegarde" :
+                    "Error saving");
+      } else {
+        toast.success(language === 'de' ? "Story-Erstellungs-Prompt gespeichert" : 
+                      language === 'fr' ? "Prompt de création d'histoire sauvegardé" :
+                      "Story creation prompt saved");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error(language === 'de' ? "Fehler beim Speichern" : 
+                  language === 'fr' ? "Erreur lors de la sauvegarde" :
+                  "Error saving");
+    } finally {
+      setIsSavingStoryCreation(false);
     }
   };
 
@@ -583,6 +625,91 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       )}
                     </Button>
                   </div>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Story Creation Parameters Prompt */}
+      <Collapsible open={openSections.storyCreation} onOpenChange={() => toggleSection('storyCreation')}>
+        <Card className="border-2 border-purple-500/30">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.storyCreation ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <Wand2 className="h-5 w-5 text-purple-500" />
+                  {language === 'de' ? 'Story-Erstellungs-Parameter' : 
+                   language === 'fr' ? 'Paramètres de Création d\'Histoire' : 
+                   'Story Creation Parameters'}
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({getLanguageLabel()})
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <p className="text-sm text-muted-foreground">
+                {language === 'de' 
+                  ? 'Dieser Prompt erklärt dem Modell, wie es mit den vom Wizard eingegebenen Parametern umgehen soll (Länge, Schwierigkeit, Serie, Charaktere, Orte, Zeitepoche, etc.).'
+                  : language === 'fr'
+                  ? 'Ce prompt explique au modèle comment gérer les paramètres saisis par l\'assistant (longueur, difficulté, série, personnages, lieux, époque, etc.).'
+                  : 'This prompt explains to the model how to handle the parameters entered by the wizard (length, difficulty, series, characters, locations, time period, etc.).'}
+              </p>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={storyCreationPrompt}
+                    onChange={(e) => setStoryCreationPrompt(e.target.value)}
+                    className="min-h-[350px] text-sm font-mono leading-relaxed"
+                    placeholder={language === 'de' 
+                      ? "Story-Erstellungs-Prompt hier eingeben...\n\nBeispiel-Platzhalter:\n- {length} = kurz/mittel/lang\n- {difficulty} = einfach/mittel/schwer\n- {isSeries} = ja/nein\n- {storyType} = Abenteuer/Detektiv/etc.\n- {characters} = Liste der Charaktere\n- {locations} = Orte\n- {timePeriod} = Zeitepoche" 
+                      : language === 'fr' 
+                      ? "Entrez le prompt de création d'histoire ici...\n\nPlaceholders exemple:\n- {length} = court/moyen/long\n- {difficulty} = facile/moyen/difficile\n- {isSeries} = oui/non\n- {storyType} = Aventure/Détective/etc.\n- {characters} = Liste des personnages\n- {locations} = Lieux\n- {timePeriod} = Époque"
+                      : "Enter story creation prompt here...\n\nExample placeholders:\n- {length} = short/medium/long\n- {difficulty} = easy/medium/hard\n- {isSeries} = yes/no\n- {storyType} = Adventure/Detective/etc.\n- {characters} = Character list\n- {locations} = Locations\n- {timePeriod} = Time period"}
+                  />
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={saveStoryCreationPrompt}
+                      disabled={isSavingStoryCreation}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingStoryCreation ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 
+                           language === 'fr' ? 'Sauvegarde...' : 
+                           'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 
+                           language === 'fr' ? 'Sauvegarder' : 
+                           'Save'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground italic">
+                    {language === 'de' 
+                      ? 'Tipp: Verwende Platzhalter wie {length}, {difficulty}, {characters} etc., die bei der Generierung automatisch ersetzt werden.'
+                      : language === 'fr'
+                      ? 'Astuce: Utilisez des placeholders comme {length}, {difficulty}, {characters} etc., qui seront automatiquement remplacés lors de la génération.'
+                      : 'Tip: Use placeholders like {length}, {difficulty}, {characters} etc., which will be automatically replaced during generation.'}
+                  </p>
                 </>
               )}
             </CardContent>
