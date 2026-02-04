@@ -274,9 +274,11 @@ const StorySelectPage = () => {
   };
 
   // Filter stories by type
-  const fictionStories = stories.filter(s => (!s.text_type || s.text_type === 'fiction') && !s.series_id);
-  const nonFictionStories = stories.filter(s => s.text_type === 'non-fiction' && !s.series_id);
-  const seriesStories = stories.filter(s => s.series_id !== null);
+  // A story is part of a series if it has series_id OR episode_number (first episodes have episode_number but no series_id)
+  const isPartOfSeries = (s: Story) => s.series_id !== null || s.episode_number !== null;
+  const fictionStories = stories.filter(s => (!s.text_type || s.text_type === 'fiction') && !isPartOfSeries(s));
+  const nonFictionStories = stories.filter(s => s.text_type === 'non-fiction' && !isPartOfSeries(s));
+  const seriesStories = stories.filter(s => isPartOfSeries(s));
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
