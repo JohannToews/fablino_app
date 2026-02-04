@@ -141,31 +141,39 @@ const StorySelectPage = () => {
     setIsGeneratingForSeries(series.seriesId);
     
     try {
-      // Get app settings for continuation prompt
-      const { data: settings } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "continuation_prompt")
-        .single();
+      // Build context from ALL previous episodes
+      // For each episode: Title + first 800 chars of content
+      const episodeContexts = series.episodes.map((ep, idx) => {
+        const episodeNum = ep.episode_number || (idx + 1);
+        const contentPreview = ep.content.substring(0, 800);
+        return `--- Episode ${episodeNum}: "${ep.title}" ---\n${contentPreview}${ep.content.length > 800 ? '...' : ''}`;
+      });
       
-      const continuationPrompt = settings?.value || "";
+      const fullSeriesContext = episodeContexts.join('\n\n');
+      const nextEpisodeNumber = (lastEpisode.episode_number || series.episodes.length) + 1;
       
-      // Build context from previous episode
-      const previousContext = `Vorherige Episode "${lastEpisode.title}": ${lastEpisode.content.substring(0, 1500)}...`;
+      // Determine ending type based on episode number (max 5 episodes typically)
+      // Episode 5 should be final (ending type A), others are cliffhangers (C)
+      const endingType = nextEpisodeNumber >= 5 ? 'A' : 'C';
       
-      // Call generate-story function
+      // Call generate-story function with modular prompt system
       const { data, error } = await supabase.functions.invoke("generate-story", {
         body: {
           length: "medium",
           difficulty: lastEpisode.difficulty || "medium",
-          description: `${continuationPrompt}\n\n${previousContext}`,
+          description: fullSeriesContext, // All episodes as context
           textLanguage: appLang.toUpperCase(),
           schoolLevel: selectedProfile.school_class,
           textType: lastEpisode.text_type || "fiction",
-          endingType: "C", // Continue as cliffhanger
-          episodeNumber: (lastEpisode.episode_number || 1) + 1,
+          endingType,
+          episodeNumber: nextEpisodeNumber,
           seriesId: series.seriesId,
           userId: user?.id,
+          // Modular prompt system: CORE + KINDER-MODUL + SERIEN-MODUL
+          source: 'kid',
+          isSeries: true,
+          kidName: selectedProfile.name,
+          kidHobbies: selectedProfile.hobbies,
         },
       });
       
