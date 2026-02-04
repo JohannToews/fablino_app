@@ -65,13 +65,26 @@ const SeriesGrid = ({
   const labels = seriesLabels[appLang] || seriesLabels.de;
   const status = statusLabels[appLang] || statusLabels.de;
 
-  // Group stories by series_id
+  // Group stories by series
+  // First episodes: series_id is null but episode_number = 1, use own id as key
+  // Continuation episodes: use series_id as key
   const seriesMap = new Map<string, Story[]>();
   stories.forEach(story => {
+    // Determine the series key
+    let seriesKey: string | null = null;
+    
     if (story.series_id) {
-      const existing = seriesMap.get(story.series_id) || [];
+      // This is a continuation episode - use series_id
+      seriesKey = story.series_id;
+    } else if (story.episode_number !== null && story.episode_number >= 1) {
+      // This is a first episode - use its own id as the series key
+      seriesKey = story.id;
+    }
+    
+    if (seriesKey) {
+      const existing = seriesMap.get(seriesKey) || [];
       existing.push(story);
-      seriesMap.set(story.series_id, existing);
+      seriesMap.set(seriesKey, existing);
     }
   });
 
