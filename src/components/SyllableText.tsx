@@ -27,15 +27,23 @@ const hyphenators: Record<string, { hyphenateSync: (text: string) => string }> =
  * Split word into syllables using language-specific hyphenation patterns
  */
 function splitSyllables(word: string, language: string): string[] {
-  if (!word || word.length <= 3) return [word];
+  // Only skip truly tiny words (1-2 chars)
+  if (!word || word.length <= 2) return [word];
   
   const hyphenModule = hyphenators[language] || hyphenators.de;
-  const hyphenated = hyphenModule.hyphenateSync(word);
   
-  // Split by soft hyphen
-  const syllables = hyphenated.split(SOFT_HYPHEN);
-  
-  return syllables.length > 0 ? syllables : [word];
+  try {
+    const hyphenated = hyphenModule.hyphenateSync(word);
+    
+    // Split by soft hyphen
+    const syllables = hyphenated.split(SOFT_HYPHEN);
+    
+    return syllables.length > 0 ? syllables : [word];
+  } catch (e) {
+    // If hyphenation fails, return original word
+    console.warn("Hyphenation failed for:", word, e);
+    return [word];
+  }
 }
 
 interface SyllableTextProps {
@@ -68,12 +76,12 @@ export const SyllableText = ({ text, className = "", onClick, dataPosition, lang
     // Split into syllables using language-specific patterns
     const syllables = splitSyllables(cleanWord, language);
 
+    // Always color ALL words - single syllable gets first color, multi-syllable alternates
     if (syllables.length <= 1) {
-      // Single syllable - just show with first color
       return (
         <span>
           {leadingPunct}
-          <span style={{ color: SYLLABLE_COLORS[0] }}>{cleanWord}</span>
+          <span style={{ color: SYLLABLE_COLORS[0], fontWeight: 500 }}>{cleanWord}</span>
           {trailingPunct}
         </span>
       );
