@@ -43,6 +43,7 @@ export type Database = {
           created_at: string
           expected_answer: string
           id: string
+          options: string[] | null
           order_index: number
           question: string
           story_id: string
@@ -51,6 +52,7 @@ export type Database = {
           created_at?: string
           expected_answer: string
           id?: string
+          options?: string[] | null
           order_index?: number
           question: string
           story_id: string
@@ -59,6 +61,7 @@ export type Database = {
           created_at?: string
           expected_answer?: string
           id?: string
+          options?: string[] | null
           order_index?: number
           question?: string
           story_id?: string

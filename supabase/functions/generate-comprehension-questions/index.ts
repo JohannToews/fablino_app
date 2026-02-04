@@ -5,89 +5,77 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const languageConfig: Record<string, { teacherRole: string; rules: string; fallbackQuestions: { question: string; expectedAnswer: string }[] }> = {
+const languageConfig: Record<string, { teacherRole: string; rules: string; fallbackQuestions: { question: string; correctAnswer: string; options: string[] }[] }> = {
   fr: {
     teacherRole: "Tu es un enseignant pour enfants de 6-8 ans.",
     rules: `Règles:
 - Questions courtes et simples (1 phrase)
-- Réponses attendues courtes (1-2 phrases maximum)
-- Les questions doivent porter sur des éléments clés de l'histoire
-- Utilise un vocabulaire adapté aux enfants de 6-8 ans
-- Les réponses doivent être factuelles et basées sur le texte`,
+- 4 options de réponse par question
+- UNE SEULE option correcte, les 3 autres sont des distracteurs plausibles mais incorrects
+- Les distracteurs doivent être liés au contexte de l'histoire
+- Utilise un vocabulaire adapté aux enfants de 6-8 ans`,
     fallbackQuestions: [
-      { question: "De quoi parle cette histoire?", expectedAnswer: "L'histoire parle de..." },
-      { question: "Qui est le personnage principal?", expectedAnswer: "Le personnage principal est..." },
-      { question: "Que s'est-il passé à la fin?", expectedAnswer: "À la fin..." }
+      { question: "De quoi parle cette histoire?", correctAnswer: "Une aventure", options: ["Une aventure", "Une recette", "Un sport", "Une chanson"] },
     ]
   },
   de: {
     teacherRole: "Du bist ein Lehrer für Kinder von 6-8 Jahren.",
     rules: `Regeln:
 - Kurze und einfache Fragen (1 Satz)
-- Kurze erwartete Antworten (maximal 1-2 Sätze)
-- Die Fragen müssen sich auf wichtige Elemente der Geschichte beziehen
-- Verwende einen für Kinder von 6-8 Jahren geeigneten Wortschatz
-- Die Antworten müssen faktisch und textbasiert sein`,
+- 4 Antwortmöglichkeiten pro Frage
+- NUR EINE richtige Antwort, die anderen 3 sind plausible aber falsche Ablenker
+- Die Ablenker müssen zum Kontext der Geschichte passen
+- Verwende einen für Kinder von 6-8 Jahren geeigneten Wortschatz`,
     fallbackQuestions: [
-      { question: "Worum geht es in dieser Geschichte?", expectedAnswer: "Die Geschichte handelt von..." },
-      { question: "Wer ist die Hauptfigur?", expectedAnswer: "Die Hauptfigur ist..." },
-      { question: "Was ist am Ende passiert?", expectedAnswer: "Am Ende..." }
+      { question: "Worum geht es in dieser Geschichte?", correctAnswer: "Ein Abenteuer", options: ["Ein Abenteuer", "Ein Rezept", "Ein Sport", "Ein Lied"] },
     ]
   },
   en: {
     teacherRole: "You are a teacher for children aged 6-8.",
     rules: `Rules:
 - Short and simple questions (1 sentence)
-- Short expected answers (1-2 sentences maximum)
-- Questions must focus on key elements of the story
-- Use vocabulary suitable for children aged 6-8
-- Answers must be factual and text-based`,
+- 4 answer options per question
+- ONLY ONE correct answer, the other 3 are plausible but incorrect distractors
+- Distractors must be related to the story context
+- Use vocabulary suitable for children aged 6-8`,
     fallbackQuestions: [
-      { question: "What is this story about?", expectedAnswer: "The story is about..." },
-      { question: "Who is the main character?", expectedAnswer: "The main character is..." },
-      { question: "What happened at the end?", expectedAnswer: "At the end..." }
+      { question: "What is this story about?", correctAnswer: "An adventure", options: ["An adventure", "A recipe", "A sport", "A song"] },
     ]
   },
   es: {
     teacherRole: "Eres un profesor para niños de 6-8 años.",
     rules: `Reglas:
 - Preguntas cortas y simples (1 frase)
-- Respuestas esperadas cortas (máximo 1-2 frases)
-- Las preguntas deben centrarse en elementos clave de la historia
-- Usa vocabulario adecuado para niños de 6-8 años
-- Las respuestas deben ser factuales y basadas en el texto`,
+- 4 opciones de respuesta por pregunta
+- SOLO UNA respuesta correcta, las otras 3 son distractores plausibles pero incorrectos
+- Los distractores deben estar relacionados con el contexto de la historia
+- Usa vocabulario adecuado para niños de 6-8 años`,
     fallbackQuestions: [
-      { question: "¿De qué trata esta historia?", expectedAnswer: "La historia trata de..." },
-      { question: "¿Quién es el personaje principal?", expectedAnswer: "El personaje principal es..." },
-      { question: "¿Qué pasó al final?", expectedAnswer: "Al final..." }
+      { question: "¿De qué trata esta historia?", correctAnswer: "Una aventura", options: ["Una aventura", "Una receta", "Un deporte", "Una canción"] },
     ]
   },
   nl: {
     teacherRole: "Je bent een leraar voor kinderen van 6-8 jaar.",
     rules: `Regels:
 - Korte en eenvoudige vragen (1 zin)
-- Korte verwachte antwoorden (maximaal 1-2 zinnen)
-- De vragen moeten gaan over belangrijke elementen van het verhaal
-- Gebruik een woordenschat die geschikt is voor kinderen van 6-8 jaar
-- De antwoorden moeten feitelijk en gebaseerd op de tekst zijn`,
+- 4 antwoordmogelijkheden per vraag
+- SLECHTS ÉÉN correct antwoord, de andere 3 zijn plausibele maar onjuiste afleiders
+- De afleiders moeten gerelateerd zijn aan de context van het verhaal
+- Gebruik een woordenschat die geschikt is voor kinderen van 6-8 jaar`,
     fallbackQuestions: [
-      { question: "Waar gaat dit verhaal over?", expectedAnswer: "Het verhaal gaat over..." },
-      { question: "Wie is het hoofdpersonage?", expectedAnswer: "Het hoofdpersonage is..." },
-      { question: "Wat gebeurde er aan het einde?", expectedAnswer: "Aan het einde..." }
+      { question: "Waar gaat dit verhaal over?", correctAnswer: "Een avontuur", options: ["Een avontuur", "Een recept", "Een sport", "Een liedje"] },
     ]
   },
   it: {
     teacherRole: "Sei un insegnante per bambini di 6-8 anni.",
     rules: `Regole:
 - Domande brevi e semplici (1 frase)
-- Risposte attese brevi (massimo 1-2 frasi)
-- Le domande devono riguardare elementi chiave della storia
-- Usa un vocabolario adatto ai bambini di 6-8 anni
-- Le risposte devono essere fattuali e basate sul testo`,
+- 4 opzioni di risposta per domanda
+- SOLO UNA risposta corretta, le altre 3 sono distrattori plausibili ma sbagliati
+- I distrattori devono essere legati al contesto della storia
+- Usa un vocabolario adatto ai bambini di 6-8 anni`,
     fallbackQuestions: [
-      { question: "Di cosa parla questa storia?", expectedAnswer: "La storia parla di..." },
-      { question: "Chi è il personaggio principale?", expectedAnswer: "Il personaggio principale è..." },
-      { question: "Cosa è successo alla fine?", expectedAnswer: "Alla fine..." }
+      { question: "Di cosa parla questa storia?", correctAnswer: "Un'avventura", options: ["Un'avventura", "Una ricetta", "Uno sport", "Una canzone"] },
     ]
   }
 };
@@ -116,18 +104,32 @@ serve(async (req) => {
 Titre: "${storyTitle}"
 Texte: "${storyContent}"
 
-Crée exactement 3 questions de compréhension simples pour vérifier si l'enfant a compris l'histoire.
+Crée exactement 3 questions de compréhension à choix multiple pour vérifier si l'enfant a compris l'histoire.
 
 ${config.rules}
 
 Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
 {
   "questions": [
-    {"question": "Question 1?", "expectedAnswer": "Réponse attendue 1"},
-    {"question": "Question 2?", "expectedAnswer": "Réponse attendue 2"},
-    {"question": "Question 3?", "expectedAnswer": "Réponse attendue 3"}
+    {
+      "question": "Question 1?",
+      "correctAnswer": "La bonne réponse",
+      "options": ["La bonne réponse", "Mauvaise 1", "Mauvaise 2", "Mauvaise 3"]
+    },
+    {
+      "question": "Question 2?",
+      "correctAnswer": "La bonne réponse",
+      "options": ["Mauvaise 1", "La bonne réponse", "Mauvaise 2", "Mauvaise 3"]
+    },
+    {
+      "question": "Question 3?",
+      "correctAnswer": "La bonne réponse",
+      "options": ["Mauvaise 1", "Mauvaise 2", "La bonne réponse", "Mauvaise 3"]
+    }
   ]
-}`;
+}
+
+IMPORTANT: Mélange la position de la bonne réponse dans les options (pas toujours en première position).`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -138,7 +140,7 @@ Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.5,
-            maxOutputTokens: 500,
+            maxOutputTokens: 800,
           },
         }),
       }

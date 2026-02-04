@@ -565,12 +565,13 @@ const ReadingPage = () => {
         // Don't fail - story is already saved
       }
 
-        // Save comprehension questions if available
+        // Save comprehension questions if available (multiple choice format)
         if (data.questions && data.questions.length > 0 && newStory) {
-          const questionsToInsert = data.questions.map((q: { question: string; expectedAnswer: string }, idx: number) => ({
+          const questionsToInsert = data.questions.map((q: { question: string; correctAnswer?: string; expectedAnswer?: string; options?: string[] }, idx: number) => ({
             story_id: newStory.id,
             question: q.question,
-            expected_answer: q.expectedAnswer,
+            expected_answer: q.correctAnswer || q.expectedAnswer || '',
+            options: q.options || [],
             order_index: idx,
           }));
 

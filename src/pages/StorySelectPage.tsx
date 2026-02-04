@@ -265,10 +265,11 @@ const StorySelectPage = () => {
       
       // Save comprehension questions
       if (data.questions?.length > 0 && newStory) {
-        const questionsToInsert = data.questions.map((q: { question: string; expected_answer: string }, idx: number) => ({
+        const questionsToInsert = data.questions.map((q: { question: string; correctAnswer: string; options?: string[] }, idx: number) => ({
           story_id: newStory.id,
           question: q.question,
-          expected_answer: q.expected_answer,
+          expected_answer: q.correctAnswer,
+          options: q.options || [],
           order_index: idx,
         }));
         await supabase.from("comprehension_questions").insert(questionsToInsert);
