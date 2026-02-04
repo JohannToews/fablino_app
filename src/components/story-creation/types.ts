@@ -245,6 +245,146 @@ export const settingSelectionTranslations: Record<Language, SettingSelectionTran
   },
 };
 
+export type StoryType = 
+  | "educational" 
+  | "adventure" 
+  | "detective" 
+  | "funny" 
+  | "friendship" 
+  | "surprise";
+
+export interface StoryTypeSelectionTranslations {
+  header: string;
+  educational: string;
+  educationalSubtext: string;
+  adventure: string;
+  detective: string;
+  funny: string;
+  friendship: string;
+  surprise: string;
+  humorSliderTitle: string;
+  humorLow: string;
+  humorMid: string;
+  humorHigh: string;
+  continue: string;
+  back: string;
+}
+
+export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelectionTranslations> = {
+  de: {
+    header: "Was für eine Geschichte möchtest du?",
+    educational: "Ich will was lernen",
+    educationalSubtext: "Sachgeschichte",
+    adventure: "Abenteuergeschichte",
+    detective: "Detektiv-Geschichte",
+    funny: "Lustige Geschichte",
+    friendship: "Schul- & Freundschaftsgeschichte",
+    surprise: "Überrasch mich",
+    humorSliderTitle: "Wie lustig soll es sein?",
+    humorLow: "Normal lustig",
+    humorMid: "Richtig lustig",
+    humorHigh: "Total verrückt",
+    continue: "Weiter",
+    back: "Zurück",
+  },
+  fr: {
+    header: "Quel type d'histoire veux-tu?",
+    educational: "Je veux apprendre",
+    educationalSubtext: "Histoire éducative",
+    adventure: "Aventure",
+    detective: "Histoire de détective",
+    funny: "Histoire drôle",
+    friendship: "École & Amitié",
+    surprise: "Surprends-moi",
+    humorSliderTitle: "À quel point drôle?",
+    humorLow: "Normalement drôle",
+    humorMid: "Très drôle",
+    humorHigh: "Totalement fou",
+    continue: "Continuer",
+    back: "Retour",
+  },
+  en: {
+    header: "What kind of story do you want?",
+    educational: "I want to learn",
+    educationalSubtext: "Educational story",
+    adventure: "Adventure story",
+    detective: "Detective story",
+    funny: "Funny story",
+    friendship: "School & Friendship",
+    surprise: "Surprise me",
+    humorSliderTitle: "How funny should it be?",
+    humorLow: "Normally funny",
+    humorMid: "Really funny",
+    humorHigh: "Totally crazy",
+    continue: "Continue",
+    back: "Back",
+  },
+  es: {
+    header: "¿Qué tipo de historia quieres?",
+    educational: "Quiero aprender",
+    educationalSubtext: "Historia educativa",
+    adventure: "Aventura",
+    detective: "Historia de detective",
+    funny: "Historia graciosa",
+    friendship: "Escuela & Amistad",
+    surprise: "Sorpréndeme",
+    humorSliderTitle: "¿Qué tan gracioso?",
+    humorLow: "Normalmente gracioso",
+    humorMid: "Muy gracioso",
+    humorHigh: "Totalmente loco",
+    continue: "Continuar",
+    back: "Volver",
+  },
+  nl: {
+    header: "Wat voor verhaal wil je?",
+    educational: "Ik wil leren",
+    educationalSubtext: "Educatief verhaal",
+    adventure: "Avonturenverhaal",
+    detective: "Detectiveverhaal",
+    funny: "Grappig verhaal",
+    friendship: "School & Vriendschap",
+    surprise: "Verras me",
+    humorSliderTitle: "Hoe grappig moet het zijn?",
+    humorLow: "Normaal grappig",
+    humorMid: "Echt grappig",
+    humorHigh: "Totaal gek",
+    continue: "Verder",
+    back: "Terug",
+  },
+  it: {
+    header: "Che tipo di storia vuoi?",
+    educational: "Voglio imparare",
+    educationalSubtext: "Storia educativa",
+    adventure: "Avventura",
+    detective: "Storia di detective",
+    funny: "Storia divertente",
+    friendship: "Scuola & Amicizia",
+    surprise: "Sorprendimi",
+    humorSliderTitle: "Quanto divertente?",
+    humorLow: "Normalmente divertente",
+    humorMid: "Molto divertente",
+    humorHigh: "Totalmente pazzo",
+    continue: "Continua",
+    back: "Indietro",
+  },
+  bs: {
+    header: "Kakvu priču želiš?",
+    educational: "Želim učiti",
+    educationalSubtext: "Obrazovna priča",
+    adventure: "Avantura",
+    detective: "Detektivska priča",
+    funny: "Smiješna priča",
+    friendship: "Škola & Prijateljstvo",
+    surprise: "Iznenadi me",
+    humorSliderTitle: "Koliko smiješno?",
+    humorLow: "Normalno smiješno",
+    humorMid: "Jako smiješno",
+    humorHigh: "Totalno ludo",
+    continue: "Nastavi",
+    back: "Nazad",
+  },
+};
+
 export interface SelectedCharacter {
   id: string;
   type: CharacterType | FamilyMember | SiblingGender;

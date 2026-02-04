@@ -1,40 +1,50 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
-import { useAuth } from "@/hooks/useAuth";
+import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
 import SettingSelectionScreen from "@/components/story-creation/SettingSelectionScreen";
 import {
+  StoryType,
   SelectedCharacter,
   SpecialAttribute,
   LocationType,
   TimePeriod,
+  storyTypeSelectionTranslations,
   characterSelectionTranslations,
   settingSelectionTranslations,
 } from "@/components/story-creation/types";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Screen states for the wizard
-type WizardScreen = "characters" | "setting" | "story-type";
+// Screen states for the wizard (new order: story-type first!)
+type WizardScreen = "story-type" | "characters" | "setting";
 
 const CreateStoryPage = () => {
   const navigate = useNavigate();
-  const { kidAppLanguage, selectedProfile } = useKidProfile();
-  const { user } = useAuth();
+  const { kidAppLanguage } = useKidProfile();
   const { colors: paletteColors } = useColorPalette();
 
   // Wizard state
-  const [currentScreen, setCurrentScreen] = useState<WizardScreen>("characters");
+  const [currentScreen, setCurrentScreen] = useState<WizardScreen>("story-type");
+  const [selectedStoryType, setSelectedStoryType] = useState<StoryType | null>(null);
+  const [humorLevel, setHumorLevel] = useState<number | undefined>(undefined);
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<LocationType[]>([]);
   const [selectedTime, setSelectedTime] = useState<TimePeriod>("today");
 
   // Translations
+  const storyTypeTranslations = storyTypeSelectionTranslations[kidAppLanguage] || storyTypeSelectionTranslations.de;
   const characterTranslations = characterSelectionTranslations[kidAppLanguage] || characterSelectionTranslations.de;
   const settingTranslations = settingSelectionTranslations[kidAppLanguage] || settingSelectionTranslations.de;
+
+  // Handle story type selection complete
+  const handleStoryTypeComplete = (storyType: StoryType, humor?: number) => {
+    setSelectedStoryType(storyType);
+    setHumorLevel(humor);
+    setCurrentScreen("characters");
+  };
 
   // Handle character selection complete
   const handleCharactersComplete = (
@@ -54,27 +64,40 @@ const CreateStoryPage = () => {
     setSelectedLocations(locations);
     setSelectedTime(timePeriod);
     
+    // All selections complete - ready for story generation
+    console.log("Story Type:", selectedStoryType, humorLevel ? `(Humor: ${humorLevel})` : "");
+    console.log("Characters:", selectedCharacters);
+    console.log("Attributes:", selectedAttributes);
     console.log("Locations:", locations);
     console.log("Time:", timePeriod);
-    toast.success("Setting ausgewählt! 🌍");
     
-    // Navigate to story-type screen (to be implemented)
-    setCurrentScreen("story-type");
+    toast.success("Alle Einstellungen fertig! 🎉");
+    
+    // TODO: Call story generation API
+    // For now, navigate back to home or show confirmation
   };
 
   // Handle back navigation
   const handleBack = () => {
-    if (currentScreen === "characters") {
+    if (currentScreen === "story-type") {
       navigate("/");
+    } else if (currentScreen === "characters") {
+      setCurrentScreen("story-type");
     } else if (currentScreen === "setting") {
       setCurrentScreen("characters");
-    } else if (currentScreen === "story-type") {
-      setCurrentScreen("setting");
     }
   };
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+      {currentScreen === "story-type" && (
+        <StoryTypeSelectionScreen
+          translations={storyTypeTranslations}
+          onComplete={handleStoryTypeComplete}
+          onBack={handleBack}
+        />
+      )}
+
       {currentScreen === "characters" && (
         <CharacterSelectionScreen
           translations={characterTranslations}
@@ -89,29 +112,6 @@ const CreateStoryPage = () => {
           onComplete={handleSettingComplete}
           onBack={handleBack}
         />
-      )}
-
-      {currentScreen === "story-type" && (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center p-8">
-            <h2 className="text-2xl font-baloo mb-4">Screen 3: Story-Typ</h2>
-            <p className="text-muted-foreground mb-4">
-              Charaktere: {selectedCharacters.map(c => c.name).join(", ")}
-            </p>
-            <p className="text-muted-foreground mb-4">
-              Orte: {selectedLocations.join(", ")}
-            </p>
-            <p className="text-muted-foreground mb-6">
-              Zeit: {selectedTime}
-            </p>
-            <button
-              onClick={handleBack}
-              className="px-6 py-2 bg-primary text-primary-foreground rounded-xl"
-            >
-              Zurück zu Setting
-            </button>
-          </div>
-        </div>
       )}
     </div>
   );
