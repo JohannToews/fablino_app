@@ -34,6 +34,7 @@ const SiblingInputModal = ({
   const [name, setName] = useState("");
   const [age, setAge] = useState<number | "">("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -46,9 +47,17 @@ const SiblingInputModal = ({
 
   useEffect(() => {
     if (step === "name" || step === "age") {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [step]);
+
+  const handleInputFocus = () => {
+    // Scroll the modal into view when keyboard appears
+    setTimeout(() => {
+      contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  };
 
   const handleGenderSelect = (g: SiblingGender) => {
     setGender(g);
@@ -89,35 +98,38 @@ const SiblingInputModal = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="w-[85vw] max-w-[420px] rounded-2xl">
+      <DialogContent 
+        ref={contentRef}
+        className="w-[85vw] max-w-[420px] rounded-2xl top-[15%] translate-y-0 data-[state=open]:slide-in-from-top-[10%]"
+      >
         <DialogHeader>
-          <DialogTitle className="text-xl font-baloo text-center">
+          <DialogTitle className="text-lg md:text-xl font-baloo text-center">
             {step === "gender" && translations.siblings}
             {step === "name" && `${translations.nameModalTitle} ${gender === "brother" ? translations.brother : translations.sister}?`}
             {step === "age" && `${translations.siblingAge} von ${name}`}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-2">
           {/* Step 1: Gender Selection */}
           {step === "gender" && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               <button
                 onClick={() => handleGenderSelect("brother")}
                 className={cn(
-                  "flex flex-col items-center gap-3 p-4 rounded-xl",
+                  "flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl",
                   "border-2 border-border transition-all duration-200",
                   "hover:scale-105 hover:border-primary/50 active:scale-95"
                 )}
               >
-                <div className="w-20 h-20 rounded-full overflow-hidden">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden">
                   <img
                     src={boyImg}
                     alt={translations.brother}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className="font-baloo font-medium">
+                <span className="font-baloo font-medium text-sm md:text-base">
                   {translations.brother}
                 </span>
               </button>
@@ -125,19 +137,19 @@ const SiblingInputModal = ({
               <button
                 onClick={() => handleGenderSelect("sister")}
                 className={cn(
-                  "flex flex-col items-center gap-3 p-4 rounded-xl",
+                  "flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl",
                   "border-2 border-border transition-all duration-200",
                   "hover:scale-105 hover:border-primary/50 active:scale-95"
                 )}
               >
-                <div className="w-20 h-20 rounded-full overflow-hidden">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden">
                   <img
                     src={girlImg}
                     alt={translations.sister}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className="font-baloo font-medium">
+                <span className="font-baloo font-medium text-sm md:text-base">
                   {translations.sister}
                 </span>
               </button>
@@ -152,7 +164,11 @@ const SiblingInputModal = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={handleInputFocus}
                 placeholder="Name..."
+                enterKeyHint="next"
+                autoComplete="off"
+                autoCorrect="off"
                 className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
               />
 
@@ -181,12 +197,16 @@ const SiblingInputModal = ({
               <Input
                 ref={inputRef}
                 type="number"
+                inputMode="numeric"
                 min={1}
                 max={99}
                 value={age}
                 onChange={(e) => setAge(e.target.value ? Number(e.target.value) : "")}
                 onKeyDown={handleKeyDown}
+                onFocus={handleInputFocus}
                 placeholder={translations.siblingAge}
+                enterKeyHint="done"
+                autoComplete="off"
                 className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
               />
 
