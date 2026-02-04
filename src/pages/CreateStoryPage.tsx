@@ -170,8 +170,10 @@ const CreateStoryPage = () => {
         // Use story settings from wizard if available
         const storyLength = storySettings?.length || "medium";
         const storyDifficulty = storySettings?.difficulty || difficulty;
+        const isSeries = storySettings?.isSeries || false;
         
         // Save the story to database
+        // For series: first episode has series_id = null, episode_number = 1
         const { data: savedStory, error: saveError } = await supabase
           .from("stories")
           .insert({
@@ -186,6 +188,9 @@ const CreateStoryPage = () => {
             user_id: user.id,
             kid_profile_id: selectedProfile?.id,
             generation_status: "verified",
+            ending_type: isSeries ? 'C' : 'A',
+            episode_number: isSeries ? 1 : null,
+            series_id: null,
           })
           .select()
           .single();
@@ -379,6 +384,8 @@ const CreateStoryPage = () => {
 
       if (data?.title && data?.content) {
         // Save the story to database
+        // For series: first episode has series_id = null, episode_number = 1
+        // Subsequent episodes will reference this story's id as series_id
         const { data: savedStory, error: saveError } = await supabase
           .from("stories")
           .insert({
@@ -394,6 +401,9 @@ const CreateStoryPage = () => {
             kid_profile_id: selectedProfile?.id,
             generation_status: "verified",
             ending_type: isSeries ? 'C' : 'A',
+            // Series setup: first episode is the series root
+            episode_number: isSeries ? 1 : null,
+            series_id: null, // First episode doesn't have a series_id - it IS the series
           })
           .select()
           .single();
