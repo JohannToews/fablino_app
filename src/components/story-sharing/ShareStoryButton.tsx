@@ -73,14 +73,13 @@
    return (
      <>
        <Button
-         variant="outline"
-         size="sm"
+        variant="secondary"
          onClick={handleShare}
          disabled={isLoading}
-         className="gap-2"
+        className="gap-2 flex items-center"
        >
          <Share2 className="h-4 w-4" />
-         {isLoading ? t.generating : t.share}
+        <span className="hidden sm:inline">{isLoading ? t.generating : t.share}</span>
        </Button>
  
        {shareData && (
