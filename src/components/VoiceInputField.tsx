@@ -272,36 +272,49 @@ const VoiceInputField = ({
     : value;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {label && <Label className="text-base font-medium">{label}</Label>}
-      <div className="flex gap-2">
-        <InputComponent
-          value={displayValue}
-          onChange={(e) => {
-            if (!isRecording) {
-              onChange(e.target.value);
-            }
-          }}
-          placeholder={placeholder}
-          className={multiline ? "min-h-[100px] text-base" : "text-base"}
-          readOnly={isRecording}
-        />
+      <div className="flex gap-3 items-start">
+        <div className="flex-1">
+          <InputComponent
+            value={isRecording ? value : displayValue}
+            onChange={(e) => {
+              if (!isRecording) {
+                onChange(e.target.value);
+              }
+            }}
+            placeholder={placeholder}
+            className={multiline ? "min-h-[100px] text-base" : "text-base"}
+            readOnly={isRecording}
+          />
+          {/* Live transcription display */}
+          {isRecording && interimTranscript && (
+            <div className="mt-2 p-3 bg-primary/10 rounded-lg border border-primary/30">
+              <p className="text-sm text-primary font-medium animate-pulse">
+                {interimTranscript}
+              </p>
+            </div>
+          )}
+        </div>
         <Button
           type="button"
           variant={isRecording ? "destructive" : "outline"}
-          size="icon"
-          className="flex-shrink-0 h-10 w-10"
+          className={`flex-shrink-0 rounded-full transition-all duration-200 ${
+            isRecording 
+              ? "h-16 w-16 md:h-20 md:w-20 animate-pulse shadow-lg" 
+              : "h-14 w-14 md:h-16 md:w-16 hover:scale-105"
+          }`}
           onClick={isRecording ? stopRecording : startRecording}
         >
           {isRecording ? (
-            <MicOff className="h-5 w-5" />
+            <MicOff className="h-7 w-7 md:h-8 md:w-8" />
           ) : (
-            <Mic className="h-5 w-5" />
+            <Mic className="h-7 w-7 md:h-8 md:w-8" />
           )}
         </Button>
       </div>
       {isRecording && (
-        <p className="text-sm text-primary animate-pulse">
+        <p className="text-sm text-primary font-medium animate-pulse text-center">
           {msgs.recording}
         </p>
       )}
