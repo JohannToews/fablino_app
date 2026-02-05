@@ -141,12 +141,10 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       setSelectedAnswer(null);
       setShowFeedback(false);
     } else {
-      // Quiz complete
+      // Quiz complete - results already contains ALL answers including current one
+      // (added in handleSelectAnswer before this function is called)
       const correctCount = results.filter(r => r.correct).length;
-      // Include current answer if it exists
-      const currentCorrect = selectedAnswer === questions[currentIndex]?.expected_answer;
-      const finalCorrectCount = currentCorrect ? correctCount + 1 : correctCount;
-      onComplete(finalCorrectCount, questions.length);
+      onComplete(correctCount, questions.length);
     }
   };
 
