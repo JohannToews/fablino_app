@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Html5Qrcode, CameraDevice } from "html5-qrcode";
-import { X, AlertCircle, Loader2, SwitchCamera } from "lucide-react";
+import { AlertCircle, Loader2, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -138,7 +138,8 @@ export default function QRScannerModal({
   const { selectedProfileId } = useKidProfile();
   const t = translations[language] || translations.de;
 
-  const [isScanning, setIsScanning] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [scannerReady, setScannerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -151,7 +152,6 @@ export default function QRScannerModal({
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = "qr-scanner-container";
 
-  // Extract share token from URL
   const extractToken = (url: string): string | null => {
     try {
       const urlObj = new URL(url);
@@ -161,7 +161,6 @@ export default function QRScannerModal({
         return pathParts[sIndex + 1];
       }
     } catch {
-      // If not a valid URL, check if it's just a token
       if (/^[A-Za-z0-9]{8}$/.test(url)) {
         return url;
       }
@@ -169,7 +168,6 @@ export default function QRScannerModal({
     return null;
   };
 
-  // Start scanner when modal opens
   useEffect(() => {
     if (isOpen && !storyPreview) {
       initializeScanner();
@@ -180,108 +178,108 @@ export default function QRScannerModal({
   }, [isOpen]);
 
   const initializeScanner = async () => {
-    setIsScanning(true);
+    setIsInitializing(true);
+    setScannerReady(false);
     setError(null);
     setIsExpired(false);
 
     try {
-      // Get available cameras
       const devices = await Html5Qrcode.getCameras();
+      console.log("Available cameras:", devices);
       setCameras(devices);
 
       if (devices.length === 0) {
         setError(t.cameraError);
-        setIsScanning(false);
+        setIsInitializing(false);
         return;
       }
 
-      // Try to find back camera first (usually contains "back", "rear", or "environment" in label)
+      // Try to find back camera
       let backCameraIndex = devices.findIndex(
         (d) =>
           d.label.toLowerCase().includes("back") ||
           d.label.toLowerCase().includes("rear") ||
           d.label.toLowerCase().includes("environment") ||
-          d.label.toLowerCase().includes("rück")
+          d.label.toLowerCase().includes("rück") ||
+          d.label.toLowerCase().includes("arrière")
       );
 
-      // If no back camera found by label, use the last camera (often back camera on mobile)
+      // If no back camera found by label, use the last one (often back camera)
       if (backCameraIndex === -1 && devices.length > 1) {
         backCameraIndex = devices.length - 1;
       } else if (backCameraIndex === -1) {
         backCameraIndex = 0;
       }
 
+      console.log("Selected camera index:", backCameraIndex, devices[backCameraIndex]?.label);
       setCurrentCameraIndex(backCameraIndex);
       await startScannerWithCamera(devices[backCameraIndex].id);
     } catch (err) {
       console.error("Scanner init error:", err);
       setError(t.cameraError);
-      setIsScanning(false);
+      setIsInitializing(false);
     }
   };
 
   const startScannerWithCamera = async (cameraId: string) => {
     try {
-      // Wait for container to be in DOM
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // Ensure container exists
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const html5QrCode = new Html5Qrcode(scannerContainerId, {
-        verbose: true,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true
-        }
-      });
+      // Stop any existing scanner first
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop();
+          scannerRef.current.clear();
+        } catch {}
+        scannerRef.current = null;
+      }
+
+      const html5QrCode = new Html5Qrcode(scannerContainerId);
       scannerRef.current = html5QrCode;
 
-      console.log("Starting scanner with camera:", cameraId);
+      console.log("Starting scanner with camera ID:", cameraId);
 
       await html5QrCode.start(
         cameraId,
         { 
-          fps: 15, 
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            // Use 70% of the smallest dimension for the scan box
-            const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
-            const qrboxSize = Math.floor(minDimension * 0.7);
-            return { width: qrboxSize, height: qrboxSize };
-          },
-          aspectRatio: 1.0
+          fps: 10,
+          qrbox: { width: 280, height: 280 },
+          disableFlip: false
         },
         async (decodedText) => {
           console.log("QR Code scanned:", decodedText);
-          // Vibrate on successful scan if supported
           if (navigator.vibrate) {
             navigator.vibrate(100);
           }
           await stopScanner();
           await handleScan(decodedText);
         },
-        (errorMessage) => {
-          // Only log significant errors, not every frame
-          if (!errorMessage.includes("No MultiFormat Readers")) {
-            console.log("Scan frame:", errorMessage);
-          }
-        }
+        () => {} // Ignore scan errors
       );
       
-      setIsScanning(false);
+      setIsInitializing(false);
+      setScannerReady(true);
       console.log("Scanner started successfully");
     } catch (err) {
       console.error("Scanner start error:", err);
       setError(t.cameraError);
-      setIsScanning(false);
+      setIsInitializing(false);
     }
   };
 
   const switchCamera = async () => {
     if (cameras.length <= 1) return;
 
-    await stopScanner();
+    console.log("Switching camera from index", currentCameraIndex);
     
     const nextIndex = (currentCameraIndex + 1) % cameras.length;
     setCurrentCameraIndex(nextIndex);
-    setIsScanning(true);
+    setIsInitializing(true);
+    setScannerReady(false);
     
+    await stopScanner();
+    await new Promise((resolve) => setTimeout(resolve, 200));
     await startScannerWithCamera(cameras[nextIndex].id);
   };
 
@@ -290,11 +288,10 @@ export default function QRScannerModal({
       try {
         await scannerRef.current.stop();
         scannerRef.current.clear();
-      } catch {
-        // Ignore stop errors
-      }
+      } catch {}
       scannerRef.current = null;
     }
+    setScannerReady(false);
   };
 
   const handleScan = async (scannedText: string) => {
@@ -385,7 +382,7 @@ export default function QRScannerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg md:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-baloo">{t.title}</DialogTitle>
         </DialogHeader>
@@ -395,25 +392,29 @@ export default function QRScannerModal({
           <div className="relative">
             <div
               id={scannerContainerId}
-              className="w-full aspect-square bg-muted rounded-lg overflow-hidden"
+              className="w-full min-h-[350px] md:min-h-[400px] bg-muted rounded-lg overflow-hidden"
+              style={{ aspectRatio: '1' }}
             />
-            {isScanning && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+            
+            {/* Loading overlay */}
+            {isInitializing && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/70 rounded-lg">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="ml-2 text-sm">{t.scanning}</span>
               </div>
             )}
             
-            {/* Camera Switch Button */}
-            {cameras.length > 1 && !isScanning && (
+            {/* Camera Switch Button - always visible when multiple cameras */}
+            {cameras.length > 1 && (
               <Button
                 variant="secondary"
-                size="icon"
-                className="absolute bottom-3 right-3 rounded-full shadow-lg"
+                size="lg"
+                className="absolute bottom-4 right-4 rounded-full shadow-lg z-10 h-14 w-14"
                 onClick={switchCamera}
                 title={t.switchCamera}
+                disabled={isInitializing}
               >
-                <SwitchCamera className="h-5 w-5" />
+                <SwitchCamera className="h-7 w-7" />
               </Button>
             )}
           </div>
