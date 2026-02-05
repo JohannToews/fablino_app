@@ -1080,8 +1080,9 @@ Story title: "${story.title}"
 ${characterDescription ? `Main characters: ${characterDescription}` : ""}
 Art Style: ${artStyle}
 Target audience: ${targetAudience}.
-Requirements: No text on the image, high quality ${textType === "non-fiction" ? "educational and informative" : "imaginative and engaging"} illustration.
-IMPORTANT: Create distinctive, memorable character designs that can be recognized in follow-up illustrations.`;
+Requirements: High quality ${textType === "non-fiction" ? "educational and informative" : "imaginative and engaging"} illustration.
+IMPORTANT: Create distinctive, memorable character designs that can be recognized in follow-up illustrations.
+CRITICAL: The image must contain ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind. Pure illustration only.`;
 
     // Prepare progress image prompts
     const storyParts = story.content.split('\n\n').filter((p: string) => p.trim().length > 0);
@@ -1094,6 +1095,7 @@ CRITICAL - VISUAL CONSISTENCY REQUIREMENTS:
 - Maintain consistent color palette and lighting style
 - Characters must be immediately recognizable from the cover image
 ${characterDescription ? `- Character reference: ${characterDescription}` : ""}
+- ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind in the image
 `;
 
     const progressPrompts: string[] = [];
@@ -1107,8 +1109,9 @@ ${styleReference}
 
 Art Style: ${textType === "non-fiction" ? "Simplified documentary sketch style" : "Gentle, slightly muted version of the cover style"} with softer, pastel tones.
 The image should maintain the same characters but with reduced visual intensity - think soft colors and gentle washes.
-Target audience: ${targetAudience}. No text. 
-The characters MUST look exactly like they do on the cover - same faces, hair, clothing, proportions.`);
+Target audience: ${targetAudience}. 
+The characters MUST look exactly like they do on the cover - same faces, hair, clothing, proportions.
+CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind. Pure illustration only.`);
     }
     
     if (totalImageCount >= 3 && partCount > 2) {
@@ -1120,8 +1123,9 @@ ${styleReference}
 
 Art Style: ${textType === "non-fiction" ? "Simple line-art sketch with minimal color" : "Soft pencil sketch style matching the cover"} using desaturated, calm tones.
 Very understated visual style - muted colors, intentionally reduced saturation.
-Target audience: ${targetAudience}. No text. 
-CRITICAL: The characters MUST be the exact same as in the cover image - identical faces, features, and clothing.`);
+Target audience: ${targetAudience}. 
+CRITICAL: The characters MUST be the exact same as in the cover image - identical faces, features, and clothing.
+CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind. Pure illustration only.`);
     }
 
     // ================== PARALLEL EXECUTION ==================
