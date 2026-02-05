@@ -311,6 +311,41 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_stories: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          retrieved_count: number
+          share_token: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          retrieved_count?: number
+          share_token: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          retrieved_count?: number
+          share_token?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_stories_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stories: {
         Row: {
           content: string
