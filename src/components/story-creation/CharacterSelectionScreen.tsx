@@ -7,13 +7,11 @@ import NameInputModal from "./NameInputModal";
 import FamilyMemberModal from "./FamilyMemberModal";
 import SiblingInputModal from "./SiblingInputModal";
 import SelectionSummary from "./SelectionSummary";
-import BonusAttributesModal from "./BonusAttributesModal";
 import {
   CharacterType,
   FamilyMember,
   SiblingGender,
   SelectedCharacter,
-  SpecialAttribute,
   CharacterSelectionTranslations,
 } from "./types";
 
@@ -31,7 +29,7 @@ import grandpaImg from "@/assets/characters/grandpa.jpg";
 
 interface CharacterSelectionScreenProps {
   translations: CharacterSelectionTranslations;
-  onComplete: (characters: SelectedCharacter[], attributes: SpecialAttribute[]) => void;
+  onComplete: (characters: SelectedCharacter[]) => void;
   onBack: () => void;
 }
 
@@ -59,7 +57,6 @@ const CharacterSelectionScreen = ({
   } | null>(null);
   
   const [siblingModalOpen, setSiblingModalOpen] = useState(false);
-  const [bonusModalOpen, setBonusModalOpen] = useState(false);
 
   const mainTiles = [
     { type: "me" as CharacterType, image: heroKidImg, label: translations.me },
@@ -211,7 +208,8 @@ const CharacterSelectionScreen = ({
       label: translations.surprise,
     };
     setSelectedCharacters([surpriseCharacter]);
-    setBonusModalOpen(true);
+    // Go directly to next screen
+    onComplete([surpriseCharacter]);
   };
 
   const handleContinue = () => {
@@ -220,12 +218,8 @@ const CharacterSelectionScreen = ({
       setViewState("main");
       return;
     }
-    // From main view, proceed to bonus attributes
-    setBonusModalOpen(true);
-  };
-
-  const handleBonusComplete = (attributes: SpecialAttribute[]) => {
-    onComplete(selectedCharacters, attributes);
+    // From main view, proceed directly to next screen
+    onComplete(selectedCharacters);
   };
 
   const isSelected = (type: CharacterType | FamilyMember) => {
@@ -328,14 +322,6 @@ const CharacterSelectionScreen = ({
         open={siblingModalOpen}
         onClose={() => setSiblingModalOpen(false)}
         onSave={handleSaveSibling}
-        translations={translations}
-      />
-
-      {/* Bonus Attributes Modal */}
-      <BonusAttributesModal
-        open={bonusModalOpen}
-        onClose={() => setBonusModalOpen(false)}
-        onContinue={handleBonusComplete}
         translations={translations}
       />
     </div>

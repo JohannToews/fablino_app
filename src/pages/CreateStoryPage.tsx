@@ -283,12 +283,8 @@ const CreateStoryPage = () => {
   };
 
   // Handle character selection complete
-  const handleCharactersComplete = (
-    characters: SelectedCharacter[],
-    attributes: SpecialAttribute[]
-  ) => {
+  const handleCharactersComplete = (characters: SelectedCharacter[]) => {
     setSelectedCharacters(characters);
-    setSelectedAttributes(attributes);
     setCurrentScreen("effects");
   };
   
@@ -297,7 +293,7 @@ const CreateStoryPage = () => {
     attributes: SpecialAttribute[],
     description: string
   ) => {
-    setSelectedAttributes(prev => [...prev, ...attributes.filter(a => !prev.includes(a))]);
+    setSelectedAttributes(attributes);
     setAdditionalDescription(description);
     
     // Generate the story with all collected data
