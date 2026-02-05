@@ -8,6 +8,7 @@ interface CharacterTileProps {
   size?: "normal" | "small";
   badge?: string;
   className?: string;
+  overlayClass?: string;
 }
 
 const CharacterTile = ({
@@ -18,6 +19,7 @@ const CharacterTile = ({
   size = "normal",
   badge,
   className,
+  overlayClass,
 }: CharacterTileProps) => {
   return (
     <button
@@ -46,6 +48,11 @@ const CharacterTile = ({
           alt={label}
           className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
         />
+        
+        {/* Color palette overlay filter */}
+        {overlayClass && (
+          <div className={cn("absolute inset-0 pointer-events-none", overlayClass)} />
+        )}
         
         {/* Selection Indicator */}
         {selected && (

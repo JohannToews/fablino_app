@@ -17,6 +17,7 @@ import {
   getCategorySubElements
 } from "./types";
 import { cn } from "@/lib/utils";
+import { useColorPalette } from "@/hooks/useColorPalette";
 
 // Main category images
 import fantasyImg from "@/assets/story-types/fantasy.jpg";
@@ -59,6 +60,7 @@ const StoryTypeSelectionScreen = ({
   onComplete,
   onBack,
 }: StoryTypeSelectionScreenProps) => {
+  const { colors } = useColorPalette();
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedType, setSelectedType] = useState<StoryType | null>(null);
   const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
@@ -310,6 +312,7 @@ const StoryTypeSelectionScreen = ({
                   onClick={() => handleTypeClick(tile.type)}
                   selected={selectedType === tile.type}
                   size="small"
+                  overlayClass={colors.overlay}
                 />
               ))}
             </div>
@@ -321,11 +324,14 @@ const StoryTypeSelectionScreen = ({
               className="w-full h-14 md:h-16 rounded-xl md:rounded-2xl border-2 border-dashed border-primary/50 hover:border-primary hover:bg-primary/5 transition-all group"
             >
               <div className="flex items-center gap-3">
-                <img 
-                  src={surpriseBoxImg} 
-                  alt="Surprise" 
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover"
-                />
+                <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden">
+                  <img 
+                    src={surpriseBoxImg} 
+                    alt="Surprise" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className={cn("absolute inset-0 pointer-events-none", colors.overlay)} />
+                </div>
                 <span className="text-base md:text-lg font-baloo font-semibold">
                   {translations.surprise}
                 </span>
@@ -424,6 +430,7 @@ const StoryTypeSelectionScreen = ({
                   onClick={() => handleTopicClick(tile.type)}
                   selected={selectedTopic === tile.type}
                   size="small"
+                  overlayClass={colors.overlay}
                 />
               ))}
             </div>
