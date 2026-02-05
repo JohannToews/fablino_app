@@ -245,13 +245,44 @@ export const settingSelectionTranslations: Record<Language, SettingSelectionTran
   },
 };
 
+// Main story categories
 export type StoryType = 
-  | "educational" 
-  | "adventure" 
-  | "detective" 
-  | "funny" 
-  | "friendship" 
-  | "surprise";
+  | "fantasy"      // Märchen & Fantasie
+  | "action"       // Abenteuer & Action
+  | "animals"      // Tiergeschichten
+  | "everyday"     // Alltag & Gefühle
+  | "humor"        // Humor & Chaos
+  | "educational"; // Wissen & Entdecken
+
+// Sub-elements for each category
+export type StorySubElement = 
+  // Fantasy
+  | "witches" | "fairies" | "wizards" | "dragons" | "royalty" | "magic_objects" | "talking_animals"
+  // Action
+  | "pirates" | "ninjas" | "detectives" | "superheroes" | "explorers" | "treasure_hunts" | "knights" | "space_travel"
+  // Animals
+  | "pets" | "wild_animals" | "farm_animals" | "animal_friends" | "humanized_animals" | "animal_communities"
+  // Everyday
+  | "family" | "school" | "friendship" | "conflict_resolution" | "emotions" | "first_experiences"
+  // Humor
+  | "silly_stories" | "absurd_characters" | "mishaps" | "cheeky_kids" | "crazy_animals" | "wordplay";
+
+export const getCategorySubElements = (category: StoryType): StorySubElement[] => {
+  switch (category) {
+    case "fantasy":
+      return ["witches", "fairies", "wizards", "dragons", "royalty", "magic_objects", "talking_animals"];
+    case "action":
+      return ["pirates", "ninjas", "detectives", "superheroes", "explorers", "treasure_hunts", "knights", "space_travel"];
+    case "animals":
+      return ["pets", "wild_animals", "farm_animals", "animal_friends", "humanized_animals", "animal_communities"];
+    case "everyday":
+      return ["family", "school", "friendship", "conflict_resolution", "emotions", "first_experiences"];
+    case "humor":
+      return ["silly_stories", "absurd_characters", "mishaps", "cheeky_kids", "crazy_animals", "wordplay"];
+    default:
+      return [];
+  }
+};
 
 export type EducationalTopic = 
   | "nature" 
@@ -278,14 +309,57 @@ export interface StoryTypeSelectionTranslations {
   seriesLabel: string;
   seriesYes: string;
   seriesNo: string;
-  // Story types
+  // Main categories
+  fantasy: string;
+  action: string;
+  animals: string;
+  everyday: string;
+  humor: string;
   educational: string;
-  educationalSubtext: string;
-  adventure: string;
-  detective: string;
-  funny: string;
-  friendship: string;
   surprise: string;
+  // Sub-element selection
+  subElementHeader: string;
+  subElementHint: string;
+  selectedElements: string;
+  // Fantasy sub-elements
+  subElement_witches: string;
+  subElement_fairies: string;
+  subElement_wizards: string;
+  subElement_dragons: string;
+  subElement_royalty: string;
+  subElement_magic_objects: string;
+  subElement_talking_animals: string;
+  // Action sub-elements
+  subElement_pirates: string;
+  subElement_ninjas: string;
+  subElement_detectives: string;
+  subElement_superheroes: string;
+  subElement_explorers: string;
+  subElement_treasure_hunts: string;
+  subElement_knights: string;
+  subElement_space_travel: string;
+  // Animals sub-elements
+  subElement_pets: string;
+  subElement_wild_animals: string;
+  subElement_farm_animals: string;
+  subElement_animal_friends: string;
+  subElement_humanized_animals: string;
+  subElement_animal_communities: string;
+  // Everyday sub-elements
+  subElement_family: string;
+  subElement_school: string;
+  subElement_friendship: string;
+  subElement_conflict_resolution: string;
+  subElement_emotions: string;
+  subElement_first_experiences: string;
+  // Humor sub-elements
+  subElement_silly_stories: string;
+  subElement_absurd_characters: string;
+  subElement_mishaps: string;
+  subElement_cheeky_kids: string;
+  subElement_crazy_animals: string;
+  subElement_wordplay: string;
+  // Humor slider
   humorSliderTitle: string;
   humorLow: string;
   humorMid: string;
@@ -322,19 +396,64 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Serie",
     seriesYes: "Ja",
     seriesNo: "Nein",
-    educational: "Ich will was lernen",
-    educationalSubtext: "Sachgeschichte",
-    adventure: "Abenteuer",
-    detective: "Detektive",
-    funny: "Lustig",
-    friendship: "Freundschaft",
+    // Main categories
+    fantasy: "Märchen & Fantasie",
+    action: "Abenteuer & Action",
+    animals: "Tiergeschichten",
+    everyday: "Alltag & Gefühle",
+    humor: "Humor & Chaos",
+    educational: "Wissen & Entdecken",
     surprise: "Überrasch mich",
+    // Sub-element selection
+    subElementHeader: "Wähle Elemente",
+    subElementHint: "Wähle bis zu 3 Elemente (optional)",
+    selectedElements: "Ausgewählt",
+    // Fantasy
+    subElement_witches: "🧙‍♀️ Hexen",
+    subElement_fairies: "🧚 Feen",
+    subElement_wizards: "🧙 Zauberer",
+    subElement_dragons: "🐉 Drachen",
+    subElement_royalty: "👑 Prinzen & Prinzessinnen",
+    subElement_magic_objects: "✨ Magische Gegenstände",
+    subElement_talking_animals: "🗣️ Sprechende Tiere",
+    // Action
+    subElement_pirates: "🏴‍☠️ Piraten",
+    subElement_ninjas: "🥷 Ninjas",
+    subElement_detectives: "🔍 Detektive",
+    subElement_superheroes: "🦸 Superhelden",
+    subElement_explorers: "🧭 Entdecker",
+    subElement_treasure_hunts: "💎 Schatzsuchen",
+    subElement_knights: "⚔️ Ritter",
+    subElement_space_travel: "🚀 Weltraumabenteuer",
+    // Animals
+    subElement_pets: "🐕 Haustiere",
+    subElement_wild_animals: "🦁 Wildtiere",
+    subElement_farm_animals: "🐄 Bauernhoftiere",
+    subElement_animal_friends: "🐾 Tierfreunde",
+    subElement_humanized_animals: "🐻 Vermenschlichte Tiere",
+    subElement_animal_communities: "🐝 Tiergemeinschaften",
+    // Everyday
+    subElement_family: "👨‍👩‍👧 Familie",
+    subElement_school: "🏫 Schule",
+    subElement_friendship: "🤝 Freundschaft",
+    subElement_conflict_resolution: "🤗 Streit & Versöhnung",
+    subElement_emotions: "💖 Gefühle",
+    subElement_first_experiences: "🌟 Erste Erfahrungen",
+    // Humor
+    subElement_silly_stories: "🤪 Quatschgeschichten",
+    subElement_absurd_characters: "👽 Absurde Figuren",
+    subElement_mishaps: "💥 Missgeschicke",
+    subElement_cheeky_kids: "😜 Freche Kinder",
+    subElement_crazy_animals: "🦊 Verrückte Tiere",
+    subElement_wordplay: "📝 Sprachwitz",
+    // Humor slider
     humorSliderTitle: "Wie lustig soll es sein?",
     humorLow: "Normal lustig",
     humorMid: "Richtig lustig",
     humorHigh: "Total verrückt",
     continue: "Weiter",
     back: "Zurück",
+    // Educational topics
     educationalTopicHeader: "Was möchtest du lernen?",
     natureAnimals: "Natur & Tiere",
     monumentsHistory: "Monumente & Geschichte",
@@ -362,13 +481,49 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Série",
     seriesYes: "Oui",
     seriesNo: "Non",
-    educational: "Je veux apprendre",
-    educationalSubtext: "Histoire éducative",
-    adventure: "Aventure",
-    detective: "Détective",
-    funny: "Drôle",
-    friendship: "Amitié",
+    fantasy: "Contes & Fantaisie",
+    action: "Aventure & Action",
+    animals: "Histoires d'animaux",
+    everyday: "Quotidien & Émotions",
+    humor: "Humour & Chaos",
+    educational: "Savoir & Découvrir",
     surprise: "Surprends-moi",
+    subElementHeader: "Choisis des éléments",
+    subElementHint: "Choisis jusqu'à 3 éléments (optionnel)",
+    selectedElements: "Sélectionnés",
+    subElement_witches: "🧙‍♀️ Sorcières",
+    subElement_fairies: "🧚 Fées",
+    subElement_wizards: "🧙 Magiciens",
+    subElement_dragons: "🐉 Dragons",
+    subElement_royalty: "👑 Princes & Princesses",
+    subElement_magic_objects: "✨ Objets magiques",
+    subElement_talking_animals: "🗣️ Animaux parlants",
+    subElement_pirates: "🏴‍☠️ Pirates",
+    subElement_ninjas: "🥷 Ninjas",
+    subElement_detectives: "🔍 Détectives",
+    subElement_superheroes: "🦸 Super-héros",
+    subElement_explorers: "🧭 Explorateurs",
+    subElement_treasure_hunts: "💎 Chasses au trésor",
+    subElement_knights: "⚔️ Chevaliers",
+    subElement_space_travel: "🚀 Aventures spatiales",
+    subElement_pets: "🐕 Animaux domestiques",
+    subElement_wild_animals: "🦁 Animaux sauvages",
+    subElement_farm_animals: "🐄 Animaux de ferme",
+    subElement_animal_friends: "🐾 Amis animaux",
+    subElement_humanized_animals: "🐻 Animaux humanisés",
+    subElement_animal_communities: "🐝 Communautés animales",
+    subElement_family: "👨‍👩‍👧 Famille",
+    subElement_school: "🏫 École",
+    subElement_friendship: "🤝 Amitié",
+    subElement_conflict_resolution: "🤗 Conflits & Réconciliation",
+    subElement_emotions: "💖 Émotions",
+    subElement_first_experiences: "🌟 Premières expériences",
+    subElement_silly_stories: "🤪 Histoires absurdes",
+    subElement_absurd_characters: "👽 Personnages absurdes",
+    subElement_mishaps: "💥 Mésaventures",
+    subElement_cheeky_kids: "😜 Enfants espiègles",
+    subElement_crazy_animals: "🦊 Animaux fous",
+    subElement_wordplay: "📝 Jeux de mots",
     humorSliderTitle: "À quel point drôle?",
     humorLow: "Normalement drôle",
     humorMid: "Très drôle",
@@ -402,13 +557,49 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Series",
     seriesYes: "Yes",
     seriesNo: "No",
-    educational: "I want to learn",
-    educationalSubtext: "Educational story",
-    adventure: "Adventure",
-    detective: "Detective",
-    funny: "Funny",
-    friendship: "Friendship",
+    fantasy: "Fairy Tales & Fantasy",
+    action: "Adventure & Action",
+    animals: "Animal Stories",
+    everyday: "Everyday & Feelings",
+    humor: "Humor & Chaos",
+    educational: "Learn & Discover",
     surprise: "Surprise me",
+    subElementHeader: "Choose elements",
+    subElementHint: "Choose up to 3 elements (optional)",
+    selectedElements: "Selected",
+    subElement_witches: "🧙‍♀️ Witches",
+    subElement_fairies: "🧚 Fairies",
+    subElement_wizards: "🧙 Wizards",
+    subElement_dragons: "🐉 Dragons",
+    subElement_royalty: "👑 Princes & Princesses",
+    subElement_magic_objects: "✨ Magic Objects",
+    subElement_talking_animals: "🗣️ Talking Animals",
+    subElement_pirates: "🏴‍☠️ Pirates",
+    subElement_ninjas: "🥷 Ninjas",
+    subElement_detectives: "🔍 Detectives",
+    subElement_superheroes: "🦸 Superheroes",
+    subElement_explorers: "🧭 Explorers",
+    subElement_treasure_hunts: "💎 Treasure Hunts",
+    subElement_knights: "⚔️ Knights",
+    subElement_space_travel: "🚀 Space Adventures",
+    subElement_pets: "🐕 Pets",
+    subElement_wild_animals: "🦁 Wild Animals",
+    subElement_farm_animals: "🐄 Farm Animals",
+    subElement_animal_friends: "🐾 Animal Friends",
+    subElement_humanized_animals: "🐻 Humanized Animals",
+    subElement_animal_communities: "🐝 Animal Communities",
+    subElement_family: "👨‍👩‍👧 Family",
+    subElement_school: "🏫 School",
+    subElement_friendship: "🤝 Friendship",
+    subElement_conflict_resolution: "🤗 Conflict & Resolution",
+    subElement_emotions: "💖 Emotions",
+    subElement_first_experiences: "🌟 First Experiences",
+    subElement_silly_stories: "🤪 Silly Stories",
+    subElement_absurd_characters: "👽 Absurd Characters",
+    subElement_mishaps: "💥 Mishaps",
+    subElement_cheeky_kids: "😜 Cheeky Kids",
+    subElement_crazy_animals: "🦊 Crazy Animals",
+    subElement_wordplay: "📝 Wordplay",
     humorSliderTitle: "How funny should it be?",
     humorLow: "Normally funny",
     humorMid: "Really funny",
@@ -442,13 +633,49 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Serie",
     seriesYes: "Sí",
     seriesNo: "No",
-    educational: "Quiero aprender",
-    educationalSubtext: "Historia educativa",
-    adventure: "Aventura",
-    detective: "Detective",
-    funny: "Gracioso",
-    friendship: "Amistad",
+    fantasy: "Cuentos & Fantasía",
+    action: "Aventura & Acción",
+    animals: "Historias de animales",
+    everyday: "Cotidiano & Emociones",
+    humor: "Humor & Caos",
+    educational: "Saber & Descubrir",
     surprise: "Sorpréndeme",
+    subElementHeader: "Elige elementos",
+    subElementHint: "Elige hasta 3 elementos (opcional)",
+    selectedElements: "Seleccionados",
+    subElement_witches: "🧙‍♀️ Brujas",
+    subElement_fairies: "🧚 Hadas",
+    subElement_wizards: "🧙 Magos",
+    subElement_dragons: "🐉 Dragones",
+    subElement_royalty: "👑 Príncipes & Princesas",
+    subElement_magic_objects: "✨ Objetos mágicos",
+    subElement_talking_animals: "🗣️ Animales parlantes",
+    subElement_pirates: "🏴‍☠️ Piratas",
+    subElement_ninjas: "🥷 Ninjas",
+    subElement_detectives: "🔍 Detectives",
+    subElement_superheroes: "🦸 Superhéroes",
+    subElement_explorers: "🧭 Exploradores",
+    subElement_treasure_hunts: "💎 Búsqueda del tesoro",
+    subElement_knights: "⚔️ Caballeros",
+    subElement_space_travel: "🚀 Aventuras espaciales",
+    subElement_pets: "🐕 Mascotas",
+    subElement_wild_animals: "🦁 Animales salvajes",
+    subElement_farm_animals: "🐄 Animales de granja",
+    subElement_animal_friends: "🐾 Amigos animales",
+    subElement_humanized_animals: "🐻 Animales humanizados",
+    subElement_animal_communities: "🐝 Comunidades animales",
+    subElement_family: "👨‍👩‍👧 Familia",
+    subElement_school: "🏫 Escuela",
+    subElement_friendship: "🤝 Amistad",
+    subElement_conflict_resolution: "🤗 Conflictos & Reconciliación",
+    subElement_emotions: "💖 Emociones",
+    subElement_first_experiences: "🌟 Primeras experiencias",
+    subElement_silly_stories: "🤪 Historias tontas",
+    subElement_absurd_characters: "👽 Personajes absurdos",
+    subElement_mishaps: "💥 Percances",
+    subElement_cheeky_kids: "😜 Niños traviesos",
+    subElement_crazy_animals: "🦊 Animales locos",
+    subElement_wordplay: "📝 Juegos de palabras",
     humorSliderTitle: "¿Qué tan gracioso?",
     humorLow: "Normalmente gracioso",
     humorMid: "Muy gracioso",
@@ -482,13 +709,49 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Serie",
     seriesYes: "Ja",
     seriesNo: "Nee",
-    educational: "Ik wil leren",
-    educationalSubtext: "Educatief verhaal",
-    adventure: "Avontuur",
-    detective: "Detective",
-    funny: "Grappig",
-    friendship: "Vriendschap",
+    fantasy: "Sprookjes & Fantasie",
+    action: "Avontuur & Actie",
+    animals: "Dierenverhalen",
+    everyday: "Dagelijks & Gevoelens",
+    humor: "Humor & Chaos",
+    educational: "Leren & Ontdekken",
     surprise: "Verras me",
+    subElementHeader: "Kies elementen",
+    subElementHint: "Kies maximaal 3 elementen (optioneel)",
+    selectedElements: "Geselecteerd",
+    subElement_witches: "🧙‍♀️ Heksen",
+    subElement_fairies: "🧚 Feeën",
+    subElement_wizards: "🧙 Tovenaars",
+    subElement_dragons: "🐉 Draken",
+    subElement_royalty: "👑 Prinsen & Prinsessen",
+    subElement_magic_objects: "✨ Magische voorwerpen",
+    subElement_talking_animals: "🗣️ Sprekende dieren",
+    subElement_pirates: "🏴‍☠️ Piraten",
+    subElement_ninjas: "🥷 Ninja's",
+    subElement_detectives: "🔍 Detectives",
+    subElement_superheroes: "🦸 Superhelden",
+    subElement_explorers: "🧭 Ontdekkers",
+    subElement_treasure_hunts: "💎 Schattenjachten",
+    subElement_knights: "⚔️ Ridders",
+    subElement_space_travel: "🚀 Ruimteavonturen",
+    subElement_pets: "🐕 Huisdieren",
+    subElement_wild_animals: "🦁 Wilde dieren",
+    subElement_farm_animals: "🐄 Boerderijdieren",
+    subElement_animal_friends: "🐾 Dierenvrienden",
+    subElement_humanized_animals: "🐻 Vermenselijkte dieren",
+    subElement_animal_communities: "🐝 Dierengemeenschappen",
+    subElement_family: "👨‍👩‍👧 Familie",
+    subElement_school: "🏫 School",
+    subElement_friendship: "🤝 Vriendschap",
+    subElement_conflict_resolution: "🤗 Conflicten & Verzoening",
+    subElement_emotions: "💖 Emoties",
+    subElement_first_experiences: "🌟 Eerste ervaringen",
+    subElement_silly_stories: "🤪 Gekke verhalen",
+    subElement_absurd_characters: "👽 Absurde figuren",
+    subElement_mishaps: "💥 Ongelukjes",
+    subElement_cheeky_kids: "😜 Brutale kinderen",
+    subElement_crazy_animals: "🦊 Gekke dieren",
+    subElement_wordplay: "📝 Woordspelingen",
     humorSliderTitle: "Hoe grappig moet het zijn?",
     humorLow: "Normaal grappig",
     humorMid: "Echt grappig",
@@ -522,13 +785,49 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Serie",
     seriesYes: "Sì",
     seriesNo: "No",
-    educational: "Voglio imparare",
-    educationalSubtext: "Storia educativa",
-    adventure: "Avventura",
-    detective: "Detective",
-    funny: "Divertente",
-    friendship: "Amicizia",
+    fantasy: "Fiabe & Fantasia",
+    action: "Avventura & Azione",
+    animals: "Storie di animali",
+    everyday: "Quotidiano & Emozioni",
+    humor: "Umorismo & Caos",
+    educational: "Sapere & Scoprire",
     surprise: "Sorprendimi",
+    subElementHeader: "Scegli elementi",
+    subElementHint: "Scegli fino a 3 elementi (opzionale)",
+    selectedElements: "Selezionati",
+    subElement_witches: "🧙‍♀️ Streghe",
+    subElement_fairies: "🧚 Fate",
+    subElement_wizards: "🧙 Maghi",
+    subElement_dragons: "🐉 Draghi",
+    subElement_royalty: "👑 Principi & Principesse",
+    subElement_magic_objects: "✨ Oggetti magici",
+    subElement_talking_animals: "🗣️ Animali parlanti",
+    subElement_pirates: "🏴‍☠️ Pirati",
+    subElement_ninjas: "🥷 Ninja",
+    subElement_detectives: "🔍 Detective",
+    subElement_superheroes: "🦸 Supereroi",
+    subElement_explorers: "🧭 Esploratori",
+    subElement_treasure_hunts: "💎 Caccia al tesoro",
+    subElement_knights: "⚔️ Cavalieri",
+    subElement_space_travel: "🚀 Avventure spaziali",
+    subElement_pets: "🐕 Animali domestici",
+    subElement_wild_animals: "🦁 Animali selvatici",
+    subElement_farm_animals: "🐄 Animali della fattoria",
+    subElement_animal_friends: "🐾 Amici animali",
+    subElement_humanized_animals: "🐻 Animali umanizzati",
+    subElement_animal_communities: "🐝 Comunità animali",
+    subElement_family: "👨‍👩‍👧 Famiglia",
+    subElement_school: "🏫 Scuola",
+    subElement_friendship: "🤝 Amicizia",
+    subElement_conflict_resolution: "🤗 Conflitti & Riconciliazione",
+    subElement_emotions: "💖 Emozioni",
+    subElement_first_experiences: "🌟 Prime esperienze",
+    subElement_silly_stories: "🤪 Storie sciocche",
+    subElement_absurd_characters: "👽 Personaggi assurdi",
+    subElement_mishaps: "💥 Disavventure",
+    subElement_cheeky_kids: "😜 Bambini birichini",
+    subElement_crazy_animals: "🦊 Animali pazzi",
+    subElement_wordplay: "📝 Giochi di parole",
     humorSliderTitle: "Quanto divertente?",
     humorLow: "Normalmente divertente",
     humorMid: "Molto divertente",
@@ -562,13 +861,49 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     seriesLabel: "Serija",
     seriesYes: "Da",
     seriesNo: "Ne",
-    educational: "Želim učiti",
-    educationalSubtext: "Obrazovna priča",
-    adventure: "Avantura",
-    detective: "Detektiv",
-    funny: "Smiješno",
-    friendship: "Prijateljstvo",
+    fantasy: "Bajke & Fantazija",
+    action: "Avantura & Akcija",
+    animals: "Priče o životinjama",
+    everyday: "Svakodnevica & Osjećaji",
+    humor: "Humor & Kaos",
+    educational: "Znanje & Otkrivanje",
     surprise: "Iznenadi me",
+    subElementHeader: "Odaberi elemente",
+    subElementHint: "Odaberi do 3 elementa (opcionalno)",
+    selectedElements: "Odabrano",
+    subElement_witches: "🧙‍♀️ Vještice",
+    subElement_fairies: "🧚 Vile",
+    subElement_wizards: "🧙 Čarobnjaci",
+    subElement_dragons: "🐉 Zmajevi",
+    subElement_royalty: "👑 Prinčevi & Princeze",
+    subElement_magic_objects: "✨ Magični predmeti",
+    subElement_talking_animals: "🗣️ Životinje koje govore",
+    subElement_pirates: "🏴‍☠️ Pirati",
+    subElement_ninjas: "🥷 Nindže",
+    subElement_detectives: "🔍 Detektivi",
+    subElement_superheroes: "🦸 Superheroji",
+    subElement_explorers: "🧭 Istraživači",
+    subElement_treasure_hunts: "💎 Potraga za blagom",
+    subElement_knights: "⚔️ Vitezovi",
+    subElement_space_travel: "🚀 Svemirske avanture",
+    subElement_pets: "🐕 Kućni ljubimci",
+    subElement_wild_animals: "🦁 Divlje životinje",
+    subElement_farm_animals: "🐄 Životinje s farme",
+    subElement_animal_friends: "🐾 Životinjski prijatelji",
+    subElement_humanized_animals: "🐻 Ljudske životinje",
+    subElement_animal_communities: "🐝 Životinjske zajednice",
+    subElement_family: "👨‍👩‍👧 Porodica",
+    subElement_school: "🏫 Škola",
+    subElement_friendship: "🤝 Prijateljstvo",
+    subElement_conflict_resolution: "🤗 Sukob & Pomirenje",
+    subElement_emotions: "💖 Emocije",
+    subElement_first_experiences: "🌟 Prva iskustva",
+    subElement_silly_stories: "🤪 Lude priče",
+    subElement_absurd_characters: "👽 Apsurdni likovi",
+    subElement_mishaps: "💥 Nezgode",
+    subElement_cheeky_kids: "😜 Nestašna djeca",
+    subElement_crazy_animals: "🦊 Lude životinje",
+    subElement_wordplay: "📝 Igra riječima",
     humorSliderTitle: "Koliko smiješno?",
     humorLow: "Normalno smiješno",
     humorMid: "Jako smiješno",

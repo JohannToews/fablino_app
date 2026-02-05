@@ -1,20 +1,30 @@
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import CharacterTile from "./CharacterTile";
-import { StoryType, EducationalTopic, StoryTypeSelectionTranslations, StoryLength, StoryDifficulty } from "./types";
+import { 
+  StoryType, 
+  StorySubElement,
+  EducationalTopic, 
+  StoryTypeSelectionTranslations, 
+  StoryLength, 
+  StoryDifficulty,
+  getCategorySubElements
+} from "./types";
 import { cn } from "@/lib/utils";
 
-// Story type images
+// Main category images
+import fantasyImg from "@/assets/story-types/fantasy.jpg";
+import actionImg from "@/assets/story-types/action.jpg";
+import animalsImg from "@/assets/story-types/animals.jpg";
+import everydayImg from "@/assets/story-types/everyday.jpg";
+import humorImg from "@/assets/story-types/humor.jpg";
 import educationalImg from "@/assets/story-types/educational.jpg";
-import adventureImg from "@/assets/story-types/adventure.jpg";
-import detectiveImg from "@/assets/story-types/detective.jpg";
-import funnyImg from "@/assets/story-types/funny.jpg";
-import friendshipImg from "@/assets/story-types/friendship.jpg";
 import surpriseBoxImg from "@/assets/characters/surprise-box.jpg";
 
 // Educational topic images
@@ -36,12 +46,13 @@ interface StoryTypeSelectionScreenProps {
     settings: StorySettings,
     humorLevel?: number,
     educationalTopic?: EducationalTopic,
-    customTopic?: string
+    customTopic?: string,
+    selectedSubElements?: StorySubElement[]
   ) => void;
   onBack: () => void;
 }
 
-type ViewState = "main" | "educational";
+type ViewState = "main" | "subelements" | "educational";
 
 const StoryTypeSelectionScreen = ({
   translations,
@@ -50,6 +61,7 @@ const StoryTypeSelectionScreen = ({
 }: StoryTypeSelectionScreenProps) => {
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedType, setSelectedType] = useState<StoryType | null>(null);
+  const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<EducationalTopic | null>(null);
   const [customTopic, setCustomTopic] = useState("");
   const [humorLevel, setHumorLevel] = useState(5);
@@ -59,13 +71,13 @@ const StoryTypeSelectionScreen = ({
   const [storyDifficulty, setStoryDifficulty] = useState<StoryDifficulty>("medium");
   const [isSeries, setIsSeries] = useState(false);
 
-  const storyTypeTiles = [
-    { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
-    { type: "adventure" as StoryType, image: adventureImg, label: translations.adventure },
-    { type: "detective" as StoryType, image: detectiveImg, label: translations.detective },
-    { type: "funny" as StoryType, image: funnyImg, label: translations.funny },
-    { type: "friendship" as StoryType, image: friendshipImg, label: translations.friendship },
-    { type: "surprise" as StoryType, image: surpriseBoxImg, label: translations.surprise, badge: "⭐" },
+  const mainCategoryTiles = [
+    { type: "fantasy" as StoryType, image: fantasyImg, label: translations.fantasy, emoji: "🧚" },
+    { type: "action" as StoryType, image: actionImg, label: translations.action, emoji: "⚔️" },
+    { type: "animals" as StoryType, image: animalsImg, label: translations.animals, emoji: "🐾" },
+    { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday, emoji: "🏠" },
+    { type: "humor" as StoryType, image: humorImg, label: translations.humor, emoji: "🤪" },
+    { type: "educational" as StoryType, image: educationalImg, label: translations.educational, emoji: "📚" },
   ];
 
   const educationalTopicTiles = [
@@ -77,28 +89,52 @@ const StoryTypeSelectionScreen = ({
   ];
 
   const handleTypeClick = (type: StoryType) => {
-    if (type === "surprise") {
-      // Random selection (excluding surprise and educational)
-      const randomTypes = storyTypeTiles.filter(t => t.type !== "surprise" && t.type !== "educational");
-      const randomType = randomTypes[Math.floor(Math.random() * randomTypes.length)].type;
-      setSelectedType(randomType);
-      
-      if (randomType === "funny") {
-        setHumorLevel(Math.floor(Math.random() * 10) + 1);
-      }
-    } else if (type === "educational") {
+    if (type === "educational") {
       setSelectedType(type);
       setViewState("educational");
     } else {
       setSelectedType(type);
+      setSelectedSubElements([]);
+      setViewState("subelements");
     }
   };
 
-  const handleTopicClick = (topic: EducationalTopic) => {
-    if (selectedTopic === topic) {
-      // Deselect if clicking same topic
-      return;
+  const handleSurpriseClick = () => {
+    // Random selection from main categories (excluding educational)
+    const randomCategories = mainCategoryTiles.filter(t => t.type !== "educational");
+    const randomCategory = randomCategories[Math.floor(Math.random() * randomCategories.length)].type;
+    
+    // Get random sub-elements for that category
+    const subElements = getCategorySubElements(randomCategory);
+    const numElements = Math.floor(Math.random() * 2) + 1; // 1-2 elements
+    const shuffled = [...subElements].sort(() => Math.random() - 0.5);
+    const randomElements = shuffled.slice(0, numElements);
+    
+    setSelectedType(randomCategory);
+    setSelectedSubElements(randomElements);
+    
+    if (randomCategory === "humor") {
+      setHumorLevel(Math.floor(Math.random() * 10) + 1);
     }
+    
+    // Go directly to confirmation with random selections
+    setViewState("subelements");
+  };
+
+  const handleSubElementToggle = (element: StorySubElement) => {
+    setSelectedSubElements(prev => {
+      if (prev.includes(element)) {
+        return prev.filter(e => e !== element);
+      }
+      if (prev.length >= 3) {
+        return prev; // Max 3 elements
+      }
+      return [...prev, element];
+    });
+  };
+
+  const handleTopicClick = (topic: EducationalTopic) => {
+    if (selectedTopic === topic) return;
     setSelectedTopic(topic);
     setCustomTopic("");
   };
@@ -125,12 +161,11 @@ const StoryTypeSelectionScreen = ({
     
     if (selectedType === "educational") {
       if (!selectedTopic) return;
-      // Pass customTopic for any topic (optional for most, required for "other")
       onComplete(selectedType, settings, undefined, selectedTopic, customTopic.trim() || undefined);
-    } else if (selectedType === "funny") {
-      onComplete(selectedType, settings, humorLevel);
+    } else if (selectedType === "humor") {
+      onComplete(selectedType, settings, humorLevel, undefined, undefined, selectedSubElements);
     } else {
-      onComplete(selectedType, settings);
+      onComplete(selectedType, settings, undefined, undefined, undefined, selectedSubElements);
     }
   };
 
@@ -139,6 +174,9 @@ const StoryTypeSelectionScreen = ({
       setViewState("main");
       setSelectedTopic(null);
       setCustomTopic("");
+    } else if (viewState === "subelements") {
+      setViewState("main");
+      setSelectedSubElements([]);
     } else {
       onBack();
     }
@@ -162,7 +200,26 @@ const StoryTypeSelectionScreen = ({
       if (!selectedTopic) return false;
       if (selectedTopic === "other" && !customTopic.trim()) return false;
     }
+    // For other types, sub-elements are optional
     return true;
+  };
+
+  const getSubElementLabel = (element: StorySubElement): string => {
+    // Get translation for sub-element
+    const key = `subElement_${element}` as keyof StoryTypeSelectionTranslations;
+    return (translations[key] as string) || element;
+  };
+
+  const currentSubElements = selectedType && selectedType !== "educational" 
+    ? getCategorySubElements(selectedType) 
+    : [];
+
+  const getHeaderForView = () => {
+    if (viewState === "main") return translations.header;
+    if (viewState === "educational") return translations.educationalTopicHeader;
+    // For subelements, show category name
+    const category = mainCategoryTiles.find(t => t.type === selectedType);
+    return `${category?.emoji || ""} ${category?.label || ""} - ${translations.subElementHeader}`;
   };
 
   return (
@@ -174,13 +231,13 @@ const StoryTypeSelectionScreen = ({
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-base md:text-lg font-baloo font-bold flex-1">
-            {viewState === "main" ? translations.header : translations.educationalTopicHeader}
+            {getHeaderForView()}
           </h1>
         </div>
       </div>
 
       <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-3 md:space-y-4">
-        {/* Story Settings (Length, Difficulty, Series) - Compact for tablets */}
+        {/* Story Settings (Length, Difficulty, Series) - Only on main view */}
         {viewState === "main" && (
           <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border space-y-3 md:space-y-4">
             {/* Length Selection */}
@@ -240,25 +297,81 @@ const StoryTypeSelectionScreen = ({
             </div>
           </div>
         )}
-        {/* Main Story Type Grid - 3 columns on tablet */}
+
+        {/* Main Category Grid */}
         {viewState === "main" && (
           <>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
-              {storyTypeTiles.map((tile) => (
+              {mainCategoryTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
                   image={tile.image}
                   label={tile.label}
                   onClick={() => handleTypeClick(tile.type)}
                   selected={selectedType === tile.type}
-                  badge={tile.badge}
+                  badge={tile.emoji}
                   size="small"
                 />
               ))}
             </div>
 
-            {/* Humor Slider (appears when "funny" is selected) */}
-            {selectedType === "funny" && (
+            {/* Surprise Me Button - Separate */}
+            <Button
+              onClick={handleSurpriseClick}
+              variant="outline"
+              className="w-full h-14 md:h-16 rounded-xl md:rounded-2xl border-2 border-dashed border-primary/50 hover:border-primary hover:bg-primary/5 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <img 
+                  src={surpriseBoxImg} 
+                  alt="Surprise" 
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover"
+                />
+                <span className="text-base md:text-lg font-baloo font-semibold">
+                  {translations.surprise}
+                </span>
+                <Sparkles className="h-5 w-5 text-primary group-hover:animate-pulse" />
+              </div>
+            </Button>
+          </>
+        )}
+
+        {/* Sub-Elements Selection */}
+        {viewState === "subelements" && selectedType && selectedType !== "educational" && (
+          <>
+            <p className="text-sm text-muted-foreground text-center">
+              {translations.subElementHint}
+            </p>
+            
+            <div className="flex flex-wrap gap-2 justify-center">
+              {currentSubElements.map((element) => (
+                <Badge
+                  key={element}
+                  variant={selectedSubElements.includes(element) ? "default" : "outline"}
+                  className={cn(
+                    "px-3 py-2 text-sm md:text-base cursor-pointer transition-all",
+                    selectedSubElements.includes(element) 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                      : "hover:bg-primary/10 hover:border-primary"
+                  )}
+                  onClick={() => handleSubElementToggle(element)}
+                >
+                  {getSubElementLabel(element)}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Selected elements display */}
+            {selectedSubElements.length > 0 && (
+              <div className="bg-primary/10 rounded-xl p-3 text-center">
+                <p className="text-sm font-medium text-primary">
+                  {translations.selectedElements}: {selectedSubElements.map(e => getSubElementLabel(e)).join(", ")}
+                </p>
+              </div>
+            )}
+
+            {/* Humor Slider (appears when "humor" is selected) */}
+            {selectedType === "humor" && (
               <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-primary/20 space-y-3">
                 <h3 className="text-base md:text-lg font-baloo font-semibold text-center">
                   {translations.humorSliderTitle}

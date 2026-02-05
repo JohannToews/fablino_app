@@ -9,6 +9,7 @@ import CharacterSelectionScreen from "@/components/story-creation/CharacterSelec
 import SettingSelectionScreen from "@/components/story-creation/SettingSelectionScreen";
 import {
   StoryType,
+  StorySubElement,
   EducationalTopic,
   SelectedCharacter,
   SpecialAttribute,
@@ -94,6 +95,7 @@ const CreateStoryPage = () => {
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<LocationType[]>([]);
   const [selectedTime, setSelectedTime] = useState<TimePeriod>("today");
+  const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Translations
@@ -265,13 +267,15 @@ const CreateStoryPage = () => {
     settings: StorySettings,
     humor?: number, 
     topic?: EducationalTopic, 
-    customTopicText?: string
+    customTopicText?: string,
+    subElements?: StorySubElement[]
   ) => {
     setSelectedStoryType(storyType);
     setStorySettings(settings);
     setHumorLevel(humor);
     setEducationalTopic(topic);
     setCustomTopic(customTopicText);
+    setSelectedSubElements(subElements || []);
 
     // For educational stories, generate directly without character/setting screens
     if (storyType === "educational" && topic) {
@@ -324,21 +328,22 @@ const CreateStoryPage = () => {
     const attributeNames = selectedAttributes.join(", ");
     
     const storyTypeLabels: Record<StoryType, Record<string, string>> = {
-      adventure: { de: "Abenteuergeschichte", fr: "Histoire d'aventure", en: "Adventure story" },
-      detective: { de: "Detektivgeschichte", fr: "Histoire de détective", en: "Detective story" },
-      friendship: { de: "Freundschaftsgeschichte", fr: "Histoire d'amitié", en: "Friendship story" },
-      funny: { de: "Lustige Geschichte", fr: "Histoire drôle", en: "Funny story" },
+      fantasy: { de: "Märchen- & Fantasiegeschichte", fr: "Conte & fantaisie", en: "Fairy tale & fantasy story" },
+      action: { de: "Abenteuer- & Actiongeschichte", fr: "Histoire d'aventure & action", en: "Adventure & action story" },
+      animals: { de: "Tiergeschichte", fr: "Histoire d'animaux", en: "Animal story" },
+      everyday: { de: "Alltagsgeschichte", fr: "Histoire du quotidien", en: "Everyday story" },
+      humor: { de: "Lustige Geschichte", fr: "Histoire drôle", en: "Funny story" },
       educational: { de: "Sachgeschichte", fr: "Histoire éducative", en: "Educational story" },
-      surprise: { de: "Überraschungsgeschichte", fr: "Histoire surprise", en: "Surprise story" },
     };
     
-    const storyTypeLabel = storyTypeLabels[selectedStoryType || "adventure"][kidAppLanguage] || storyTypeLabels[selectedStoryType || "adventure"].de;
+    const storyTypeLabel = storyTypeLabels[selectedStoryType || "fantasy"][kidAppLanguage] || storyTypeLabels[selectedStoryType || "fantasy"].de;
     
     // Build rich description for the story generator
     let description = `${storyTypeLabel} mit ${characterNames}`;
     if (locationNames) description += ` in ${locationNames}`;
     if (timePeriod !== "today") description += ` (Zeitepoche: ${timePeriod})`;
     if (attributeNames) description += `. Besondere Elemente: ${attributeNames}`;
+    if (selectedSubElements.length > 0) description += `. Themen-Elemente: ${selectedSubElements.join(", ")}`;
     if (humorLevel && humorLevel > 50) description += `. Humor-Level: ${humorLevel}%`;
 
     const difficulty = getDifficultyFromSchoolClass(selectedProfile?.school_class || "3");
@@ -377,6 +382,7 @@ const CreateStoryPage = () => {
           locations,
           timePeriod,
           specialAttributes: selectedAttributes,
+          subElements: selectedSubElements,
           humorLevel,
           // Kid profile for personalization
           kidName: selectedProfile?.name,
