@@ -912,7 +912,11 @@ Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
       "word": "das Wort aus dem Text (bei Verben: Infinitiv)",
       "explanation": "kindgerechte Erklärung auf ${targetLanguage} (max 15 Wörter)"
     }
-  ]
+  ],
+  "structure_beginning": 1-5,
+  "structure_middle": 1-5,
+  "structure_ending": 1-5,
+  "emotional_coloring": "Kurze Beschreibung der emotionalen Färbung (z.B. 'fröhlich und abenteuerlustig', 'spannend mit Happy End', 'nachdenklich und lehrreich')"
 }
 
 **WICHTIG FÜR MULTIPLE-CHOICE FRAGEN:**
@@ -921,6 +925,15 @@ Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
 - Die 3 falschen Optionen (Distraktoren) müssen plausibel aber falsch sein
 - MISCHE die Position der korrekten Antwort (nicht immer an erster Stelle!)
 - Die correctAnswer muss EXAKT mit einer der options übereinstimmen
+
+**STRUKTUR-BEWERTUNG (1-5 Punkte pro Teil):**
+- structure_beginning: Qualität der Einführung (Setting, Charaktere, Handlungsauslöser)
+- structure_middle: Qualität des Hauptteils (Konflikt, Entwicklung, Spannung)
+- structure_ending: Qualität des Abschlusses (Auflösung, Lerneffekt, Zufriedenheit)
+Bewerte deine eigene Geschichte ehrlich von 1 (schwach) bis 5 (exzellent) für jeden Teil.
+
+**EMOTIONAL COLORING:**
+Beschreibe in 3-6 Wörtern die emotionale Grundstimmung der Geschichte.
 
 Erstelle genau ${questionCount} Multiple-Choice Fragen mit der richtigen Mischung:
 - ~30% explizite Informationsfragen
