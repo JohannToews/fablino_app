@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw } from "lucide-react";
+import ShareStoryButton from "@/components/story-sharing/ShareStoryButton";
 import ComprehensionQuiz from "@/components/ComprehensionQuiz";
 import QuizCompletionResult from "@/components/QuizCompletionResult";
 import StoryAudioPlayer from "@/components/StoryAudioPlayer";
@@ -1037,13 +1038,21 @@ const ReadingPage = () => {
         title={story?.title || ""}
         backTo="/stories"
         rightContent={
-          <Button
-            onClick={() => navigate("/quiz")}
-            className="btn-accent-kid flex items-center gap-2"
-          >
-            <BookOpen className="h-5 w-5" />
-            <span className="hidden sm:inline">Quiz</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            {story && (
+              <ShareStoryButton 
+                storyId={story.id} 
+                language={kidAppLanguage as any}
+              />
+            )}
+            <Button
+              onClick={() => navigate("/quiz")}
+              className="btn-accent-kid flex items-center gap-2"
+            >
+              <BookOpen className="h-5 w-5" />
+              <span className="hidden sm:inline">Quiz</span>
+            </Button>
+          </div>
         }
       />
 

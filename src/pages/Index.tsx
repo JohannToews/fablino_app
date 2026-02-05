@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users, BarChart3 } from "lucide-react";
+import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users, BarChart3, QrCode } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { Language } from "@/lib/translations";
 import heroImage from "@/assets/hero-reading.jpg";
+import ScanStoryButton from "@/components/story-sharing/ScanStoryButton";
 
 // Home page translations
 const homeTranslations: Record<Language, {
@@ -23,6 +24,7 @@ const homeTranslations: Record<Language, {
   footer: string;
   appName: string;
   newBadge: string;
+  scanStory: string;
 }> = {
   de: {
     greeting: 'Hallo',
@@ -38,6 +40,7 @@ const homeTranslations: Record<Language, {
     footer: 'Mit ❤️ für kleine Leser gemacht',
     appName: 'LeseMagie',
     newBadge: 'Neu',
+    scanStory: 'Geschichte scannen',
   },
   fr: {
     greeting: 'Salut',
@@ -53,6 +56,7 @@ const homeTranslations: Record<Language, {
     footer: 'Fait avec ❤️ pour les petits lecteurs',
     appName: 'LireMagie',
     newBadge: 'Nouveau',
+    scanStory: 'Scanner une histoire',
   },
   en: {
     greeting: 'Hello',
@@ -68,6 +72,7 @@ const homeTranslations: Record<Language, {
     footer: 'Made with ❤️ for little readers',
     appName: 'ReadMagic',
     newBadge: 'New',
+    scanStory: 'Scan Story',
   },
   es: {
     greeting: 'Hola',
@@ -83,6 +88,7 @@ const homeTranslations: Record<Language, {
     footer: 'Hecho con ❤️ para pequeños lectores',
     appName: 'LeerMagia',
     newBadge: 'Nuevo',
+    scanStory: 'Escanear historia',
   },
   nl: {
     greeting: 'Hallo',
@@ -98,6 +104,7 @@ const homeTranslations: Record<Language, {
     footer: 'Gemaakt met ❤️ voor kleine lezers',
     appName: 'LeesMagie',
     newBadge: 'Nieuw',
+    scanStory: 'Verhaal scannen',
   },
   it: {
     greeting: 'Ciao',
@@ -113,6 +120,7 @@ const homeTranslations: Record<Language, {
     footer: 'Fatto con ❤️ per i piccoli lettori',
     appName: 'LeggiMagia',
     newBadge: 'Nuovo',
+    scanStory: 'Scansiona storia',
   },
   bs: {
     greeting: 'Zdravo',
@@ -128,6 +136,7 @@ const homeTranslations: Record<Language, {
     footer: 'Napravljeno s ❤️ za male čitače',
     appName: 'ČitajMagija',
     newBadge: 'Novo',
+    scanStory: 'Skeniraj priču',
   },
 };
 
@@ -161,6 +170,11 @@ const Index = () => {
       <div className={`relative container max-w-4xl mx-auto px-4 ${hasMultipleProfiles ? 'py-4 md:py-6' : 'py-8 md:py-12'} flex flex-col items-center min-h-screen`}>
         {/* Top Right Icons */}
         <div className="absolute top-4 right-4 flex items-center gap-2">
+          {/* Scan QR Button */}
+          <ScanStoryButton 
+            language={kidAppLanguage} 
+            onImportSuccess={(storyId) => navigate(`/read/${storyId}`)}
+          />
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate("/feedback-stats")}
