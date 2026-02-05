@@ -88,13 +88,15 @@
    
    // Format expiry date for display
    const expiryDate = new Date(expiresAt);
-   const formattedExpiry = expiryDate.toLocaleString(language, {
-     dateStyle: "medium",
-     timeStyle: "short",
-   });
- 
-   // Generate the share URL
-   const shareUrl = `${window.location.origin}/s/${shareToken}`;
+  const formattedExpiry = expiryDate.toLocaleString(language, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  // Always use the published URL for sharing (not preview URL)
+  // This ensures other users land on the public app, not Lovable login
+  const PUBLISHED_URL = "https://kinder-wort-trainer.lovable.app";
+  const shareUrl = `${PUBLISHED_URL}/s/${shareToken}`;
  
    return (
      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
