@@ -1,21 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Default system prompts by language
-const DEFAULT_SYSTEM_PROMPTS: Record<string, string> = {
-  de: 'system_prompt_de',
-  fr: 'system_prompt_fr',
-  en: 'system_prompt_en',
-  es: 'system_prompt_es',
-  nl: 'system_prompt_nl',
-};
-
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
