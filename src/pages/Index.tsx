@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users, BarChart3, QrCode } from "lucide-react";
+import { BookOpen, Settings, Sparkles, Star, Brain, Trophy, Hand, Users, BarChart3, QrCode, Album } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
@@ -21,6 +21,8 @@ const homeTranslations: Record<Language, {
   wordQuizDesc: string;
   myResults: string;
   myResultsDesc: string;
+  myCollection: string;
+  myCollectionDesc: string;
   footer: string;
   appName: string;
   newBadge: string;
@@ -37,6 +39,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Teste dein Vokabular',
     myResults: 'Meine Ergebnisse',
     myResultsDesc: 'Punkte und Fortschritt',
+    myCollection: 'Sammelalbum',
+    myCollectionDesc: 'Deine Schätze',
     footer: 'Mit ❤️ für kleine Leser gemacht',
     appName: 'LeseMagie',
     newBadge: 'Neu',
@@ -53,6 +57,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Teste ton vocabulaire',
     myResults: 'Mes Résultats',
     myResultsDesc: 'Points et progrès',
+    myCollection: 'Ma Collection',
+    myCollectionDesc: 'Tes trésors',
     footer: 'Fait avec ❤️ pour les petits lecteurs',
     appName: 'LireMagie',
     newBadge: 'Nouveau',
@@ -69,6 +75,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Test your vocabulary',
     myResults: 'My Results',
     myResultsDesc: 'Points and progress',
+    myCollection: 'My Collection',
+    myCollectionDesc: 'Your treasures',
     footer: 'Made with ❤️ for little readers',
     appName: 'ReadMagic',
     newBadge: 'New',
@@ -85,6 +93,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Pon a prueba tu vocabulario',
     myResults: 'Mis Resultados',
     myResultsDesc: 'Puntos y progreso',
+    myCollection: 'Mi Colección',
+    myCollectionDesc: 'Tus tesoros',
     footer: 'Hecho con ❤️ para pequeños lectores',
     appName: 'LeerMagia',
     newBadge: 'Nuevo',
@@ -101,6 +111,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Test je woordenschat',
     myResults: 'Mijn Resultaten',
     myResultsDesc: 'Punten en voortgang',
+    myCollection: 'Mijn Album',
+    myCollectionDesc: 'Jouw schatten',
     footer: 'Gemaakt met ❤️ voor kleine lezers',
     appName: 'LeesMagie',
     newBadge: 'Nieuw',
@@ -117,6 +129,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Metti alla prova il tuo vocabolario',
     myResults: 'I Miei Risultati',
     myResultsDesc: 'Punti e progressi',
+    myCollection: 'La Mia Collezione',
+    myCollectionDesc: 'I tuoi tesori',
     footer: 'Fatto con ❤️ per i piccoli lettori',
     appName: 'LeggiMagia',
     newBadge: 'Nuovo',
@@ -133,6 +147,8 @@ const homeTranslations: Record<Language, {
     wordQuizDesc: 'Testiraj svoj vokabular',
     myResults: 'Moji rezultati',
     myResultsDesc: 'Bodovi i napredak',
+    myCollection: 'Moja Kolekcija',
+    myCollectionDesc: 'Tvoja blaga',
     footer: 'Napravljeno s ❤️ za male čitače',
     appName: 'ČitajMagija',
     newBadge: 'Novo',
@@ -330,6 +346,24 @@ const Index = () => {
                 </div>
                 <h3 className="font-baloo font-bold text-base md:text-lg mb-1">{t.myResults}</h3>
                 <p className="text-xs md:text-sm text-muted-foreground">{t.myResultsDesc}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Collection Card - centered below */}
+          <div className="mt-4 w-full max-w-xs">
+            <Card 
+              onClick={() => navigate("/collection")}
+              className="cursor-pointer border-2 border-secondary/30 hover:border-secondary hover:shadow-card transition-all duration-300 group touch-manipulation"
+            >
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <div className="text-left">
+                  <h3 className="font-baloo font-bold text-base">{t.myCollection}</h3>
+                  <p className="text-xs text-muted-foreground">{t.myCollectionDesc}</p>
+                </div>
               </CardContent>
             </Card>
           </div>
