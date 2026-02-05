@@ -14,6 +14,7 @@ import SyllableText, { isSyllableModeSupported } from "@/components/SyllableText
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { useGamification } from "@/hooks/useGamification";
 import PageHeader from "@/components/PageHeader";
 import { Language } from "@/lib/translations";
 
@@ -198,6 +199,7 @@ const ReadingPage = () => {
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const { selectedProfile, kidAppLanguage } = useKidProfile();
+  const { awardStoryPoints, awardQuizPoints } = useGamification();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
@@ -1241,16 +1243,10 @@ const ReadingPage = () => {
                   onSubmit={async () => {
                     setShowFeedbackDialog(false);
                     
-                    // ALWAYS save story_completed immediately when clicking "Fertig gelesen"
-                    const { data: pointData } = await supabase
-                      .from("point_settings")
-                      .select("points")
-                      .eq("category", "story")
-                      .eq("difficulty", story?.difficulty || "medium")
-                      .maybeSingle();
+                    // Award points via gamification system (updates user_progress, point_transactions)
+                    const storyPoints = await awardStoryPoints(id!);
                     
-                    const storyPoints = pointData?.points || 10;
-                    
+                    // Also save to user_results for history/tracking
                     await supabase.from("user_results").insert({
                       activity_type: "story_completed",
                       reference_id: id,
@@ -1298,24 +1294,16 @@ const ReadingPage = () => {
                       setQuizResult({ correctCount, totalCount });
                       setQuizCompleted(true);
                       
-                      // Load point value for questions
-                      const { data: pointData } = await supabase
-                        .from("point_settings")
-                        .select("points")
-                        .eq("category", "question")
-                        .eq("difficulty", story?.difficulty || "medium")
-                        .maybeSingle();
+                      // Award quiz points via gamification system (updates user_progress, point_transactions)
+                      const quizPoints = await awardQuizPoints(id!, correctCount, totalCount);
                       
-                      const pointsPerQuestion = pointData?.points || 3;
-                      const earnedPoints = correctCount * pointsPerQuestion;
-                      
-                      // Save quiz result as bonus points (story_completed was already saved)
-                      if (earnedPoints > 0) {
+                      // Also save to user_results for history/tracking
+                      if (quizPoints > 0) {
                         await supabase.from("user_results").insert({
                           activity_type: "quiz_completed",
                           reference_id: id,
                           difficulty: story?.difficulty || "medium",
-                          points_earned: earnedPoints,
+                          points_earned: quizPoints,
                           correct_answers: correctCount,
                           total_questions: totalCount,
                           user_id: user?.id,
