@@ -6,18 +6,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
-import SettingSelectionScreen from "@/components/story-creation/SettingSelectionScreen";
+import SpecialEffectsScreen from "@/components/story-creation/SpecialEffectsScreen";
 import {
   StoryType,
   StorySubElement,
   EducationalTopic,
   SelectedCharacter,
   SpecialAttribute,
-  LocationType,
-  TimePeriod,
   storyTypeSelectionTranslations,
   characterSelectionTranslations,
-  settingSelectionTranslations,
   StoryLength,
   StoryDifficulty,
 } from "@/components/story-creation/types";
@@ -26,7 +23,7 @@ import { toast } from "sonner";
 import StoryGenerationProgress from "@/components/story-creation/StoryGenerationProgress";
 
 // Screen states for the wizard
-type WizardScreen = "story-type" | "characters" | "setting" | "generating";
+type WizardScreen = "story-type" | "characters" | "effects" | "generating";
 
 // Map school class to difficulty
 const getDifficultyFromSchoolClass = (schoolClass: string): string => {
@@ -93,15 +90,13 @@ const CreateStoryPage = () => {
   const [customTopic, setCustomTopic] = useState<string | undefined>(undefined);
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
-  const [selectedLocations, setSelectedLocations] = useState<LocationType[]>([]);
-  const [selectedTime, setSelectedTime] = useState<TimePeriod>("today");
+  const [additionalDescription, setAdditionalDescription] = useState<string>("");
   const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Translations
   const storyTypeTranslations = storyTypeSelectionTranslations[kidAppLanguage] || storyTypeSelectionTranslations.de;
   const characterTranslations = characterSelectionTranslations[kidAppLanguage] || characterSelectionTranslations.de;
-  const settingTranslations = settingSelectionTranslations[kidAppLanguage] || settingSelectionTranslations.de;
 
   // Generate educational story directly
   const generateEducationalStory = async (
@@ -294,24 +289,25 @@ const CreateStoryPage = () => {
   ) => {
     setSelectedCharacters(characters);
     setSelectedAttributes(attributes);
-    setCurrentScreen("setting");
+    setCurrentScreen("effects");
   };
-  // Handle setting selection complete
-  const handleSettingComplete = async (
-    locations: LocationType[],
-    timePeriod: TimePeriod
+  
+  // Handle special effects selection complete
+  const handleEffectsComplete = async (
+    attributes: SpecialAttribute[],
+    description: string
   ) => {
-    setSelectedLocations(locations);
-    setSelectedTime(timePeriod);
+    setSelectedAttributes(prev => [...prev, ...attributes.filter(a => !prev.includes(a))]);
+    setAdditionalDescription(description);
     
     // Generate the story with all collected data
-    await generateFictionStory(locations, timePeriod);
+    await generateFictionStory(attributes, description);
   };
 
   // Generate fiction story (adventure, detective, friendship, funny)
   const generateFictionStory = async (
-    locations: LocationType[],
-    timePeriod: TimePeriod
+    effectAttributes: SpecialAttribute[],
+    userDescription: string
   ) => {
     if (!user?.id) {
       toast.error("Bitte melde dich erneut an");
@@ -324,8 +320,8 @@ const CreateStoryPage = () => {
 
     // Build description from all wizard selections
     const characterNames = selectedCharacters.map(c => c.name).join(", ");
-    const locationNames = locations.join(", ");
-    const attributeNames = selectedAttributes.join(", ");
+    const allAttributes = [...new Set([...selectedAttributes, ...effectAttributes])];
+    const attributeNames = allAttributes.filter(a => a !== "normal").join(", ");
     
     const storyTypeLabels: Record<StoryType, Record<string, string>> = {
       fantasy: { de: "Märchen- & Fantasiegeschichte", fr: "Conte & fantaisie", en: "Fairy tale & fantasy story" },
@@ -340,11 +336,10 @@ const CreateStoryPage = () => {
     
     // Build rich description for the story generator
     let description = `${storyTypeLabel} mit ${characterNames}`;
-    if (locationNames) description += ` in ${locationNames}`;
-    if (timePeriod !== "today") description += ` (Zeitepoche: ${timePeriod})`;
-    if (attributeNames) description += `. Besondere Elemente: ${attributeNames}`;
+    if (attributeNames) description += `. Besondere Eigenschaften: ${attributeNames}`;
     if (selectedSubElements.length > 0) description += `. Themen-Elemente: ${selectedSubElements.join(", ")}`;
     if (humorLevel && humorLevel > 50) description += `. Humor-Level: ${humorLevel}%`;
+    if (userDescription) description += `. Zusätzliche Wünsche: ${userDescription}`;
 
     const difficulty = getDifficultyFromSchoolClass(selectedProfile?.school_class || "3");
     const textLanguage = kidAppLanguage.toUpperCase();
@@ -372,18 +367,17 @@ const CreateStoryPage = () => {
           source: 'kid',
           isSeries,
           storyType: selectedStoryType,
-          // Character and setting data for richer generation
+          // Character data for richer generation
           characters: selectedCharacters.map(c => ({
             name: c.name,
             type: c.type,
             age: c.age,
             gender: c.gender,
           })),
-          locations,
-          timePeriod,
-          specialAttributes: selectedAttributes,
+          specialAttributes: allAttributes,
           subElements: selectedSubElements,
           humorLevel,
+          additionalDescription: userDescription,
           // Kid profile for personalization
           kidName: selectedProfile?.name,
           kidHobbies: selectedProfile?.hobbies,
@@ -507,7 +501,7 @@ const CreateStoryPage = () => {
       navigate("/");
     } else if (currentScreen === "characters") {
       setCurrentScreen("story-type");
-    } else if (currentScreen === "setting") {
+    } else if (currentScreen === "effects") {
       setCurrentScreen("characters");
     }
   };
@@ -539,10 +533,9 @@ const CreateStoryPage = () => {
         />
       )}
 
-      {currentScreen === "setting" && (
-        <SettingSelectionScreen
-          translations={settingTranslations}
-          onComplete={handleSettingComplete}
+      {currentScreen === "effects" && (
+        <SpecialEffectsScreen
+          onComplete={handleEffectsComplete}
           onBack={handleBack}
         />
       )}
