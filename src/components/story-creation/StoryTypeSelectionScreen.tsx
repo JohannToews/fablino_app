@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import CharacterTile from "./CharacterTile";
 import { 
   StoryType, 
@@ -14,7 +12,6 @@ import {
   StoryTypeSelectionTranslations, 
   StoryLength, 
   StoryDifficulty,
-  getCategorySubElements
 } from "./types";
 import { cn } from "@/lib/utils";
 import { useColorPalette } from "@/hooks/useColorPalette";
@@ -53,7 +50,7 @@ interface StoryTypeSelectionScreenProps {
   onBack: () => void;
 }
 
-type ViewState = "main" | "subelements" | "educational";
+type ViewState = "main" | "educational";
 
 const StoryTypeSelectionScreen = ({
   translations,
@@ -63,10 +60,8 @@ const StoryTypeSelectionScreen = ({
   const { colors } = useColorPalette();
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedType, setSelectedType] = useState<StoryType | null>(null);
-  const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<EducationalTopic | null>(null);
   const [customTopic, setCustomTopic] = useState("");
-  const [humorLevel, setHumorLevel] = useState(5);
   
   // Story settings
   const [storyLength, setStoryLength] = useState<StoryLength>("medium");
@@ -95,9 +90,13 @@ const StoryTypeSelectionScreen = ({
       setSelectedType(type);
       setViewState("educational");
     } else {
-      setSelectedType(type);
-      setSelectedSubElements([]);
-      setViewState("subelements");
+      // Go directly to character selection for non-educational types
+      const settings: StorySettings = {
+        length: storyLength,
+        difficulty: storyDifficulty,
+        isSeries,
+      };
+      onComplete(type, settings, undefined, undefined, undefined, []);
     }
   };
 
@@ -106,33 +105,14 @@ const StoryTypeSelectionScreen = ({
     const randomCategories = mainCategoryTiles.filter(t => t.type !== "educational");
     const randomCategory = randomCategories[Math.floor(Math.random() * randomCategories.length)].type;
     
-    // Get random sub-elements for that category
-    const subElements = getCategorySubElements(randomCategory);
-    const numElements = Math.floor(Math.random() * 2) + 1; // 1-2 elements
-    const shuffled = [...subElements].sort(() => Math.random() - 0.5);
-    const randomElements = shuffled.slice(0, numElements);
+    const settings: StorySettings = {
+      length: storyLength,
+      difficulty: storyDifficulty,
+      isSeries,
+    };
     
-    setSelectedType(randomCategory);
-    setSelectedSubElements(randomElements);
-    
-    if (randomCategory === "humor") {
-      setHumorLevel(Math.floor(Math.random() * 10) + 1);
-    }
-    
-    // Go directly to confirmation with random selections
-    setViewState("subelements");
-  };
-
-  const handleSubElementToggle = (element: StorySubElement) => {
-    setSelectedSubElements(prev => {
-      if (prev.includes(element)) {
-        return prev.filter(e => e !== element);
-      }
-      if (prev.length >= 3) {
-        return prev; // Max 3 elements
-      }
-      return [...prev, element];
-    });
+    // Go directly to character selection with random category
+    onComplete(randomCategory, settings, undefined, undefined, undefined, []);
   };
 
   const handleTopicClick = (topic: EducationalTopic) => {
@@ -153,7 +133,7 @@ const StoryTypeSelectionScreen = ({
   };
 
   const handleContinue = () => {
-    if (!selectedType) return;
+    if (selectedType !== "educational" || !selectedTopic) return;
     
     const settings: StorySettings = {
       length: storyLength,
@@ -161,14 +141,7 @@ const StoryTypeSelectionScreen = ({
       isSeries,
     };
     
-    if (selectedType === "educational") {
-      if (!selectedTopic) return;
-      onComplete(selectedType, settings, undefined, selectedTopic, customTopic.trim() || undefined);
-    } else if (selectedType === "humor") {
-      onComplete(selectedType, settings, humorLevel, undefined, undefined, selectedSubElements);
-    } else {
-      onComplete(selectedType, settings, undefined, undefined, undefined, selectedSubElements);
-    }
+    onComplete(selectedType, settings, undefined, selectedTopic, customTopic.trim() || undefined);
   };
 
   const handleBack = () => {
@@ -176,52 +149,21 @@ const StoryTypeSelectionScreen = ({
       setViewState("main");
       setSelectedTopic(null);
       setCustomTopic("");
-    } else if (viewState === "subelements") {
-      setViewState("main");
-      setSelectedSubElements([]);
     } else {
       onBack();
     }
   };
 
-  const getHumorEmoji = () => {
-    if (humorLevel <= 3) return "😊";
-    if (humorLevel <= 6) return "😆";
-    return "🤪";
-  };
-
-  const getHumorLabel = () => {
-    if (humorLevel <= 3) return translations.humorLow;
-    if (humorLevel <= 6) return translations.humorMid;
-    return translations.humorHigh;
-  };
-
   const canContinue = () => {
-    if (!selectedType) return false;
-    if (selectedType === "educational") {
-      if (!selectedTopic) return false;
-      if (selectedTopic === "other" && !customTopic.trim()) return false;
-    }
-    // For other types, sub-elements are optional
+    if (selectedType !== "educational") return false;
+    if (!selectedTopic) return false;
+    if (selectedTopic === "other" && !customTopic.trim()) return false;
     return true;
   };
 
-  const getSubElementLabel = (element: StorySubElement): string => {
-    // Get translation for sub-element
-    const key = `subElement_${element}` as keyof StoryTypeSelectionTranslations;
-    return (translations[key] as string) || element;
-  };
-
-  const currentSubElements = selectedType && selectedType !== "educational" 
-    ? getCategorySubElements(selectedType) 
-    : [];
-
   const getHeaderForView = () => {
     if (viewState === "main") return translations.header;
-    if (viewState === "educational") return translations.educationalTopicHeader;
-    // For subelements, show category name
-    const category = mainCategoryTiles.find(t => t.type === selectedType);
-    return `${category?.label || ""} - ${translations.subElementHeader}`;
+    return translations.educationalTopicHeader;
   };
 
   return (
@@ -341,83 +283,6 @@ const StoryTypeSelectionScreen = ({
           </>
         )}
 
-        {/* Sub-Elements Selection */}
-        {viewState === "subelements" && selectedType && selectedType !== "educational" && (
-          <>
-            <p className="text-sm text-muted-foreground text-center">
-              {translations.subElementHint}
-            </p>
-            
-            <div className="flex flex-wrap gap-2 justify-center">
-              {currentSubElements.map((element) => (
-                <Badge
-                  key={element}
-                  variant={selectedSubElements.includes(element) ? "default" : "outline"}
-                  className={cn(
-                    "px-3 py-2 text-sm md:text-base cursor-pointer transition-all",
-                    selectedSubElements.includes(element) 
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                      : "hover:bg-primary/10 hover:border-primary"
-                  )}
-                  onClick={() => handleSubElementToggle(element)}
-                >
-                  {getSubElementLabel(element)}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Selected elements display */}
-            {selectedSubElements.length > 0 && (
-              <div className="bg-primary/10 rounded-xl p-3 text-center">
-                <p className="text-sm font-medium text-primary">
-                  {translations.selectedElements}: {selectedSubElements.map(e => getSubElementLabel(e)).join(", ")}
-                </p>
-              </div>
-            )}
-
-            {/* Humor Slider (appears when "humor" is selected) */}
-            {selectedType === "humor" && (
-              <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-primary/20 space-y-3">
-                <h3 className="text-base md:text-lg font-baloo font-semibold text-center">
-                  {translations.humorSliderTitle}
-                </h3>
-                
-                {/* Current Emoji Display */}
-                <div className="flex justify-center">
-                  <span className="text-4xl md:text-5xl animate-bounce">{getHumorEmoji()}</span>
-                </div>
-                
-                {/* Slider */}
-                <div className="px-2">
-                  <Slider
-                    value={[humorLevel]}
-                    onValueChange={(value) => setHumorLevel(value[0])}
-                    min={1}
-                    max={10}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-                
-                {/* Labels */}
-                <div className="flex justify-between text-xs md:text-sm text-muted-foreground px-1">
-                  <span className="flex items-center gap-1">
-                    😊 {translations.humorLow}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    🤪 {translations.humorHigh}
-                  </span>
-                </div>
-                
-                {/* Current Level */}
-                <p className="text-center text-sm md:text-base font-baloo font-medium text-primary">
-                  {getHumorLabel()} ({humorLevel}/10)
-                </p>
-              </div>
-            )}
-          </>
-        )}
-
         {/* Educational Topics Grid */}
         {viewState === "educational" && (
           <>
@@ -456,20 +321,22 @@ const StoryTypeSelectionScreen = ({
         )}
       </div>
 
-      {/* Bottom Continue Button */}
-      <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border pb-safe">
-        <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
-          <Button
-            onClick={handleContinue}
-            disabled={!canContinue()}
-            className={cn(
-              "w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
-            )}
-          >
-            {translations.continue} →
-          </Button>
+      {/* Bottom Continue Button - Only show for educational */}
+      {viewState === "educational" && (
+        <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border pb-safe">
+          <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
+            <Button
+              onClick={handleContinue}
+              disabled={!canContinue()}
+              className={cn(
+                "w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
+              )}
+            >
+              {translations.continue} →
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
