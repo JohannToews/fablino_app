@@ -219,6 +219,7 @@ export type Database = {
       level_settings: {
         Row: {
           created_at: string
+          icon: string | null
           id: string
           level_number: number
           min_points: number
@@ -227,6 +228,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          icon?: string | null
           id?: string
           level_number: number
           min_points: number
@@ -235,6 +237,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          icon?: string | null
           id?: string
           level_number?: number
           min_points?: number
@@ -310,6 +313,61 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          kid_profile_id: string
+          points: number
+          story_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kid_profile_id: string
+          points: number
+          story_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kid_profile_id?: string
+          points?: number
+          story_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shared_stories: {
         Row: {
@@ -510,6 +568,38 @@ export type Database = {
           },
         ]
       }
+      streak_milestones: {
+        Row: {
+          claimed_at: string
+          id: string
+          kid_profile_id: string
+          milestone_days: number
+          streak_count: number
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          kid_profile_id: string
+          milestone_days: number
+          streak_count: number
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          kid_profile_id?: string
+          milestone_days?: number
+          streak_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streak_milestones_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           admin_language: string
@@ -548,6 +638,75 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      user_progress: {
+        Row: {
+          created_at: string
+          current_level: number
+          current_streak: number
+          id: string
+          kid_profile_id: string
+          last_read_date: string | null
+          longest_streak: number
+          quizzes_passed: number
+          quizzes_perfect: number
+          stories_read_total: number
+          streak_freeze_available: boolean
+          streak_freeze_used_this_week: string | null
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_level?: number
+          current_streak?: number
+          id?: string
+          kid_profile_id: string
+          last_read_date?: string | null
+          longest_streak?: number
+          quizzes_passed?: number
+          quizzes_perfect?: number
+          stories_read_total?: number
+          streak_freeze_available?: boolean
+          streak_freeze_used_this_week?: string | null
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_level?: number
+          current_streak?: number
+          id?: string
+          kid_profile_id?: string
+          last_read_date?: string | null
+          longest_streak?: number
+          quizzes_passed?: number
+          quizzes_perfect?: number
+          stories_read_total?: number
+          streak_freeze_available?: boolean
+          streak_freeze_used_this_week?: string | null
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: true
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_results: {
         Row: {

@@ -3,11 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, BookOpen, Brain, Star, Sparkles, Users } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { BookOpen, Brain, Sparkles, Users, ChevronRight } from "lucide-react";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { useGamification } from "@/hooks/useGamification";
 import PageHeader from "@/components/PageHeader";
+import { StreakFlame, StreakMilestoneCard } from "@/components/gamification/StreakFlame";
+import { LevelBadge, LevelCard } from "@/components/gamification/LevelBadge";
+import { PointsDisplay } from "@/components/gamification/PointsDisplay";
+import { LevelUpModal } from "@/components/gamification/LevelUpModal";
 
 // Translations for results page
 const resultsTranslations: Record<string, {
@@ -17,202 +23,192 @@ const resultsTranslations: Record<string, {
   stories: string;
   storiesRead: string;
   quiz: string;
+  quizPerfect: string;
   quizPassed: string;
   vocabulary: string;
   wordsLearned: string;
   learnedHint: string;
   readStory: string;
   takeQuiz: string;
+  streak: string;
+  streakDays: string;
+  longestStreak: string;
+  streakMilestones: string;
+  levels: string;
+  currentLevel: string;
 }> = {
   de: {
     title: "Meine Ergebnisse",
-    totalPoints: "Gesamtpunkte",
-    pointsToNext: "Noch {n} Punkte bis zum nächsten Level",
+    totalPoints: "Punkte",
+    pointsToNext: "Noch {n} Punkte bis {level}",
     stories: "Geschichten",
-    storiesRead: "{n} Geschichten gelesen",
+    storiesRead: "{n} gelesen",
     quiz: "Quiz",
-    quizPassed: "{n} Quiz bestanden",
+    quizPerfect: "{n} perfekt",
+    quizPassed: "{n} bestanden",
     vocabulary: "Wortschatz",
     wordsLearned: "Wörter gelernt",
     learnedHint: "(3x richtig = gelernt)",
     readStory: "Geschichte lesen",
     takeQuiz: "Quiz machen",
+    streak: "Lese-Flamme",
+    streakDays: "{n} Tage",
+    longestStreak: "Längste Serie: {n} Tage",
+    streakMilestones: "Streak-Meilensteine",
+    levels: "Stufen",
+    currentLevel: "Aktuelles Level"
   },
   fr: {
     title: "Mes Résultats",
-    totalPoints: "Points totaux",
-    pointsToNext: "Encore {n} points pour le niveau suivant",
+    totalPoints: "Points",
+    pointsToNext: "Encore {n} points pour {level}",
     stories: "Histoires",
-    storiesRead: "{n} histoires lues",
+    storiesRead: "{n} lues",
     quiz: "Quiz",
-    quizPassed: "{n} quiz réussis",
+    quizPerfect: "{n} parfaits",
+    quizPassed: "{n} réussis",
     vocabulary: "Vocabulaire",
     wordsLearned: "mots appris",
-    learnedHint: "(3x correct de suite = appris)",
+    learnedHint: "(3x correct = appris)",
     readStory: "Lire une histoire",
     takeQuiz: "Faire un quiz",
+    streak: "Flamme de lecture",
+    streakDays: "{n} jours",
+    longestStreak: "Plus longue série: {n} jours",
+    streakMilestones: "Jalons de série",
+    levels: "Niveaux",
+    currentLevel: "Niveau actuel"
   },
   en: {
     title: "My Results",
-    totalPoints: "Total Points",
-    pointsToNext: "{n} more points to next level",
+    totalPoints: "Points",
+    pointsToNext: "{n} more points to {level}",
     stories: "Stories",
-    storiesRead: "{n} stories read",
+    storiesRead: "{n} read",
     quiz: "Quiz",
-    quizPassed: "{n} quizzes passed",
+    quizPerfect: "{n} perfect",
+    quizPassed: "{n} passed",
     vocabulary: "Vocabulary",
     wordsLearned: "words learned",
-    learnedHint: "(3x correct in a row = learned)",
+    learnedHint: "(3x correct = learned)",
     readStory: "Read a story",
     takeQuiz: "Take a quiz",
+    streak: "Reading Flame",
+    streakDays: "{n} days",
+    longestStreak: "Longest streak: {n} days",
+    streakMilestones: "Streak Milestones",
+    levels: "Levels",
+    currentLevel: "Current Level"
   },
   es: {
     title: "Mis Resultados",
-    totalPoints: "Puntos totales",
-    pointsToNext: "{n} puntos más para el siguiente nivel",
+    totalPoints: "Puntos",
+    pointsToNext: "{n} puntos más para {level}",
     stories: "Historias",
-    storiesRead: "{n} historias leídas",
+    storiesRead: "{n} leídas",
     quiz: "Quiz",
-    quizPassed: "{n} quiz aprobados",
+    quizPerfect: "{n} perfectos",
+    quizPassed: "{n} aprobados",
     vocabulary: "Vocabulario",
     wordsLearned: "palabras aprendidas",
-    learnedHint: "(3x correcto seguido = aprendido)",
+    learnedHint: "(3x correcto = aprendido)",
     readStory: "Leer una historia",
     takeQuiz: "Hacer un quiz",
+    streak: "Llama de lectura",
+    streakDays: "{n} días",
+    longestStreak: "Mayor racha: {n} días",
+    streakMilestones: "Hitos de racha",
+    levels: "Niveles",
+    currentLevel: "Nivel actual"
   },
   nl: {
     title: "Mijn Resultaten",
-    totalPoints: "Totale punten",
-    pointsToNext: "Nog {n} punten voor het volgende niveau",
+    totalPoints: "Punten",
+    pointsToNext: "Nog {n} punten voor {level}",
     stories: "Verhalen",
-    storiesRead: "{n} verhalen gelezen",
+    storiesRead: "{n} gelezen",
     quiz: "Quiz",
-    quizPassed: "{n} quizzen geslaagd",
+    quizPerfect: "{n} perfect",
+    quizPassed: "{n} geslaagd",
     vocabulary: "Woordenschat",
     wordsLearned: "woorden geleerd",
-    learnedHint: "(3x correct achter elkaar = geleerd)",
+    learnedHint: "(3x correct = geleerd)",
     readStory: "Verhaal lezen",
     takeQuiz: "Quiz doen",
+    streak: "Leesvlam",
+    streakDays: "{n} dagen",
+    longestStreak: "Langste reeks: {n} dagen",
+    streakMilestones: "Reeks mijlpalen",
+    levels: "Niveaus",
+    currentLevel: "Huidig niveau"
   },
   bs: {
     title: "Moji rezultati",
-    totalPoints: "Ukupno bodova",
-    pointsToNext: "Još {n} bodova do sljedećeg nivoa",
+    totalPoints: "Bodova",
+    pointsToNext: "Još {n} bodova do {level}",
     stories: "Priče",
-    storiesRead: "{n} priča pročitano",
+    storiesRead: "{n} pročitano",
     quiz: "Kviz",
-    quizPassed: "{n} kvizova položeno",
+    quizPerfect: "{n} savršeno",
+    quizPassed: "{n} položeno",
     vocabulary: "Vokabular",
     wordsLearned: "riječi naučeno",
-    learnedHint: "(3x tačno zaredom = naučeno)",
+    learnedHint: "(3x tačno = naučeno)",
     readStory: "Čitaj priču",
     takeQuiz: "Riješi kviz",
-  },
+    streak: "Plamen čitanja",
+    streakDays: "{n} dana",
+    longestStreak: "Najduži niz: {n} dana",
+    streakMilestones: "Prekretnice niza",
+    levels: "Nivoi",
+    currentLevel: "Trenutni nivo"
+  }
 };
-
-interface UserResult {
-  id: string;
-  activity_type: string;
-  reference_id: string | null;
-  difficulty: string | null;
-  points_earned: number;
-  correct_answers: number | null;
-  total_questions: number | null;
-  created_at: string;
-}
 
 interface LevelSetting {
   level_number: number;
   title: string;
   min_points: number;
+  icon: string | null;
 }
+
+const STREAK_MILESTONE_POINTS: Record<number, number> = {
+  3: 10,
+  7: 25,
+  14: 50,
+  30: 100
+};
 
 const ResultsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
-  const [isLoading, setIsLoading] = useState(true);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [storyPoints, setStoryPoints] = useState(0);
-  const [quizPoints, setQuizPoints] = useState(0);
-  const [storiesRead, setStoriesRead] = useState(0);
-  const [quizzesPassed, setQuizzesPassed] = useState(0);
-  const [wordsLearned, setWordsLearned] = useState(0);
+  const { progress, isLoading, pendingLevelUp, clearPendingLevelUp } = useGamification();
   const [levels, setLevels] = useState<LevelSetting[]>([]);
+  const [wordsLearned, setWordsLearned] = useState(0);
+  const [claimedMilestones, setClaimedMilestones] = useState<number[]>([]);
 
+  // Load additional data
   useEffect(() => {
-    if (user) {
-      loadResults();
-    }
-  }, [user, selectedProfileId]);
+    const loadData = async () => {
+      if (!user || !selectedProfileId) return;
 
-  const loadResults = async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
       // Load level settings
       const { data: levelData } = await supabase
         .from("level_settings")
         .select("*")
         .order("level_number");
-
-      if (levelData) {
-        setLevels(levelData);
-      }
-
-      // Load user results filtered by kid_profile_id
-      let resultsQuery = supabase
-        .from("user_results")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
       
-      // Filter by kid profile if selected
-      if (selectedProfileId) {
-        resultsQuery = resultsQuery.eq("kid_profile_id", selectedProfileId);
-      }
-      
-      const { data: results } = await resultsQuery;
+      if (levelData) setLevels(levelData);
 
-      if (results) {
-        // Calculate totals by category
-        let storyPts = 0;
-        let quizPts = 0;
-        let storyCount = 0;
-        let quizCount = 0;
-
-        results.forEach((r: UserResult) => {
-          if (r.activity_type === 'story_read' || r.activity_type === 'story_completed') {
-            storyPts += r.points_earned;
-            storyCount++;
-          } else if (r.activity_type === 'quiz_passed') {
-            quizPts += r.points_earned;
-            quizCount++;
-          }
-        });
-
-        setStoryPoints(storyPts);
-        setQuizPoints(quizPts);
-        setStoriesRead(storyCount);
-        setQuizzesPassed(quizCount);
-        setTotalPoints(storyPts + quizPts);
-      }
-
-      // Load learned words count - filter by kid profile's stories
-      let storiesQuery = supabase
+      // Load learned words count
+      const { data: storiesData } = await supabase
         .from("stories")
         .select("id")
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("kid_profile_id", selectedProfileId);
       
-      if (selectedProfileId) {
-        storiesQuery = storiesQuery.eq("kid_profile_id", selectedProfileId);
-      }
-      
-      const { data: storiesData } = await storiesQuery;
       const storyIds = storiesData?.map(s => s.id) || [];
 
       if (storyIds.length > 0) {
@@ -223,54 +219,37 @@ const ResultsPage = () => {
           .in("story_id", storyIds);
         
         setWordsLearned(learnedData?.length || 0);
-      } else {
-        setWordsLearned(0);
       }
 
-    } catch (err) {
-      console.error("Error loading results:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getLevel = (points: number): { level: number; title: string; nextLevel: number } => {
-    if (levels.length === 0) {
-      return { level: 1, title: "Débutant", nextLevel: 50 };
-    }
-
-    // Find current level based on points
-    let currentLevel = levels[0];
-    let nextLevelPoints = levels[1]?.min_points || points;
-
-    for (let i = levels.length - 1; i >= 0; i--) {
-      if (points >= levels[i].min_points) {
-        currentLevel = levels[i];
-        nextLevelPoints = levels[i + 1]?.min_points || points;
-        break;
+      // Load claimed streak milestones
+      const { data: milestonesData } = await supabase
+        .from("streak_milestones")
+        .select("milestone_days")
+        .eq("kid_profile_id", selectedProfileId);
+      
+      if (milestonesData) {
+        setClaimedMilestones([...new Set(milestonesData.map(m => m.milestone_days))]);
       }
-    }
-
-    return {
-      level: currentLevel.level_number,
-      title: currentLevel.title,
-      nextLevel: nextLevelPoints
     };
-  };
 
-  const levelInfo = getLevel(totalPoints);
-  const isMaxLevel = levels.length > 0 && levelInfo.level === levels[levels.length - 1]?.level_number;
+    loadData();
+  }, [user, selectedProfileId]);
+
   const t = resultsTranslations[kidAppLanguage] || resultsTranslations.de;
 
-  if (isLoading) {
+  if (isLoading || !progress) {
     return (
       <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
         <div className="animate-bounce-soft">
-          <Trophy className="h-16 w-16 text-primary" />
+          <StreakFlame streak={3} flameType="gold" size="lg" showCount={false} />
         </div>
       </div>
     );
   }
+
+  const pointsToNextLevel = progress.level.nextLevelPoints 
+    ? progress.level.nextLevelPoints - progress.totalPoints 
+    : 0;
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
@@ -307,93 +286,147 @@ const ResultsPage = () => {
           </div>
         )}
 
-        {/* Total Points Hero - More Compact */}
+        {/* Hero Section - Points, Level, Streak */}
         <Card className="mb-6 border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent overflow-hidden">
-          <CardContent className="p-5 text-center relative">
-            <div className="absolute top-3 right-3">
-              <Sparkles className="h-6 w-6 text-primary/30 animate-sparkle" />
-            </div>
-            <Trophy className="h-14 w-14 text-primary mx-auto mb-2" />
-            <p className="text-5xl md:text-6xl font-baloo font-bold text-primary mb-1">
-              {totalPoints}
-            </p>
-            <p className="text-lg text-muted-foreground mb-3">
-              {t.totalPoints} {selectedProfile && `- ${selectedProfile.name}`}
-            </p>
-            
-            {/* Level Badge */}
-            <div className="inline-flex items-center gap-2 bg-primary/20 rounded-full px-4 py-1.5">
-              <Star className="h-4 w-4 text-primary" />
-              <span className="font-baloo font-bold">{levelInfo.title}</span>
-            </div>
-            
-            {/* Progress to next level */}
-            {!isMaxLevel && (
-              <div className="mt-3">
-                <p className="text-xs text-muted-foreground mb-1">
-                  {t.pointsToNext.replace('{n}', String(levelInfo.nextLevel - totalPoints))}
-                </p>
-                <div className="w-full bg-muted rounded-full h-2 max-w-xs mx-auto">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min((totalPoints / levelInfo.nextLevel) * 100, 100)}%` }}
-                  />
-                </div>
+          <CardContent className="p-5">
+            {/* Top Row: Points and Streak */}
+            <div className="flex items-center justify-between mb-4">
+              <PointsDisplay points={progress.totalPoints} size="lg" />
+              
+              <div className="flex items-center gap-2 bg-card/60 rounded-full px-4 py-2">
+                <StreakFlame 
+                  streak={progress.streak.current} 
+                  flameType={progress.streak.flameType}
+                  size="md"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {t.streakDays.replace('{n}', String(progress.streak.current))}
+                </span>
               </div>
+            </div>
+
+            {/* Level Badge and Progress */}
+            <div className="text-center space-y-3">
+              <LevelBadge 
+                level={progress.level} 
+                totalPoints={progress.totalPoints}
+                size="lg"
+                className="justify-center"
+              />
+              
+              {!progress.level.isMaxLevel && (
+                <div className="max-w-md mx-auto space-y-1">
+                  <Progress 
+                    value={((progress.totalPoints - progress.level.minPoints) / 
+                      ((progress.level.nextLevelPoints || 0) - progress.level.minPoints)) * 100} 
+                    className="h-3"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t.pointsToNext
+                      .replace('{n}', String(pointsToNextLevel))
+                      .replace('{level}', levels.find(l => l.level_number === progress.level.level + 1)?.title || '')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Profile name */}
+            {selectedProfile && (
+              <p className="text-center text-sm text-muted-foreground mt-3">
+                {selectedProfile.name}
+              </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Category Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {/* Stories */}
-          <Card className="border-2 border-primary/30">
-            <CardHeader className="pb-2">
-              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-2">
-                <BookOpen className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle className="text-lg font-baloo">{t.stories}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary mb-1">{storyPoints}</p>
-              <p className="text-sm text-muted-foreground">{t.storiesRead.replace('{n}', String(storiesRead))}</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {/* Stories Read */}
+          <Card className="border border-primary/20">
+            <CardContent className="p-4 text-center">
+              <BookOpen className="h-8 w-8 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold text-primary">{progress.storiesReadTotal}</p>
+              <p className="text-xs text-muted-foreground">{t.stories}</p>
             </CardContent>
           </Card>
 
-          {/* Quiz */}
-          <Card className="border-2 border-secondary/30">
-            <CardHeader className="pb-2">
-              <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center mb-2">
-                <Brain className="h-6 w-6 text-secondary" />
-              </div>
-              <CardTitle className="text-lg font-baloo">{t.quiz}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-secondary mb-1">{quizPoints}</p>
-              <p className="text-sm text-muted-foreground">{t.quizPassed.replace('{n}', String(quizzesPassed))}</p>
+          {/* Quiz Perfect */}
+          <Card className="border border-secondary/20">
+            <CardContent className="p-4 text-center">
+              <Brain className="h-8 w-8 text-secondary mx-auto mb-2" />
+              <p className="text-2xl font-bold text-secondary">{progress.quizzesPerfect}</p>
+              <p className="text-xs text-muted-foreground">{t.quizPerfect.replace('{n}', '')}</p>
+            </CardContent>
+          </Card>
+
+          {/* Words Learned */}
+          <Card className="border border-accent/20">
+            <CardContent className="p-4 text-center">
+              <Sparkles className="h-8 w-8 text-accent mx-auto mb-2" />
+              <p className="text-2xl font-bold text-accent">{wordsLearned}</p>
+              <p className="text-xs text-muted-foreground">{t.vocabulary}</p>
+            </CardContent>
+          </Card>
+
+          {/* Longest Streak */}
+          <Card className="border border-border">
+            <CardContent className="p-4 text-center">
+              <StreakFlame 
+                streak={progress.streak.longest} 
+                flameType={progress.streak.longest >= 30 ? 'diamond' : progress.streak.longest >= 14 ? 'gold' : progress.streak.longest >= 7 ? 'silver' : progress.streak.longest >= 3 ? 'bronze' : 'none'}
+                showCount={false}
+                size="md"
+                className="justify-center mb-2"
+              />
+              <p className="text-2xl font-bold">{progress.streak.longest}</p>
+              <p className="text-xs text-muted-foreground">Beste Serie</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Vocabulary Stats */}
-        <Card className="border-2 border-lavender/50 mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-600" />
-              {t.vocabulary}
+        {/* Streak Milestones */}
+        <Card className="mb-6 border border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-baloo flex items-center gap-2">
+              <StreakFlame streak={7} flameType="gold" showCount={false} size="sm" />
+              {t.streakMilestones}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-4xl font-bold text-purple-700">{wordsLearned}</p>
-                <p className="text-muted-foreground">{t.wordsLearned}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">
-                  {t.learnedHint}
-                </p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[3, 7, 14, 30].map((milestone) => (
+                <StreakMilestoneCard
+                  key={milestone}
+                  milestone={milestone}
+                  achieved={progress.streak.longest >= milestone}
+                  points={STREAK_MILESTONE_POINTS[milestone]}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Level Overview */}
+        <Card className="mb-8 border border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-baloo flex items-center gap-2">
+              {progress.level.icon}
+              {t.levels}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {levels.map((level) => (
+                <LevelCard
+                  key={level.level_number}
+                  levelNumber={level.level_number}
+                  title={level.title}
+                  icon={level.icon || '🔒'}
+                  minPoints={level.min_points}
+                  isUnlocked={progress.totalPoints >= level.min_points}
+                  isCurrent={progress.level.level === level.level_number}
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -406,6 +439,7 @@ const ResultsPage = () => {
           >
             <BookOpen className="h-5 w-5 mr-2" />
             {t.readStory}
+            <ChevronRight className="h-5 w-5 ml-2" />
           </Button>
           <Button
             onClick={() => navigate("/quiz")}
@@ -417,6 +451,13 @@ const ResultsPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Level Up Modal */}
+      <LevelUpModal
+        level={pendingLevelUp}
+        onClose={clearPendingLevelUp}
+        language={kidAppLanguage}
+      />
     </div>
   );
 };
