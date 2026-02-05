@@ -223,22 +223,49 @@ export default function QRScannerModal({
   const startScannerWithCamera = async (cameraId: string) => {
     try {
       // Wait for container to be in DOM
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const html5QrCode = new Html5Qrcode(scannerContainerId);
+      const html5QrCode = new Html5Qrcode(scannerContainerId, {
+        verbose: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
+      });
       scannerRef.current = html5QrCode;
+
+      console.log("Starting scanner with camera:", cameraId);
 
       await html5QrCode.start(
         cameraId,
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { 
+          fps: 15, 
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            // Use 70% of the smallest dimension for the scan box
+            const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
+            const qrboxSize = Math.floor(minDimension * 0.7);
+            return { width: qrboxSize, height: qrboxSize };
+          },
+          aspectRatio: 1.0
+        },
         async (decodedText) => {
+          console.log("QR Code scanned:", decodedText);
+          // Vibrate on successful scan if supported
+          if (navigator.vibrate) {
+            navigator.vibrate(100);
+          }
           await stopScanner();
           await handleScan(decodedText);
         },
-        () => {} // Ignore scan failures
+        (errorMessage) => {
+          // Only log significant errors, not every frame
+          if (!errorMessage.includes("No MultiFormat Readers")) {
+            console.log("Scan frame:", errorMessage);
+          }
+        }
       );
       
       setIsScanning(false);
+      console.log("Scanner started successfully");
     } catch (err) {
       console.error("Scanner start error:", err);
       setError(t.cameraError);
