@@ -1,6 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,7 +14,6 @@ serve(async (req) => {
   try {
     const { username, password } = await req.json();
 
-    // Validate input
     if (!username || !password) {
       return new Response(
         JSON.stringify({ success: false, error: 'Username and password required' }),
@@ -30,12 +28,10 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role to bypass RLS
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Query user from database
     const { data: user, error: dbError } = await supabase
       .from('user_profiles')
       .select('*')
@@ -57,7 +53,6 @@ serve(async (req) => {
       );
     }
 
-    // Check password (simple comparison for this demo app)
     if (user.password_hash !== password) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid username or password' }),
@@ -65,7 +60,6 @@ serve(async (req) => {
       );
     }
 
-    // Get user role
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
@@ -73,11 +67,8 @@ serve(async (req) => {
       .maybeSingle();
 
     const userRole = roleData?.role || 'standard';
-
-    // Generate session token
     const sessionToken = crypto.randomUUID();
     
-    // Return user settings along with token
     return new Response(
       JSON.stringify({ 
         success: true, 
