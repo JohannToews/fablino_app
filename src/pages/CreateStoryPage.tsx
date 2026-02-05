@@ -326,6 +326,7 @@ const CreateStoryPage = () => {
       everyday: { de: "Alltagsgeschichte", fr: "Histoire du quotidien", en: "Everyday story" },
       humor: { de: "Lustige Geschichte", fr: "Histoire drôle", en: "Funny story" },
       educational: { de: "Sachgeschichte", fr: "Histoire éducative", en: "Educational story" },
+      music: { de: "Musik- & Kunstgeschichte", fr: "Histoire de musique & art", en: "Music & art story" },
     };
     
     const storyTypeLabel = storyTypeLabels[selectedStoryType || "fantasy"][kidAppLanguage] || storyTypeLabels[selectedStoryType || "fantasy"].de;

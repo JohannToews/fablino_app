@@ -19,17 +19,18 @@ import { useColorPalette } from "@/hooks/useColorPalette";
 // Main category images
 import fantasyImg from "@/assets/story-types/fantasy.jpg";
 import actionImg from "@/assets/story-types/action.jpg";
-import animalsImg from "@/assets/story-types/animals.jpg";
+import animalsImg from "@/assets/story-types/animals-new.jpg";
 import everydayImg from "@/assets/story-types/everyday.jpg";
 import humorImg from "@/assets/story-types/humor.jpg";
 import educationalImg from "@/assets/story-types/educational.jpg";
+import musicArtImg from "@/assets/story-types/music-art.jpg";
 import surpriseBoxImg from "@/assets/characters/surprise-box.jpg";
 
 // Educational topic images
 import natureAnimalsImg from "@/assets/story-types/nature-animals.jpg";
 import monumentsImg from "@/assets/story-types/monuments.jpg";
 import countriesImg from "@/assets/story-types/countries.jpg";
-import scienceImg from "@/assets/story-types/science.jpg";
+import scienceImg from "@/assets/story-types/science-new.jpg";
 
 export interface StorySettings {
   length: StoryLength;
@@ -74,6 +75,7 @@ const StoryTypeSelectionScreen = ({
     { type: "animals" as StoryType, image: animalsImg, label: translations.animals },
     { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday },
     { type: "humor" as StoryType, image: humorImg, label: translations.humor },
+    { type: "music" as StoryType, image: musicArtImg, label: translations.music },
     { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
   ];
 

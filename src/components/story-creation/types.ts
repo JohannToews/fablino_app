@@ -252,7 +252,8 @@ export type StoryType =
   | "animals"      // Tiergeschichten
   | "everyday"     // Alltag & Gefühle
   | "humor"        // Humor & Chaos
-  | "educational"; // Wissen & Entdecken
+  | "educational"  // Wissen & Entdecken
+  | "music";       // Musik & Kunst
 
 // Sub-elements for each category
 export type StorySubElement = 
@@ -316,6 +317,7 @@ export interface StoryTypeSelectionTranslations {
   everyday: string;
   humor: string;
   educational: string;
+  music: string;
   surprise: string;
   // Sub-element selection
   subElementHeader: string;
@@ -403,6 +405,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Alltag & Gefühle",
     humor: "Humor & Chaos",
     educational: "Wissen & Entdecken",
+    music: "Musik & Kunst",
     surprise: "Überrasch mich",
     // Sub-element selection
     subElementHeader: "Wähle Elemente",
@@ -487,6 +490,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Quotidien & Émotions",
     humor: "Humour & Chaos",
     educational: "Savoir & Découvrir",
+    music: "Musique & Art",
     surprise: "Surprends-moi",
     subElementHeader: "Choisis des éléments",
     subElementHint: "Choisis jusqu'à 3 éléments (optionnel)",
@@ -563,6 +567,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Everyday & Feelings",
     humor: "Humor & Chaos",
     educational: "Learn & Discover",
+    music: "Music & Art",
     surprise: "Surprise me",
     subElementHeader: "Choose elements",
     subElementHint: "Choose up to 3 elements (optional)",
@@ -639,6 +644,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Cotidiano & Emociones",
     humor: "Humor & Caos",
     educational: "Saber & Descubrir",
+    music: "Música & Arte",
     surprise: "Sorpréndeme",
     subElementHeader: "Elige elementos",
     subElementHint: "Elige hasta 3 elementos (opcional)",
@@ -715,6 +721,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Dagelijks & Gevoelens",
     humor: "Humor & Chaos",
     educational: "Leren & Ontdekken",
+    music: "Muziek & Kunst",
     surprise: "Verras me",
     subElementHeader: "Kies elementen",
     subElementHint: "Kies maximaal 3 elementen (optioneel)",
@@ -791,6 +798,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Quotidiano & Emozioni",
     humor: "Umorismo & Caos",
     educational: "Sapere & Scoprire",
+    music: "Musica & Arte",
     surprise: "Sorprendimi",
     subElementHeader: "Scegli elementi",
     subElementHint: "Scegli fino a 3 elementi (opzionale)",
@@ -867,6 +875,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     everyday: "Svakodnevica & Osjećaji",
     humor: "Humor & Kaos",
     educational: "Znanje & Otkrivanje",
+    music: "Muzika & Umjetnost",
     surprise: "Iznenadi me",
     subElementHeader: "Odaberi elemente",
     subElementHint: "Odaberi do 3 elementa (opcionalno)",
