@@ -57,25 +57,23 @@
  
      const originalStory = share.stories;
  
-     // Create a copy of the story (no imported_from for privacy)
-     const { data: newStory, error: insertError } = await supabase
-       .from("stories")
-       .insert({
-         title: originalStory.title,
-         content: originalStory.content,
-         difficulty: originalStory.difficulty,
-         text_language: originalStory.text_language,
-         text_type: originalStory.text_type,
-         cover_image_url: originalStory.cover_image_url,
-         story_images: originalStory.story_images,
-         generation_status: "completed",
-         cover_image_status: originalStory.cover_image_url ? "completed" : "pending",
-         story_images_status: originalStory.story_images?.length ? "completed" : "pending",
-         user_id,
-         kid_profile_id: kid_profile_id || null,
-       })
-       .select()
-       .single();
+      // Create a copy of the story (no imported_from for privacy)
+      // Note: Don't set status fields - let them use defaults to avoid check constraint issues
+      const { data: newStory, error: insertError } = await supabase
+        .from("stories")
+        .insert({
+          title: originalStory.title,
+          content: originalStory.content,
+          difficulty: originalStory.difficulty,
+          text_language: originalStory.text_language,
+          text_type: originalStory.text_type,
+          cover_image_url: originalStory.cover_image_url,
+          story_images: originalStory.story_images,
+          user_id,
+          kid_profile_id: kid_profile_id || null,
+        })
+        .select()
+        .single();
  
      if (insertError || !newStory) {
        console.error("Error creating story copy:", insertError);
