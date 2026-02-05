@@ -72,12 +72,12 @@ const StoryTypeSelectionScreen = ({
   const [isSeries, setIsSeries] = useState(false);
 
   const mainCategoryTiles = [
-    { type: "fantasy" as StoryType, image: fantasyImg, label: translations.fantasy, emoji: "🧚" },
-    { type: "action" as StoryType, image: actionImg, label: translations.action, emoji: "⚔️" },
-    { type: "animals" as StoryType, image: animalsImg, label: translations.animals, emoji: "🐾" },
-    { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday, emoji: "🏠" },
-    { type: "humor" as StoryType, image: humorImg, label: translations.humor, emoji: "🤪" },
-    { type: "educational" as StoryType, image: educationalImg, label: translations.educational, emoji: "📚" },
+    { type: "fantasy" as StoryType, image: fantasyImg, label: translations.fantasy },
+    { type: "action" as StoryType, image: actionImg, label: translations.action },
+    { type: "animals" as StoryType, image: animalsImg, label: translations.animals },
+    { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday },
+    { type: "humor" as StoryType, image: humorImg, label: translations.humor },
+    { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
   ];
 
   const educationalTopicTiles = [
@@ -219,7 +219,7 @@ const StoryTypeSelectionScreen = ({
     if (viewState === "educational") return translations.educationalTopicHeader;
     // For subelements, show category name
     const category = mainCategoryTiles.find(t => t.type === selectedType);
-    return `${category?.emoji || ""} ${category?.label || ""} - ${translations.subElementHeader}`;
+    return `${category?.label || ""} - ${translations.subElementHeader}`;
   };
 
   return (
@@ -309,7 +309,6 @@ const StoryTypeSelectionScreen = ({
                   label={tile.label}
                   onClick={() => handleTypeClick(tile.type)}
                   selected={selectedType === tile.type}
-                  badge={tile.emoji}
                   size="small"
                 />
               ))}
