@@ -38,6 +38,100 @@ export type Database = {
         }
         Relationships: []
       }
+      collected_items: {
+        Row: {
+          category: Database["public"]["Enums"]["collectible_category"]
+          collected_at: string
+          id: string
+          item_description: string | null
+          item_emoji: string
+          item_name: string
+          kid_profile_id: string
+          rarity: string
+          story_id: string | null
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["collectible_category"]
+          collected_at?: string
+          id?: string
+          item_description?: string | null
+          item_emoji?: string
+          item_name: string
+          kid_profile_id: string
+          rarity?: string
+          story_id?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["collectible_category"]
+          collected_at?: string
+          id?: string
+          item_description?: string | null
+          item_emoji?: string
+          item_name?: string
+          kid_profile_id?: string
+          rarity?: string
+          story_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collected_items_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collected_items_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collected_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collectible_pool: {
+        Row: {
+          category: Database["public"]["Enums"]["collectible_category"]
+          created_at: string
+          id: string
+          item_description: string | null
+          item_emoji: string
+          item_name: string
+          keywords: string[] | null
+          rarity: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["collectible_category"]
+          created_at?: string
+          id?: string
+          item_description?: string | null
+          item_emoji: string
+          item_name: string
+          keywords?: string[] | null
+          rarity?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["collectible_category"]
+          created_at?: string
+          id?: string
+          item_description?: string | null
+          item_emoji?: string
+          item_name?: string
+          keywords?: string[] | null
+          rarity?: string
+        }
+        Relationships: []
+      }
       comprehension_questions: {
         Row: {
           created_at: string
@@ -806,6 +900,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "standard"
+      collectible_category: "creature" | "place" | "object" | "star"
       ending_type: "A" | "B" | "C"
     }
     CompositeTypes: {
@@ -935,6 +1030,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "standard"],
+      collectible_category: ["creature", "place", "object", "star"],
       ending_type: ["A", "B", "C"],
     },
   },

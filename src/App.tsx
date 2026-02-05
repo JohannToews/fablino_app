@@ -13,6 +13,7 @@ import ReadingPage from "./pages/ReadingPage";
 import VocabularyQuizPage from "./pages/VocabularyQuizPage";
 import VocabularyManagePage from "./pages/VocabularyManagePage";
 import ResultsPage from "./pages/ResultsPage";
+import CollectionPage from "./pages/CollectionPage";
 import FeedbackStatsPage from "./pages/FeedbackStatsPage";
 import LoginPage from "./pages/LoginPage";
 import CreateStoryPage from "./pages/CreateStoryPage";
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/create-story" element={
               <ProtectedRoute>
                 <CreateStoryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/collection" element={
+              <ProtectedRoute>
+                <CollectionPage />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
