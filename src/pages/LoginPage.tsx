@@ -144,7 +144,7 @@ const LoginPage = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 text-xl font-bold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg"
+              className="w-full h-14 text-xl font-bold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-lg"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
