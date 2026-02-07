@@ -224,6 +224,39 @@ export type Database = {
           },
         ]
       }
+      content_themes_by_level: {
+        Row: {
+          created_at: string | null
+          example_texts: Json
+          id: string
+          labels: Json
+          min_age: number | null
+          min_safety_level: number
+          sort_order: number
+          theme_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          example_texts: Json
+          id?: string
+          labels: Json
+          min_age?: number | null
+          min_safety_level: number
+          sort_order?: number
+          theme_key: string
+        }
+        Update: {
+          created_at?: string | null
+          example_texts?: Json
+          id?: string
+          labels?: Json
+          min_age?: number | null
+          min_safety_level?: number
+          sort_order?: number
+          theme_key?: string
+        }
+        Relationships: []
+      }
       image_cache: {
         Row: {
           created_at: string | null
@@ -258,6 +291,7 @@ export type Database = {
         Row: {
           age: number | null
           color_palette: string
+          content_safety_level: number
           cover_image_url: string | null
           created_at: string
           gender: string | null
@@ -273,6 +307,7 @@ export type Database = {
         Insert: {
           age?: number | null
           color_palette?: string
+          content_safety_level?: number
           cover_image_url?: string | null
           created_at?: string
           gender?: string | null
@@ -288,6 +323,7 @@ export type Database = {
         Update: {
           age?: number | null
           color_palette?: string
+          content_safety_level?: number
           cover_image_url?: string | null
           created_at?: string
           gender?: string | null
@@ -309,6 +345,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      learning_themes: {
+        Row: {
+          category: string
+          created_at: string | null
+          descriptions: Json
+          id: string
+          labels: Json
+          sort_order: number
+          theme_key: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          descriptions: Json
+          id?: string
+          labels: Json
+          sort_order?: number
+          theme_key: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          descriptions?: Json
+          id?: string
+          labels?: Json
+          sort_order?: number
+          theme_key?: string
+        }
+        Relationships: []
       }
       level_settings: {
         Row: {
@@ -377,6 +443,41 @@ export type Database = {
             columns: ["story_id"]
             isOneToOne: false
             referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_learning_config: {
+        Row: {
+          active_themes: string[]
+          created_at: string | null
+          frequency: number
+          id: string
+          kid_profile_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          active_themes?: string[]
+          created_at?: string | null
+          frequency?: number
+          id?: string
+          kid_profile_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          active_themes?: string[]
+          created_at?: string | null
+          frequency?: number
+          id?: string
+          kid_profile_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_learning_config_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: true
+            referencedRelation: "kid_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -513,6 +614,8 @@ export type Database = {
           id: string
           is_deleted: boolean
           kid_profile_id: string | null
+          learning_theme_applied: string | null
+          parent_prompt_text: string | null
           prompt: string | null
           series_id: string | null
           story_images: string[] | null
@@ -540,6 +643,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
+          learning_theme_applied?: string | null
+          parent_prompt_text?: string | null
           prompt?: string | null
           series_id?: string | null
           story_images?: string[] | null
@@ -567,6 +672,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
+          learning_theme_applied?: string | null
+          parent_prompt_text?: string | null
           prompt?: string | null
           series_id?: string | null
           story_images?: string[] | null
