@@ -22,6 +22,7 @@ export interface KidProfile {
   difficulty_level?: number;
   age?: number | null;
   gender?: string | null;
+  story_languages?: string[];
 }
 
 // Derive app language from school_system (legacy fallback)
@@ -59,6 +60,8 @@ interface KidProfileContextType {
   kidExplanationLanguage: KidLanguage;
   /** Languages spoken at home */
   kidHomeLanguages: string[];
+  /** Languages available for story generation */
+  kidStoryLanguages: string[];
 }
 
 const KidProfileContext = createContext<KidProfileContextType | undefined>(undefined);
@@ -106,6 +109,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
         difficulty_level: (d as any).difficulty_level ?? 2,
         age: (d as any).age ?? null,
         gender: (d as any).gender ?? null,
+        story_languages: (d as any).story_languages || [(d as any).reading_language || d.school_system],
       }));
       setKidProfiles(mappedProfiles);
       
@@ -157,6 +161,9 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
   
   // Home languages from profile, default to ['de']
   const kidHomeLanguages = selectedProfile?.home_languages || ['de'];
+  
+  // Story languages from profile, default to [reading_language]
+  const kidStoryLanguages = selectedProfile?.story_languages || [kidReadingLanguage];
 
   return (
     <KidProfileContext.Provider value={{
@@ -171,6 +178,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       kidReadingLanguage,
       kidExplanationLanguage,
       kidHomeLanguages,
+      kidStoryLanguages,
     }}>
       {children}
     </KidProfileContext.Provider>

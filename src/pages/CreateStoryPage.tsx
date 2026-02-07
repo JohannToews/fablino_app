@@ -82,7 +82,7 @@ const getEducationalDescription = (
 const CreateStoryPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { kidAppLanguage, kidReadingLanguage, kidExplanationLanguage, kidHomeLanguages, selectedProfile } = useKidProfile();
+  const { kidAppLanguage, kidReadingLanguage, kidExplanationLanguage, kidHomeLanguages, kidStoryLanguages, selectedProfile } = useKidProfile();
   const { colors: paletteColors } = useColorPalette();
 
   // Wizard state
@@ -103,11 +103,10 @@ const CreateStoryPage = () => {
   const storyTypeTranslations = storyTypeSelectionTranslations[kidAppLanguage] || storyTypeSelectionTranslations.de;
   const characterTranslations = characterSelectionTranslations[kidAppLanguage] || characterSelectionTranslations.de;
 
-  // Compute available languages for story generation (reading_language + home_languages, deduplicated)
-  const availableLanguages = Array.from(new Set([
-    kidReadingLanguage,
-    ...(kidHomeLanguages || []),
-  ]));
+  // Compute available languages for story generation from story_languages (Block 2.3d+)
+  const availableLanguages = kidStoryLanguages.length > 0
+    ? kidStoryLanguages
+    : [kidReadingLanguage];
 
   // Generate educational story directly
   const generateEducationalStory = async (

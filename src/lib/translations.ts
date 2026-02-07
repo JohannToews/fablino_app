@@ -109,6 +109,8 @@ export interface Translations {
   genderMale: string;
   genderFemale: string;
   genderDiverse: string;
+  storyLanguagesLabel: string;
+  storyLanguagesHint: string;
   
   // Image styles
   imageStyleCute: string;
@@ -323,6 +325,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Junge',
     genderFemale: 'Mädchen',
     genderDiverse: 'Divers',
+    storyLanguagesLabel: 'Geschichten-Sprachen',
+    storyLanguagesHint: 'In welchen Sprachen soll dein Kind Geschichten lesen?',
     
     imageStyleCute: 'Niedlich & verspielt',
     imageStyleWatercolor: 'Aquarell',
@@ -519,6 +523,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Boy',
     genderFemale: 'Girl',
     genderDiverse: 'Diverse',
+    storyLanguagesLabel: 'Story languages',
+    storyLanguagesHint: 'In which languages should your child read stories?',
     
     imageStyleCute: 'Cute & playful',
     imageStyleWatercolor: 'Watercolor',
@@ -715,6 +721,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Garçon',
     genderFemale: 'Fille',
     genderDiverse: 'Autre',
+    storyLanguagesLabel: 'Langues des histoires',
+    storyLanguagesHint: 'Dans quelles langues votre enfant doit-il lire des histoires ?',
     
     imageStyleCute: 'Mignon & ludique',
     imageStyleWatercolor: 'Aquarelle',
@@ -911,6 +919,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Niño',
     genderFemale: 'Niña',
     genderDiverse: 'Diverso',
+    storyLanguagesLabel: 'Idiomas de historias',
+    storyLanguagesHint: '¿En qué idiomas debe leer historias tu hijo/a?',
     
     imageStyleCute: 'Lindo & juguetón',
     imageStyleWatercolor: 'Acuarela',
@@ -1107,6 +1117,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Jongen',
     genderFemale: 'Meisje',
     genderDiverse: 'Divers',
+    storyLanguagesLabel: 'Verhaaltalen',
+    storyLanguagesHint: 'In welke talen moet uw kind verhalen lezen?',
     
     imageStyleCute: 'Schattig & speels',
     imageStyleWatercolor: 'Aquarel',
@@ -1303,6 +1315,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Ragazzo',
     genderFemale: 'Ragazza',
     genderDiverse: 'Altro',
+    storyLanguagesLabel: 'Lingue delle storie',
+    storyLanguagesHint: 'In quali lingue il tuo bambino dovrebbe leggere storie?',
     
     imageStyleCute: 'Carino & giocoso',
     imageStyleWatercolor: 'Acquerello',
@@ -1499,6 +1513,8 @@ const translations: Record<Language, Translations> = {
     genderMale: 'Dječak',
     genderFemale: 'Djevojčica',
     genderDiverse: 'Drugo',
+    storyLanguagesLabel: 'Jezici priča',
+    storyLanguagesHint: 'Na kojim jezicima vaše dijete treba čitati priče?',
     
     imageStyleCute: 'Slatko & razigrano',
     imageStyleWatercolor: 'Akvarel',

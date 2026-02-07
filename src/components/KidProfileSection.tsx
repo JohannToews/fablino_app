@@ -11,6 +11,7 @@ import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2 } from "lucide-rea
 import { useTranslations, Language } from "@/lib/translations";
 import { DEFAULT_SCHOOL_SYSTEMS, SchoolSystems, SchoolSystem } from "@/lib/schoolSystems";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
 
 interface KidProfile {
   id?: string;
@@ -27,6 +28,7 @@ interface KidProfile {
   reading_language?: string;
   explanation_language?: string;
   home_languages?: string[];
+  story_languages?: string[];
 }
 
 interface KidProfileSectionProps {
@@ -126,6 +128,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         reading_language: (d as any).reading_language || d.school_system,
         explanation_language: (d as any).explanation_language || 'de',
         home_languages: (d as any).home_languages || ['de'],
+        story_languages: (d as any).story_languages || [(d as any).reading_language || d.school_system],
       }));
       setProfiles(mappedProfiles);
       if (mappedProfiles[0]?.cover_image_url) {
@@ -315,6 +318,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         reading_language: currentProfile.reading_language || currentProfile.school_system,
         explanation_language: currentProfile.explanation_language || 'de',
         home_languages: currentProfile.home_languages || ['de'],
+        story_languages: currentProfile.story_languages || [currentProfile.reading_language || currentProfile.school_system],
       };
 
       let savedData;
@@ -369,6 +373,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         reading_language: savedData.reading_language,
         explanation_language: savedData.explanation_language,
         home_languages: savedData.home_languages,
+        story_languages: (savedData as any).story_languages || [savedData.reading_language],
       };
 
       setProfiles(prev => {
@@ -576,6 +581,39 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Story Languages Multi-Select */}
+            <div className="space-y-2">
+              <Label>{t.storyLanguagesLabel}</Label>
+              <p className="text-xs text-muted-foreground">{t.storyLanguagesHint}</p>
+              <div className="flex flex-wrap gap-2">
+                {(['fr', 'de', 'en', 'es', 'it', 'bs'] as const).map((lang) => {
+                  const isSelected = (currentProfile.story_languages || []).includes(lang);
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        const current = currentProfile.story_languages || [];
+                        if (isSelected) {
+                          // Don't allow deselecting the last language
+                          if (current.length <= 1) return;
+                          updateCurrentProfile({ story_languages: current.filter(l => l !== lang) });
+                        } else {
+                          updateCurrentProfile({ story_languages: [...current, lang] });
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg border-2 transition-all text-sm font-medium ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                          : 'border-muted bg-background text-muted-foreground hover:border-muted-foreground/50'
+                      }`}
+                    >
+                      {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[language] || lang.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-2">

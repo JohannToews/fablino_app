@@ -102,7 +102,7 @@ kinder-wort-trainer/
 │   │   │   ├── promptBuilder.ts   # Block 2.3c: Dynamic prompt builder (queries rule tables)
 │   │   │   └── learningThemeRotation.ts  # Block 2.3c: Learning theme rotation logic
 │   │   └── …                      # 14 more Edge Functions
-│   └── migrations/                # 39 SQL migrations (incl. multilingual fields, Block 2.1 learning/guardrails, Block 2.2 rule tables + difficulty_rules, Block 2.3a story classifications + kid_characters, Block 2.3c core slim prompt)
+│   └── migrations/                # 40 SQL migrations (incl. multilingual fields, Block 2.1 learning/guardrails, Block 2.2 rule tables + difficulty_rules, Block 2.3a story classifications + kid_characters, Block 2.3c core slim prompt, Block 2.3d+ story_languages)
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.ts
@@ -405,7 +405,7 @@ difficulty_rules             ← Block 2.2b (standalone rule table, 9 entries: 3
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
 | `user_profiles` | User accounts | username, password_hash, display_name, admin_language, app_language, text_language |
-| `kid_profiles` | Child profiles (multi per user) | name, hobbies, school_system, school_class, color_palette, image_style, gender, age, **ui_language**, **reading_language**, **explanation_language**, **home_languages[]**, **content_safety_level** (1-4, default 2), **difficulty_level** (1-3, default 2) |
+| `kid_profiles` | Child profiles (multi per user) | name, hobbies, school_system, school_class, color_palette, image_style, gender, age, **ui_language**, **reading_language**, **explanation_language**, **home_languages[]**, **story_languages[]** (Block 2.3d+), **content_safety_level** (1-4, default 2), **difficulty_level** (1-3, default 2) |
 | `user_roles` | Role assignments | user_id, role (admin/standard) |
 | `stories` | Story content and metadata | title, content, cover_image_url, story_images[], difficulty, text_type, **text_language** (NOT NULL, default 'fr'), generation_status, series_id, episode_number, ending_type, structure ratings, **learning_theme_applied**, **parent_prompt_text**, **emotional_secondary**, **humor_level** (1-5), **emotional_depth** (1-3), **moral_topic**, **concrete_theme** |
 | `kid_characters` | Recurring story figures per kid (Block 2.3a) | kid_profile_id (FK CASCADE), name, role (sibling/friend/known_figure/custom), age, relation, description, is_active, sort_order |
@@ -466,6 +466,7 @@ Added per-profile language separation to support families where the child reads 
 | `kid_profiles` | `reading_language` | text NOT NULL | `'fr'` | Story generation language |
 | `kid_profiles` | `explanation_language` | text NOT NULL | `'de'` | Word explanation language |
 | `kid_profiles` | `home_languages` | text[] NOT NULL | `'{"de"}'` | Languages spoken at home |
+| `kid_profiles` | `story_languages` | text[] NOT NULL | `'{"fr"}'` | Languages available for story generation (Block 2.3d+) |
 | `marked_words` | `word_language` | text NOT NULL | `'fr'` | Language of the word |
 | `marked_words` | `explanation_language` | text NOT NULL | `'de'` | Language of the explanation |
 | `comprehension_questions` | `question_language` | text NOT NULL | `'fr'` | Language of the question |
@@ -635,7 +636,7 @@ Extended the story creation wizard (`CreateStoryPage.tsx` + `src/components/stor
 | Length toggle | `StoryTypeSelectionScreen` | `storyLength: 'short' \| 'medium' \| 'long'` | Already existed pre-2.3d; default "medium" |
 | Difficulty toggle | `StoryTypeSelectionScreen` | `storyDifficulty: 'easy' \| 'medium' \| 'hard'` | Already existed pre-2.3d |
 | Series toggle | `StoryTypeSelectionScreen` | `isSeries: boolean` | Already existed pre-2.3d |
-| **Language picker** | `StoryTypeSelectionScreen` | `storyLanguage: string` | New. Shows flags + labels. Only rendered when >1 language available (reading_language + home_languages). Default = `kidReadingLanguage`. Passed as `storyLanguage` to Edge Function. |
+| **Language picker** | `StoryTypeSelectionScreen` | `storyLanguage: string` | New. Shows flags + labels. Only rendered when >1 language available. Source: `kid_profiles.story_languages` (Block 2.3d+). Default = `kidReadingLanguage`. Passed as `storyLanguage` to Edge Function. |
 
 #### Screen 2 Additions
 
@@ -663,9 +664,17 @@ Extended the story creation wizard (`CreateStoryPage.tsx` + `src/components/stor
 | `difficultyLevel` | `selectedProfile.difficulty_level` | `difficultyLevel` → `StoryRequest.kid_profile.difficulty_level` |
 | `contentSafetyLevel` | `selectedProfile.content_safety_level` | `contentSafetyLevel` → `StoryRequest.kid_profile.content_safety_level` |
 
+#### Story Languages Field (Block 2.3d+)
+
+Added `story_languages text[]` to `kid_profiles` – explicitly stores which languages a child can receive stories in. Replaces the implicit derivation from `reading_language + home_languages` in the wizard. Migration backfills existing profiles with `ARRAY[reading_language] || home_languages`.
+
+**UI**: Multi-select toggle buttons in `KidProfileSection.tsx` (Profile Editor). Shows all 6 supported languages with flags. At least 1 must be selected.
+
+**Wizard**: `CreateStoryPage.tsx` now reads `kidStoryLanguages` from `useKidProfile` context instead of computing from `reading_language + home_languages`.
+
 #### KidProfile Interface Extended
 
-Added `difficulty_level`, `age`, and `gender` to the `KidProfile` interface in `useKidProfile.tsx` (with fallback defaults in the DB mapping).
+Added `difficulty_level`, `age`, `gender`, and `story_languages` to the `KidProfile` interface in `useKidProfile.tsx` (with fallback defaults in the DB mapping). Context exposes `kidStoryLanguages` for the wizard.
 
 #### Translation Additions
 
@@ -763,4 +772,4 @@ Added `difficulty_level`, `age`, and `gender` to the `KidProfile` interface in `
 
 ---
 
-*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), Block 2.2b (difficulty_rules + age group adjustments), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine + CORE Slim v2 + story classifications + shared modules promptBuilder.ts + learningThemeRotation.ts), and Block 2.3d (Story Wizard extensions: language picker, "Ich" tile with kid data, saved kid_characters, "Save character" dialog, extended parameter passing to Edge Function).*
+*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), Block 2.2b (difficulty_rules + age group adjustments), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine + CORE Slim v2 + story classifications + shared modules promptBuilder.ts + learningThemeRotation.ts), Block 2.3d (Story Wizard extensions: language picker, "Ich" tile with kid data, saved kid_characters, "Save character" dialog, extended parameter passing to Edge Function), and Block 2.3d+ (story_languages[] on kid_profiles, profile editor multi-select, wizard reads from story_languages).*
