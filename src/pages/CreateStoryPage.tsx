@@ -187,6 +187,18 @@ const CreateStoryPage = () => {
             ending_type: isSeries ? 'C' : 'A',
             episode_number: isSeries ? 1 : null,
             series_id: null,
+            // Block 2.3c: Story classification metadata
+            structure_beginning: data.structure_beginning ?? null,
+            structure_middle: data.structure_middle ?? null,
+            structure_ending: data.structure_ending ?? null,
+            emotional_coloring: data.emotional_coloring ?? null,
+            emotional_secondary: data.emotional_secondary ?? null,
+            humor_level: data.humor_level ?? null,
+            emotional_depth: data.emotional_depth ?? null,
+            moral_topic: data.moral_topic ?? null,
+            concrete_theme: data.concrete_theme ?? null,
+            learning_theme_applied: data.learning_theme_applied ?? null,
+            parent_prompt_text: data.parent_prompt_text ?? null,
           })
           .select()
           .single();
@@ -403,6 +415,18 @@ const CreateStoryPage = () => {
             // Series setup: first episode is the series root
             episode_number: isSeries ? 1 : null,
             series_id: null, // First episode doesn't have a series_id - it IS the series
+            // Block 2.3c: Story classification metadata
+            structure_beginning: data.structure_beginning ?? null,
+            structure_middle: data.structure_middle ?? null,
+            structure_ending: data.structure_ending ?? null,
+            emotional_coloring: data.emotional_coloring ?? null,
+            emotional_secondary: data.emotional_secondary ?? null,
+            humor_level: data.humor_level ?? null,
+            emotional_depth: data.emotional_depth ?? null,
+            moral_topic: data.moral_topic ?? null,
+            concrete_theme: data.concrete_theme ?? null,
+            learning_theme_applied: data.learning_theme_applied ?? null,
+            parent_prompt_text: data.parent_prompt_text ?? null,
           })
           .select()
           .single();
