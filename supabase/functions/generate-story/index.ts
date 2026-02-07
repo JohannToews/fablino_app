@@ -1080,14 +1080,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     }
 
     // ── Block 2.3c: Robust parsing of new classification fields ──
+    // Clamp structure values to 1-5 to match database CHECK constraints
     const structureBeginning = story.structure_beginning 
-      ? parseInt(String(story.structure_beginning).replace(/[^0-9]/g, '')) || null
+      ? Math.min(5, Math.max(1, parseInt(String(story.structure_beginning).replace(/[^0-9]/g, '')) || 1))
       : null;
     const structureMiddle = story.structure_middle 
-      ? parseInt(String(story.structure_middle).replace(/[^0-9]/g, '')) || null
+      ? Math.min(5, Math.max(1, parseInt(String(story.structure_middle).replace(/[^0-9]/g, '')) || 1))
       : null;
     const structureEnding = story.structure_ending 
-      ? parseInt(String(story.structure_ending).replace(/[^0-9]/g, '')) || null
+      ? Math.min(5, Math.max(1, parseInt(String(story.structure_ending).replace(/[^0-9]/g, '')) || 1))
       : null;
     const emotionalColoring = story.emotional_coloring 
       ? String(story.emotional_coloring).match(/EM-[JTHWDC]/)?.[0] || null 
