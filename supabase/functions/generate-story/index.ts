@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { buildStoryPrompt, injectLearningTheme, StoryRequest } from '../_shared/promptBuilder.ts';
+import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -680,7 +682,20 @@ Deno.serve(async (req) => {
       locations,
       timePeriod,
       kidName,
-      kidHobbies
+      kidHobbies,
+      // Block 2.3c: New dynamic prompt parameters
+      kidProfileId,
+      kidAge,
+      difficultyLevel,
+      contentSafetyLevel,
+      themeKey,
+      storyLanguage: storyLanguageParam,  // 'fr', 'de', 'en', etc.
+      storyLength,                        // 'short' | 'medium' | 'long'
+      includeSelf,
+      selectedCharacters,                 // Array<{name, age?, relation?, description?}>
+      specialAbilities,                   // string[]
+      userPrompt: userPromptParam,        // free text from user
+      seriesContext,                       // summary of previous episodes
     } = await req.json();
 
     // Initialize Supabase client
@@ -689,9 +704,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // ================== MODULAR PROMPT LOADING ==================
-    // Load prompts from database based on source and settings
     const adminLangCode = (textLanguage || 'DE').toLowerCase();
-    
+
     // Helper function to load a prompt from app_settings
     async function loadPrompt(key: string): Promise<string | null> {
       const { data } = await supabase
@@ -702,54 +716,139 @@ Deno.serve(async (req) => {
       return data?.value || null;
     }
 
-    // Load prompts in parallel
-    const [corePrompt, elternModulPrompt, kinderModulPrompt, serienModulPrompt] = await Promise.all([
-      loadPrompt(`system_prompt_${adminLangCode}`),
-      loadPrompt(`system_prompt_story_creation_${adminLangCode}`),
-      loadPrompt(`system_prompt_kid_creation_${adminLangCode}`),
-      loadPrompt(`system_prompt_continuation_${adminLangCode}`)
-    ]);
+    // ── Block 2.3c: NEW dynamic prompt path with FALLBACK ──
+    let fullSystemPromptFinal: string = "";
+    let userMessageFinal: string = "";
+    let usedNewPromptPath = false;
+    let learningThemeApplied: string | null = null;
 
-    console.log("Loaded prompts:", {
-      source,
-      isSeries,
-      hasCorePrompt: !!corePrompt,
-      hasElternModul: !!elternModulPrompt,
-      hasKinderModul: !!kinderModulPrompt,
-      hasSerienModul: !!serienModulPrompt
-    });
+    // Resolve the effective story language (new param > textLanguage mapping > default)
+    const effectiveStoryLanguage = storyLanguageParam
+      || (textLanguage ? textLanguage.toLowerCase() : 'fr');
 
-    // Build composite system prompt based on source
-    let compositePrompt = "";
+    try {
+      // 1. Load CORE Slim v2
+      const coreSlimData = await loadPrompt('system_prompt_core_v2');
+      if (!coreSlimData) {
+        throw new Error('system_prompt_core_v2 not found in app_settings');
+      }
 
-    // CORE: Always included
-    if (corePrompt) {
-      compositePrompt += `# CORE PROMPT\n${corePrompt}\n\n`;
+      // 2. Build StoryRequest from available parameters
+      // Map theme_key: Wizard may send storyType like 'adventure' → map to 'action'
+      const themeKeyMapping: Record<string, string> = {
+        adventure: 'action',
+        fairy_tale: 'fantasy',
+        fairy_tales: 'fantasy',
+        science: 'educational',
+        knowledge: 'educational',
+        feelings: 'everyday',
+        daily_life: 'everyday',
+      };
+      const resolvedThemeKey = themeKey
+        || themeKeyMapping[storyType] || storyType
+        || (textType === 'non-fiction' ? 'educational' : 'fantasy');
+
+      // Map length: old code uses 'very_short'|'short'|'medium'|'long'|'very_long'
+      // New code uses 'short'|'medium'|'long'
+      const lengthMapping: Record<string, 'short' | 'medium' | 'long'> = {
+        very_short: 'short',
+        short: 'short',
+        medium: 'medium',
+        long: 'long',
+        very_long: 'long',
+      };
+      const resolvedLength = storyLength || lengthMapping[length] || 'medium';
+
+      const storyRequest: StoryRequest = {
+        kid_profile: {
+          id: kidProfileId || userId || 'unknown',
+          first_name: kidName || 'Child',
+          age: kidAge || 8,
+          difficulty_level: difficultyLevel || 2,
+          content_safety_level: contentSafetyLevel || 2,
+        },
+        story_language: effectiveStoryLanguage,
+        theme_key: resolvedThemeKey,
+        length: resolvedLength,
+        is_series: isSeries || false,
+        series_context: seriesContext || (episodeNumber && episodeNumber > 1 ? description : undefined),
+        protagonists: {
+          include_self: includeSelf || false,
+          characters: selectedCharacters || [],
+        },
+        special_abilities: specialAbilities || [],
+        user_prompt: userPromptParam || (source === 'kid' ? description : undefined),
+        source: source === 'kid' ? 'kid' : 'parent',
+        question_count: 5,
+      };
+
+      // 3. Build dynamic user message
+      userMessageFinal = await buildStoryPrompt(storyRequest, supabase);
+
+      // 4. Check for learning theme
+      if (kidProfileId) {
+        const themeResult = await shouldApplyLearningTheme(
+          kidProfileId,
+          effectiveStoryLanguage,
+          supabase
+        );
+        if (themeResult) {
+          learningThemeApplied = themeResult.themeKey;
+          userMessageFinal = injectLearningTheme(
+            userMessageFinal,
+            themeResult.themeLabel,
+            effectiveStoryLanguage
+          );
+        }
+      }
+
+      fullSystemPromptFinal = coreSlimData;
+      usedNewPromptPath = true;
+      console.log('[generate-story] Using NEW prompt path (CORE Slim + dynamic context)');
+
+    } catch (promptError: any) {
+      // ── FALLBACK: Old prompt loading logic ──
+      console.warn('[generate-story] FALLBACK to old prompts:', promptError.message);
+
+      const [corePrompt, elternModulPrompt, kinderModulPrompt, serienModulPrompt] = await Promise.all([
+        loadPrompt(`system_prompt_${adminLangCode}`),
+        loadPrompt(`system_prompt_story_creation_${adminLangCode}`),
+        loadPrompt(`system_prompt_kid_creation_${adminLangCode}`),
+        loadPrompt(`system_prompt_continuation_${adminLangCode}`)
+      ]);
+
+      console.log("Loaded OLD prompts:", {
+        source, isSeries,
+        hasCorePrompt: !!corePrompt,
+        hasElternModul: !!elternModulPrompt,
+        hasKinderModul: !!kinderModulPrompt,
+        hasSerienModul: !!serienModulPrompt
+      });
+
+      let compositePrompt = "";
+      if (corePrompt) {
+        compositePrompt += `# CORE PROMPT\n${corePrompt}\n\n`;
+      }
+      if (source === 'admin' && elternModulPrompt) {
+        compositePrompt += `# ELTERN-MODUL (Admin/Lehrer Modus)\n${elternModulPrompt}\n\n`;
+      } else if (source === 'kid' && kinderModulPrompt) {
+        let kidPrompt = kinderModulPrompt;
+        if (storyType) kidPrompt = kidPrompt.replace(/\{storyType\}/g, storyType);
+        if (characters) kidPrompt = kidPrompt.replace(/\{characters\}/g, Array.isArray(characters) ? characters.join(', ') : characters);
+        if (locations) kidPrompt = kidPrompt.replace(/\{locations\}/g, Array.isArray(locations) ? locations.join(', ') : locations);
+        if (timePeriod) kidPrompt = kidPrompt.replace(/\{timePeriod\}/g, timePeriod);
+        if (kidName) kidPrompt = kidPrompt.replace(/\{kidName\}/g, kidName);
+        if (kidHobbies) kidPrompt = kidPrompt.replace(/\{kidHobbies\}/g, kidHobbies);
+        compositePrompt += `# KINDER-MODUL (Kind erstellt eigene Geschichte)\n${kidPrompt}\n\n`;
+      }
+      if ((isSeries || (episodeNumber && episodeNumber > 1)) && serienModulPrompt) {
+        compositePrompt += `# SERIEN-MODUL\n${serienModulPrompt}\n\n`;
+      }
+      fullSystemPromptFinal = compositePrompt.trim() || customSystemPrompt || "";
+      // userMessageFinal will be set below in the old dynamic context block
     }
 
-    // MODULE: Add ELTERN-MODUL or KINDER-MODUL based on source
-    if (source === 'admin' && elternModulPrompt) {
-      compositePrompt += `# ELTERN-MODUL (Admin/Lehrer Modus)\n${elternModulPrompt}\n\n`;
-    } else if (source === 'kid' && kinderModulPrompt) {
-      // Replace placeholders in KINDER-MODUL
-      let kidPrompt = kinderModulPrompt;
-      if (storyType) kidPrompt = kidPrompt.replace(/\{storyType\}/g, storyType);
-      if (characters) kidPrompt = kidPrompt.replace(/\{characters\}/g, Array.isArray(characters) ? characters.join(', ') : characters);
-      if (locations) kidPrompt = kidPrompt.replace(/\{locations\}/g, Array.isArray(locations) ? locations.join(', ') : locations);
-      if (timePeriod) kidPrompt = kidPrompt.replace(/\{timePeriod\}/g, timePeriod);
-      if (kidName) kidPrompt = kidPrompt.replace(/\{kidName\}/g, kidName);
-      if (kidHobbies) kidPrompt = kidPrompt.replace(/\{kidHobbies\}/g, kidHobbies);
-      
-      compositePrompt += `# KINDER-MODUL (Kind erstellt eigene Geschichte)\n${kidPrompt}\n\n`;
-    }
-
-    // SERIEN-MODUL: Add if isSeries is true OR if episodeNumber > 1
-    if ((isSeries || (episodeNumber && episodeNumber > 1)) && serienModulPrompt) {
-      compositePrompt += `# SERIEN-MODUL\n${serienModulPrompt}\n\n`;
-    }
-
-    // Fallback to customSystemPrompt if no composite could be built
-    const baseSystemPrompt = compositePrompt.trim() || customSystemPrompt || "";
+    const baseSystemPrompt = fullSystemPromptFinal;
 
     // Determine how many images to generate based on length
     const imageCountMap: Record<string, number> = {
@@ -772,13 +871,12 @@ Deno.serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not configured (needed for image generation)");
     }
 
-    // Language mappings
+    // Language mappings (used by both new and old paths)
     const languageNames: Record<string, string> = {
       DE: "Deutsch",
       FR: "Französisch",
       EN: "Englisch",
     };
-
     const targetLanguage = languageNames[textLanguage] || "Französisch";
 
     // Map length to approximate word count with explicit minimum
@@ -789,38 +887,36 @@ Deno.serve(async (req) => {
       long: { range: "350-450 Wörter", min: 350, max: 450 },
       very_long: { range: "500-600 Wörter", min: 500, max: 600 },
     };
-
-    // Map length to question count
     const questionCountMap: Record<string, number> = {
-      very_short: 2,
-      short: 3,
-      medium: 5,
-      long: 7,
-      very_long: 8,
+      very_short: 2, short: 3, medium: 5, long: 7, very_long: 8,
     };
-
-    // Map difficulty labels
     const difficultyLabels: Record<string, string> = {
-      easy: "LEICHT",
-      medium: "MITTEL",
-      difficult: "SCHWER",
+      easy: "LEICHT", medium: "MITTEL", difficult: "SCHWER",
     };
 
-    // Text type mapping
-    const textTypeLabels: Record<string, string> = {
-      fiction: "FIKTION/GESCHICHTE (Textes narratifs)",
-      "non-fiction": "SACHTEXT (Texte documentaires)",
-    };
-
-    const textTypeDescription = textTypeLabels[textType] || textTypeLabels.fiction;
     const difficultyLabel = difficultyLabels[difficulty] || "MITTEL";
     const questionCount = questionCountMap[length] || 5;
     const lengthConfig = lengthMap[length] || lengthMap.medium;
-    const wordCount = lengthConfig.range;
     const minWordCount = lengthConfig.min;
 
-    // Build the complete system prompt with dynamic parameters
-    const dynamicContext = `
+    // ── Build fullSystemPrompt + userPrompt depending on path ──
+    let fullSystemPrompt: string;
+    let userPrompt: string;
+
+    if (usedNewPromptPath) {
+      // NEW path: system = CORE Slim, user = dynamic context from promptBuilder
+      fullSystemPrompt = fullSystemPromptFinal;
+      userPrompt = userMessageFinal;
+    } else {
+      // OLD FALLBACK path: build dynamic context + user prompt inline
+      const textTypeLabels: Record<string, string> = {
+        fiction: "FIKTION/GESCHICHTE (Textes narratifs)",
+        "non-fiction": "SACHTEXT (Texte documentaires)",
+      };
+      const textTypeDescription = textTypeLabels[textType] || textTypeLabels.fiction;
+      const wordCount = lengthConfig.range;
+
+      const dynamicContext = `
 ---
 ## AKTUELLE AUFGABE - PARAMETER
 
@@ -846,106 +942,37 @@ Bevor du antwortest:
 1. Zähle die Wörter im generierten Text
 2. Falls weniger als ${minWordCount} Wörter: Erweitere den Text mit mehr Details, Dialogen oder Beschreibungen
 3. Der Text sollte ${lengthConfig.min}-${lengthConfig.max} Wörter haben
-
-Typische Techniken zur Texterweiterung:
-- Mehr beschreibende Details zu Orten und Personen
-- Zusätzliche kurze Dialoge zwischen Charakteren
-- Erweiterte Handlungssequenzen
-- Gefühle und Gedanken der Charaktere beschreiben
-
----
-## WICHTIGE ANWEISUNGEN
-
-1. Schreibe den GESAMTEN Text (Titel, Inhalt, Fragen, Antworten) auf **${targetLanguage}**
-2. Halte dich STRIKT an die oben genannten Parameter
-3. Erstelle genau **${questionCount}** Verständnisfragen mit der in deinem System-Prompt beschriebenen Taxonomie-Mischung
-4. Jede Frage muss eine kurze, prägnante erwartete Antwort haben
-5. **Der Text MUSS mindestens ${minWordCount} Wörter lang sein!**
 `;
 
-    // Combine the composite system prompt with dynamic context
-    const fullSystemPrompt = baseSystemPrompt 
-      ? `${baseSystemPrompt}\n${dynamicContext}`
-      : dynamicContext;
+      fullSystemPrompt = baseSystemPrompt 
+        ? `${baseSystemPrompt}\n${dynamicContext}`
+        : dynamicContext;
 
-    // Build series continuation context if applicable
-    const seriesContext = episodeNumber && episodeNumber > 1 
-      ? `\n\n**SERIEN-KONTEXT:**
+      const oldSeriesContext = episodeNumber && episodeNumber > 1 
+        ? `\n\n**SERIEN-KONTEXT:**
 - Dies ist Episode ${episodeNumber} einer fortlaufenden Serie
 - Führe die Geschichte nahtlos fort, behalte dieselben Charaktere und den Stil bei
 - Der Text in "description" enthält den Kontext der vorherigen Episode
 - Das Ende sollte ${endingType === 'C' ? 'ein Cliffhanger sein, der Spannung für die nächste Episode aufbaut' : endingType === 'B' ? 'offen sein' : 'abgeschlossen sein'}`
-      : '';
+        : '';
 
-    const userPrompt = `Erstelle ${textType === "non-fiction" ? "einen Sachtext" : "eine Geschichte"} basierend auf dieser Beschreibung: "${description}"
-${seriesContext}
+      userPrompt = `Erstelle ${textType === "non-fiction" ? "einen Sachtext" : "eine Geschichte"} basierend auf dieser Beschreibung: "${description}"
+${oldSeriesContext}
 **WICHTIG:** 
 - Der gesamte Text muss auf ${targetLanguage} sein!
 - Der Text MUSS mindestens **${minWordCount} Wörter** haben! Zähle deine Wörter und erweitere wenn nötig!
 
-**VOKABEL-AUSWAHL:**
-Wähle die 10 BESTEN Lernwörter aus dem Text aus. Diese sollten:
-- NICHT trivial sein (keine Wörter wie "le", "la", "et", "est", "un", "une", "de", "à", "il", "elle", "dans", "sur", "avec", "pour", "que", "qui", "ce", "cette")
-- Für Kinder auf ${schoolLevel}-Niveau herausfordernd aber lernbar sein
-- Substantive, Verben (Infinitivform angeben!) oder Adjektive sein
-- Zum Textverständnis und Wortschatzaufbau beitragen
-
-Antworte NUR mit einem validen JSON-Objekt in diesem exakten Format:
-{
-  "title": "Titel auf ${targetLanguage}",
-  "content": "Der vollständige Text auf ${targetLanguage}. Verwende \\n für Absätze. MINDESTENS ${minWordCount} WÖRTER!",
-  "questions": [
-    {
-      "question": "Frage 1 auf ${targetLanguage}?",
-      "correctAnswer": "Die korrekte Antwort",
-      "options": ["Die korrekte Antwort", "Falsche Option 1", "Falsche Option 2", "Falsche Option 3"]
-    },
-    {
-      "question": "Frage 2 auf ${targetLanguage}?",
-      "correctAnswer": "Die korrekte Antwort",
-      "options": ["Falsche Option 1", "Die korrekte Antwort", "Falsche Option 2", "Falsche Option 3"]
-    }
-  ],
-  "vocabulary": [
-    {
-      "word": "das Wort aus dem Text (bei Verben: Infinitiv)",
-      "explanation": "kindgerechte Erklärung auf ${targetLanguage} (max 15 Wörter)"
-    }
-  ],
-  "structure_beginning": "A1-A6",
-  "structure_middle": "M1-M6",
-  "structure_ending": "E1-E6",
-  "emotional_coloring": "EM-X (Name) – z.B. EM-T (Thrill/Spannung)"
-}
-
-**WICHTIG FÜR MULTIPLE-CHOICE FRAGEN:**
-- Jede Frage hat GENAU 4 Antwortoptionen
-- NUR EINE Option ist korrekt (correctAnswer)
-- Die 3 falschen Optionen (Distraktoren) müssen plausibel aber falsch sein
-- MISCHE die Position der korrekten Antwort (nicht immer an erster Stelle!)
-- Die correctAnswer muss EXAKT mit einer der options übereinstimmen
-
-**STORY-STRUKTUR-KLASSIFIKATION (wie im CORE-Prompt definiert):**
-- structure_beginning: Wähle A1 (In Medias Res), A2 (Rätsel-Hook), A3 (Charaktermoment), A4 (Weltenbau), A5 (Dialogue-Hook) oder A6 (Ordinary World)
-- structure_middle: Wähle M1 (Eskalation), M2 (Rätsel-Schichten), M3 (Beziehungs-Entwicklung), M4 (Parallele Handlungen), M5 (Countdown) oder M6 (Wendepunkt-Kette)
-- structure_ending: Wähle E1 (Klassisch-Befriedigend), E2 (Twist-Ende), E3 (Offenes Ende), E4 (Bittersüß), E5 (Rückkehr mit Veränderung) oder E6 (Leser-Entscheidung/Cliffhanger)
-
-**EMOTIONALE FÄRBUNG (wie im CORE-Prompt definiert):**
-- emotional_coloring: Wähle EM-J (Joy/Freude), EM-T (Thrill/Spannung), EM-H (Humor), EM-W (Warmth/Wärme), EM-D (Depth/Tiefgang) oder EM-C (Curiosity/Neugier) mit kurzer Beschreibung
-
-Erstelle genau ${questionCount} Multiple-Choice Fragen mit der richtigen Mischung:
-- ~30% explizite Informationsfragen
-- ~40% Inferenzfragen (die wichtigste Kategorie!)
-- ~15% Vokabular im Kontext
-- ~15% Textstruktur & Zusammenhänge
-
+Antworte NUR mit einem validen JSON-Objekt.
+Erstelle genau ${questionCount} Multiple-Choice Fragen.
 Wähle genau 10 Vokabelwörter aus.`;
+    }
 
     console.log("Generating story with Lovable AI Gateway:", {
+      usedNewPromptPath,
       targetLanguage,
       schoolLevel,
       difficulty: difficultyLabel,
-      length: wordCount,
+      length: lengthConfig.range,
       minWordCount,
       textType,
       questionCount
@@ -968,6 +995,14 @@ Wähle genau 10 Vokabelwörter aus.`;
       structure_middle?: string;
       structure_ending?: string;
       emotional_coloring?: string;
+      // Block 2.3c: New classification fields
+      emotional_secondary?: string;
+      humor_level?: number;
+      emotional_depth?: number;
+      moral_topic?: string;
+      concrete_theme?: string;
+      summary?: string;
+      learning_theme_response?: any;
     } = {
       title: "",
       content: "",
@@ -1043,6 +1078,35 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         console.log(`Final word count: ${wordCountActual} (min: ${minWordCount}) - proceeding with available content`);
       }
     }
+
+    // ── Block 2.3c: Robust parsing of new classification fields ──
+    const structureBeginning = story.structure_beginning 
+      ? parseInt(String(story.structure_beginning).replace(/[^0-9]/g, '')) || null
+      : null;
+    const structureMiddle = story.structure_middle 
+      ? parseInt(String(story.structure_middle).replace(/[^0-9]/g, '')) || null
+      : null;
+    const structureEnding = story.structure_ending 
+      ? parseInt(String(story.structure_ending).replace(/[^0-9]/g, '')) || null
+      : null;
+    const emotionalColoring = story.emotional_coloring 
+      ? String(story.emotional_coloring).match(/EM-[JTHWDC]/)?.[0] || null 
+      : null;
+    const emotionalSecondary = story.emotional_secondary 
+      ? String(story.emotional_secondary).match(/EM-[JTHWDC]/)?.[0] || null 
+      : null;
+    const humorLevel = story.humor_level 
+      ? Math.min(5, Math.max(1, parseInt(String(story.humor_level)))) || null
+      : null;
+    const emotionalDepth = story.emotional_depth 
+      ? Math.min(3, Math.max(1, parseInt(String(story.emotional_depth)))) || null
+      : null;
+    const moralTopic = story.moral_topic || null;
+    const concreteTheme = story.concrete_theme || null;
+    const summary = story.summary || null;
+    const learningThemeResponse = story.learning_theme_response || null;
+
+    console.log(`[generate-story] Classifications: structure=${structureBeginning}-${structureMiddle}-${structureEnding}, emotion=${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}, theme=${concreteTheme}`);
 
     const storyGenerationTime = Date.now() - startTime;
     console.log(`Story text generated in ${storyGenerationTime}ms`);
@@ -1303,20 +1367,31 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
         : null;
 
     console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
-    console.log(`Structure classification: beginning=${story.structure_beginning}, middle=${story.structure_middle}, ending=${story.structure_ending}`);
-    console.log(`Emotional coloring: ${story.emotional_coloring}`);
+    console.log(`Structure classification: beginning=${structureBeginning}, middle=${structureMiddle}, ending=${structureEnding}`);
+    console.log(`Emotional coloring: ${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}`);
 
     return new Response(JSON.stringify({
       ...story,
-      // Convert category strings (A1-A6, M1-M6, E1-E6) to numbers for DB storage
-      structure_beginning: extractCategoryNumber(story.structure_beginning),
-      structure_middle: extractCategoryNumber(story.structure_middle),
-      structure_ending: extractCategoryNumber(story.structure_ending),
-      emotional_coloring: story.emotional_coloring || null,
+      // Parsed classification fields (robust, already extracted above)
+      structure_beginning: structureBeginning,
+      structure_middle: structureMiddle,
+      structure_ending: structureEnding,
+      emotional_coloring: emotionalColoring,
+      // Block 2.3c: New classification fields
+      emotional_secondary: emotionalSecondary,
+      humor_level: humorLevel,
+      emotional_depth: emotionalDepth,
+      moral_topic: moralTopic,
+      concrete_theme: concreteTheme,
+      summary: summary,
+      learning_theme_applied: learningThemeApplied,
+      parent_prompt_text: learningThemeResponse?.parent_prompt_text || null,
+      // Existing fields
       coverImageBase64,
       storyImages,
       imageWarning,
       generationTimeMs: totalTime,
+      usedNewPromptPath,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
