@@ -75,6 +75,14 @@ const AdminPage = () => {
   const [generatedStructureMiddle, setGeneratedStructureMiddle] = useState<number | null>(null);
   const [generatedStructureEnding, setGeneratedStructureEnding] = useState<number | null>(null);
   const [generatedEmotionalColoring, setGeneratedEmotionalColoring] = useState<string | null>(null);
+  // Block 2.3c: New classification state
+  const [generatedEmotionalSecondary, setGeneratedEmotionalSecondary] = useState<string | null>(null);
+  const [generatedHumorLevel, setGeneratedHumorLevel] = useState<number | null>(null);
+  const [generatedEmotionalDepth, setGeneratedEmotionalDepth] = useState<number | null>(null);
+  const [generatedMoralTopic, setGeneratedMoralTopic] = useState<string | null>(null);
+  const [generatedConcreteTheme, setGeneratedConcreteTheme] = useState<string | null>(null);
+  const [generatedLearningThemeApplied, setGeneratedLearningThemeApplied] = useState<string | null>(null);
+  const [generatedParentPromptText, setGeneratedParentPromptText] = useState<string | null>(null);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -230,6 +238,14 @@ const AdminPage = () => {
       structure_middle: generatedStructureMiddle,
       structure_ending: generatedStructureEnding,
       emotional_coloring: generatedEmotionalColoring,
+      // Block 2.3c: New classification fields
+      emotional_secondary: generatedEmotionalSecondary,
+      humor_level: generatedHumorLevel,
+      emotional_depth: generatedEmotionalDepth,
+      moral_topic: generatedMoralTopic,
+      concrete_theme: generatedConcreteTheme,
+      learning_theme_applied: generatedLearningThemeApplied,
+      parent_prompt_text: generatedParentPromptText,
     } as any).select().single();
 
     if (error || !insertedStory) {
@@ -601,6 +617,14 @@ const AdminPage = () => {
                       setGeneratedStructureMiddle(story.structure_middle ?? null);
                       setGeneratedStructureEnding(story.structure_ending ?? null);
                       setGeneratedEmotionalColoring(story.emotional_coloring ?? null);
+                      // Block 2.3c: New classification fields
+                      setGeneratedEmotionalSecondary(story.emotional_secondary ?? null);
+                      setGeneratedHumorLevel(story.humor_level ?? null);
+                      setGeneratedEmotionalDepth(story.emotional_depth ?? null);
+                      setGeneratedMoralTopic(story.moral_topic ?? null);
+                      setGeneratedConcreteTheme(story.concrete_theme ?? null);
+                      setGeneratedLearningThemeApplied(story.learning_theme_applied ?? null);
+                      setGeneratedParentPromptText(story.parent_prompt_text ?? null);
                       setStorySubTab("editor");
                       toast.info(t.storyTransferred);
                     }}
