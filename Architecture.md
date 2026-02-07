@@ -97,7 +97,7 @@ kinder-wort-trainer/
 │       └── speech-recognition.d.ts
 ├── supabase/
 │   ├── functions/                 # 15 Edge Functions (see below)
-│   └── migrations/                # 34 SQL migrations (incl. multilingual fields + Block 2.1 learning/guardrails)
+│   └── migrations/                # 35 SQL migrations (incl. multilingual fields, Block 2.1 learning/guardrails, Block 2.2 rule tables)
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.ts
@@ -138,7 +138,7 @@ kinder-wort-trainer/
 │  Supabase Database   │
 │  (PostgreSQL)        │
 │                      │
-│  23 tables           │
+│  27 tables           │
 │  3 enums             │
 │  RLS policies        │
 └──────────────────────┘
@@ -366,6 +366,11 @@ user_profiles (1) ──── (N) kid_profiles
 
 learning_themes              ← Block 2.1 (standalone reference table, 15 entries)
 content_themes_by_level      ← Block 2.1 (standalone reference table, ~19 entries)
+
+age_rules                    ← Block 2.2 (standalone rule table, 12 entries: 4 age groups × 3 langs)
+theme_rules                  ← Block 2.2 (standalone rule table, 18 entries: 6 themes × 3 langs)
+emotion_rules                ← Block 2.2 (standalone rule table, 18 entries: 6 emotions × 3 langs)
+image_style_rules            ← Block 2.2 (standalone rule table, 6 entries: 3 age groups × 2 types)
 ```
 
 ### Tables
@@ -422,7 +427,7 @@ content_themes_by_level      ← Block 2.1 (standalone reference table, ~19 entr
 
 ### Key Triggers
 
-- `update_updated_at_column()` – Auto-updates `updated_at` on 7 tables
+- `update_updated_at_column()` – Auto-updates `updated_at` on 11 tables
 - `update_word_learned_status()` – Marks word as learned after 3 consecutive correct answers
 
 ### Multilingual Fields (Block 1 – Migration `20260206150000`)
@@ -473,6 +478,27 @@ Added parental controls for story content: learning themes and emotional content
 2. **Content Guardrails** – Select safety level (1-4), see allowed/not-allowed emotional themes, global exclusions
 
 **RLS:** `learning_themes` and `content_themes_by_level` are read-only for all users. `parent_learning_config` is CRUD-scoped to the user who owns the kid profile.
+
+### Story Generation Rule Tables (Block 2.2 – Migration `20260207_block2_2`)
+
+Added structured rule tables to replace monolithic 30k-token system prompts with focused, queryable data. These tables will feed the `promptBuilder` in Block 2.3.
+
+| Table | Purpose | Key Columns | Entries |
+|-------|---------|-------------|---------|
+| `age_rules` | Language complexity rules by age group and language | min_age, max_age, language (UNIQUE), max_sentence_length, allowed_tenses[], sentence_structures, vocabulary_level (1-5), complexity_level (1-5), min/max_word_count, paragraph_length, dialogue_ratio, narrative_perspective, narrative_guidelines, example_sentences[] | 12 (4 age groups × FR/DE/EN) |
+| `theme_rules` | Plot templates, settings, and conflicts per story theme | theme_key + language (UNIQUE), labels (JSONB), plot_templates[], setting_descriptions, character_archetypes[], sensory_details, typical_conflicts[] | 18 (6 themes × FR/DE/EN) |
+| `emotion_rules` | Conflict patterns and character development per emotional coloring | emotion_key + language (UNIQUE), labels (JSONB), conflict_patterns[], character_development, resolution_patterns[], emotional_vocabulary[] | 18 (6 emotions × FR/DE/EN) |
+| `image_style_rules` | Visual style instructions per age group and optional theme | age_group, theme_key (nullable), style_prompt, negative_prompt, color_palette, art_style | 6 (3 age groups general + 3 educational) |
+
+**Age groups in `age_rules`:** 4-5, 6-7, 8-9, 10-12 – each with language-specific tense rules (e.g. FR: présent/passé composé/imparfait, DE: Präsens/Perfekt/Präteritum, EN: simple present/simple past/past continuous).
+
+**Themes in `theme_rules`:** fantasy, action, animals, everyday, humor, educational – matching the 6 story types in the creation wizard.
+
+**Emotions in `emotion_rules`:** joy (EM-J), thrill (EM-T), humor_emotion (EM-H), warmth (EM-W), curiosity (EM-C), depth (EM-D) – matching the emotional coloring codes in `generate-story`.
+
+**RLS:** All 4 tables are SELECT-only for all users (read-only reference data). `updated_at` auto-trigger on all tables.
+
+**Note:** These tables are NOT yet consumed by `generate-story`. Integration happens in Block 2.3 (promptBuilder).
 
 ---
 
@@ -563,4 +589,4 @@ Added parental controls for story content: learning themes and emotional content
 
 ---
 
-*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, and Block 2.1 (learning themes + content guardrails).*
+*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), and Block 2.2 (story generation rule tables).*
