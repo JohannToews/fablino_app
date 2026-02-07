@@ -97,7 +97,7 @@ kinder-wort-trainer/
 │       └── speech-recognition.d.ts
 ├── supabase/
 │   ├── functions/                 # 15 Edge Functions (see below)
-│   └── migrations/                # 36 SQL migrations (incl. multilingual fields, Block 2.1 learning/guardrails, Block 2.2 rule tables + difficulty_rules)
+│   └── migrations/                # 37 SQL migrations (incl. multilingual fields, Block 2.1 learning/guardrails, Block 2.2 rule tables + difficulty_rules, Block 2.3a story classifications + kid_characters)
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.ts
@@ -138,7 +138,7 @@ kinder-wort-trainer/
 │  Supabase Database   │
 │  (PostgreSQL)        │
 │                      │
-│  28 tables           │
+│  29 tables           │
 │  3 enums             │
 │  RLS policies        │
 └──────────────────────┘
@@ -347,6 +347,7 @@ Data stored in:
 user_profiles (1) ──── (N) kid_profiles
       │                       │
       │                       ├── (N) stories
+      │                       ├── (N) kid_characters            ← Block 2.3a
       │                       ├── (1) parent_learning_config   ← Block 2.1
       │                       ├── (N) user_progress (1:1 per kid)
       │                       ├── (N) point_transactions
@@ -383,7 +384,8 @@ difficulty_rules             ← Block 2.2b (standalone rule table, 9 entries: 3
 | `user_profiles` | User accounts | username, password_hash, display_name, admin_language, app_language, text_language |
 | `kid_profiles` | Child profiles (multi per user) | name, hobbies, school_system, school_class, color_palette, image_style, gender, age, **ui_language**, **reading_language**, **explanation_language**, **home_languages[]**, **content_safety_level** (1-4, default 2), **difficulty_level** (1-3, default 2) |
 | `user_roles` | Role assignments | user_id, role (admin/standard) |
-| `stories` | Story content and metadata | title, content, cover_image_url, story_images[], difficulty, text_type, **text_language** (NOT NULL, default 'fr'), generation_status, series_id, episode_number, ending_type, structure ratings, **learning_theme_applied**, **parent_prompt_text** |
+| `stories` | Story content and metadata | title, content, cover_image_url, story_images[], difficulty, text_type, **text_language** (NOT NULL, default 'fr'), generation_status, series_id, episode_number, ending_type, structure ratings, **learning_theme_applied**, **parent_prompt_text**, **emotional_secondary**, **humor_level** (1-5), **emotional_depth** (1-3), **moral_topic**, **concrete_theme** |
+| `kid_characters` | Recurring story figures per kid (Block 2.3a) | kid_profile_id (FK CASCADE), name, role (sibling/friend/known_figure/custom), age, relation, description, is_active, sort_order |
 | `marked_words` | Vocabulary words with explanations | word, explanation, story_id, quiz_history[], is_learned, difficulty, **word_language**, **explanation_language** |
 | `comprehension_questions` | Story comprehension questions | question, expected_answer, options[], story_id, **question_language** |
 
@@ -428,7 +430,7 @@ difficulty_rules             ← Block 2.2b (standalone rule table, 9 entries: 3
 
 ### Key Triggers
 
-- `update_updated_at_column()` – Auto-updates `updated_at` on 12 tables
+- `update_updated_at_column()` – Auto-updates `updated_at` on 13 tables
 - `update_word_learned_status()` – Marks word as learned after 3 consecutive correct answers
 
 ### Multilingual Fields (Block 1 – Migration `20260206150000`)
@@ -502,7 +504,36 @@ Added structured rule tables to replace monolithic 30k-token system prompts with
 
 **RLS:** All 5 tables are SELECT-only for all users (read-only reference data). `updated_at` auto-trigger on all tables.
 
-**Note:** These tables are NOT yet consumed by `generate-story`. Integration happens in Block 2.3 (promptBuilder).
+**Note:** These tables are NOT yet consumed by `generate-story`. Integration happens in Block 2.3c (promptBuilder).
+
+### Story Classifications & Kid Characters (Block 2.3a – Migration `20260207_block2_3a`)
+
+Added story classification columns for variety tracking and a kid_characters table for recurring story figures.
+
+**New columns on `stories`** (all nullable, populated by LLM from Block 2.3c onwards):
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `emotional_secondary` | text | Secondary emotional coloring (e.g. EM-J + EM-C) |
+| `humor_level` | integer (CHECK 1-5) | 1=barely, 2=light, 3=charming, 4=lots, 5=absurd |
+| `emotional_depth` | integer (CHECK 1-3) | 1=entertainment, 2=light message, 3=genuine moral depth |
+| `moral_topic` | text (nullable) | e.g. "Friendship", "Honesty", "Courage" – or NULL for entertainment |
+| `concrete_theme` | text | Specific theme chosen by LLM (e.g. "Pirates", "Detective") |
+
+**New table `kid_characters`:** Stores recurring figures (siblings, friends, known characters) per kid profile. Used by the story wizard (Block 2.3d) to offer saved characters as story protagonists.
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `kid_profile_id` | uuid FK (CASCADE) | Links to kid_profiles |
+| `name` | text NOT NULL | Character name |
+| `role` | text CHECK (sibling/friend/known_figure/custom) | Character type |
+| `age` | integer | Character age |
+| `relation` | text | Relation label (Bruder, Schwester, Freund, etc.) |
+| `description` | text | Description (Batman, Gargamel, etc.) |
+| `is_active` | boolean DEFAULT true | Active/inactive toggle |
+| `sort_order` | integer DEFAULT 0 | Display order |
+
+**RLS:** kid_characters is fully CRUD-scoped per user (same pattern as parent_learning_config – SELECT/INSERT/UPDATE/DELETE only for characters belonging to the user's kid profiles). Index on `kid_profile_id`.
 
 ---
 
@@ -593,4 +624,4 @@ Added structured rule tables to replace monolithic 30k-token system prompts with
 
 ---
 
-*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), and Block 2.2b (difficulty_rules + age group adjustments).*
+*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), Block 2.2b (difficulty_rules + age group adjustments), and Block 2.3a (story classifications + kid_characters).*

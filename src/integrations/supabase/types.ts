@@ -473,6 +473,56 @@ export type Database = {
         }
         Relationships: []
       }
+      kid_characters: {
+        Row: {
+          age: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          kid_profile_id: string
+          name: string
+          relation: string | null
+          role: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kid_profile_id: string
+          name: string
+          relation?: string | null
+          role: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kid_profile_id?: string
+          name?: string
+          relation?: string | null
+          role?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kid_characters_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kid_profiles: {
         Row: {
           age: number | null
@@ -808,20 +858,25 @@ export type Database = {
       }
       stories: {
         Row: {
+          concrete_theme: string | null
           content: string
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
           difficulty: string | null
           emotional_coloring: string | null
+          emotional_depth: number | null
+          emotional_secondary: string | null
           ending_type: Database["public"]["Enums"]["ending_type"] | null
           episode_number: number | null
           generation_status: string | null
           generation_time_ms: number | null
+          humor_level: number | null
           id: string
           is_deleted: boolean
           kid_profile_id: string | null
           learning_theme_applied: string | null
+          moral_topic: string | null
           parent_prompt_text: string | null
           prompt: string | null
           series_id: string | null
@@ -837,20 +892,25 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          concrete_theme?: string | null
           content: string
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
           difficulty?: string | null
           emotional_coloring?: string | null
+          emotional_depth?: number | null
+          emotional_secondary?: string | null
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
           generation_status?: string | null
           generation_time_ms?: number | null
+          humor_level?: number | null
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
           learning_theme_applied?: string | null
+          moral_topic?: string | null
           parent_prompt_text?: string | null
           prompt?: string | null
           series_id?: string | null
@@ -866,20 +926,25 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          concrete_theme?: string | null
           content?: string
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
           difficulty?: string | null
           emotional_coloring?: string | null
+          emotional_depth?: number | null
+          emotional_secondary?: string | null
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
           generation_status?: string | null
           generation_time_ms?: number | null
+          humor_level?: number | null
           id?: string
           is_deleted?: boolean
           kid_profile_id?: string | null
           learning_theme_applied?: string | null
+          moral_topic?: string | null
           parent_prompt_text?: string | null
           prompt?: string | null
           series_id?: string | null
