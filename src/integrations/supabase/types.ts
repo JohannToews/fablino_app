@@ -476,7 +476,7 @@ export type Database = {
       kid_characters: {
         Row: {
           age: number | null
-          created_at: string
+          created_at: string | null
           description: string | null
           id: string
           is_active: boolean
@@ -485,11 +485,11 @@ export type Database = {
           relation: string | null
           role: string
           sort_order: number
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           age?: number | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -498,11 +498,11 @@ export type Database = {
           relation?: string | null
           role: string
           sort_order?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           age?: number | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -511,7 +511,7 @@ export type Database = {
           relation?: string | null
           role?: string
           sort_order?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1288,231 +1288,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      age_rules: {
-        Row: {
-          id: string
-          min_age: number
-          max_age: number
-          language: string
-          max_sentence_length: number
-          allowed_tenses: string[]
-          sentence_structures: string
-          min_word_count: number
-          max_word_count: number
-          paragraph_length: string | null
-          dialogue_ratio: string | null
-          narrative_perspective: string | null
-          narrative_guidelines: string
-          example_sentences: string[] | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          min_age: number
-          max_age: number
-          language: string
-          max_sentence_length: number
-          allowed_tenses: string[]
-          sentence_structures: string
-          min_word_count: number
-          max_word_count: number
-          paragraph_length?: string | null
-          dialogue_ratio?: string | null
-          narrative_perspective?: string | null
-          narrative_guidelines: string
-          example_sentences?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          min_age?: number
-          max_age?: number
-          language?: string
-          max_sentence_length?: number
-          allowed_tenses?: string[]
-          sentence_structures?: string
-          min_word_count?: number
-          max_word_count?: number
-          paragraph_length?: string | null
-          dialogue_ratio?: string | null
-          narrative_perspective?: string | null
-          narrative_guidelines?: string
-          example_sentences?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      theme_rules: {
-        Row: {
-          id: string
-          theme_key: string
-          language: string
-          labels: Json
-          plot_templates: string[]
-          setting_descriptions: string
-          character_archetypes: string[] | null
-          sensory_details: string | null
-          typical_conflicts: string[] | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          theme_key: string
-          language: string
-          labels: Json
-          plot_templates: string[]
-          setting_descriptions: string
-          character_archetypes?: string[] | null
-          sensory_details?: string | null
-          typical_conflicts?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          theme_key?: string
-          language?: string
-          labels?: Json
-          plot_templates?: string[]
-          setting_descriptions?: string
-          character_archetypes?: string[] | null
-          sensory_details?: string | null
-          typical_conflicts?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      emotion_rules: {
-        Row: {
-          id: string
-          emotion_key: string
-          language: string
-          labels: Json
-          conflict_patterns: string[]
-          character_development: string
-          resolution_patterns: string[] | null
-          emotional_vocabulary: string[] | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          emotion_key: string
-          language: string
-          labels: Json
-          conflict_patterns: string[]
-          character_development: string
-          resolution_patterns?: string[] | null
-          emotional_vocabulary?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          emotion_key?: string
-          language?: string
-          labels?: Json
-          conflict_patterns?: string[]
-          character_development?: string
-          resolution_patterns?: string[] | null
-          emotional_vocabulary?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      difficulty_rules: {
-        Row: {
-          id: string
-          difficulty_level: number
-          language: string
-          label: Json
-          description: Json
-          vocabulary_scope: string
-          new_words_per_story: number
-          figurative_language: string
-          idiom_usage: string
-          humor_types: string[]
-          repetition_strategy: string
-          example_vocabulary: string[] | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          difficulty_level: number
-          language: string
-          label: Json
-          description: Json
-          vocabulary_scope: string
-          new_words_per_story: number
-          figurative_language: string
-          idiom_usage: string
-          humor_types: string[]
-          repetition_strategy: string
-          example_vocabulary?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          difficulty_level?: number
-          language?: string
-          label?: Json
-          description?: Json
-          vocabulary_scope?: string
-          new_words_per_story?: number
-          figurative_language?: string
-          idiom_usage?: string
-          humor_types?: string[]
-          repetition_strategy?: string
-          example_vocabulary?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      image_style_rules: {
-        Row: {
-          id: string
-          age_group: string
-          theme_key: string | null
-          style_prompt: string
-          negative_prompt: string | null
-          color_palette: string | null
-          art_style: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          age_group: string
-          theme_key?: string | null
-          style_prompt: string
-          negative_prompt?: string | null
-          color_palette?: string | null
-          art_style?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          age_group?: string
-          theme_key?: string | null
-          style_prompt?: string
-          negative_prompt?: string | null
-          color_palette?: string | null
-          art_style?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       user_roles: {
         Row: {

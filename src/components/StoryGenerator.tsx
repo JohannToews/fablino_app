@@ -35,6 +35,14 @@ interface GeneratedStory {
   structure_middle?: number | null; // Story structure classification (1-6 for M1-M6)
   structure_ending?: number | null; // Story structure classification (1-6 for E1-E6)
   emotional_coloring?: string | null; // Emotional tone (e.g. "EM-T (Thrill/Spannung)")
+  // Block 2.3c: Extended classification fields
+  emotional_secondary?: string | null; // Secondary emotional tone
+  humor_level?: number | null; // Humor intensity (1-5)
+  emotional_depth?: number | null; // Emotional depth level (1-5)
+  moral_topic?: string | null; // Moral/educational topic
+  concrete_theme?: string | null; // Concrete story theme
+  learning_theme_applied?: string | null; // Applied learning theme key
+  parent_prompt_text?: string | null; // Parent module prompt text
 }
 
 interface StoryGeneratorProps {
