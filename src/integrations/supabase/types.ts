@@ -541,6 +541,7 @@ export type Database = {
           reading_language: string
           school_class: string
           school_system: string
+          story_languages: string[]
           ui_language: string
           updated_at: string
           user_id: string
@@ -562,6 +563,7 @@ export type Database = {
           reading_language?: string
           school_class?: string
           school_system?: string
+          story_languages?: string[]
           ui_language?: string
           updated_at?: string
           user_id: string
@@ -583,6 +585,7 @@ export type Database = {
           reading_language?: string
           school_class?: string
           school_system?: string
+          story_languages?: string[]
           ui_language?: string
           updated_at?: string
           user_id?: string

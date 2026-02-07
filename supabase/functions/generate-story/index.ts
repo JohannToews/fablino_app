@@ -1080,12 +1080,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     }
 
     // ── Block 2.3c: Robust parsing of new classification fields ──
-    // Clamp structure values to 1-5 to match database CHECK constraints
+    // Clamp structure values to match database CHECK constraints:
+    // - beginning: 1-5 (A1-A5)
+    // - middle: 1-6 (M1-M6, includes M6 Wendepunkt-Kette)
+    // - ending: 1-5 (E1-E5)
     const structureBeginning = story.structure_beginning 
       ? Math.min(5, Math.max(1, parseInt(String(story.structure_beginning).replace(/[^0-9]/g, '')) || 1))
       : null;
     const structureMiddle = story.structure_middle 
-      ? Math.min(5, Math.max(1, parseInt(String(story.structure_middle).replace(/[^0-9]/g, '')) || 1))
+      ? Math.min(6, Math.max(1, parseInt(String(story.structure_middle).replace(/[^0-9]/g, '')) || 1))
       : null;
     const structureEnding = story.structure_ending 
       ? Math.min(5, Math.max(1, parseInt(String(story.structure_ending).replace(/[^0-9]/g, '')) || 1))
