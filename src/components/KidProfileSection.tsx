@@ -110,21 +110,22 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       .order("created_at", { ascending: true });
 
     if (data && data.length > 0) {
-      const mappedProfiles = data.map(d => ({
+      const mappedProfiles: KidProfile[] = data.map(d => ({
         id: d.id,
         name: d.name,
         school_system: d.school_system,
         school_class: d.school_class,
         hobbies: d.hobbies,
         color_palette: d.color_palette,
-        image_style: (d as any).image_style || 'cute playful cartoon style with big expressive eyes',
+        image_style: d.image_style || 'cute playful cartoon style with big expressive eyes',
         cover_image_url: d.cover_image_url,
-        gender: (d as any).gender || '',
-        age: (d as any).age || undefined,
-        ui_language: d.ui_language || d.school_system,
-        reading_language: d.reading_language || d.school_system,
-        explanation_language: d.explanation_language || 'de',
-        home_languages: d.home_languages || ['de'],
+        gender: d.gender || '',
+        age: d.age || undefined,
+        // Optional multilingual fields - use fallbacks
+        ui_language: (d as any).ui_language || d.school_system,
+        reading_language: (d as any).reading_language || d.school_system,
+        explanation_language: (d as any).explanation_language || 'de',
+        home_languages: (d as any).home_languages || ['de'],
       }));
       setProfiles(mappedProfiles);
       if (mappedProfiles[0]?.cover_image_url) {
@@ -319,18 +320,19 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       let savedData;
       
       // Helper: try save with lang fields first, fall back to base-only if columns don't exist
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const trySave = async (profileData: Record<string, unknown>) => {
         if (currentProfile.id) {
           return await supabase
             .from("kid_profiles")
-            .update(profileData)
+            .update(profileData as any)
             .eq("id", currentProfile.id)
             .select()
             .single();
         } else {
           return await supabase
             .from("kid_profiles")
-            .insert(profileData)
+            .insert(profileData as any)
             .select()
             .single();
         }

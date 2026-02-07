@@ -260,6 +260,39 @@ export type Database = {
           },
         ]
       }
+      content_themes_by_level: {
+        Row: {
+          created_at: string | null
+          example_texts: Json
+          id: string
+          labels: Json
+          min_age: number | null
+          min_safety_level: number
+          sort_order: number
+          theme_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          example_texts: Json
+          id?: string
+          labels: Json
+          min_age?: number | null
+          min_safety_level: number
+          sort_order?: number
+          theme_key: string
+        }
+        Update: {
+          created_at?: string | null
+          example_texts?: Json
+          id?: string
+          labels?: Json
+          min_age?: number | null
+          min_safety_level?: number
+          sort_order?: number
+          theme_key?: string
+        }
+        Relationships: []
+      }
       image_cache: {
         Row: {
           created_at: string | null
@@ -363,31 +396,31 @@ export type Database = {
       }
       learning_themes: {
         Row: {
-          id: string
-          theme_key: string
           category: string
-          labels: Json
+          created_at: string | null
           descriptions: Json
+          id: string
+          labels: Json
           sort_order: number
-          created_at: string
+          theme_key: string
         }
         Insert: {
-          id?: string
-          theme_key: string
           category: string
-          labels: Json
+          created_at?: string | null
           descriptions: Json
+          id?: string
+          labels: Json
           sort_order?: number
-          created_at?: string
+          theme_key: string
         }
         Update: {
-          id?: string
-          theme_key?: string
           category?: string
-          labels?: Json
+          created_at?: string | null
           descriptions?: Json
+          id?: string
+          labels?: Json
           sort_order?: number
-          created_at?: string
+          theme_key?: string
         }
         Relationships: []
       }
@@ -470,28 +503,28 @@ export type Database = {
       }
       parent_learning_config: {
         Row: {
+          active_themes: string[]
+          created_at: string | null
+          frequency: number
           id: string
           kid_profile_id: string
-          active_themes: string[]
-          frequency: number
-          created_at: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
+          active_themes?: string[]
+          created_at?: string | null
+          frequency?: number
           id?: string
           kid_profile_id: string
-          active_themes?: string[]
-          frequency?: number
-          created_at?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
+          active_themes?: string[]
+          created_at?: string | null
+          frequency?: number
           id?: string
           kid_profile_id?: string
-          active_themes?: string[]
-          frequency?: number
-          created_at?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {

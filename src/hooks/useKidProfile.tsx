@@ -13,10 +13,12 @@ export interface KidProfile {
   school_system: string;
   hobbies: string;
   image_style: string | null;
-  ui_language: string;
-  reading_language: string;
-  explanation_language: string;
-  home_languages: string[];
+  // Optional multilingual fields (may not exist in DB yet)
+  ui_language?: string;
+  reading_language?: string;
+  explanation_language?: string;
+  home_languages?: string[];
+  content_safety_level?: number;
 }
 
 // Derive app language from school_system (legacy fallback)
@@ -82,7 +84,24 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       .order("created_at", { ascending: true });
 
     if (data && data.length > 0) {
-      setKidProfiles(data);
+      // Map DB data to KidProfile type (handle optional fields)
+      const mappedProfiles: KidProfile[] = data.map(d => ({
+        id: d.id,
+        name: d.name,
+        cover_image_url: d.cover_image_url,
+        color_palette: d.color_palette,
+        school_class: d.school_class,
+        school_system: d.school_system,
+        hobbies: d.hobbies,
+        image_style: d.image_style,
+        // Optional fields - use fallbacks if not in DB
+        ui_language: (d as any).ui_language || d.school_system,
+        reading_language: (d as any).reading_language || d.school_system,
+        explanation_language: (d as any).explanation_language || 'de',
+        home_languages: (d as any).home_languages || ['de'],
+        content_safety_level: (d as any).content_safety_level ?? 2,
+      }));
+      setKidProfiles(mappedProfiles);
       
       // Auto-select first profile if none selected or selected doesn't exist
       const currentSelection = sessionStorage.getItem('selected_kid_profile_id');
