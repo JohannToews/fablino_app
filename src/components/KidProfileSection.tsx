@@ -368,32 +368,68 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     if (charType === 'family') {
       const { data: allKidProfiles } = await supabase
         .from('kid_profiles')
-        .select('id')
+        .select('id, name, age, gender')
         .eq('user_id', userId);
+
+      // Check if this is a sibling relation (Bruder/Schwester)
+      const isSiblingRelation = charRelation === 'Bruder' || charRelation === 'Schwester';
 
       for (const otherKid of allKidProfiles || []) {
         if (otherKid.id === currentProfile.id) continue;
-        // Check if already exists
-        const { data: existing } = await supabase
-          .from('kid_characters')
-          .select('id')
-          .eq('kid_profile_id', otherKid.id)
-          .eq('name', charName.trim())
-          .eq('role', 'family')
-          .eq('is_active', true)
-          .maybeSingle();
 
-        if (!existing) {
-          await supabase.from('kid_characters').insert({
-            kid_profile_id: otherKid.id,
-            name: charName.trim(),
-            role: 'family',
-            relation: charRelation || null,
-            age: charAge ? parseInt(charAge) : null,
-            description: null,
-            is_active: true,
-            sort_order: 0,
-          } as any);
+        // For siblings: add the CURRENT PROFILE as sibling to otherKid, not the new character
+        // This way, if Mateo adds "Mikel" as brother, Mikel's profile gets "Mateo" as sibling
+        if (isSiblingRelation) {
+          // Determine current profile's sibling relation (based on gender)
+          const currentGender = currentProfile.gender;
+          const currentSiblingRelation = currentGender === 'female' ? 'Schwester' : 'Bruder';
+          
+          // Check if current profile already exists as sibling in otherKid's characters
+          const { data: existing } = await supabase
+            .from('kid_characters')
+            .select('id')
+            .eq('kid_profile_id', otherKid.id)
+            .eq('name', currentProfile.name)
+            .eq('role', 'family')
+            .in('relation', ['Bruder', 'Schwester'])
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase.from('kid_characters').insert({
+              kid_profile_id: otherKid.id,
+              name: currentProfile.name,
+              role: 'family',
+              relation: currentSiblingRelation,
+              age: currentProfile.age || null,
+              description: null,
+              is_active: true,
+              sort_order: 0,
+            } as any);
+          }
+        } else {
+          // For non-sibling family members (Mama, Papa, Oma, Opa, etc.), sync the same character
+          const { data: existing } = await supabase
+            .from('kid_characters')
+            .select('id')
+            .eq('kid_profile_id', otherKid.id)
+            .eq('name', charName.trim())
+            .eq('role', 'family')
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase.from('kid_characters').insert({
+              kid_profile_id: otherKid.id,
+              name: charName.trim(),
+              role: 'family',
+              relation: charRelation || null,
+              age: charAge ? parseInt(charAge) : null,
+              description: null,
+              is_active: true,
+              sort_order: 0,
+            } as any);
+          }
         }
       }
     }
