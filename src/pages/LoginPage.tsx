@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, Lock, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,22 +19,13 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
     
-    if (!trimmedUsername || !trimmedPassword) {
+    if (!trimmedEmail || !trimmedPassword) {
       toast({
         title: "Error",
-        description: "Please enter username and password.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (trimmedUsername.length > 50 || trimmedPassword.length > 100) {
-      toast({
-        title: "Error",
-        description: "Input too long.",
+        description: "Bitte E-Mail und Passwort eingeben.",
         variant: "destructive",
       });
       return;
@@ -44,23 +34,18 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('verify-login', {
-        body: { username: trimmedUsername, password: trimmedPassword }
-      });
+      const result = await login(trimmedEmail, trimmedPassword);
 
-      if (error) throw error;
-
-      if (data.success) {
-        login(data.token, data.user);
+      if (result.success) {
         toast({
-          title: "Welcome!",
-          description: `Hello, ${data.user.displayName}!`,
+          title: "Willkommen!",
+          description: "Login erfolgreich.",
         });
         navigate("/", { replace: true });
       } else {
         toast({
           title: "Error",
-          description: data.error || "Login failed.",
+          description: result.error || "Login fehlgeschlagen.",
           variant: "destructive",
         });
       }
@@ -68,7 +53,7 @@ const LoginPage = () => {
       console.error('Login error:', error);
       toast({
         title: "Error",
-        description: "An error occurred. Please try again.",
+        description: "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
         variant: "destructive",
       });
     } finally {
@@ -112,32 +97,30 @@ const LoginPage = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-lg font-medium text-foreground">
-                Username
+              <Label htmlFor="email" className="text-lg font-medium text-foreground">
+                E-Mail
               </Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username..."
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="deine@email.com"
                 className="text-lg h-12 border-2 border-primary/20 focus:border-primary"
-                maxLength={50}
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-lg font-medium text-foreground">
-                Password
+                Passwort
               </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password..."
+                placeholder="Dein Passwort..."
                 className="text-lg h-12 border-2 border-primary/20 focus:border-primary"
-                maxLength={100}
                 autoComplete="current-password"
               />
             </div>
@@ -156,7 +139,6 @@ const LoginPage = () => {
                 </span>
               )}
             </Button>
-
           </form>
         </CardContent>
       </Card>
