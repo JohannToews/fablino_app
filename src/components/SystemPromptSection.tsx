@@ -313,6 +313,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     }
   };
 
+  const saveElternModulPrompt = async () => {
     setIsSavingElternModul(true);
     const promptKey = `system_prompt_story_creation_${language}`;
     
