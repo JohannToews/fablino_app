@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 
 export type UserRole = 'admin' | 'standard';
+export type AuthMode = 'supabase' | 'legacy' | null;
 
 export interface UserSettings {
   id: string;
@@ -13,6 +14,8 @@ export interface UserSettings {
   textLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs';
   systemPrompt: string | null;
   role: UserRole;
+  email?: string | null;
+  authMigrated?: boolean;
 }
 
 interface AuthContextType {
@@ -20,19 +23,33 @@ interface AuthContextType {
   user: UserSettings | null;
   session: Session | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  authMode: AuthMode;
+  needsMigration: boolean;
+  login: (identifier: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
+  dismissMigrationBanner: () => void;
+  migrationBannerDismissed: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Session storage keys for legacy auth
+const LEGACY_SESSION_KEY = 'liremagie_session';
+const LEGACY_USER_KEY = 'liremagie_user';
+const MIGRATION_DISMISSED_KEY = 'migration_banner_dismissed';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authMode, setAuthMode] = useState<AuthMode>(null);
+  const [migrationBannerDismissed, setMigrationBannerDismissed] = useState(false);
 
-  // Fetch user profile from user_profiles table
+  // Check if legacy user needs migration (no email set)
+  const needsMigration = authMode === 'legacy' && user !== null && !user.email;
+
+  // Fetch user profile from user_profiles table (for Supabase Auth users)
   const fetchUserProfile = async (authUser: User): Promise<UserSettings | null> => {
     try {
       const { data: profile, error } = await supabase
@@ -62,6 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         textLanguage: profile.text_language as UserSettings['textLanguage'],
         systemPrompt: profile.system_prompt,
         role: (roleData?.role as UserRole) || 'standard',
+        email: profile.email,
+        authMigrated: profile.auth_migrated,
       };
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -70,45 +89,130 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUserProfile = async () => {
-    if (session?.user) {
+    if (session?.user && authMode === 'supabase') {
       const profile = await fetchUserProfile(session.user);
       setUser(profile);
     }
   };
 
+  // Dismiss migration banner for this session
+  const dismissMigrationBanner = () => {
+    sessionStorage.setItem(MIGRATION_DISMISSED_KEY, 'true');
+    setMigrationBannerDismissed(true);
+  };
+
+  // Check for legacy session in sessionStorage
+  const checkLegacySession = (): UserSettings | null => {
+    try {
+      const legacySession = sessionStorage.getItem(LEGACY_SESSION_KEY);
+      const legacyUserStr = sessionStorage.getItem(LEGACY_USER_KEY);
+      
+      if (legacySession && legacyUserStr) {
+        const legacyUser = JSON.parse(legacyUserStr);
+        return {
+          id: legacyUser.id,
+          username: legacyUser.username,
+          displayName: legacyUser.displayName,
+          adminLanguage: legacyUser.adminLanguage || 'de',
+          appLanguage: legacyUser.appLanguage || 'fr',
+          textLanguage: legacyUser.textLanguage || 'fr',
+          systemPrompt: legacyUser.systemPrompt || null,
+          role: legacyUser.role || 'standard',
+          email: legacyUser.email || null,
+          authMigrated: false,
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing legacy session:', error);
+    }
+    return null;
+  };
+
+  // Save legacy session to sessionStorage
+  const saveLegacySession = (token: string, userData: UserSettings) => {
+    sessionStorage.setItem(LEGACY_SESSION_KEY, token);
+    sessionStorage.setItem(LEGACY_USER_KEY, JSON.stringify(userData));
+  };
+
+  // Clear legacy session from sessionStorage
+  const clearLegacySession = () => {
+    sessionStorage.removeItem(LEGACY_SESSION_KEY);
+    sessionStorage.removeItem(LEGACY_USER_KEY);
+    sessionStorage.removeItem(MIGRATION_DISMISSED_KEY);
+  };
+
   useEffect(() => {
+    // Check if migration banner was dismissed this session
+    const dismissed = sessionStorage.getItem(MIGRATION_DISMISSED_KEY) === 'true';
+    setMigrationBannerDismissed(dismissed);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log('Auth state changed:', event, newSession?.user?.email);
-        setSession(newSession);
         
         if (newSession?.user) {
+          setSession(newSession);
+          setAuthMode('supabase');
           // Use setTimeout to avoid potential deadlock with Supabase client
           setTimeout(async () => {
             const profile = await fetchUserProfile(newSession.user);
             setUser(profile);
             setIsLoading(false);
           }, 0);
-        } else {
-          setUser(null);
+        } else if (event === 'SIGNED_OUT') {
+          // Check for legacy session as fallback
+          const legacyUser = checkLegacySession();
+          if (legacyUser) {
+            setUser(legacyUser);
+            setAuthMode('legacy');
+          } else {
+            setSession(null);
+            setUser(null);
+            setAuthMode(null);
+          }
           setIsLoading(false);
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (existingSession?.user) {
-        setSession(existingSession);
-        fetchUserProfile(existingSession.user).then((profile) => {
+    const initAuth = async () => {
+      try {
+        // First check Supabase Auth session
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (existingSession?.user) {
+          setSession(existingSession);
+          setAuthMode('supabase');
+          const profile = await fetchUserProfile(existingSession.user);
           setUser(profile);
           setIsLoading(false);
-        });
-      } else {
+        } else {
+          // No Supabase session - check for legacy session
+          const legacyUser = checkLegacySession();
+          if (legacyUser) {
+            setUser(legacyUser);
+            setAuthMode('legacy');
+            // Create a mock session for legacy
+            const mockSession = {
+              access_token: sessionStorage.getItem(LEGACY_SESSION_KEY) || 'legacy-token',
+              refresh_token: '',
+              expires_in: 3600,
+              token_type: 'bearer',
+              user: { id: legacyUser.id } as any
+            } as Session;
+            setSession(mockSession);
+          }
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
         setIsLoading(false);
       }
-    });
+    };
+
+    initAuth();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -133,6 +237,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setSession(data.session);
         setUser(profile);
+        setAuthMode('supabase');
+        // Clear any legacy session data
+        clearLegacySession();
         return { success: true };
       }
 
@@ -156,9 +263,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data?.success && data?.user) {
-        // Create a mock session for simple login
+        const userData: UserSettings = {
+          id: data.user.id,
+          username: data.user.username,
+          displayName: data.user.displayName,
+          adminLanguage: data.user.adminLanguage || 'de',
+          appLanguage: data.user.appLanguage || 'fr',
+          textLanguage: data.user.textLanguage || 'fr',
+          systemPrompt: data.user.systemPrompt || null,
+          role: data.user.role || 'standard',
+          email: data.user.email || null,
+          authMigrated: false,
+        };
+
+        // Save to sessionStorage for persistence
+        saveLegacySession(data.token || 'legacy-auth-token', userData);
+
+        // Create a mock session for legacy login
         const mockSession = {
-          access_token: data.token || 'simple-auth-token',
+          access_token: data.token || 'legacy-auth-token',
           refresh_token: '',
           expires_in: 3600,
           token_type: 'bearer',
@@ -166,16 +289,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } as Session;
         
         setSession(mockSession);
-        setUser({
-          id: data.user.id,
-          username: data.user.username,
-          displayName: data.user.displayName,
-          adminLanguage: data.user.adminLanguage,
-          appLanguage: data.user.appLanguage,
-          textLanguage: data.user.textLanguage,
-          systemPrompt: data.user.systemPrompt,
-          role: data.user.role || 'standard',
-        });
+        setUser(userData);
+        setAuthMode('legacy');
         return { success: true };
       }
 
@@ -198,9 +313,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    // Sign out from Supabase Auth if applicable
+    if (authMode === 'supabase') {
+      await supabase.auth.signOut();
+    }
+    
+    // Clear legacy session data
+    clearLegacySession();
+    
     setSession(null);
     setUser(null);
+    setAuthMode(null);
   };
 
   return (
@@ -209,9 +332,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user, 
       session,
       isLoading,
+      authMode,
+      needsMigration,
       login, 
       logout,
       refreshUserProfile,
+      dismissMigrationBanner,
+      migrationBannerDismissed,
     }}>
       {children}
     </AuthContext.Provider>
