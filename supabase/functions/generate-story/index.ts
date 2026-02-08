@@ -1253,12 +1253,32 @@ CRITICAL: The image must contain ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NU
 
     // Prepare progress image prompts
     // Normalize escaped newlines (LLM sometimes returns literal "\n" strings)
-    const normalizedContent = story.content
-      .replace(/\\n\\n/g, '\n\n')
-      .replace(/\\n/g, '\n');
-    const storyParts = normalizedContent.split('\n\n').filter((p: string) => p.trim().length > 0);
+    // ROBUST: Handle multiple escape patterns and ensure clean paragraph splitting
+    let normalizedContent = story.content;
+    
+    // Pattern 1: Literal escaped sequences (\\n\\n or \\n)
+    normalizedContent = normalizedContent.replace(/\\n\\n/g, '\n\n').replace(/\\n/g, '\n');
+    
+    // Pattern 2: Mixed single backslash (sometimes JSON parsing leaves single backslash)
+    if (normalizedContent.includes('\\n')) {
+      normalizedContent = normalizedContent.replace(/\n/g, '\n');  // Already real newlines, skip
+    }
+    
+    // Pattern 3: Multiple consecutive newlines → collapse to double newline (paragraph boundary)
+    normalizedContent = normalizedContent.replace(/\n\n\n+/g, '\n\n');
+    
+    // Pattern 4: Trailing/leading whitespace in paragraphs
+    const storyParts = normalizedContent
+      .split('\n\n')
+      .map(p => p.trim())
+      .filter((p: string) => p.length > 0);
+    
     const partCount = storyParts.length;
-    console.log(`[generate-story] Story has ${partCount} paragraphs, totalImageCount=${totalImageCount}, will generate ${Math.min(totalImageCount - 1, partCount > 1 ? 1 : 0)} progress images`);
+    console.log(`[generate-story] Story has ${partCount} paragraphs (after normalization), totalImageCount=${totalImageCount}, will generate ${Math.min(totalImageCount - 1, partCount > 1 ? 1 : 0)} progress images`);
+    console.log(`[generate-story] Debug - Raw content length: ${story.content.length}, normalized length: ${normalizedContent.length}`);
+    if (partCount <= 1) {
+      console.log(`[generate-story] Debug - Full normalized content:\n${normalizedContent.substring(0, 500)}`);
+    }
     
     const styleReference = `
 CRITICAL - VISUAL CONSISTENCY REQUIREMENTS:
