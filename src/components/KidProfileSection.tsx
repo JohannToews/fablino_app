@@ -73,7 +73,7 @@ const IMAGE_STYLES = [
 
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
   const t = useTranslations(language);
-  const { refreshProfiles: refreshGlobalProfiles } = useKidProfile();
+  const { refreshProfiles: refreshGlobalProfiles, setSelectedProfileId: setGlobalSelectedProfileId, selectedProfileId: globalSelectedProfileId } = useKidProfile();
   const [profiles, setProfiles] = useState<KidProfile[]>([]);
   const [selectedProfileIndex, setSelectedProfileIndex] = useState<number>(0);
   const [schoolSystems, setSchoolSystems] = useState<SchoolSystems>(DEFAULT_SCHOOL_SYSTEMS);
@@ -171,8 +171,19 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         story_languages: (d as any).story_languages || [(d as any).reading_language || d.school_system],
       }));
       setProfiles(mappedProfiles);
-      if (mappedProfiles[0]?.cover_image_url) {
-        setCoverPreview(mappedProfiles[0].cover_image_url);
+      
+      // Sync selected profile index with global context
+      const globalIndex = mappedProfiles.findIndex(p => p.id === globalSelectedProfileId);
+      if (globalIndex >= 0) {
+        setSelectedProfileIndex(globalIndex);
+        setCoverPreview(mappedProfiles[globalIndex]?.cover_image_url || null);
+      } else {
+        // Default to first profile and sync globally
+        setSelectedProfileIndex(0);
+        setCoverPreview(mappedProfiles[0]?.cover_image_url || null);
+        if (mappedProfiles[0]?.id) {
+          setGlobalSelectedProfileId(mappedProfiles[0].id);
+        }
       }
     } else {
       // Create default empty profile
@@ -252,6 +263,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     setSelectedProfileIndex(index);
     const profile = profiles[index];
     setCoverPreview(profile?.cover_image_url || null);
+    // Sync with global context
+    if (profile?.id) {
+      setGlobalSelectedProfileId(profile.id);
+    }
   };
 
   const getPaletteLabel = (paletteId: string) => {
