@@ -974,6 +974,9 @@ export interface SelectedCharacter {
   label: string;
   age?: number;
   gender?: SiblingGender;
+  role?: string;        // 'family' | 'friend' | 'known_figure' (from DB)
+  relation?: string;    // e.g. 'Mama', 'Bruder' (from DB)
+  description?: string; // optional description (from DB)
 }
 
 export interface CharacterSelectionTranslations {
@@ -1020,10 +1023,10 @@ export interface CharacterSelectionTranslations {
   characterAge: string;
   characterRelation: string;
   characterDescription: string;
-  roleSibling: string;
+  roleFamily: string;
   roleFriend: string;
   roleKnownFigure: string;
-  roleCustom: string;
+  noCharactersSaved: string;
 }
 
 export const characterSelectionTranslations: Record<Language, CharacterSelectionTranslations> = {
@@ -1070,10 +1073,10 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Alter",
     characterRelation: "Beziehung",
     characterDescription: "Beschreibung",
-    roleSibling: "Geschwister",
+    roleFamily: "Familie",
     roleFriend: "Freund/in",
     roleKnownFigure: "Bekannte Figur",
-    roleCustom: "Andere",
+    noCharactersSaved: "Noch keine angelegt \u2192 Im Profil anlegen",
   },
   fr: {
     header: "Qui sont les personnages principaux de ton histoire?",
@@ -1118,10 +1121,10 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Âge",
     characterRelation: "Relation",
     characterDescription: "Description",
-    roleSibling: "Frère/Sœur",
+    roleFamily: "Famille",
     roleFriend: "Ami(e)",
     roleKnownFigure: "Personnage connu",
-    roleCustom: "Autre",
+    noCharactersSaved: "Aucun enregistr\u00e9 \u2192 Cr\u00e9er dans le profil",
   },
   en: {
     header: "Who are the main characters in your story?",
@@ -1166,10 +1169,10 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Age",
     characterRelation: "Relation",
     characterDescription: "Description",
-    roleSibling: "Sibling",
+    roleFamily: "Family",
     roleFriend: "Friend",
     roleKnownFigure: "Known character",
-    roleCustom: "Other",
+    noCharactersSaved: "None saved \u2192 Create in profile",
   },
   es: {
     header: "¿Quiénes son los personajes principales de tu historia?",
@@ -1214,10 +1217,10 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Edad",
     characterRelation: "Relación",
     characterDescription: "Descripción",
-    roleSibling: "Hermano/a",
+    roleFamily: "Familia",
     roleFriend: "Amigo/a",
     roleKnownFigure: "Personaje conocido",
-    roleCustom: "Otro",
+    noCharactersSaved: "Ninguno guardado \u2192 Crear en el perfil",
   },
   nl: {
     header: "Wie zijn de hoofdpersonen in je verhaal?",
@@ -1262,10 +1265,10 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Leeftijd",
     characterRelation: "Relatie",
     characterDescription: "Beschrijving",
-    roleSibling: "Broer/Zus",
+    roleFamily: "Familie",
     roleFriend: "Vriend(in)",
     roleKnownFigure: "Bekend personage",
-    roleCustom: "Andere",
+    noCharactersSaved: "Geen opgeslagen \u2192 Aanmaken in profiel",
   },
   it: {
     header: "Chi sono i personaggi principali della tua storia?",
@@ -1310,10 +1313,10 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Età",
     characterRelation: "Relazione",
     characterDescription: "Descrizione",
-    roleSibling: "Fratello/Sorella",
+    roleFamily: "Famiglia",
     roleFriend: "Amico/a",
     roleKnownFigure: "Personaggio noto",
-    roleCustom: "Altro",
+    noCharactersSaved: "Nessuno salvato \u2192 Crea nel profilo",
   },
   bs: {
     header: "Ko su glavni likovi u tvojoj priči?",
@@ -1358,9 +1361,9 @@ export const characterSelectionTranslations: Record<Language, CharacterSelection
     characterAge: "Dob",
     characterRelation: "Odnos",
     characterDescription: "Opis",
-    roleSibling: "Brat/Sestra",
+    roleFamily: "Porodica",
     roleFriend: "Prijatelj/ica",
     roleKnownFigure: "Poznati lik",
-    roleCustom: "Ostalo",
+    noCharactersSaved: "Nema sa\u010duvanih \u2192 Kreiraj u profilu",
   },
 };

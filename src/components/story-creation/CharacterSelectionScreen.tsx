@@ -1,10 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { ArrowLeft, Plus, Star, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CharacterTile from "./CharacterTile";
@@ -55,6 +52,9 @@ interface CharacterSelectionScreenProps {
 
 type ViewState = "main" | "family";
 
+// Which category tile is expanded to show saved characters
+type ExpandedCategory = "family" | "friends" | "famous" | null;
+
 const CharacterSelectionScreen = ({
   translations,
   kidProfileId,
@@ -65,6 +65,7 @@ const CharacterSelectionScreen = ({
 }: CharacterSelectionScreenProps) => {
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
+  const [expandedCategory, setExpandedCategory] = useState<ExpandedCategory>(null);
   
   // Modal states
   const [nameModalOpen, setNameModalOpen] = useState(false);
@@ -81,14 +82,8 @@ const CharacterSelectionScreen = ({
   
   const [siblingModalOpen, setSiblingModalOpen] = useState(false);
 
-  // Block 2.3d: Saved kid_characters
+  // Saved kid_characters from DB
   const [savedCharacters, setSavedCharacters] = useState<KidCharacterDB[]>([]);
-  const [addCharacterOpen, setAddCharacterOpen] = useState(false);
-  const [newCharName, setNewCharName] = useState("");
-  const [newCharRole, setNewCharRole] = useState<string>("friend");
-  const [newCharAge, setNewCharAge] = useState("");
-  const [newCharRelation, setNewCharRelation] = useState("");
-  const [newCharDescription, setNewCharDescription] = useState("");
 
   // Load saved characters from DB
   useEffect(() => {
@@ -106,6 +101,11 @@ const CharacterSelectionScreen = ({
     };
     loadSavedCharacters();
   }, [kidProfileId]);
+
+  // Filter saved characters by role
+  const familyChars = savedCharacters.filter(c => c.role === 'family');
+  const friendChars = savedCharacters.filter(c => c.role === 'friend');
+  const knownChars = savedCharacters.filter(c => c.role === 'known_figure');
 
   // "Ich" tile shows actual kid name + age
   const meLabel = kidName
@@ -138,33 +138,121 @@ const CharacterSelectionScreen = ({
     setFamilyModalOpen(true);
   };
 
+  // Toggle a saved character in the selection
+  const toggleSavedCharacter = (char: KidCharacterDB) => {
+    const charId = `saved-${char.id}`;
+    const isAlreadySelected = selectedCharacters.some(c => c.id === charId);
+    
+    if (isAlreadySelected) {
+      setSelectedCharacters(prev => prev.filter(c => c.id !== charId));
+    } else {
+      const charLabel = [
+        char.name,
+        char.relation ? char.relation : null,
+        char.age ? `${char.age} J.` : null,
+      ].filter(Boolean).join(', ');
+      
+      // Map DB role to CharacterType
+      const typeMap: Record<string, CharacterType> = {
+        family: "family",
+        friend: "friends",
+        known_figure: "famous",
+      };
+      
+      const newChar: SelectedCharacter = {
+        id: charId,
+        type: typeMap[char.role] || "friends",
+        name: char.name,
+        label: charLabel,
+        age: char.age || undefined,
+        role: char.role,
+        relation: char.relation || undefined,
+        description: char.description || undefined,
+      };
+      setSelectedCharacters(prev => [...prev, newChar]);
+      toast.success(`\u2713 ${char.name} ${translations.nameSaved}`);
+    }
+  };
+
+  // Get saved characters for a category and render checkboxes
+  const renderSavedCheckboxes = (category: ExpandedCategory) => {
+    let chars: KidCharacterDB[] = [];
+    if (category === "family") chars = familyChars;
+    else if (category === "friends") chars = friendChars;
+    else if (category === "famous") chars = knownChars;
+    
+    if (chars.length === 0) {
+      return (
+        <p className="text-xs text-muted-foreground italic py-2 px-1">
+          {translations.noCharactersSaved}
+        </p>
+      );
+    }
+
+    return (
+      <div className="space-y-1.5">
+        {chars.map((char) => {
+          const charId = `saved-${char.id}`;
+          const isChecked = selectedCharacters.some(c => c.id === charId);
+          const charLabel = [
+            char.name,
+            char.relation ? `(${char.relation})` : null,
+            char.age ? `${char.age} J.` : null,
+          ].filter(Boolean).join(' ');
+          
+          return (
+            <label
+              key={char.id}
+              className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+            >
+              <Checkbox
+                checked={isChecked}
+                onCheckedChange={() => toggleSavedCharacter(char)}
+              />
+              <span className="text-xs md:text-sm font-medium">{charLabel}</span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleMainTileClick = (type: CharacterType) => {
     switch (type) {
-      case "me":
-        // Direct selection - use actual kid profile name and age
-        const meName = kidName || translations.me;
-        const meLabel = kidAge ? `${meName} (${kidAge})` : meName;
-        const meCharacter: SelectedCharacter = {
-          id: `me-${Date.now()}`,
-          type: "me",
-          name: meName,
-          label: meLabel,
-          age: kidAge || undefined,
-        };
-        setSelectedCharacters((prev) => [...prev, meCharacter]);
-        toast.success(`✓ ${meName} ${translations.nameSaved}`);
+      case "me": {
+        // Toggle "me" selection
+        const meExists = selectedCharacters.some(c => c.type === "me");
+        if (meExists) {
+          setSelectedCharacters(prev => prev.filter(c => c.type !== "me"));
+        } else {
+          const meName = kidName || translations.me;
+          const meLabelText = kidAge ? `${meName} (${kidAge})` : meName;
+          const meCharacter: SelectedCharacter = {
+            id: `me-${Date.now()}`,
+            type: "me",
+            name: meName,
+            label: meLabelText,
+            age: kidAge || undefined,
+          };
+          setSelectedCharacters((prev) => [...prev, meCharacter]);
+          toast.success(`\u2713 ${meName} ${translations.nameSaved}`);
+        }
         break;
+      }
       case "family":
-        setViewState("family");
+        // Toggle expansion of saved family characters
+        setExpandedCategory(prev => prev === "family" ? null : "family");
         break;
       case "siblings":
         setSiblingModalOpen(true);
         break;
       case "friends":
-        openNameModal("friends", translations.friends);
+        // Toggle expansion of saved friend characters
+        setExpandedCategory(prev => prev === "friends" ? null : "friends");
         break;
       case "famous":
-        openNameModal("famous", translations.famous);
+        // Toggle expansion of saved known figure characters
+        setExpandedCategory(prev => prev === "famous" ? null : "famous");
         break;
       case "surprise":
         handleSurprise();
@@ -197,7 +285,7 @@ const CharacterSelectionScreen = ({
           label: labels[type],
         };
         setSelectedCharacters((prev) => [...prev, familyCharacter]);
-        toast.success(`✓ ${labels[type]} ${translations.nameSaved}`);
+        toast.success(`\u2713 ${labels[type]} ${translations.nameSaved}`);
       }
       // Stay in family view for multi-select
     } else {
@@ -217,7 +305,7 @@ const CharacterSelectionScreen = ({
     };
 
     setSelectedCharacters((prev) => [...prev, newCharacter]);
-    toast.success(`✓ ${name} ${translations.nameSaved}`);
+    toast.success(`\u2713 ${name} ${translations.nameSaved}`);
   }, [nameModalTarget, translations.nameSaved]);
 
   const handleSaveFamilyMember = useCallback((name: string, useDefault: boolean) => {
@@ -231,7 +319,7 @@ const CharacterSelectionScreen = ({
     };
 
     setSelectedCharacters((prev) => [...prev, newCharacter]);
-    toast.success(`✓ ${name} ${translations.nameSaved}`);
+    toast.success(`\u2713 ${name} ${translations.nameSaved}`);
     
     // Return to main view
     setViewState("main");
@@ -250,7 +338,7 @@ const CharacterSelectionScreen = ({
     };
 
     setSelectedCharacters((prev) => [...prev, newCharacter]);
-    toast.success(`✓ ${name} ${translations.nameSaved}`);
+    toast.success(`\u2713 ${name} ${translations.nameSaved}`);
   }, [translations.brother, translations.sister, translations.nameSaved]);
 
   const handleRemoveCharacter = (id: string) => {
@@ -283,6 +371,15 @@ const CharacterSelectionScreen = ({
     return selectedCharacters.some((c) => c.type === type);
   };
 
+  // Check if any saved character from a category is selected
+  const hasSavedSelections = (category: ExpandedCategory): boolean => {
+    let chars: KidCharacterDB[] = [];
+    if (category === "family") chars = familyChars;
+    else if (category === "friends") chars = friendChars;
+    else if (category === "famous") chars = knownChars;
+    return chars.some(c => selectedCharacters.some(sc => sc.id === `saved-${c.id}`));
+  };
+
   return (
     <div className="min-h-screen pb-24 md:pb-28">
       {/* Header */}
@@ -302,21 +399,50 @@ const CharacterSelectionScreen = ({
       </div>
 
       {/* Main Content */}
-      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
+      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-2">
         {viewState === "main" && (
-          <div className="grid grid-cols-3 gap-2 md:gap-3">
-            {mainTiles.map((tile) => (
-              <CharacterTile
-                key={tile.type}
-                image={tile.image}
-                label={tile.label}
-                onClick={() => handleMainTileClick(tile.type)}
-                selected={isSelected(tile.type)}
-                badge={tile.badge}
-                size="small"
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
+              {mainTiles.map((tile) => {
+                const isExpandable = tile.type === "family" || tile.type === "friends" || tile.type === "famous";
+                const isExpanded = expandedCategory === tile.type;
+                const hasSelections = isExpandable && hasSavedSelections(tile.type as ExpandedCategory);
+                
+                return (
+                  <div key={tile.type} className="relative">
+                    <CharacterTile
+                      image={tile.image}
+                      label={tile.label}
+                      onClick={() => handleMainTileClick(tile.type)}
+                      selected={isSelected(tile.type) || hasSelections}
+                      badge={tile.badge}
+                      size="small"
+                    />
+                    {/* Expand indicator for categories with saved characters */}
+                    {isExpandable && (
+                      <div className="absolute bottom-6 right-1 md:bottom-7 md:right-1.5">
+                        {isExpanded ? (
+                          <ChevronUp className="w-3.5 h-3.5 text-primary" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Expanded saved characters checkboxes */}
+            {expandedCategory && (
+              <div className="animate-fade-in bg-card rounded-xl border border-border p-3">
+                <h3 className="text-xs md:text-sm font-medium text-muted-foreground mb-2">
+                  {translations.savedCharactersLabel}
+                </h3>
+                {renderSavedCheckboxes(expandedCategory)}
+              </div>
+            )}
+          </>
         )}
 
         {viewState === "family" && (
@@ -346,177 +472,6 @@ const CharacterSelectionScreen = ({
           </div>
         )}
       </div>
-
-      {/* Block 2.3d: Saved Characters Section */}
-      {viewState === "main" && savedCharacters.length > 0 && (
-        <div className="container max-w-3xl mx-auto px-4 pt-3">
-          <div className="bg-card rounded-xl border border-border p-3 space-y-2">
-            <h3 className="text-xs md:text-sm font-medium text-muted-foreground">
-              {translations.savedCharactersLabel}
-            </h3>
-            <div className="flex flex-wrap gap-1.5 md:gap-2">
-              {savedCharacters.map((char) => {
-                const charSelected = selectedCharacters.some(c => c.id === `saved-${char.id}`);
-                const charLabel = [char.name, char.age ? `${char.age}` : null, char.relation].filter(Boolean).join(', ');
-                return (
-                  <Button
-                    key={char.id}
-                    variant={charSelected ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 md:h-9 rounded-lg md:rounded-xl text-xs md:text-sm px-2.5"
-                    onClick={() => {
-                      if (charSelected) {
-                        setSelectedCharacters(prev => prev.filter(c => c.id !== `saved-${char.id}`));
-                      } else {
-                        const newChar: SelectedCharacter = {
-                          id: `saved-${char.id}`,
-                          type: "friends",
-                          name: char.name,
-                          label: charLabel,
-                          age: char.age || undefined,
-                        };
-                        setSelectedCharacters(prev => [...prev, newChar]);
-                        toast.success(`\u2713 ${char.name} ${translations.nameSaved}`);
-                      }
-                    }}
-                  >
-                    {charLabel}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Block 2.3d: Add Character Button */}
-      {viewState === "main" && kidProfileId && (
-        <div className="container max-w-3xl mx-auto px-4 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-10 md:h-11 rounded-xl border-dashed border-2 text-xs md:text-sm"
-            onClick={() => setAddCharacterOpen(true)}
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            {translations.addCharacter}
-          </Button>
-        </div>
-      )}
-
-      {/* Block 2.3d: Add Character Dialog */}
-      <Dialog open={addCharacterOpen} onOpenChange={setAddCharacterOpen}>
-        <DialogContent className="max-w-sm mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-base font-baloo">{translations.addCharacter}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs font-medium">{translations.characterName} *</Label>
-              <Input
-                value={newCharName}
-                onChange={(e) => setNewCharName(e.target.value)}
-                maxLength={50}
-                className="h-9 mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-medium">{translations.characterRole} *</Label>
-              <Select value={newCharRole} onValueChange={setNewCharRole}>
-                <SelectTrigger className="h-9 mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sibling">{translations.roleSibling}</SelectItem>
-                  <SelectItem value="friend">{translations.roleFriend}</SelectItem>
-                  <SelectItem value="known_figure">{translations.roleKnownFigure}</SelectItem>
-                  <SelectItem value="custom">{translations.roleCustom}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs font-medium">{translations.characterAge}</Label>
-                <Input
-                  type="number"
-                  value={newCharAge}
-                  onChange={(e) => setNewCharAge(e.target.value)}
-                  min={0}
-                  max={99}
-                  className="h-9 mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-medium">{translations.characterRelation}</Label>
-                <Input
-                  value={newCharRelation}
-                  onChange={(e) => setNewCharRelation(e.target.value)}
-                  maxLength={50}
-                  className="h-9 mt-1"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs font-medium">{translations.characterDescription}</Label>
-              <Input
-                value={newCharDescription}
-                onChange={(e) => setNewCharDescription(e.target.value)}
-                maxLength={100}
-                className="h-9 mt-1"
-              />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  setAddCharacterOpen(false);
-                  setNewCharName("");
-                  setNewCharRole("friend");
-                  setNewCharAge("");
-                  setNewCharRelation("");
-                  setNewCharDescription("");
-                }}
-              >
-                {translations.cancel}
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1"
-                disabled={!newCharName.trim()}
-                onClick={async () => {
-                  if (!kidProfileId || !newCharName.trim()) return;
-                  const { data, error } = await supabase.from('kid_characters').insert({
-                    kid_profile_id: kidProfileId,
-                    name: newCharName.trim(),
-                    role: newCharRole,
-                    age: newCharAge ? parseInt(newCharAge) : null,
-                    relation: newCharRelation.trim() || null,
-                    description: newCharDescription.trim() || null,
-                    is_active: true,
-                    sort_order: savedCharacters.length,
-                  }).select().single();
-                  if (data && !error) {
-                    setSavedCharacters(prev => [...prev, data as KidCharacterDB]);
-                    toast.success(`\u2713 ${newCharName.trim()} ${translations.nameSaved}`);
-                  } else {
-                    console.error('Error saving character:', error);
-                  }
-                  setAddCharacterOpen(false);
-                  setNewCharName("");
-                  setNewCharRole("friend");
-                  setNewCharAge("");
-                  setNewCharRelation("");
-                  setNewCharDescription("");
-                }}
-              >
-                {translations.save}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Selection Summary (Bottom Sheet) */}
       <SelectionSummary

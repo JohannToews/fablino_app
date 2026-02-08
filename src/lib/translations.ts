@@ -112,6 +112,28 @@ export interface Translations {
   storyLanguagesLabel: string;
   storyLanguagesHint: string;
   
+  // Kid Characters (Profile)
+  importantCharacters: string;
+  addCharacterBtn: string;
+  characterType: string;
+  typeFamily: string;
+  typeFriend: string;
+  typeKnownFigure: string;
+  relationMama: string;
+  relationPapa: string;
+  relationBrother: string;
+  relationSister: string;
+  relationGrandma: string;
+  relationGrandpa: string;
+  relationCousin: string;
+  relationCousine: string;
+  relationAunt: string;
+  relationUncle: string;
+  characterName: string;
+  characterAge: string;
+  characterRelation: string;
+  maxFriendsReached: string;
+  
   // Image styles
   imageStyleCute: string;
   imageStyleWatercolor: string;
@@ -327,6 +349,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Divers',
     storyLanguagesLabel: 'Geschichten-Sprachen',
     storyLanguagesHint: 'In welchen Sprachen soll dein Kind Geschichten lesen?',
+    importantCharacters: 'Wichtige Personen für Geschichten',
+    addCharacterBtn: 'Hinzufügen',
+    characterType: 'Wer soll hinzugefügt werden?',
+    typeFamily: 'Familie',
+    typeFriend: 'Freund/in',
+    typeKnownFigure: 'Bekannte Figur',
+    relationMama: 'Mama',
+    relationPapa: 'Papa',
+    relationBrother: 'Bruder',
+    relationSister: 'Schwester',
+    relationGrandma: 'Oma',
+    relationGrandpa: 'Opa',
+    relationCousin: 'Cousin',
+    relationCousine: 'Cousine',
+    relationAunt: 'Tante',
+    relationUncle: 'Onkel',
+    characterName: 'Name',
+    characterAge: 'Alter',
+    characterRelation: 'Beziehung',
+    maxFriendsReached: 'Maximum 5 Freunde erreicht',
     
     imageStyleCute: 'Niedlich & verspielt',
     imageStyleWatercolor: 'Aquarell',
@@ -525,6 +567,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Diverse',
     storyLanguagesLabel: 'Story languages',
     storyLanguagesHint: 'In which languages should your child read stories?',
+    importantCharacters: 'Important characters for stories',
+    addCharacterBtn: 'Add',
+    characterType: 'Who do you want to add?',
+    typeFamily: 'Family',
+    typeFriend: 'Friend',
+    typeKnownFigure: 'Known character',
+    relationMama: 'Mom',
+    relationPapa: 'Dad',
+    relationBrother: 'Brother',
+    relationSister: 'Sister',
+    relationGrandma: 'Grandma',
+    relationGrandpa: 'Grandpa',
+    relationCousin: 'Cousin',
+    relationCousine: 'Cousin',
+    relationAunt: 'Aunt',
+    relationUncle: 'Uncle',
+    characterName: 'Name',
+    characterAge: 'Age',
+    characterRelation: 'Relation',
+    maxFriendsReached: 'Maximum 5 friends reached',
     
     imageStyleCute: 'Cute & playful',
     imageStyleWatercolor: 'Watercolor',
@@ -723,6 +785,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Autre',
     storyLanguagesLabel: 'Langues des histoires',
     storyLanguagesHint: 'Dans quelles langues votre enfant doit-il lire des histoires ?',
+    importantCharacters: 'Personnages importants pour les histoires',
+    addCharacterBtn: 'Ajouter',
+    characterType: 'Qui voulez-vous ajouter ?',
+    typeFamily: 'Famille',
+    typeFriend: 'Ami(e)',
+    typeKnownFigure: 'Personnage connu',
+    relationMama: 'Maman',
+    relationPapa: 'Papa',
+    relationBrother: 'Frère',
+    relationSister: 'Sœur',
+    relationGrandma: 'Grand-mère',
+    relationGrandpa: 'Grand-père',
+    relationCousin: 'Cousin',
+    relationCousine: 'Cousine',
+    relationAunt: 'Tante',
+    relationUncle: 'Oncle',
+    characterName: 'Nom',
+    characterAge: 'Âge',
+    characterRelation: 'Relation',
+    maxFriendsReached: 'Maximum 5 ami(e)s atteint',
     
     imageStyleCute: 'Mignon & ludique',
     imageStyleWatercolor: 'Aquarelle',
@@ -921,6 +1003,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Diverso',
     storyLanguagesLabel: 'Idiomas de historias',
     storyLanguagesHint: '¿En qué idiomas debe leer historias tu hijo/a?',
+    importantCharacters: 'Personajes importantes para las historias',
+    addCharacterBtn: 'Añadir',
+    characterType: '¿A quién quieres añadir?',
+    typeFamily: 'Familia',
+    typeFriend: 'Amigo/a',
+    typeKnownFigure: 'Personaje conocido',
+    relationMama: 'Mamá',
+    relationPapa: 'Papá',
+    relationBrother: 'Hermano',
+    relationSister: 'Hermana',
+    relationGrandma: 'Abuela',
+    relationGrandpa: 'Abuelo',
+    relationCousin: 'Primo',
+    relationCousine: 'Prima',
+    relationAunt: 'Tía',
+    relationUncle: 'Tío',
+    characterName: 'Nombre',
+    characterAge: 'Edad',
+    characterRelation: 'Relación',
+    maxFriendsReached: 'Máximo 5 amigos alcanzado',
     
     imageStyleCute: 'Lindo & juguetón',
     imageStyleWatercolor: 'Acuarela',
@@ -1119,6 +1221,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Divers',
     storyLanguagesLabel: 'Verhaaltalen',
     storyLanguagesHint: 'In welke talen moet uw kind verhalen lezen?',
+    importantCharacters: 'Belangrijke personages voor verhalen',
+    addCharacterBtn: 'Toevoegen',
+    characterType: 'Wie wil je toevoegen?',
+    typeFamily: 'Familie',
+    typeFriend: 'Vriend(in)',
+    typeKnownFigure: 'Bekend personage',
+    relationMama: 'Mama',
+    relationPapa: 'Papa',
+    relationBrother: 'Broer',
+    relationSister: 'Zus',
+    relationGrandma: 'Oma',
+    relationGrandpa: 'Opa',
+    relationCousin: 'Neef',
+    relationCousine: 'Nicht',
+    relationAunt: 'Tante',
+    relationUncle: 'Oom',
+    characterName: 'Naam',
+    characterAge: 'Leeftijd',
+    characterRelation: 'Relatie',
+    maxFriendsReached: 'Maximaal 5 vrienden bereikt',
     
     imageStyleCute: 'Schattig & speels',
     imageStyleWatercolor: 'Aquarel',
@@ -1317,6 +1439,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Altro',
     storyLanguagesLabel: 'Lingue delle storie',
     storyLanguagesHint: 'In quali lingue il tuo bambino dovrebbe leggere storie?',
+    importantCharacters: 'Personaggi importanti per le storie',
+    addCharacterBtn: 'Aggiungi',
+    characterType: 'Chi vuoi aggiungere?',
+    typeFamily: 'Famiglia',
+    typeFriend: 'Amico/a',
+    typeKnownFigure: 'Personaggio noto',
+    relationMama: 'Mamma',
+    relationPapa: 'Papà',
+    relationBrother: 'Fratello',
+    relationSister: 'Sorella',
+    relationGrandma: 'Nonna',
+    relationGrandpa: 'Nonno',
+    relationCousin: 'Cugino',
+    relationCousine: 'Cugina',
+    relationAunt: 'Zia',
+    relationUncle: 'Zio',
+    characterName: 'Nome',
+    characterAge: 'Età',
+    characterRelation: 'Relazione',
+    maxFriendsReached: 'Massimo 5 amici raggiunto',
     
     imageStyleCute: 'Carino & giocoso',
     imageStyleWatercolor: 'Acquerello',
@@ -1515,6 +1657,26 @@ const translations: Record<Language, Translations> = {
     genderDiverse: 'Drugo',
     storyLanguagesLabel: 'Jezici priča',
     storyLanguagesHint: 'Na kojim jezicima vaše dijete treba čitati priče?',
+    importantCharacters: 'Važni likovi za priče',
+    addCharacterBtn: 'Dodaj',
+    characterType: 'Koga želite dodati?',
+    typeFamily: 'Porodica',
+    typeFriend: 'Prijatelj/ica',
+    typeKnownFigure: 'Poznati lik',
+    relationMama: 'Mama',
+    relationPapa: 'Tata',
+    relationBrother: 'Brat',
+    relationSister: 'Sestra',
+    relationGrandma: 'Baka',
+    relationGrandpa: 'Djed',
+    relationCousin: 'Rođak',
+    relationCousine: 'Rođaka',
+    relationAunt: 'Tetka',
+    relationUncle: 'Ujak',
+    characterName: 'Ime',
+    characterAge: 'Starost',
+    characterRelation: 'Odnos',
+    maxFriendsReached: 'Maksimalno 5 prijatelja dostignuto',
     
     imageStyleCute: 'Slatko & razigrano',
     imageStyleWatercolor: 'Akvarel',

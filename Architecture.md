@@ -212,10 +212,10 @@ CreateStoryPage.tsx (Wizard – 4 screens)
            + Series toggle (yes/no)
            + Language picker (Block 2.3d – only if >1 language available)
   Screen 2: Character Selection
-           + "Ich" tile with kid name + age (Block 2.3d)
-           + Family, siblings, friends, famous, surprise
-           + Saved kid_characters from DB (Block 2.3d)
-           + "Save character" dialog → kid_characters table (Block 2.3d)
+           + "Ich" tile with kid name + age (Block 2.3d) – toggle on/off
+           + Family, siblings, friends, famous, surprise – expandable tiles
+           + Saved kid_characters as checkboxes behind category tiles (Block 2.3d Phase 3)
+           + Characters managed in profile only (no wizard save dialog)
   Screen 3: Special Effects (attributes) + Optional free text
   Screen 4: Generation progress animation
         │
@@ -550,7 +550,7 @@ Added story classification columns for variety tracking and a kid_characters tab
 |--------|------|---------|
 | `kid_profile_id` | uuid FK (CASCADE) | Links to kid_profiles |
 | `name` | text NOT NULL | Character name |
-| `role` | text CHECK (sibling/friend/known_figure/custom) | Character type |
+| `role` | text CHECK (family/friend/known_figure) | Character type (Block 2.3d: migrated from sibling/custom → family) |
 | `age` | integer | Character age |
 | `relation` | text | Relation label (Bruder, Schwester, Freund, etc.) |
 | `description` | text | Description (Batman, Gargamel, etc.) |
@@ -567,7 +567,7 @@ Replaced the monolithic 30k-token system prompt with a modular, database-driven 
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
-| `promptBuilder.ts` | Builds dynamic user message by querying rule tables | `buildStoryPrompt(request, supabase)` – fetches age_rules, difficulty_rules, theme_rules, emotion_rules, content_themes_by_level; calculates word counts; builds character, guardrail, and variety sections. `injectLearningTheme(prompt, label, lang)` – appends learning theme instruction |
+| `promptBuilder.ts` | Builds dynamic user message by querying rule tables | `buildStoryPrompt(request, supabase)` – fetches age_rules, difficulty_rules, theme_rules, emotion_rules, content_themes_by_level; calculates word counts; builds character (with relationship logic), guardrail, and variety sections. `buildCharactersSection()` (Block 2.3d) – intelligent relationship formatting: include_self=true → relations relative to child; include_self=false → parents as couple, siblings grouped, family hint, friends grouped. `injectLearningTheme(prompt, label, lang)` – appends learning theme instruction |
 | `learningThemeRotation.ts` | Determines if a learning theme should be applied | `shouldApplyLearningTheme(kidProfileId, lang, supabase)` – checks parent_learning_config frequency, rotates through active_themes round-robin based on past stories |
 
 #### Prompt Architecture
@@ -638,13 +638,15 @@ Extended the story creation wizard (`CreateStoryPage.tsx` + `src/components/stor
 | Series toggle | `StoryTypeSelectionScreen` | `isSeries: boolean` | Already existed pre-2.3d |
 | **Language picker** | `StoryTypeSelectionScreen` | `storyLanguage: string` | New. Shows flags + labels. Only rendered when >1 language available. Source: `kid_profiles.story_languages` (Block 2.3d+). Default = `kidReadingLanguage`. Passed as `storyLanguage` to Edge Function. |
 
-#### Screen 2 Additions
+#### Screen 2 Additions (Block 2.3d Phase 3)
 
 | Feature | Component | Details |
 |---------|-----------|---------|
-| **"Ich" tile with kid data** | `CharacterSelectionScreen` | Shows actual kid name + age (e.g. "Emma (8)") instead of generic "Ich". Star badge. Sets `includeSelf = true` in Edge Function request. |
-| **Saved kid_characters** | `CharacterSelectionScreen` | Loads `kid_characters` from DB for active kid profile. Displays as toggle buttons grouped by name/age/relation. |
-| **"Save character" dialog** | `CharacterSelectionScreen` | Modal form: name (required), role (sibling/friend/known_figure/custom), age, relation, description. Inserts into `kid_characters` table. Immediate refetch after save. |
+| **"Ich" tile with kid data** | `CharacterSelectionScreen` | Shows actual kid name + age (e.g. "Emma (8)"). Toggle on/off. Sets `includeSelf = true` in Edge Function request. |
+| **Expandable category tiles** | `CharacterSelectionScreen` | Clicking "Familie", "Freunde", or "Bekannte Figuren" expands to show saved kid_characters as **checkboxes** (filtered by role: family/friend/known_figure). Chevron indicator. |
+| **No characters hint** | `CharacterSelectionScreen` | If a category has no saved characters, shows "Noch keine angelegt → Im Profil anlegen" (translated). |
+| **Character management in profile only** | `KidProfileSection` | "Save character" dialog removed from wizard. Characters are managed exclusively in the kid profile editor (Block 2.3d Phase 2: stepped dialog, family sync logic). |
+| **Character data with role** | `CharacterSelectionScreen → CreateStoryPage` | Selected saved characters carry `role`, `relation`, `description` to the Edge Function for intelligent relationship prompting. |
 
 #### Screen 3 Additions
 
@@ -663,6 +665,9 @@ Extended the story creation wizard (`CreateStoryPage.tsx` + `src/components/stor
 | `kidAge` | `selectedProfile.age` | `kidAge` → `StoryRequest.kid_profile.age` |
 | `difficultyLevel` | `selectedProfile.difficulty_level` | `difficultyLevel` → `StoryRequest.kid_profile.difficulty_level` |
 | `contentSafetyLevel` | `selectedProfile.content_safety_level` | `contentSafetyLevel` → `StoryRequest.kid_profile.content_safety_level` |
+| `characters[].role` | Saved kid_characters DB role | `characters[].role` → `StoryRequest.protagonists.characters[].role` (Block 2.3d Phase 4) |
+| `characters[].relation` | Saved kid_characters DB relation | `characters[].relation` → `StoryRequest.protagonists.characters[].relation` |
+| `characters[].description` | Saved kid_characters DB description | `characters[].description` → `StoryRequest.protagonists.characters[].description` |
 
 #### Story Languages Field (Block 2.3d+)
 
@@ -772,4 +777,4 @@ Added `difficulty_level`, `age`, `gender`, and `story_languages` to the `KidProf
 
 ---
 
-*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), Block 2.2b (difficulty_rules + age group adjustments), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine + CORE Slim v2 + story classifications + shared modules promptBuilder.ts + learningThemeRotation.ts), Block 2.3d (Story Wizard extensions: language picker, "Ich" tile with kid data, saved kid_characters, "Save character" dialog, extended parameter passing to Edge Function), and Block 2.3d+ (story_languages[] on kid_profiles, profile editor multi-select, wizard reads from story_languages).*
+*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), Block 2.2b (difficulty_rules + age group adjustments), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine + CORE Slim v2 + story classifications + shared modules promptBuilder.ts + learningThemeRotation.ts). Updated 2026-02-08 with Block 2.3d full (5 phases): story_languages[] on kid_profiles, kid_characters role constraint migration (sibling/custom → family), character management UI in profile (stepped dialog, family sync), wizard redesign (expandable tiles with checkboxes, no save dialog), character role/relation/description passed to Edge Function, intelligent relationship logic in promptBuilder.ts (include_self vs. group relationships).*

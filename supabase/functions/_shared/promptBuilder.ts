@@ -25,6 +25,7 @@ export interface StoryRequest {
       age?: number;
       relation?: string;
       description?: string;
+      role?: string;  // 'family' | 'friend' | 'known_figure'
     }>;
   };
   special_abilities: string[];
@@ -188,6 +189,169 @@ const SPECIAL_ABILITIES_DESC: Record<string, Record<string, string>> = {
     special_talents: 'Personages hebben buitengewone talenten (muzikaal genie, uitvinder, met dieren praten...)',
   },
 };
+
+// ─── Character Relationship Helpers (Block 2.3d) ────────────────
+
+type CharacterEntry = { name: string; age?: number; relation?: string; description?: string; role?: string };
+
+function fmtChar(c: { name: string; age?: number }): string {
+  return c.age ? `${c.name}, ${c.age}` : c.name;
+}
+
+function mainCharLabel(l: string): string {
+  const map: Record<string, string> = { fr: 'Personnage principal', de: 'Hauptfigur', en: 'Main character', es: 'Personaje principal', it: 'Protagonista', bs: 'Glavni lik', nl: 'Hoofdpersoon' };
+  return map[l] || 'Main character';
+}
+
+function ofWord(l: string): string {
+  const map: Record<string, string> = { fr: 'de', de: 'von', en: 'of', es: 'de', it: 'di', bs: 'od', nl: 'van' };
+  return map[l] || 'of';
+}
+
+function andWord(l: string): string {
+  const map: Record<string, string> = { fr: 'et', de: 'und', en: 'and', es: 'y', it: 'e', bs: 'i', nl: 'en' };
+  return map[l] || 'and';
+}
+
+function coupleLabel(l: string): string {
+  const map: Record<string, string> = { fr: 'sont un couple / les parents', de: 'sind ein Paar / die Eltern', en: 'are a couple / the parents', es: 'son pareja / los padres', it: 'sono una coppia / i genitori', bs: 'su par / roditelji', nl: 'zijn een koppel / de ouders' };
+  return map[l] || 'are a couple / the parents';
+}
+
+function siblingsLabel(l: string): string {
+  const map: Record<string, string> = { fr: 'sont frères et sœurs', de: 'sind Geschwister', en: 'are siblings', es: 'son hermanos', it: 'sono fratelli', bs: 'su braća i sestre', nl: 'zijn broers en zussen' };
+  return map[l] || 'are siblings';
+}
+
+function familyHint(l: string): string {
+  const map: Record<string, string> = { fr: '→ Ceci est une histoire de famille.', de: '→ Dies ist eine Familiengeschichte.', en: '→ This is a family story.', es: '→ Esta es una historia familiar.', it: '→ Questa è una storia di famiglia.', bs: '→ Ovo je porodična priča.', nl: '→ Dit is een familieverhaal.' };
+  return map[l] || '→ This is a family story.';
+}
+
+function friendsLabel(l: string): string {
+  const map: Record<string, string> = { fr: 'sont amis entre eux', de: 'sind miteinander befreundet', en: 'are friends with each other', es: 'son amigos entre sí', it: 'sono amici tra loro', bs: 'su međusobni prijatelji', nl: 'zijn vrienden van elkaar' };
+  return map[l] || 'are friends with each other';
+}
+
+function knownFigureLabel(l: string): string {
+  const map: Record<string, string> = { fr: 'personnage connu', de: 'bekannte Figur', en: 'known character', es: 'personaje conocido', it: 'personaggio noto', bs: 'poznati lik', nl: 'bekend personage' };
+  return map[l] || 'known character';
+}
+
+function notMainCharHint(l: string): string {
+  const map: Record<string, string> = {
+    fr: "Note : L'enfant n'est PAS un personnage. Les personnes suivantes sont les personnages de l'histoire.",
+    de: 'Hinweis: Das Kind ist NICHT selbst eine Figur. Die folgenden Personen sind die Figuren der Geschichte.',
+    en: 'Note: The child is NOT a character. The following people are the story characters.',
+    es: 'Nota: El niño NO es un personaje. Las siguientes personas son los personajes de la historia.',
+    it: 'Nota: Il bambino NON è un personaggio. Le seguenti persone sono i personaggi della storia.',
+    bs: 'Napomena: Dijete NIJE lik. Sljedeće osobe su likovi priče.',
+    nl: 'Opmerking: Het kind is GEEN personage. De volgende personen zijn de personages van het verhaal.',
+  };
+  return map[l] || 'Note: The child is NOT a character. The following people are the story characters.';
+}
+
+// Known parent and sibling relation names across supported languages
+const PARENT_RELATIONS = ['Mama', 'Papa', 'Maman', 'Mom', 'Dad', 'Mamá', 'Papá', 'Mamma', 'Papà', 'Tata', 'Oma', 'Opa', 'Grand-mère', 'Grand-père', 'Grandma', 'Grandpa', 'Abuela', 'Abuelo', 'Nonna', 'Nonno', 'Baka', 'Djed'];
+const SIBLING_RELATIONS = ['Bruder', 'Schwester', 'Frère', 'Sœur', 'Brother', 'Sister', 'Hermano', 'Hermana', 'Fratello', 'Sorella', 'Brat', 'Sestra'];
+
+/**
+ * Build the CHARACTERS section with intelligent relationship logic.
+ * - include_self = true: All relationships relative to the child.
+ * - include_self = false: Characters relate to each other (parents as couple, siblings as group, etc.)
+ */
+function buildCharactersSection(
+  protagonists: StoryRequest['protagonists'],
+  kidName: string,
+  kidAge: number,
+  headers: Record<string, string>,
+  lang: string
+): string {
+  const lines: string[] = [];
+  const chars = protagonists.characters;
+
+  if (protagonists.include_self) {
+    // ═══ CASE 1: Child is the main character ═══
+    lines.push(`${mainCharLabel(lang)}: ${kidName}, ${kidAge}`);
+
+    for (const char of chars) {
+      let entry = char.name;
+      if (char.age) entry += `, ${char.age}`;
+
+      if (char.relation) {
+        entry += ` — ${char.relation} ${ofWord(lang)} ${kidName}`;
+      } else if (char.role === 'known_figure') {
+        entry += ` — ${knownFigureLabel(lang)}`;
+      }
+      lines.push(entry);
+    }
+
+  } else {
+    // ═══ CASE 2: Child is NOT a character ═══
+    lines.push(notMainCharHint(lang));
+
+    const family = chars.filter(c => c.role === 'family');
+    const friends = chars.filter(c => c.role === 'friend');
+    const known = chars.filter(c => c.role === 'known_figure');
+    // Characters without a role get listed individually
+    const unclassified = chars.filter(c => !c.role);
+
+    // -- Family --
+    if (family.length > 0) {
+      const parents = family.filter(c => PARENT_RELATIONS.includes(c.relation || ''));
+      const siblings = family.filter(c => SIBLING_RELATIONS.includes(c.relation || ''));
+      const otherFamily = family.filter(c => !parents.includes(c) && !siblings.includes(c));
+
+      if (parents.length >= 2) {
+        lines.push(`${fmtChar(parents[0])} ${andWord(lang)} ${fmtChar(parents[1])} — ${coupleLabel(lang)}`);
+        // If more than 2 parents (e.g. Oma + Opa too), list the rest individually
+        for (const p of parents.slice(2)) {
+          lines.push(`${fmtChar(p)} — ${p.relation || ''}`);
+        }
+      } else if (parents.length === 1) {
+        lines.push(`${fmtChar(parents[0])} — ${parents[0].relation || ''}`);
+      }
+
+      if (siblings.length >= 2) {
+        lines.push(`${siblings.map(fmtChar).join(` ${andWord(lang)} `)} — ${siblingsLabel(lang)}`);
+      } else if (siblings.length === 1) {
+        lines.push(`${fmtChar(siblings[0])} — ${siblings[0].relation || ''}`);
+      }
+
+      // Family hint if both parents and siblings present
+      if (parents.length > 0 && siblings.length > 0) {
+        lines.push(familyHint(lang));
+      }
+
+      for (const c of otherFamily) {
+        lines.push(`${fmtChar(c)} — ${c.relation || ''}`);
+      }
+    }
+
+    // -- Friends --
+    if (friends.length >= 2) {
+      lines.push(`${friends.map(fmtChar).join(` ${andWord(lang)} `)} — ${friendsLabel(lang)}`);
+    } else if (friends.length === 1) {
+      lines.push(fmtChar(friends[0]));
+    }
+
+    // -- Known figures --
+    for (const c of known) {
+      lines.push(`${c.name} — ${knownFigureLabel(lang)}`);
+    }
+
+    // -- Unclassified --
+    for (const c of unclassified) {
+      const parts = [c.name];
+      if (c.age) parts.push(`${c.age}`);
+      if (c.relation) parts.push(c.relation);
+      lines.push(parts.join(', '));
+    }
+  }
+
+  if (lines.length === 0) return '';
+  return `## ${headers.characters}\n${lines.join('\n')}`;
+}
 
 // ─── Variety Block Builder ──────────────────────────────────────
 
@@ -375,20 +539,16 @@ export async function buildStoryPrompt(
   ].filter(Boolean).join('\n');
   sections.push(categorySection);
 
-  // CHARACTERS
-  const charLines: string[] = [`## ${headers.characters}`];
-  if (request.protagonists.include_self) {
-    charLines.push(`Main character: ${request.kid_profile.first_name}, ${request.kid_profile.age} years old`);
-  }
-  for (const c of request.protagonists.characters) {
-    const parts = [`Name: ${c.name}`];
-    if (c.age) parts.push(`Age: ${c.age}`);
-    if (c.relation) parts.push(`Relation: ${c.relation}`);
-    if (c.description) parts.push(`Description: ${c.description}`);
-    charLines.push(parts.join(', '));
-  }
-  if (charLines.length > 1) {
-    sections.push(charLines.join('\n'));
+  // CHARACTERS (Block 2.3d: relationship logic)
+  const charactersSection = buildCharactersSection(
+    request.protagonists,
+    request.kid_profile.first_name,
+    request.kid_profile.age,
+    headers,
+    lang
+  );
+  if (charactersSection) {
+    sections.push(charactersSection);
   }
 
   // SPECIAL EFFECTS (only if non-empty)

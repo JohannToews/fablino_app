@@ -698,6 +698,11 @@ Deno.serve(async (req) => {
       seriesContext,                       // summary of previous episodes
     } = await req.json();
 
+    // Block 2.3d: Debug logging for character data from frontend
+    console.log('[generate-story] Request body characters:', JSON.stringify(characters, null, 2));
+    console.log('[generate-story] Request body selectedCharacters:', JSON.stringify(selectedCharacters, null, 2));
+    console.log('[generate-story] include_self:', includeSelf);
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -774,7 +779,13 @@ Deno.serve(async (req) => {
         series_context: seriesContext || (episodeNumber && episodeNumber > 1 ? description : undefined),
         protagonists: {
           include_self: includeSelf || false,
-          characters: selectedCharacters || [],
+          characters: (characters || selectedCharacters || []).map((c: any) => ({
+            name: c.name,
+            age: c.age || undefined,
+            relation: c.relation || undefined,
+            description: c.description || undefined,
+            role: c.role || undefined,
+          })),
         },
         special_abilities: specialAbilities || [],
         user_prompt: userPromptParam || (source === 'kid' ? description : undefined),
@@ -784,6 +795,11 @@ Deno.serve(async (req) => {
 
       // 3. Build dynamic user message
       userMessageFinal = await buildStoryPrompt(storyRequest, supabase);
+
+      // Block 2.3d: Log the CHARACTERS section from the built prompt
+      const charSectionMatch = userMessageFinal.match(/## (PERSONNAGES|FIGUREN|CHARACTERS|PERSONAJES|PERSONAGGI|LIKOVI|PERSONAGES)[\s\S]*?(?=\n## |$)/);
+      console.log('[generate-story] Built prompt CHARACTERS section:', charSectionMatch ? charSectionMatch[0] : '(no characters section found)');
+      console.log('[generate-story] StoryRequest protagonists:', JSON.stringify(storyRequest.protagonists, null, 2));
 
       // 4. Check for learning theme
       if (kidProfileId) {

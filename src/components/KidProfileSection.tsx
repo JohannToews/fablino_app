@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,25 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2 } from "lucide-react";
+import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2, X } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 import { DEFAULT_SCHOOL_SYSTEMS, SchoolSystems, SchoolSystem } from "@/lib/schoolSystems";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
+
+interface KidCharacterDB {
+  id: string;
+  kid_profile_id: string;
+  name: string;
+  role: string;
+  age: number | null;
+  relation: string | null;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
+}
 
 interface KidProfile {
   id?: string;
@@ -68,6 +81,14 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  
+  // Character management state
+  const [characters, setCharacters] = useState<KidCharacterDB[]>([]);
+  const [isCharDialogOpen, setIsCharDialogOpen] = useState(false);
+  const [charType, setCharType] = useState<'family' | 'friend' | 'known_figure' | ''>('');
+  const [charName, setCharName] = useState('');
+  const [charAge, setCharAge] = useState('');
+  const [charRelation, setCharRelation] = useState('');
 
   const currentProfile = profiles[selectedProfileIndex] || {
     name: '',
@@ -81,10 +102,29 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     age: undefined,
   };
 
+  const loadCharacters = useCallback(async (profileId?: string) => {
+    const id = profileId || currentProfile?.id;
+    if (!id) { setCharacters([]); return; }
+    const { data } = await supabase
+      .from('kid_characters')
+      .select('*')
+      .eq('kid_profile_id', id)
+      .eq('is_active', true)
+      .order('role', { ascending: true })
+      .order('sort_order', { ascending: true });
+    setCharacters((data as KidCharacterDB[]) || []);
+  }, [currentProfile?.id]);
+
   useEffect(() => {
     loadProfiles();
     loadSchoolSystems();
   }, [userId]);
+
+  // Reload characters when selected profile changes
+  useEffect(() => {
+    if (currentProfile?.id) loadCharacters(currentProfile.id);
+    else setCharacters([]);
+  }, [currentProfile?.id, loadCharacters]);
 
   const loadSchoolSystems = async () => {
     const { data } = await supabase
@@ -268,6 +308,129 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       toast.error(t.errorSaving);
     }
     setIsGeneratingCover(false);
+  };
+
+  // ── Character management ──
+
+  const familyRelations = [
+    { value: 'Mama', label: t.relationMama },
+    { value: 'Papa', label: t.relationPapa },
+    { value: 'Bruder', label: t.relationBrother },
+    { value: 'Schwester', label: t.relationSister },
+    { value: 'Oma', label: t.relationGrandma },
+    { value: 'Opa', label: t.relationGrandpa },
+    { value: 'Cousin', label: t.relationCousin },
+    { value: 'Cousine', label: t.relationCousine },
+    { value: 'Tante', label: t.relationAunt },
+    { value: 'Onkel', label: t.relationUncle },
+  ];
+
+  const getRoleEmoji = (role: string) => {
+    if (role === 'family') return '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    if (role === 'friend') return '\u{1F46B}';
+    return '\u2B50';
+  };
+
+  const getRoleLabel = (role: string) => {
+    if (role === 'family') return t.typeFamily;
+    if (role === 'friend') return t.typeFriend;
+    return t.typeKnownFigure;
+  };
+
+  const friendCount = characters.filter(c => c.role === 'friend').length;
+
+  const openAddCharDialog = () => {
+    setCharType('');
+    setCharName('');
+    setCharAge('');
+    setCharRelation('');
+    setIsCharDialogOpen(true);
+  };
+
+  const saveCharacter = async () => {
+    if (!currentProfile?.id || !charName.trim() || !charType) return;
+
+    const newChar = {
+      kid_profile_id: currentProfile.id,
+      name: charName.trim(),
+      role: charType,
+      relation: charType === 'family' ? charRelation : (charType === 'friend' ? t.typeFriend : null),
+      age: charAge ? parseInt(charAge) : null,
+      description: null,
+      is_active: true,
+      sort_order: characters.length,
+    };
+
+    const { error } = await supabase.from('kid_characters').insert(newChar as any);
+    if (error) { toast.error(t.errorSaving); return; }
+
+    // Family sync: also add to all other kid profiles of the same user
+    if (charType === 'family') {
+      const { data: allKidProfiles } = await supabase
+        .from('kid_profiles')
+        .select('id')
+        .eq('user_id', userId);
+
+      for (const otherKid of allKidProfiles || []) {
+        if (otherKid.id === currentProfile.id) continue;
+        // Check if already exists
+        const { data: existing } = await supabase
+          .from('kid_characters')
+          .select('id')
+          .eq('kid_profile_id', otherKid.id)
+          .eq('name', charName.trim())
+          .eq('role', 'family')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!existing) {
+          await supabase.from('kid_characters').insert({
+            kid_profile_id: otherKid.id,
+            name: charName.trim(),
+            role: 'family',
+            relation: charRelation || null,
+            age: charAge ? parseInt(charAge) : null,
+            description: null,
+            is_active: true,
+            sort_order: 0,
+          } as any);
+        }
+      }
+    }
+
+    setIsCharDialogOpen(false);
+    await loadCharacters();
+  };
+
+  const deleteCharacter = async (char: KidCharacterDB) => {
+    if (char.role === 'family') {
+      // Family sync: soft-delete across ALL kid profiles for this user
+      const { data: allKidProfiles } = await supabase
+        .from('kid_profiles')
+        .select('id')
+        .eq('user_id', userId);
+
+      for (const kid of allKidProfiles || []) {
+        let query = supabase
+          .from('kid_characters')
+          .update({ is_active: false } as any)
+          .eq('kid_profile_id', kid.id)
+          .eq('name', char.name)
+          .eq('role', 'family');
+        if (char.relation) {
+          query = query.eq('relation', char.relation);
+        } else {
+          query = query.is('relation', null);
+        }
+        await query;
+      }
+    } else {
+      await supabase
+        .from('kid_characters')
+        .update({ is_active: false } as any)
+        .eq('id', char.id);
+    }
+    await loadCharacters();
   };
 
   const saveProfile = async () => {
@@ -677,6 +840,142 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
             </Button>
           </div>
         </div>
+
+        {/* ── Important Characters Section ── */}
+        {currentProfile?.id && (
+          <div className="pt-4 border-t space-y-3">
+            <Label className="text-base font-semibold">{t.importantCharacters}</Label>
+            
+            {/* Character list */}
+            {characters.length > 0 ? (
+              <div className="space-y-1.5">
+                {characters.map((char) => (
+                  <div key={char.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
+                    <span className="text-sm">
+                      {getRoleEmoji(char.role)}{' '}
+                      <span className="font-medium">{char.name}</span>
+                      {char.relation && <span className="text-muted-foreground"> — {char.relation}</span>}
+                      {char.age && <span className="text-muted-foreground">, {char.age} J.</span>}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => deleteCharacter(char)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">—</p>
+            )}
+
+            {/* Add character button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-dashed"
+              onClick={openAddCharDialog}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t.addCharacterBtn}
+            </Button>
+          </div>
+        )}
+
+        {/* Add Character Dialog */}
+        <Dialog open={isCharDialogOpen} onOpenChange={setIsCharDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{t.characterType}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Step 1: Type selection */}
+              <div className="flex flex-col gap-2">
+                {(['family', 'friend', 'known_figure'] as const).map((type) => (
+                  <Button
+                    key={type}
+                    variant={charType === type ? 'default' : 'outline'}
+                    className="justify-start"
+                    disabled={type === 'friend' && friendCount >= 5}
+                    onClick={() => {
+                      setCharType(type);
+                      setCharRelation('');
+                      setCharName('');
+                      setCharAge('');
+                    }}
+                  >
+                    {getRoleEmoji(type)} {getRoleLabel(type)}
+                    {type === 'friend' && friendCount >= 5 && (
+                      <span className="ml-2 text-xs text-muted-foreground">({t.maxFriendsReached})</span>
+                    )}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Step 2: Fields based on type */}
+              {charType && (
+                <div className="space-y-3 pt-2 border-t animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Family: relation dropdown */}
+                  {charType === 'family' && (
+                    <div className="space-y-1">
+                      <Label className="text-sm">{t.characterRelation} *</Label>
+                      <Select value={charRelation} onValueChange={setCharRelation}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {familyRelations.map((rel) => (
+                            <SelectItem key={rel.value} value={rel.value}>{rel.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Name (always) */}
+                  <div className="space-y-1">
+                    <Label className="text-sm">{t.characterName} *</Label>
+                    <Input
+                      value={charName}
+                      onChange={(e) => setCharName(e.target.value)}
+                      maxLength={50}
+                      placeholder={charType === 'known_figure' ? 'Batman, Ladybug...' : ''}
+                    />
+                  </div>
+
+                  {/* Age (family + friend only) */}
+                  {charType !== 'known_figure' && (
+                    <div className="space-y-1">
+                      <Label className="text-sm">{t.characterAge}</Label>
+                      <Input
+                        type="number"
+                        value={charAge}
+                        onChange={(e) => setCharAge(e.target.value)}
+                        min={0}
+                        max={99}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={saveCharacter}
+                disabled={
+                  !charType || !charName.trim() ||
+                  (charType === 'family' && !charRelation)
+                }
+              >
+                <Save className="h-4 w-4 mr-1" />
+                {t.save}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="pt-4 border-t">
           <Button
