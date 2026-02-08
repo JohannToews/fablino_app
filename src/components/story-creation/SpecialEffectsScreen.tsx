@@ -3,8 +3,9 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import VoiceInputField from "@/components/VoiceInputField";
-import { SpecialAttribute } from "./types";
+import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
 
@@ -147,20 +148,52 @@ const attributeOptions: AttributeOption[] = [
   { id: "normal", emoji: "❌", labelKey: "normal" },
 ];
 
+// Settings translations (reused from StoryTypeSelectionScreen, inline for independence)
+const settingsTranslations: Record<string, Record<string, string>> = {
+  de: { lengthLabel: 'Länge', short: 'Kurz', medium: 'Mittel', long: 'Lang', difficultyLabel: 'Schwierigkeit', easy: 'Leicht', hard: 'Schwer', seriesLabel: 'Serie', seriesNo: 'Nein', seriesYes: 'Ja', languageLabel: 'Sprache' },
+  fr: { lengthLabel: 'Longueur', short: 'Court', medium: 'Moyen', long: 'Long', difficultyLabel: 'Difficulté', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Série', seriesNo: 'Non', seriesYes: 'Oui', languageLabel: 'Langue' },
+  en: { lengthLabel: 'Length', short: 'Short', medium: 'Medium', long: 'Long', difficultyLabel: 'Difficulty', easy: 'Easy', hard: 'Hard', seriesLabel: 'Series', seriesNo: 'No', seriesYes: 'Yes', languageLabel: 'Language' },
+  es: { lengthLabel: 'Longitud', short: 'Corto', medium: 'Medio', long: 'Largo', difficultyLabel: 'Dificultad', easy: 'Fácil', hard: 'Difícil', seriesLabel: 'Serie', seriesNo: 'No', seriesYes: 'Sí', languageLabel: 'Idioma' },
+  nl: { lengthLabel: 'Lengte', short: 'Kort', medium: 'Gemiddeld', long: 'Lang', difficultyLabel: 'Moeilijkheid', easy: 'Makkelijk', hard: 'Moeilijk', seriesLabel: 'Serie', seriesNo: 'Nee', seriesYes: 'Ja', languageLabel: 'Taal' },
+  it: { lengthLabel: 'Lunghezza', short: 'Breve', medium: 'Medio', long: 'Lungo', difficultyLabel: 'Difficoltà', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Serie', seriesNo: 'No', seriesYes: 'Sì', languageLabel: 'Lingua' },
+  bs: { lengthLabel: 'Dužina', short: 'Kratko', medium: 'Srednje', long: 'Dugo', difficultyLabel: 'Težina', easy: 'Lagano', hard: 'Teško', seriesLabel: 'Serija', seriesNo: 'Ne', seriesYes: 'Da', languageLabel: 'Jezik' },
+};
+
+export interface StorySettingsFromEffects {
+  length: StoryLength;
+  difficulty: StoryDifficulty;
+  isSeries: boolean;
+  storyLanguage: string;
+}
+
 interface SpecialEffectsScreenProps {
-  onComplete: (attributes: SpecialAttribute[], additionalDescription: string) => void;
+  onComplete: (attributes: SpecialAttribute[], additionalDescription: string, settings?: StorySettingsFromEffects) => void;
   onBack: () => void;
+  /** When true, show length/difficulty/series/language settings (used by Weg A "free path") */
+  showSettings?: boolean;
+  availableLanguages?: string[];
+  defaultLanguage?: string;
 }
 
 const SpecialEffectsScreen = ({
   onComplete,
   onBack,
+  showSettings = false,
+  availableLanguages = [],
+  defaultLanguage = 'fr',
 }: SpecialEffectsScreenProps) => {
   const { kidAppLanguage } = useKidProfile();
   const t = translations[kidAppLanguage] || translations.de;
+  const st = settingsTranslations[kidAppLanguage] || settingsTranslations.de;
   
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
   const [additionalDescription, setAdditionalDescription] = useState("");
+  
+  // Settings state (only used when showSettings = true, i.e. Weg A)
+  const [storyLength, setStoryLength] = useState<StoryLength>("medium");
+  const [storyDifficulty, setStoryDifficulty] = useState<StoryDifficulty>("medium");
+  const [isSeries, setIsSeries] = useState(false);
+  const [storyLanguage, setStoryLanguage] = useState<string>(defaultLanguage);
 
   const toggleAttribute = (attr: SpecialAttribute) => {
     if (attr === "normal") {
@@ -179,7 +212,16 @@ const SpecialEffectsScreen = ({
   };
 
   const handleContinue = () => {
-    onComplete(selectedAttributes, additionalDescription.trim());
+    if (showSettings) {
+      onComplete(selectedAttributes, additionalDescription.trim(), {
+        length: storyLength,
+        difficulty: storyDifficulty,
+        isSeries,
+        storyLanguage,
+      });
+    } else {
+      onComplete(selectedAttributes, additionalDescription.trim());
+    }
   };
 
   return (
@@ -197,6 +239,86 @@ const SpecialEffectsScreen = ({
       </div>
 
       <div className="container max-w-3xl mx-auto px-4 py-4 md:py-6 space-y-6 md:space-y-8">
+        {/* Story Settings (only for Weg A / free path) */}
+        {showSettings && (
+          <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border space-y-3 md:space-y-4">
+            {/* Length Selection */}
+            <div className="flex items-center gap-3">
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{st.lengthLabel}</Label>
+              <div className="flex gap-1.5 md:gap-2 flex-1">
+                {(["short", "medium", "long"] as StoryLength[]).map((len) => (
+                  <Button
+                    key={len}
+                    variant={storyLength === len ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
+                      storyLength === len && "bg-primary text-primary-foreground"
+                    )}
+                    onClick={() => setStoryLength(len)}
+                  >
+                    {len === "short" ? st.short : len === "medium" ? st.medium : st.long}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty Selection */}
+            <div className="flex items-center gap-3">
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{st.difficultyLabel}</Label>
+              <div className="flex gap-1.5 md:gap-2 flex-1">
+                {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
+                  <Button
+                    key={diff}
+                    variant={storyDifficulty === diff ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
+                      storyDifficulty === diff && "bg-primary text-primary-foreground"
+                    )}
+                    onClick={() => setStoryDifficulty(diff)}
+                  >
+                    {diff === "easy" ? st.easy : diff === "medium" ? st.medium : st.hard}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Series Toggle */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground">{st.seriesLabel}</Label>
+              <div className="flex items-center gap-2 md:gap-3">
+                <span className={cn("text-xs md:text-sm", !isSeries && "font-semibold text-foreground")}>{st.seriesNo}</span>
+                <Switch checked={isSeries} onCheckedChange={setIsSeries} className="scale-90 md:scale-100" />
+                <span className={cn("text-xs md:text-sm", isSeries && "font-semibold text-foreground")}>{st.seriesYes}</span>
+              </div>
+            </div>
+
+            {/* Language Picker */}
+            {availableLanguages.length > 1 && (
+              <div className="flex items-center gap-3">
+                <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{st.languageLabel}</Label>
+                <div className="flex gap-1.5 md:gap-2 flex-1 flex-wrap">
+                  {availableLanguages.map((lang) => (
+                    <Button
+                      key={lang}
+                      variant={storyLanguage === lang ? "default" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm px-2.5 md:px-3",
+                        storyLanguage === lang && "bg-primary text-primary-foreground"
+                      )}
+                      onClick={() => setStoryLanguage(lang)}
+                    >
+                      {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[kidAppLanguage] || lang.toUpperCase()}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Special Effects Checkboxes */}
         <section className="space-y-3 md:space-y-4">
           <h2 className="text-base md:text-lg font-baloo font-semibold text-center">

@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
-import SpecialEffectsScreen from "@/components/story-creation/SpecialEffectsScreen";
+import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
 import {
   StoryType,
   StorySubElement,
@@ -24,7 +24,10 @@ import { useTranslations } from "@/lib/translations";
 import StoryGenerationProgress from "@/components/story-creation/StoryGenerationProgress";
 
 // Screen states for the wizard
-type WizardScreen = "story-type" | "characters" | "effects" | "generating";
+type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "generating";
+
+// Wizard path: free (Weg A) or guided (Weg B)
+type WizardPath = "free" | "guided" | null;
 
 // Map school class to difficulty
 const getDifficultyFromSchoolClass = (schoolClass: string): string => {
@@ -86,7 +89,8 @@ const CreateStoryPage = () => {
   const { colors: paletteColors } = useColorPalette();
 
   // Wizard state
-  const [currentScreen, setCurrentScreen] = useState<WizardScreen>("story-type");
+  const [currentScreen, setCurrentScreen] = useState<WizardScreen>("entry");
+  const [wizardPath, setWizardPath] = useState<WizardPath>(null);
   const [selectedStoryType, setSelectedStoryType] = useState<StoryType | null>(null);
   const [storySettings, setStorySettings] = useState<StorySettings | null>(null);
   const [humorLevel, setHumorLevel] = useState<number | undefined>(undefined);
@@ -163,14 +167,14 @@ const CreateStoryPage = () => {
         console.error("Generation error:", error);
         toast.error(t.toastGenerationError);
         setIsGenerating(false);
-        setCurrentScreen("story-type");
+        setCurrentScreen("entry");
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
         setIsGenerating(false);
-        setCurrentScreen("story-type");
+        setCurrentScreen("entry");
         return;
       }
 
@@ -219,7 +223,7 @@ const CreateStoryPage = () => {
           console.error("Save error:", saveError);
           toast.error(t.toastSaveError);
           setIsGenerating(false);
-          setCurrentScreen("story-type");
+          setCurrentScreen("entry");
           return;
         }
 
@@ -256,13 +260,13 @@ const CreateStoryPage = () => {
       } else {
         toast.error(t.toastGenerationError);
         setIsGenerating(false);
-        setCurrentScreen("story-type");
+        setCurrentScreen("entry");
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
       setIsGenerating(false);
-      setCurrentScreen("story-type");
+      setCurrentScreen("entry");
     }
   };
 
@@ -301,19 +305,31 @@ const CreateStoryPage = () => {
   // Handle special effects selection complete
   const handleEffectsComplete = async (
     attributes: SpecialAttribute[],
-    description: string
+    description: string,
+    settingsFromEffects?: StorySettingsFromEffects
   ) => {
     setSelectedAttributes(attributes);
     setAdditionalDescription(description);
     
+    // For Weg A (free path), settings come from the effects screen
+    if (settingsFromEffects) {
+      setStorySettings({
+        length: settingsFromEffects.length,
+        difficulty: settingsFromEffects.difficulty,
+        isSeries: settingsFromEffects.isSeries,
+        storyLanguage: settingsFromEffects.storyLanguage,
+      });
+    }
+    
     // Generate the story with all collected data
-    await generateFictionStory(attributes, description);
+    await generateFictionStory(attributes, description, settingsFromEffects);
   };
 
   // Generate fiction story (adventure, detective, friendship, funny)
   const generateFictionStory = async (
     effectAttributes: SpecialAttribute[],
-    userDescription: string
+    userDescription: string,
+    settingsOverride?: StorySettingsFromEffects
   ) => {
     if (!user?.id) {
       toast.error("Bitte melde dich erneut an");
@@ -338,26 +354,31 @@ const CreateStoryPage = () => {
       educational: { de: "Sachgeschichte", fr: "Histoire éducative", en: "Educational story" },
     };
     
-    const storyTypeLabel = storyTypeLabels[selectedStoryType || "fantasy"][kidAppLanguage] || storyTypeLabels[selectedStoryType || "fantasy"].de;
-    
-    // Build rich description for the story generator
-    let description = `${storyTypeLabel} mit ${characterNames}`;
-    if (attributeNames) description += `. Besondere Eigenschaften: ${attributeNames}`;
+    // For Weg A, storyType may be null – build description accordingly
+    const effectiveStoryType = selectedStoryType;
+    let description = "";
+    if (effectiveStoryType) {
+      const storyTypeLabel = storyTypeLabels[effectiveStoryType][kidAppLanguage] || storyTypeLabels[effectiveStoryType].de;
+      description = characterNames ? `${storyTypeLabel} mit ${characterNames}` : storyTypeLabel;
+    } else if (characterNames) {
+      description = characterNames;
+    }
+    if (attributeNames) description += description ? `. Besondere Eigenschaften: ${attributeNames}` : `Besondere Eigenschaften: ${attributeNames}`;
     if (selectedSubElements.length > 0) description += `. Themen-Elemente: ${selectedSubElements.join(", ")}`;
     if (humorLevel && humorLevel > 50) description += `. Humor-Level: ${humorLevel}%`;
-    if (userDescription) description += `. Zusätzliche Wünsche: ${userDescription}`;
+    if (userDescription) description += description ? `. Zusätzliche Wünsche: ${userDescription}` : userDescription;
 
     const difficulty = getDifficultyFromSchoolClass(selectedProfile?.school_class || "3");
-    // Use storyLanguage from wizard settings if available, fallback to reading_language
-    const effectiveLanguage = storySettings?.storyLanguage || kidReadingLanguage;
+    // Use storyLanguage from settings override (Weg A) or wizard settings or fallback
+    const effectiveLanguage = settingsOverride?.storyLanguage || storySettings?.storyLanguage || kidReadingLanguage;
     const textLanguage = effectiveLanguage.toUpperCase();
 
     toast.info(t.toastGeneratingStory);
 
     try {
-      const storyLength = storySettings?.length || "medium";
-      const storyDifficulty = storySettings?.difficulty || difficulty;
-      const isSeries = storySettings?.isSeries || false;
+      const storyLength = settingsOverride?.length || storySettings?.length || "medium";
+      const storyDifficulty = settingsOverride?.difficulty || storySettings?.difficulty || difficulty;
+      const isSeries = settingsOverride?.isSeries || storySettings?.isSeries || false;
 
       // Determine include_self from character selection
       const includeSelf = selectedCharacters.some(c => c.type === "me");
@@ -408,14 +429,14 @@ const CreateStoryPage = () => {
         console.error("Generation error:", error);
         toast.error(t.toastGenerationError);
         setIsGenerating(false);
-        setCurrentScreen("story-type");
+        setCurrentScreen("entry");
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
         setIsGenerating(false);
-        setCurrentScreen("story-type");
+        setCurrentScreen("entry");
         return;
       }
 
@@ -461,7 +482,7 @@ const CreateStoryPage = () => {
           console.error("Save error:", saveError);
           toast.error(t.toastSaveError);
           setIsGenerating(false);
-          setCurrentScreen("story-type");
+          setCurrentScreen("entry");
           return;
         }
 
@@ -498,24 +519,43 @@ const CreateStoryPage = () => {
       } else {
         toast.error(t.toastGenerationError);
         setIsGenerating(false);
-        setCurrentScreen("story-type");
+        setCurrentScreen("entry");
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
       setIsGenerating(false);
+      setCurrentScreen("entry");
+    }
+  };
+
+  // Handle entry screen path selection
+  const handlePathSelect = (path: WizardPath) => {
+    setWizardPath(path);
+    if (path === "free") {
+      // Weg A: Skip to effects screen directly
+      setCurrentScreen("effects");
+    } else {
+      // Weg B: Normal guided flow
       setCurrentScreen("story-type");
     }
   };
 
   // Handle back navigation
   const handleBack = () => {
-    if (currentScreen === "story-type") {
+    if (currentScreen === "entry") {
       navigate("/");
+    } else if (currentScreen === "story-type") {
+      setCurrentScreen("entry");
     } else if (currentScreen === "characters") {
       setCurrentScreen("story-type");
     } else if (currentScreen === "effects") {
-      setCurrentScreen("characters");
+      if (wizardPath === "free") {
+        // Weg A: go back to entry
+        setCurrentScreen("entry");
+      } else {
+        setCurrentScreen("characters");
+      }
     }
   };
 
@@ -530,6 +570,61 @@ const CreateStoryPage = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+      {currentScreen === "entry" && (
+        <div className="min-h-screen flex flex-col">
+          {/* Header */}
+          <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
+            <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
+              <button onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <h1 className="text-base md:text-lg font-baloo font-bold flex-1">
+                {t.wizardEntryTitle}
+              </h1>
+            </div>
+          </div>
+
+          {/* Two path cards */}
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 gap-4 md:gap-6 max-w-lg mx-auto w-full">
+            {/* Weg A: Free */}
+            <button
+              onClick={() => handlePathSelect("free")}
+              className="w-full bg-card border-2 border-border hover:border-primary/50 rounded-2xl p-6 md:p-8 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
+              <div className="flex items-start gap-4">
+                <span className="text-4xl md:text-5xl">🎤</span>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg md:text-xl font-baloo font-bold text-foreground">
+                    {t.wizardPathFree}
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground mt-1">
+                    {t.wizardPathFreeHint}
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Weg B: Guided */}
+            <button
+              onClick={() => handlePathSelect("guided")}
+              className="w-full bg-card border-2 border-border hover:border-primary/50 rounded-2xl p-6 md:p-8 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
+              <div className="flex items-start gap-4">
+                <span className="text-4xl md:text-5xl">🧙</span>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg md:text-xl font-baloo font-bold text-foreground">
+                    {t.wizardPathGuided}
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground mt-1">
+                    {t.wizardPathGuidedHint}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {currentScreen === "story-type" && (
         <StoryTypeSelectionScreen
           translations={storyTypeTranslations}
@@ -556,6 +651,9 @@ const CreateStoryPage = () => {
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
           onBack={handleBack}
+          showSettings={wizardPath === "free"}
+          availableLanguages={availableLanguages}
+          defaultLanguage={kidReadingLanguage}
         />
       )}
     </div>

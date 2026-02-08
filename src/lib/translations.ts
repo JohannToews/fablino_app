@@ -187,6 +187,13 @@ export interface Translations {
   toastSaveError: string;
   toastStoryCreated: string;
   
+  // Wizard entry (Block 2.3e)
+  wizardEntryTitle: string;
+  wizardPathFree: string;
+  wizardPathFreeHint: string;
+  wizardPathGuided: string;
+  wizardPathGuidedHint: string;
+  
   // Vocabulary manage
   vocabManageTitle: string;
   vocabManageAdd: string;
@@ -409,6 +416,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Fehler bei der Generierung',
     toastSaveError: 'Geschichte erstellt, aber Speicherfehler',
     toastStoryCreated: 'Geschichte erstellt! 🎉',
+    wizardEntryTitle: 'Wie möchtest du deine Geschichte erstellen?',
+    wizardPathFree: 'Ich erzähle selbst',
+    wizardPathFreeHint: 'Beschreibe deine Geschichte frei per Text oder Sprache',
+    wizardPathGuided: 'Schritt für Schritt',
+    wizardPathGuidedHint: 'Wähle Thema, Personen und Spezialeffekte aus',
     vocabManageTitle: 'Wörter verwalten',
     vocabManageAdd: 'Wort hinzufügen',
     vocabManageAddPlaceholder: 'Neues Wort eingeben...',
@@ -627,6 +639,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Error generating story',
     toastSaveError: 'Story created, but save error',
     toastStoryCreated: 'Story created! 🎉',
+    wizardEntryTitle: 'How do you want to create your story?',
+    wizardPathFree: 'I tell it myself',
+    wizardPathFreeHint: 'Describe your story freely by text or voice',
+    wizardPathGuided: 'Step by step',
+    wizardPathGuidedHint: 'Choose theme, characters and special effects',
     vocabManageTitle: 'Manage words',
     vocabManageAdd: 'Add word',
     vocabManageAddPlaceholder: 'Enter new word...',
@@ -845,6 +862,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Erreur lors de la génération',
     toastSaveError: 'Histoire créée, mais erreur de sauvegarde',
     toastStoryCreated: 'Histoire créée! 🎉',
+    wizardEntryTitle: 'Comment veux-tu créer ton histoire ?',
+    wizardPathFree: 'Je raconte moi-même',
+    wizardPathFreeHint: 'Décris ton histoire librement par texte ou par la voix',
+    wizardPathGuided: 'Étape par étape',
+    wizardPathGuidedHint: 'Choisis le thème, les personnages et les effets spéciaux',
     vocabManageTitle: 'Gérer les mots',
     vocabManageAdd: 'Ajouter un mot',
     vocabManageAddPlaceholder: 'Entrer un nouveau mot...',
@@ -1063,6 +1085,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Error al generar la historia',
     toastSaveError: 'Historia creada, pero error al guardar',
     toastStoryCreated: '¡Historia creada! 🎉',
+    wizardEntryTitle: '¿Cómo quieres crear tu historia?',
+    wizardPathFree: 'Yo lo cuento',
+    wizardPathFreeHint: 'Describe tu historia libremente por texto o voz',
+    wizardPathGuided: 'Paso a paso',
+    wizardPathGuidedHint: 'Elige tema, personajes y efectos especiales',
     vocabManageTitle: 'Gestionar palabras',
     vocabManageAdd: 'Añadir palabra',
     vocabManageAddPlaceholder: 'Introducir nueva palabra...',
@@ -1281,6 +1308,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Fout bij genereren',
     toastSaveError: 'Verhaal gemaakt, maar opslagfout',
     toastStoryCreated: 'Verhaal gemaakt! 🎉',
+    wizardEntryTitle: 'Hoe wil je je verhaal maken?',
+    wizardPathFree: 'Ik vertel het zelf',
+    wizardPathFreeHint: 'Beschrijf je verhaal vrij met tekst of spraak',
+    wizardPathGuided: 'Stap voor stap',
+    wizardPathGuidedHint: 'Kies thema, personages en speciale effecten',
     vocabManageTitle: 'Woorden beheren',
     vocabManageAdd: 'Woord toevoegen',
     vocabManageAddPlaceholder: 'Nieuw woord invoeren...',
@@ -1499,6 +1531,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Errore nella generazione',
     toastSaveError: 'Storia creata, ma errore di salvataggio',
     toastStoryCreated: 'Storia creata! 🎉',
+    wizardEntryTitle: 'Come vuoi creare la tua storia?',
+    wizardPathFree: 'Racconto io',
+    wizardPathFreeHint: 'Descrivi la tua storia liberamente con testo o voce',
+    wizardPathGuided: 'Passo dopo passo',
+    wizardPathGuidedHint: 'Scegli tema, personaggi ed effetti speciali',
     vocabManageTitle: 'Gestisci parole',
     vocabManageAdd: 'Aggiungi parola',
     vocabManageAddPlaceholder: 'Inserisci nuova parola...',
@@ -1717,6 +1754,11 @@ const translations: Record<Language, Translations> = {
     toastGenerationError: 'Greška pri generisanju',
     toastSaveError: 'Priča kreirana, ali greška pri čuvanju',
     toastStoryCreated: 'Priča kreirana! 🎉',
+    wizardEntryTitle: 'Kako želiš kreirati svoju priču?',
+    wizardPathFree: 'Ja pričam sam/a',
+    wizardPathFreeHint: 'Opiši svoju priču slobodno tekstom ili glasom',
+    wizardPathGuided: 'Korak po korak',
+    wizardPathGuidedHint: 'Odaberi temu, likove i specijalne efekte',
     vocabManageTitle: 'Upravljaj riječima',
     vocabManageAdd: 'Dodaj riječ',
     vocabManageAddPlaceholder: 'Unesite novu riječ...',
