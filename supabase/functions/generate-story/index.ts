@@ -172,15 +172,47 @@ async function callLovableAI(
   throw lastError || new Error("Max retries exceeded");
 }
 
-// Interface for consistency check result
+// Interface for consistency check result (v2 format)
+interface ConsistencyCheckResultV2 {
+  errors_found: boolean;
+  summary: string;
+  errors: Array<{
+    category: string;
+    severity: string;
+    original: string;
+    problem: string;
+    fix: string;
+  }>;
+  stats: { critical: number; medium: number; low: number };
+}
+
+// Old interface for backwards compatibility
 interface ConsistencyCheckResult {
   hasIssues: boolean;
   issues: string[];
   suggestedFixes: string;
 }
 
-// Helper function to fetch consistency check prompt from database
-// Uses a universal English prompt that works for all story languages
+// Helper function to fetch consistency check prompts (v2 or fallback to old)
+async function getConsistencyCheckPromptV2(supabase: any): Promise<{ basePrompt: string | null; seriesAddon: string | null }> {
+  try {
+    // Fetch both v2 prompts
+    const { data: prompts } = await supabase
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["consistency_check_prompt_v2", "consistency_check_series_addon_v2"]);
+    
+    const basePrompt = prompts?.find((p: any) => p.key === "consistency_check_prompt_v2")?.value || null;
+    const seriesAddon = prompts?.find((p: any) => p.key === "consistency_check_series_addon_v2")?.value || null;
+    
+    return { basePrompt, seriesAddon };
+  } catch (error) {
+    console.error("Error fetching consistency check prompt v2:", error);
+    return { basePrompt: null, seriesAddon: null };
+  }
+}
+
+// Helper function to fetch OLD consistency check prompt from database (fallback)
 async function getConsistencyCheckPrompt(): Promise<string | null> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -212,7 +244,44 @@ async function getConsistencyCheckPrompt(): Promise<string | null> {
   }
 }
 
-// Helper function to perform consistency check on generated story
+// Helper function to perform consistency check with v2 prompt (all languages)
+async function performConsistencyCheckV2(
+  apiKey: string,
+  story: { title: string; content: string },
+  prompt: string
+): Promise<ConsistencyCheckResultV2> {
+  const userPrompt = `${prompt}
+
+--- STORY TO CHECK ---
+
+TITLE: ${story.title}
+
+CONTENT:
+${story.content}`;
+
+  try {
+    const response = await callLovableAI(apiKey, "You are a children's story quality checker. Respond only with valid JSON.", userPrompt, 0.3);
+    
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.log("[Consistency V2] Could not parse response, assuming no issues");
+      return { errors_found: false, summary: "", errors: [], stats: { critical: 0, medium: 0, low: 0 } };
+    }
+    
+    const result = JSON.parse(jsonMatch[0]);
+    return {
+      errors_found: result.errors_found === true,
+      summary: result.summary || "",
+      errors: Array.isArray(result.errors) ? result.errors : [],
+      stats: result.stats || { critical: 0, medium: 0, low: 0 }
+    };
+  } catch (error) {
+    console.error("Error in consistency check v2:", error);
+    return { errors_found: false, summary: "", errors: [], stats: { critical: 0, medium: 0, low: 0 } };
+  }
+}
+
+// Helper function to perform consistency check on generated story (OLD - for fallback)
 async function performConsistencyCheck(
   apiKey: string,
   story: { title: string; content: string },
@@ -261,7 +330,81 @@ Falls keine Probleme gefunden: {"hasIssues": false, "issues": [], "suggestedFixe
   }
 }
 
-// Helper function to correct story based on consistency check results
+// Helper function to correct story based on consistency check results (v2 format)
+async function correctStoryV2(
+  apiKey: string,
+  story: { title: string; content: string; questions: any[]; vocabulary: any[] },
+  errors: ConsistencyCheckResultV2['errors'],
+  targetLanguage: string
+): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[]; correctedCount: number }> {
+  // Build correction instructions from errors
+  const errorInstructions = errors.map((e, i) => 
+    `${i + 1}. [${e.severity}] ${e.category}: "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`
+  ).join('\n');
+
+  const correctionPrompt = `You are a text editor. Correct the following text based on the found problems.
+
+IMPORTANT:
+- Keep the language (${targetLanguage})
+- Keep the style and structure
+- Correct ONLY the mentioned problems
+- The text must remain child-friendly`;
+
+  const userPrompt = `Correct this story:
+
+TITLE: ${story.title}
+
+CONTENT:
+${story.content}
+
+ERRORS TO FIX:
+${errorInstructions}
+
+Respond ONLY with a JSON object:
+{
+  "title": "Corrected title (or original if no issue)",
+  "content": "The fully corrected text"
+}`;
+
+  try {
+    const response = await callLovableAI(apiKey, correctionPrompt, userPrompt, 0.5);
+    
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("Could not parse correction response");
+      return { ...story, correctedCount: 0 };
+    }
+    
+    const corrected = JSON.parse(jsonMatch[0]);
+    
+    // Count how many errors were actually corrected by checking if content changed
+    let correctedCount = 0;
+    if (corrected.content && corrected.content !== story.content) {
+      // For each error, check if the original text is no longer present
+      for (const error of errors) {
+        if (error.original && !corrected.content.includes(error.original)) {
+          correctedCount++;
+        }
+      }
+    }
+    if (corrected.title && corrected.title !== story.title) {
+      correctedCount++;
+    }
+    
+    return {
+      title: corrected.title || story.title,
+      content: corrected.content || story.content,
+      questions: story.questions,
+      vocabulary: story.vocabulary,
+      correctedCount
+    };
+  } catch (error) {
+    console.error("Error correcting story:", error);
+    return { ...story, correctedCount: 0 };
+  }
+}
+
+// Helper function to correct story based on consistency check results (OLD - for fallback)
 async function correctStory(
   apiKey: string,
   story: { title: string; content: string; questions: any[]; vocabulary: any[] },
@@ -1336,58 +1479,101 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
     let consistencyDuration: number | 'skipped' = 'skipped';
     
     const consistencyCheckTask = async () => {
-      // Load universal consistency check prompt (language-independent)
-      const consistencyCheckPrompt = await getConsistencyCheckPrompt();
+      // Load v2 consistency check prompts (with placeholders)
+      const { basePrompt: rawPrompt, seriesAddon } = await getConsistencyCheckPromptV2(supabase);
       
-      if (!consistencyCheckPrompt) {
-        console.log("No consistency check prompt configured, skipping check");
-        console.log(`[generate-story] [PERF] Consistency check: skipped`);
+      if (!rawPrompt) {
+        console.log("[generate-story] [PERF] Consistency check: skipped (no prompt)");
         return;
       }
       
       consistencyStart = Date.now();
       
-      console.log("Starting consistency check...");
-      const seriesContextForCheck = episodeNumber && episodeNumber > 1 && description
-        ? { previousEpisode: description, episodeNumber }
-        : undefined;
+      // Determine age range from school level
+      const ageRanges: Record<string, { min: number; max: number }> = {
+        'cp': { min: 6, max: 7 }, '1e': { min: 6, max: 7 },
+        'ce1': { min: 7, max: 8 }, '2e': { min: 7, max: 8 },
+        'ce2': { min: 8, max: 9 }, '3e': { min: 8, max: 9 },
+        'cm1': { min: 9, max: 10 }, '4e': { min: 9, max: 10 },
+        'cm2': { min: 10, max: 11 }, '5e': { min: 10, max: 11 },
+        '6e': { min: 11, max: 12 },
+        // German
+        '1. klasse': { min: 6, max: 7 }, '2. klasse': { min: 7, max: 8 },
+        '3. klasse': { min: 8, max: 9 }, '4. klasse': { min: 9, max: 10 },
+        // English
+        'grade 1': { min: 6, max: 7 }, 'grade 2': { min: 7, max: 8 },
+        'grade 3': { min: 8, max: 9 }, 'grade 4': { min: 9, max: 10 },
+        'grade 5': { min: 10, max: 11 },
+      };
+      const effectiveSchoolLevelLower = (schoolLevel || 'ce2').toLowerCase();
+      const ageRange = ageRanges[effectiveSchoolLevelLower] || { min: 8, max: 9 };
+      
+      // Map text language code to full language name
+      const languageMap: Record<string, string> = {
+        'DE': 'German', 'FR': 'French', 'EN': 'English',
+        'ES': 'Spanish', 'IT': 'Italian', 'NL': 'Dutch', 'PT': 'Portuguese'
+      };
+      const storyLanguage = languageMap[textLanguage] || 'French';
+      
+      // Replace placeholders in base prompt
+      let prompt = rawPrompt
+        .replace(/{story_language}/g, storyLanguage)
+        .replace(/{age_min}/g, String(ageRange.min))
+        .replace(/{age_max}/g, String(ageRange.max));
+      
+      // Add series addon if applicable
+      if (seriesId && episodeNumber && episodeNumber > 1 && seriesAddon) {
+        // Build series context from description (which contains previous episode info)
+        const seriesContext = description?.substring(0, 1500) || '';
+        prompt += '\n\n' + seriesAddon
+          .replace(/{episode_number}/g, String(episodeNumber))
+          .replace(/{series_context}/g, seriesContext);
+      }
+      
+      console.log(`[generate-story] Starting consistency check v2 (language: ${storyLanguage}, age: ${ageRange.min}-${ageRange.max})...`);
       
       let correctionAttempts = 0;
       const maxCorrectionAttempts = 2;
       
       while (correctionAttempts < maxCorrectionAttempts) {
-        const checkResult = await performConsistencyCheck(
+        const checkResult = await performConsistencyCheckV2(
           LOVABLE_API_KEY,
           story,
-          consistencyCheckPrompt,
-          seriesContextForCheck
+          prompt
         );
         
-        if (!checkResult.hasIssues) {
-          console.log(`Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
+        if (!checkResult.errors_found || checkResult.errors.length === 0) {
+          console.log(`[generate-story] Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
           break;
         }
         
-        totalIssuesFound += checkResult.issues.length;
-        allIssueDetails.push(...checkResult.issues);
+        // Map errors to issue_details format: [SEVERITY] [CATEGORY] problem | Original: "..." | Fix: "..."
+        const newIssueDetails = checkResult.errors.map(e => 
+          `[${e.severity}] [${e.category}] ${e.problem} | Original: "${e.original}" | Fix: "${e.fix}"`
+        );
+        
+        totalIssuesFound += checkResult.errors.length;
+        allIssueDetails.push(...newIssueDetails);
         
         correctionAttempts++;
-        console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
+        console.log(`[generate-story] Consistency check found ${checkResult.errors.length} issue(s) (${checkResult.stats.critical} critical, ${checkResult.stats.medium} medium, ${checkResult.stats.low} low), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
+        console.log(`[generate-story] Summary: ${checkResult.summary}`);
         
-        const correctedStory = await correctStory(
+        const correctedStory = await correctStoryV2(
           LOVABLE_API_KEY,
           story,
-          checkResult.issues,
-          checkResult.suggestedFixes,
-          targetLanguage
+          checkResult.errors,
+          storyLanguage
         );
         
         if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
-          story = correctedStory;
-          totalIssuesCorrected += checkResult.issues.length;
-          console.log("Story corrected, re-checking...");
+          story.title = correctedStory.title;
+          story.content = correctedStory.content;
+          // Only count errors that were actually corrected
+          totalIssuesCorrected += correctedStory.correctedCount;
+          console.log(`[generate-story] Story corrected (${correctedStory.correctedCount}/${checkResult.errors.length} errors fixed), re-checking...`);
         } else {
-          console.log("No changes made in correction, stopping");
+          console.log("[generate-story] No changes made in correction, stopping");
           break;
         }
       }
@@ -1403,9 +1589,9 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
           issue_details: allIssueDetails,
           user_id: userId || null,
         });
-        console.log("Consistency check results saved");
+        console.log("[generate-story] Consistency check results saved");
       } catch (dbErr) {
-        console.error("Error saving consistency check results:", dbErr);
+        console.error("[generate-story] Error saving consistency check results:", dbErr);
       }
       
       consistencyDuration = Date.now() - consistencyStart;
