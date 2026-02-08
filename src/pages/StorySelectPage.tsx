@@ -16,7 +16,6 @@ import SeriesGrid from "@/components/SeriesGrid";
 interface Story {
   id: string;
   title: string;
-  content: string;
   cover_image_url: string | null;
   difficulty: string | null;
   text_type: string | null;
@@ -58,10 +57,10 @@ const StorySelectPage = () => {
   const loadStories = async () => {
     if (!user) return;
     
-    // Build query - filter strictly by kid_profile_id
+    // Build stories query — NO content field (saves large text transfer)
     let query = supabase
       .from("stories")
-      .select("id, title, content, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
+      .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
       .eq("user_id", user.id)
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
@@ -71,37 +70,37 @@ const StorySelectPage = () => {
       query = query.or(`kid_profile_id.eq.${selectedProfileId},kid_profile_id.is.null`);
     }
     
-    const { data: storiesData } = await query;
-    
+    // Build completions query (runs in parallel)
+    const completionsQuery = supabase
+      .from("user_results")
+      .select("reference_id, kid_profile_id")
+      .eq("user_id", user.id)
+      .eq("activity_type", "story_completed");
+
+    // Run both queries in parallel
+    const [storiesResult, completionsResult] = await Promise.all([
+      query,
+      completionsQuery,
+    ]);
+
+    const storiesData = storiesResult.data;
     if (storiesData) {
       setStories(storiesData);
-      
-      // Load completion status for all stories
-      const storyIds = storiesData.map(s => s.id);
-      if (storyIds.length > 0) {
-        // Query for completions - include both kid-specific and legacy (null kid_profile_id) completions
-        const { data: results } = await supabase
-          .from("user_results")
-          .select("reference_id, kid_profile_id")
-          .eq("user_id", user.id)
-          .eq("activity_type", "story_completed")
-          .in("reference_id", storyIds);
-        
-        const statusMap = new Map<string, boolean>();
-        results?.forEach(r => {
-          if (r.reference_id) {
-            // Match if kid_profile_id matches OR if it's a legacy completion (null)
-            // OR if no profile is selected
-            const matches = !selectedProfileId || 
-                           r.kid_profile_id === selectedProfileId || 
-                           r.kid_profile_id === null;
-            if (matches) {
-              statusMap.set(r.reference_id, true);
-            }
+
+      // Build status map from completions
+      const storyIdSet = new Set(storiesData.map(s => s.id));
+      const statusMap = new Map<string, boolean>();
+      completionsResult.data?.forEach(r => {
+        if (r.reference_id && storyIdSet.has(r.reference_id)) {
+          const matches = !selectedProfileId ||
+                         r.kid_profile_id === selectedProfileId ||
+                         r.kid_profile_id === null;
+          if (matches) {
+            statusMap.set(r.reference_id, true);
           }
-        });
-        setStoryStatuses(statusMap);
-      }
+        }
+      });
+      setStoryStatuses(statusMap);
     }
     setIsLoading(false);
   };
@@ -143,13 +142,22 @@ const StorySelectPage = () => {
     setIsGeneratingForSeries(series.seriesId);
     
     try {
+      // Fetch content for previous episodes on-demand (not stored in list)
+      const episodeIds = series.episodes.map(ep => ep.id);
+      const { data: episodesWithContent } = await supabase
+        .from("stories")
+        .select("id, title, content, episode_number")
+        .in("id", episodeIds);
+
       // Build context from ALL previous episodes
       // For each episode: Title + first 800 chars of content
-      const episodeContexts = series.episodes.map((ep, idx) => {
-        const episodeNum = ep.episode_number || (idx + 1);
-        const contentPreview = ep.content.substring(0, 800);
-        return `--- Episode ${episodeNum}: "${ep.title}" ---\n${contentPreview}${ep.content.length > 800 ? '...' : ''}`;
-      });
+      const episodeContexts = (episodesWithContent || [])
+        .sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0))
+        .map((ep, idx) => {
+          const episodeNum = ep.episode_number || (idx + 1);
+          const contentPreview = (ep.content || '').substring(0, 800);
+          return `--- Episode ${episodeNum}: "${ep.title}" ---\n${contentPreview}${(ep.content || '').length > 800 ? '...' : ''}`;
+        });
       
       const fullSeriesContext = episodeContexts.join('\n\n');
       
@@ -438,6 +446,7 @@ const StoryCard = ({
           <img
             src={story.cover_image_url}
             alt={story.title}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (

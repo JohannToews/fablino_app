@@ -5,7 +5,6 @@ import { useTranslations, type Language } from "@/lib/translations";
 interface Story {
   id: string;
   title: string;
-  content: string;
   cover_image_url: string | null;
   difficulty: string | null;
   text_type: string | null;
@@ -102,6 +101,7 @@ const SeriesGrid = ({
                   <img
                     src={firstEpisode.cover_image_url}
                     alt={firstEpisode.title}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -138,6 +138,7 @@ const SeriesGrid = ({
                         <img
                           src={episode.cover_image_url}
                           alt={episode.title}
+                          loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
