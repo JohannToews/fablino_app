@@ -1,57 +1,75 @@
 // Level name translations for the gamification system
-export const levelTranslations: Record<string, Record<number, string>> = {
+// Keys match LEVELS[].title in useGamification.tsx
+
+export const levelTitleTranslations: Record<string, Record<string, string>> = {
   de: {
-    1: "Lesefuchs",
-    2: "Geschichtenentdecker",
-    3: "Bücherheld",
-    4: "Lesemeister",
-    5: "Geschichtenlegende"
+    buecherfuchs: "Bücherfuchs",
+    geschichtenentdecker: "Geschichtenentdecker",
+    leseheld: "Leseheld",
+    wortmagier: "Wortmagier",
+    fablinoMeister: "Fablino-Meister",
   },
   fr: {
-    1: "Petit Renard",
-    2: "Explorateur d'histoires",
-    3: "Héros des livres",
-    4: "Maître lecteur",
-    5: "Légende des histoires"
+    buecherfuchs: "Petit Renard",
+    geschichtenentdecker: "Explorateur d'histoires",
+    leseheld: "Héros lecteur",
+    wortmagier: "Magicien des mots",
+    fablinoMeister: "Maître Fablino",
   },
   en: {
-    1: "Reading Fox",
-    2: "Story Explorer",
-    3: "Book Hero",
-    4: "Reading Master",
-    5: "Story Legend"
+    buecherfuchs: "Book Fox",
+    geschichtenentdecker: "Story Explorer",
+    leseheld: "Reading Hero",
+    wortmagier: "Word Wizard",
+    fablinoMeister: "Fablino Master",
   },
   es: {
-    1: "Zorrito lector",
-    2: "Explorador de historias",
-    3: "Héroe de libros",
-    4: "Maestro lector",
-    5: "Leyenda de historias"
+    buecherfuchs: "Zorrito lector",
+    geschichtenentdecker: "Explorador de historias",
+    leseheld: "Héroe lector",
+    wortmagier: "Mago de palabras",
+    fablinoMeister: "Maestro Fablino",
   },
   nl: {
-    1: "Leesvos",
-    2: "Verhaalontdekker",
-    3: "Boekenheld",
-    4: "Leesmeester",
-    5: "Verhalenlegende"
+    buecherfuchs: "Boekenvos",
+    geschichtenentdecker: "Verhaalontdekker",
+    leseheld: "Leesheld",
+    wortmagier: "Woordmagiër",
+    fablinoMeister: "Fablino Meester",
   },
   bs: {
-    1: "Lisica čitač",
-    2: "Istraživač priča",
-    3: "Heroj knjiga",
-    4: "Majstor čitanja",
-    5: "Legenda priča"
+    buecherfuchs: "Lisica čitač",
+    geschichtenentdecker: "Istraživač priča",
+    leseheld: "Heroj čitanja",
+    wortmagier: "Čarobnjak riječi",
+    fablinoMeister: "Fablino Majstor",
   },
   it: {
-    1: "Volpe lettrice",
-    2: "Esploratore di storie",
-    3: "Eroe dei libri",
-    4: "Maestro lettore",
-    5: "Leggenda delle storie"
-  }
+    buecherfuchs: "Volpe lettrice",
+    geschichtenentdecker: "Esploratore di storie",
+    leseheld: "Eroe lettore",
+    wortmagier: "Mago delle parole",
+    fablinoMeister: "Maestro Fablino",
+  },
 };
+
+// Number-based lookup (legacy, used by existing components)
+export const levelTranslations: Record<string, Record<number, string>> = {};
+const titleOrder = ['buecherfuchs', 'geschichtenentdecker', 'leseheld', 'wortmagier', 'fablinoMeister'];
+for (const lang of Object.keys(levelTitleTranslations)) {
+  levelTranslations[lang] = {};
+  titleOrder.forEach((key, idx) => {
+    levelTranslations[lang][idx + 1] = levelTitleTranslations[lang][key];
+  });
+}
 
 export const getTranslatedLevelName = (levelNumber: number, language: string): string => {
   const translations = levelTranslations[language] || levelTranslations.de;
   return translations[levelNumber] || levelTranslations.de[levelNumber] || `Level ${levelNumber}`;
+};
+
+/** Get translated level title by key (matches LEVELS[].title) */
+export const getTranslatedLevelTitle = (titleKey: string, language: string): string => {
+  const translations = levelTitleTranslations[language] || levelTitleTranslations.de;
+  return translations[titleKey] || levelTitleTranslations.de[titleKey] || titleKey;
 };

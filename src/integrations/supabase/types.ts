@@ -861,6 +861,7 @@ export type Database = {
       }
       stories: {
         Row: {
+          completed: boolean
           concrete_theme: string | null
           content: string
           cover_image_status: string | null
@@ -896,6 +897,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          completed?: boolean
           concrete_theme?: string | null
           content: string
           cover_image_status?: string | null
@@ -931,6 +933,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          completed?: boolean
           concrete_theme?: string | null
           content?: string
           cover_image_status?: string | null
@@ -1192,12 +1195,14 @@ export type Database = {
           longest_streak: number
           quizzes_passed: number
           quizzes_perfect: number
+          stories_completed: number
           stories_read_total: number
           streak_freeze_available: boolean
           streak_freeze_used_this_week: string | null
           total_points: number
           updated_at: string
           user_id: string
+          words_learned: number
         }
         Insert: {
           created_at?: string
@@ -1209,12 +1214,14 @@ export type Database = {
           longest_streak?: number
           quizzes_passed?: number
           quizzes_perfect?: number
+          stories_completed?: number
           stories_read_total?: number
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
           updated_at?: string
           user_id: string
+          words_learned?: number
         }
         Update: {
           created_at?: string
@@ -1226,12 +1233,14 @@ export type Database = {
           longest_streak?: number
           quizzes_passed?: number
           quizzes_perfect?: number
+          stories_completed?: number
           stories_read_total?: number
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
           updated_at?: string
           user_id?: string
+          words_learned?: number
         }
         Relationships: [
           {
