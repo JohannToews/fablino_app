@@ -14,9 +14,10 @@ import SyllableText, { isSyllableModeSupported } from "@/components/SyllableText
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useGamification } from "@/hooks/useGamification";
+import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
+import FablinoReaction from "@/components/FablinoReaction";
 import PageHeader from "@/components/PageHeader";
-import { Language } from "@/lib/translations";
+import { Language, getTranslations } from "@/lib/translations";
 
 // UI labels for word explanation popup in different languages
 const readingLabels: Record<string, {
@@ -199,7 +200,7 @@ const ReadingPage = () => {
   const { user } = useAuth();
   const { colors: paletteColors } = useColorPalette();
   const { selectedProfile, kidAppLanguage, kidExplanationLanguage } = useKidProfile();
-  const { awardStoryPoints, awardQuizPoints } = useGamification();
+  const { actions, pendingLevelUp, clearPendingLevelUp } = useGamification();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
@@ -253,9 +254,17 @@ const ReadingPage = () => {
   const [isGeneratingContinuation, setIsGeneratingContinuation] = useState(false);
   // System prompt for story generation
   const [customSystemPrompt, setCustomSystemPrompt] = useState("");
+  // Fablino feedback overlay
+  const [fablinoReaction, setFablinoReaction] = useState<{
+    type: 'celebrate' | 'encourage' | 'perfect';
+    message: string;
+    stars?: number;
+    autoClose?: number;
+  } | null>(null);
 
   // Get text language from story for UI labels and explanations
   const textLang = story?.text_language || 'fr';
+  const t = getTranslations(kidAppLanguage as Language);
 
   useEffect(() => {
     if (id) {
@@ -1249,28 +1258,27 @@ const ReadingPage = () => {
                   onSubmit={async () => {
                     setShowFeedbackDialog(false);
                     
-                    // Award points via gamification system (updates user_progress, point_transactions)
-                    const storyPoints = await awardStoryPoints(id!);
+                    // Award stars + mark story complete
+                    await actions.awardStars(STAR_REWARDS.STORY_READ, 'story_read');
+                    await actions.markStoryComplete(id!);
+                    await actions.checkAndUpdateStreak();
                     
                     // Also save to user_results for history/tracking
                     await supabase.from("user_results").insert({
                       activity_type: "story_completed",
                       reference_id: id,
                       difficulty: story?.difficulty || "medium",
-                      points_earned: storyPoints,
+                      points_earned: STAR_REWARDS.STORY_READ,
                       user_id: user?.id,
                       kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
                     });
                     
-                    const lang = story?.text_language || 'fr';
-                    toast.success(`${readingLabels[lang]?.storyCompleted || readingLabels.fr.storyCompleted} 🏆 (+${storyPoints} points)`);
-                    
-                    // Show quiz for bonus points if there are questions, otherwise navigate back
-                    if (hasQuestions) {
-                      setShowQuiz(true);
-                    } else {
-                      navigate("/stories");
-                    }
+                    // Show Fablino celebration
+                    setFablinoReaction({
+                      type: 'celebrate',
+                      message: t.fablinoStoryDone,
+                      stars: STAR_REWARDS.STORY_READ,
+                    });
                   }}
                   storyId={story.id}
                   storyTitle={story.title}
@@ -1300,22 +1308,52 @@ const ReadingPage = () => {
                       setQuizResult({ correctCount, totalCount });
                       setQuizCompleted(true);
                       
-                      // Award quiz points via gamification system (updates user_progress, point_transactions)
-                      const quizPoints = await awardQuizPoints(id!, correctCount, totalCount);
+                      // Calculate stars
+                      const isPerfect = correctCount === totalCount;
+                      const totalStars = correctCount * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
+                      
+                      // Award quiz stars
+                      if (totalStars > 0) {
+                        await actions.awardStars(totalStars, isPerfect ? 'quiz_perfect' : 'quiz_passed');
+                      }
                       
                       // Also save to user_results for history/tracking
-                      if (quizPoints > 0) {
+                      if (totalStars > 0) {
                         await supabase.from("user_results").insert({
                           activity_type: "quiz_completed",
                           reference_id: id,
                           difficulty: story?.difficulty || "medium",
-                          points_earned: quizPoints,
+                          points_earned: totalStars,
                           correct_answers: correctCount,
                           total_questions: totalCount,
                           user_id: user?.id,
                           kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
                         });
                       }
+
+                      // Show Fablino feedback
+                      if (isPerfect) {
+                        setFablinoReaction({
+                          type: 'perfect',
+                          message: t.fablinoQuizPerfect,
+                          stars: totalStars,
+                        });
+                      } else {
+                        setFablinoReaction({
+                          type: 'celebrate',
+                          message: t.fablinoQuizGood
+                            .replace('{correct}', String(correctCount))
+                            .replace('{total}', String(totalCount)),
+                          stars: totalStars,
+                        });
+                      }
+                    }}
+                    onWrongAnswer={() => {
+                      setFablinoReaction({
+                        type: 'encourage',
+                        message: t.fablinoEncourage,
+                        autoClose: 1500,
+                      });
                     }}
                   />
                 </div>
@@ -1463,6 +1501,39 @@ const ReadingPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Fablino Feedback Overlay */}
+      {fablinoReaction && (
+        <FablinoReaction
+          type={fablinoReaction.type}
+          message={fablinoReaction.message}
+          stars={fablinoReaction.stars}
+          autoClose={fablinoReaction.autoClose}
+          buttonLabel={t.continueButton}
+          onClose={() => {
+            const wasStoryDone = fablinoReaction.type === 'celebrate' && fablinoReaction.message === t.fablinoStoryDone;
+            setFablinoReaction(null);
+            // After story celebration: show quiz or go back
+            if (wasStoryDone) {
+              if (hasQuestions) {
+                setShowQuiz(true);
+              } else {
+                navigate("/stories");
+              }
+            }
+          }}
+        />
+      )}
+
+      {/* Level Up Overlay */}
+      {pendingLevelUp && (
+        <FablinoReaction
+          type="levelUp"
+          message={t.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
+          buttonLabel={t.continueButton}
+          onClose={clearPendingLevelUp}
+        />
+      )}
     </div>
   );
 };

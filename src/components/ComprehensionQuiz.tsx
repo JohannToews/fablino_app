@@ -89,9 +89,10 @@ interface ComprehensionQuizProps {
   storyDifficulty?: string;
   storyLanguage?: string;
   onComplete: (correctCount: number, totalCount: number) => void;
+  onWrongAnswer?: () => void;
 }
 
-const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage = "fr", onComplete }: ComprehensionQuizProps) => {
+const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage = "fr", onComplete, onWrongAnswer }: ComprehensionQuizProps) => {
   const t = quizLabels[storyLanguage] || quizLabels.fr;
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -133,6 +134,10 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
       correct: isCorrect,
       selectedAnswer: answer,
     }]);
+
+    if (!isCorrect && onWrongAnswer) {
+      onWrongAnswer();
+    }
   };
 
   const goToNextQuestion = () => {
