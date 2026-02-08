@@ -167,9 +167,21 @@ const Index = () => {
     setSelectedProfileId, 
     hasMultipleProfiles,
     kidAppLanguage,
+    isLoading,
   } = useKidProfile();
 
   const t = homeTranslations[kidAppLanguage] || homeTranslations.fr;
+
+  // Show nothing while loading to prevent flash of default content
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <Star className="h-12 w-12 text-primary animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   const displayImage = selectedProfile?.cover_image_url || heroImage;
   const childName = selectedProfile?.name;
