@@ -195,15 +195,15 @@ const Index = () => {
         </div>
 
         {/* ═══ BEREICH 2: Vier Kacheln (grid 2x2) ═══ */}
-        <div className="grid grid-cols-2 gap-3 md:gap-4 w-full">
+        <div className="grid grid-cols-2 gap-3 w-full">
           {/* Créer une histoire */}
           <Card
             onClick={() => navigate("/create-story")}
             className="cursor-pointer border-2 border-primary/30 hover:border-primary hover:shadow-lg transition-all group touch-manipulation"
           >
-            <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 text-center aspect-square">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-primary/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <Sparkles className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+            <CardContent className="flex items-center gap-3 p-3 md:p-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
               <h3 className="font-baloo font-bold text-sm md:text-base leading-tight">{t.createStory}</h3>
             </CardContent>
@@ -214,9 +214,9 @@ const Index = () => {
             onClick={() => navigate("/stories")}
             className="cursor-pointer border-2 border-sky-200 hover:border-sky-400 hover:shadow-lg transition-all group touch-manipulation"
           >
-            <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 text-center aspect-square">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-sky-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <BookOpen className="h-6 w-6 md:h-7 md:w-7 text-sky-600" />
+            <CardContent className="flex items-center gap-3 p-3 md:p-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-sky-600" />
               </div>
               <h3 className="font-baloo font-bold text-sm md:text-base leading-tight">{t.readStory}</h3>
             </CardContent>
@@ -227,9 +227,9 @@ const Index = () => {
             onClick={() => navigate("/quiz")}
             className="cursor-pointer border-2 border-emerald-200 hover:border-emerald-400 hover:shadow-lg transition-all group touch-manipulation"
           >
-            <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 text-center aspect-square">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-emerald-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <HelpCircle className="h-6 w-6 md:h-7 md:w-7 text-emerald-600" />
+            <CardContent className="flex items-center gap-3 p-3 md:p-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <HelpCircle className="h-5 w-5 md:h-6 md:w-6 text-emerald-600" />
               </div>
               <h3 className="font-baloo font-bold text-sm md:text-base leading-tight">{t.wordQuiz}</h3>
             </CardContent>
@@ -240,9 +240,9 @@ const Index = () => {
             onClick={() => navigate("/sticker-buch")}
             className="cursor-pointer border-2 border-amber-200 hover:border-amber-400 hover:shadow-lg transition-all group touch-manipulation"
           >
-            <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 text-center aspect-square">
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-amber-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                <span className="text-xl md:text-2xl">📖</span>
+            <CardContent className="flex items-center gap-3 p-3 md:p-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <span className="text-lg md:text-xl">📖</span>
               </div>
               <h3 className="font-baloo font-bold text-sm md:text-base leading-tight">{t.stickerBook}</h3>
             </CardContent>
