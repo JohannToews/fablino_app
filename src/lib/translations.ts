@@ -251,6 +251,40 @@ export interface Translations {
   parentSettingsSaved: string;
   parentSettingsSaveError: string;
   noKidProfileSelected: string;
+
+  // Level titles
+  levelBuecherfuchs: string;
+  levelGeschichtenentdecker: string;
+  levelLeseheld: string;
+  levelWortmagier: string;
+  levelFablinoMeister: string;
+
+  // Fablino messages
+  fablinoWelcome: string;
+  fablinoStreak: string;
+  fablinoStoryDone: string;
+  fablinoQuizPerfect: string;
+  fablinoQuizGood: string;
+  fablinoEncourage: string;
+  fablinoNewSticker: string;
+  fablinoLevelUp: string;
+  fablinoWordLearned: string;
+  fablinoWordsCount: string;
+  fablinoWelcomeBack: string;
+  fablinoAlreadyRead: string;
+
+  // Pages (StickerBook, MyWords)
+  stickerBook: string;
+  myWords: string;
+  storiesCollected: string;
+  wordsKnown: string;
+  stillLearning: string;
+  nextStory: string;
+
+  // Gamification UI
+  stars: string;
+  streak: string;
+  continueButton: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -475,6 +509,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: 'Einstellungen gespeichert!',
     parentSettingsSaveError: 'Fehler beim Speichern',
     noKidProfileSelected: 'Bitte wähle zuerst ein Kinderprofil',
+    levelBuecherfuchs: 'Bücherfuchs',
+    levelGeschichtenentdecker: 'Geschichtenentdecker',
+    levelLeseheld: 'Leseheld',
+    levelWortmagier: 'Wortmagier',
+    levelFablinoMeister: 'Fablino-Meister',
+    fablinoWelcome: 'Hallo {name}! Lust auf eine Geschichte?',
+    fablinoStreak: 'Tag {days}! Weiter so, {name}!',
+    fablinoStoryDone: 'Toll gemacht!',
+    fablinoQuizPerfect: 'WOW! Alles richtig!',
+    fablinoQuizGood: 'Super! {correct} von {total} richtig!',
+    fablinoEncourage: 'Fast! Versuch\'s nochmal.',
+    fablinoNewSticker: 'Ein neuer Sticker für dein Buch!',
+    fablinoLevelUp: 'Du bist jetzt ein {title}!',
+    fablinoWordLearned: 'Neues Wort gelernt!',
+    fablinoWordsCount: 'Du kennst schon {count} Wörter!',
+    fablinoWelcomeBack: 'Schön dass du wieder da bist, {name}!',
+    fablinoAlreadyRead: 'Du hast heute schon gelesen – toll! Noch eine?',
+    stickerBook: 'Mein Sticker-Buch',
+    myWords: 'Meine Wörter',
+    storiesCollected: '{count} Geschichten gesammelt',
+    wordsKnown: 'Du kennst schon {count} Wörter!',
+    stillLearning: 'Noch am Lernen',
+    nextStory: 'Deine nächste Geschichte',
+    stars: 'Sterne',
+    streak: 'Tage',
+    continueButton: 'Weiter',
   },
   
   en: {
@@ -698,6 +758,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: 'Settings saved!',
     parentSettingsSaveError: 'Error saving settings',
     noKidProfileSelected: 'Please select a child profile first',
+    levelBuecherfuchs: 'Book Fox',
+    levelGeschichtenentdecker: 'Story Explorer',
+    levelLeseheld: 'Reading Hero',
+    levelWortmagier: 'Word Wizard',
+    levelFablinoMeister: 'Fablino Master',
+    fablinoWelcome: 'Hi {name}! Ready for a story?',
+    fablinoStreak: 'Day {days}! Keep it up, {name}!',
+    fablinoStoryDone: 'Well done!',
+    fablinoQuizPerfect: 'WOW! All correct!',
+    fablinoQuizGood: 'Great! {correct} out of {total} right!',
+    fablinoEncourage: 'Almost! Try again.',
+    fablinoNewSticker: 'A new sticker for your book!',
+    fablinoLevelUp: 'You are now a {title}!',
+    fablinoWordLearned: 'New word learned!',
+    fablinoWordsCount: 'You already know {count} words!',
+    fablinoWelcomeBack: 'Great to see you again, {name}!',
+    fablinoAlreadyRead: 'You already read today – awesome! Another one?',
+    stickerBook: 'My Sticker Book',
+    myWords: 'My Words',
+    storiesCollected: '{count} stories collected',
+    wordsKnown: 'You already know {count} words!',
+    stillLearning: 'Still learning',
+    nextStory: 'Your next story',
+    stars: 'Stars',
+    streak: 'Days',
+    continueButton: 'Continue',
   },
   
   fr: {
@@ -921,6 +1007,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: 'Paramètres sauvegardés !',
     parentSettingsSaveError: 'Erreur lors de la sauvegarde',
     noKidProfileSelected: 'Veuillez d\'abord sélectionner un profil enfant',
+    levelBuecherfuchs: 'Renard lecteur',
+    levelGeschichtenentdecker: 'Explorateur d\'histoires',
+    levelLeseheld: 'Héros de lecture',
+    levelWortmagier: 'Magicien des mots',
+    levelFablinoMeister: 'Maître Fablino',
+    fablinoWelcome: 'Salut {name} ! Envie d\'une histoire ?',
+    fablinoStreak: 'Jour {days} ! Continue comme ça, {name} !',
+    fablinoStoryDone: 'Bravo !',
+    fablinoQuizPerfect: 'OUAH ! Tout juste !',
+    fablinoQuizGood: 'Super ! {correct} sur {total} correct !',
+    fablinoEncourage: 'Presque ! Réessaie.',
+    fablinoNewSticker: 'Un nouveau sticker pour ton album !',
+    fablinoLevelUp: 'Tu es maintenant un {title} !',
+    fablinoWordLearned: 'Nouveau mot appris !',
+    fablinoWordsCount: 'Tu connais déjà {count} mots !',
+    fablinoWelcomeBack: 'Content de te revoir, {name} !',
+    fablinoAlreadyRead: 'Tu as déjà lu aujourd\'hui – super ! Encore une ?',
+    stickerBook: 'Mon album de stickers',
+    myWords: 'Mes mots',
+    storiesCollected: '{count} histoires collectionnées',
+    wordsKnown: 'Tu connais déjà {count} mots !',
+    stillLearning: 'En cours d\'apprentissage',
+    nextStory: 'Ta prochaine histoire',
+    stars: 'Étoiles',
+    streak: 'Jours',
+    continueButton: 'Continuer',
   },
   
   es: {
@@ -1144,6 +1256,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: '¡Configuración guardada!',
     parentSettingsSaveError: 'Error al guardar',
     noKidProfileSelected: 'Primero selecciona un perfil de niño',
+    levelBuecherfuchs: 'Zorro lector',
+    levelGeschichtenentdecker: 'Explorador de historias',
+    levelLeseheld: 'Héroe de lectura',
+    levelWortmagier: 'Mago de palabras',
+    levelFablinoMeister: 'Maestro Fablino',
+    fablinoWelcome: '¡Hola {name}! ¿Listo para una historia?',
+    fablinoStreak: '¡Día {days}! ¡Sigue así, {name}!',
+    fablinoStoryDone: '¡Muy bien!',
+    fablinoQuizPerfect: '¡GUAU! ¡Todo correcto!',
+    fablinoQuizGood: '¡Genial! {correct} de {total} correctas!',
+    fablinoEncourage: '¡Casi! Inténtalo de nuevo.',
+    fablinoNewSticker: '¡Un nuevo sticker para tu álbum!',
+    fablinoLevelUp: '¡Ahora eres un {title}!',
+    fablinoWordLearned: '¡Nueva palabra aprendida!',
+    fablinoWordsCount: '¡Ya conoces {count} palabras!',
+    fablinoWelcomeBack: '¡Qué bueno verte de nuevo, {name}!',
+    fablinoAlreadyRead: '¡Ya leíste hoy – genial! ¿Otra más?',
+    stickerBook: 'Mi álbum de stickers',
+    myWords: 'Mis palabras',
+    storiesCollected: '{count} historias coleccionadas',
+    wordsKnown: '¡Ya conoces {count} palabras!',
+    stillLearning: 'Aún aprendiendo',
+    nextStory: 'Tu próxima historia',
+    stars: 'Estrellas',
+    streak: 'Días',
+    continueButton: 'Continuar',
   },
   
   nl: {
@@ -1367,6 +1505,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: 'Instellingen opgeslagen!',
     parentSettingsSaveError: 'Fout bij opslaan',
     noKidProfileSelected: 'Selecteer eerst een kindprofiel',
+    levelBuecherfuchs: 'Boekenvos',
+    levelGeschichtenentdecker: 'Verhaalontdekker',
+    levelLeseheld: 'Leesheld',
+    levelWortmagier: 'Woordmagiër',
+    levelFablinoMeister: 'Fablino Meester',
+    fablinoWelcome: 'Hoi {name}! Zin in een verhaal?',
+    fablinoStreak: 'Dag {days}! Ga zo door, {name}!',
+    fablinoStoryDone: 'Goed gedaan!',
+    fablinoQuizPerfect: 'WAUW! Alles goed!',
+    fablinoQuizGood: 'Super! {correct} van {total} goed!',
+    fablinoEncourage: 'Bijna! Probeer opnieuw.',
+    fablinoNewSticker: 'Een nieuwe sticker voor je boek!',
+    fablinoLevelUp: 'Je bent nu een {title}!',
+    fablinoWordLearned: 'Nieuw woord geleerd!',
+    fablinoWordsCount: 'Je kent al {count} woorden!',
+    fablinoWelcomeBack: 'Leuk je weer te zien, {name}!',
+    fablinoAlreadyRead: 'Je hebt vandaag al gelezen – top! Nog een?',
+    stickerBook: 'Mijn stickerboek',
+    myWords: 'Mijn woorden',
+    storiesCollected: '{count} verhalen verzameld',
+    wordsKnown: 'Je kent al {count} woorden!',
+    stillLearning: 'Nog aan het leren',
+    nextStory: 'Je volgende verhaal',
+    stars: 'Sterren',
+    streak: 'Dagen',
+    continueButton: 'Verder',
   },
   
   it: {
@@ -1590,6 +1754,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: 'Impostazioni salvate!',
     parentSettingsSaveError: 'Errore durante il salvataggio',
     noKidProfileSelected: 'Seleziona prima un profilo bambino',
+    levelBuecherfuchs: 'Volpe dei libri',
+    levelGeschichtenentdecker: 'Esploratore di storie',
+    levelLeseheld: 'Eroe della lettura',
+    levelWortmagier: 'Mago delle parole',
+    levelFablinoMeister: 'Maestro Fablino',
+    fablinoWelcome: 'Ciao {name}! Voglia di una storia?',
+    fablinoStreak: 'Giorno {days}! Continua così, {name}!',
+    fablinoStoryDone: 'Ben fatto!',
+    fablinoQuizPerfect: 'WOW! Tutto giusto!',
+    fablinoQuizGood: 'Super! {correct} su {total} corrette!',
+    fablinoEncourage: 'Quasi! Riprova.',
+    fablinoNewSticker: 'Un nuovo sticker per il tuo album!',
+    fablinoLevelUp: 'Ora sei un {title}!',
+    fablinoWordLearned: 'Nuova parola imparata!',
+    fablinoWordsCount: 'Conosci già {count} parole!',
+    fablinoWelcomeBack: 'Bello rivederti, {name}!',
+    fablinoAlreadyRead: 'Hai già letto oggi – fantastico! Un\'altra?',
+    stickerBook: 'Il mio album di sticker',
+    myWords: 'Le mie parole',
+    storiesCollected: '{count} storie collezionate',
+    wordsKnown: 'Conosci già {count} parole!',
+    stillLearning: 'Ancora in fase di apprendimento',
+    nextStory: 'La tua prossima storia',
+    stars: 'Stelle',
+    streak: 'Giorni',
+    continueButton: 'Continua',
   },
   
   bs: {
@@ -1813,6 +2003,32 @@ const translations: Record<Language, Translations> = {
     parentSettingsSaved: 'Postavke sačuvane!',
     parentSettingsSaveError: 'Greška pri čuvanju',
     noKidProfileSelected: 'Prvo odaberite profil djeteta',
+    levelBuecherfuchs: 'Lisica čitačica',
+    levelGeschichtenentdecker: 'Istraživač priča',
+    levelLeseheld: 'Heroj čitanja',
+    levelWortmagier: 'Čarobnjak riječi',
+    levelFablinoMeister: 'Fablino majstor',
+    fablinoWelcome: 'Zdravo {name}! Želiš li priču?',
+    fablinoStreak: 'Dan {days}! Nastavi tako, {name}!',
+    fablinoStoryDone: 'Svaka čast!',
+    fablinoQuizPerfect: 'VAU! Sve tačno!',
+    fablinoQuizGood: 'Super! {correct} od {total} tačno!',
+    fablinoEncourage: 'Skoro! Pokušaj ponovo.',
+    fablinoNewSticker: 'Novi stiker za tvoj album!',
+    fablinoLevelUp: 'Sada si {title}!',
+    fablinoWordLearned: 'Nova riječ naučena!',
+    fablinoWordsCount: 'Već znaš {count} riječi!',
+    fablinoWelcomeBack: 'Lijepo te opet vidjeti, {name}!',
+    fablinoAlreadyRead: 'Već si čitao/la danas – super! Još jedna?',
+    stickerBook: 'Moj album stikera',
+    myWords: 'Moje riječi',
+    storiesCollected: '{count} priča sakupljeno',
+    wordsKnown: 'Već znaš {count} riječi!',
+    stillLearning: 'Još uvijek učim',
+    nextStory: 'Tvoja sljedeća priča',
+    stars: 'Zvjezdice',
+    streak: 'Dana',
+    continueButton: 'Dalje',
   },
 };
 
