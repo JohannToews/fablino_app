@@ -1212,14 +1212,66 @@ Wähle genau 10 Vokabelwörter aus.`;
 
       // [PERF] Response parsing - START
       const parseStart = Date.now();
-      // Parse the JSON from the response
+      // Parse the JSON from the response - with robust error handling
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error("Could not parse story JSON from:", content);
-        throw new Error("Could not parse story JSON");
+        console.error("Could not find JSON object in response:", content.substring(0, 500));
+        if (attempts < maxAttempts) {
+          console.log("Retrying story generation due to missing JSON...");
+          continue; // Try again
+        }
+        throw new Error("Could not parse story JSON - no JSON object found in response");
       }
 
-      story = JSON.parse(jsonMatch[0]);
+      // Try to parse JSON with error recovery for truncated responses
+      let jsonString = jsonMatch[0];
+      try {
+        story = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError instanceof Error ? parseError.message : parseError);
+        console.log("Attempting to fix truncated JSON...");
+        
+        // Try to fix common JSON issues:
+        // 1. Unclosed arrays/objects at the end
+        let fixedJson = jsonString;
+        
+        // Count open brackets to determine what's missing
+        const openBraces = (fixedJson.match(/\{/g) || []).length;
+        const closeBraces = (fixedJson.match(/\}/g) || []).length;
+        const openBrackets = (fixedJson.match(/\[/g) || []).length;
+        const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+        
+        // Try to close unclosed structures
+        if (openBrackets > closeBrackets) {
+          // Remove incomplete array element (everything after last comma or bracket)
+          fixedJson = fixedJson.replace(/,\s*[^,\[\]{}]*$/, '');
+          for (let i = 0; i < openBrackets - closeBrackets; i++) {
+            fixedJson += ']';
+          }
+        }
+        if (openBraces > closeBraces) {
+          // Remove incomplete object property
+          fixedJson = fixedJson.replace(/,\s*"[^"]*"?\s*:?\s*[^,{}]*$/, '');
+          for (let i = 0; i < openBraces - closeBraces; i++) {
+            fixedJson += '}';
+          }
+        }
+        
+        try {
+          story = JSON.parse(fixedJson);
+          console.log("Successfully fixed and parsed truncated JSON");
+        } catch (secondParseError) {
+          console.error("Failed to fix JSON:", secondParseError instanceof Error ? secondParseError.message : secondParseError);
+          console.log("Raw JSON (first 1000 chars):", jsonString.substring(0, 1000));
+          
+          if (attempts < maxAttempts) {
+            console.log("Retrying story generation due to JSON parse error...");
+            continue; // Try again
+          }
+          throw new Error(`Could not parse story JSON: ${parseError instanceof Error ? parseError.message : 'Parse error'}`);
+        }
+      }
+      
       const parseDuration = Date.now() - parseStart;
       perf.parsing = (perf.parsing || 0) + parseDuration;
       console.log(`[generate-story] [PERF] Response parsing: ${parseDuration}ms`);
