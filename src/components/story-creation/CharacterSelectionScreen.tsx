@@ -190,6 +190,8 @@ const CharacterSelectionScreen = ({
     else if (category === "friends") chars = friendChars;
     else if (category === "famous") chars = knownChars;
     
+    console.log('[renderSavedCheckboxes]', category, 'chars:', chars.length, chars);
+    
     if (chars.length === 0) {
       return (
         <p className="text-xs text-muted-foreground italic py-2 px-1">
