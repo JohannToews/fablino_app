@@ -1,37 +1,37 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getAuthenticatedUser } from '../_shared/auth.ts';
+import { getCorsHeaders, handleCorsOptions } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsOptions(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const { userId, email } = await req.json();
+    // Authentifiziere den Legacy-User
+    const { userId } = await getAuthenticatedUser(req);
+    const { email } = await req.json();
 
-    if (!userId || !email) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ success: false, error: 'User ID and email are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Email is required' }),
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate email format
+    // Validiere E-Mail-Format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid email format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Der userId ist bereits authentifiziert und validiert
 
     // 1. Get the user profile to retrieve the current password
     const { data: userProfile, error: profileError } = await supabase
@@ -44,19 +44,19 @@ Deno.serve(async (req) => {
       console.error('Error fetching user profile:', profileError);
       return new Response(
         JSON.stringify({ success: false, error: 'User profile not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if user is already migrated
+    // Prüfe ob User bereits migriert ist
     if (userProfile.auth_migrated && userProfile.auth_id) {
       return new Response(
         JSON.stringify({ success: false, error: 'User already migrated' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if email is already in use
+    // Prüfe ob E-Mail bereits in Verwendung ist
     const { data: existingEmail } = await supabase
       .from('user_profiles')
       .select('id')
@@ -67,18 +67,17 @@ Deno.serve(async (req) => {
     if (existingEmail) {
       return new Response(
         JSON.stringify({ success: false, error: 'Email already in use' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
-    // 2. Create Supabase Auth user with the existing password
-    // Since password_hash is stored as plain text, we can use it directly
+    // Erstelle Supabase Auth User mit bestehendem Klartext-Passwort
     const password = userProfile.password_hash;
     
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email,
       password: password,
-      email_confirm: true, // Auto-confirm since they're existing users
+      email_confirm: true,
       user_metadata: {
         display_name: userProfile.display_name,
         admin_language: userProfile.admin_language,
@@ -91,13 +90,13 @@ Deno.serve(async (req) => {
       console.error('Error creating auth user:', authError);
       return new Response(
         JSON.stringify({ success: false, error: authError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
     const authUserId = authData.user.id;
 
-    // 3. Update user_profiles with auth_id, email, and auth_migrated flag
+    // Aktualisiere user_profiles mit auth_id und auth_migrated flag
     const { error: updateProfileError } = await supabase
       .from('user_profiles')
       .update({
@@ -110,15 +109,14 @@ Deno.serve(async (req) => {
 
     if (updateProfileError) {
       console.error('Error updating user profile:', updateProfileError);
-      // Try to clean up the auth user we just created
       await supabase.auth.admin.deleteUser(authUserId);
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to update user profile' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
-    // 4. Update user_roles with auth_id
+    // Aktualisiere user_roles mit auth_id
     const { error: updateRoleError } = await supabase
       .from('user_roles')
       .update({
@@ -128,7 +126,6 @@ Deno.serve(async (req) => {
 
     if (updateRoleError) {
       console.error('Error updating user role (non-critical):', updateRoleError);
-      // This is non-critical, continue anyway
     }
 
     console.log(`Successfully migrated user ${userId} to Supabase Auth with email ${email}`);
@@ -138,16 +135,16 @@ Deno.serve(async (req) => {
         success: true, 
         message: 'User successfully migrated to Supabase Auth',
         authUserId: authUserId,
-        autoLogin: true, // Signal that the client should reload for auto-login
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Migration error:', error);
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
     return new Response(
-      JSON.stringify({ success: false, error: 'An unexpected error occurred' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: message }),
+      { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });

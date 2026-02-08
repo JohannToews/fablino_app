@@ -1,9 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+import { getAuthenticatedUser } from '../_shared/auth.ts';
+import { getCorsHeaders, handleCorsOptions } from '../_shared/cors.ts';
 
 // Helper: Build prompt from custom template or fallback
 function buildPromptFromTemplate(template: string, word: string, context?: string): string {
@@ -273,11 +270,19 @@ async function tryLovableGateway(prompt: string, apiKey: string): Promise<string
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsOptions(req);
+  if (corsResponse) return corsResponse;
 
   try {
+    // Optional: Authentifizierung wenn vorhanden (nicht zwingend für diese Function)
+    let userId: string | undefined;
+    try {
+      const { userId: authUserId } = await getAuthenticatedUser(req);
+      userId = authUserId;
+    } catch {
+      // Nicht authentifiziert – das ist OK für diese Function
+    }
+
     const { word, context, language = 'fr', explanationLanguage } = await req.json();
     
     // If explanationLanguage is provided, use it for the prompt language
@@ -287,7 +292,7 @@ Deno.serve(async (req) => {
     if (!word || typeof word !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Missing or invalid word parameter' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -299,7 +304,7 @@ Deno.serve(async (req) => {
     if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'No API keys configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -345,7 +350,7 @@ Deno.serve(async (req) => {
     if (!rawText) {
       return new Response(
         JSON.stringify({ error: 'AI service temporarily unavailable, please try again' }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 503, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -353,14 +358,14 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ explanation, correctedWord }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });

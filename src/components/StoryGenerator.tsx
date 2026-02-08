@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Wand2, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useEdgeFunctionHeaders } from "@/hooks/useEdgeFunctionHeaders";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface GeneratedQuestion {
@@ -53,6 +54,7 @@ interface StoryGeneratorProps {
 
 const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
   const { user } = useAuth();
+  const { getHeaders } = useEdgeFunctionHeaders();
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = useTranslations(adminLang);
   
@@ -134,6 +136,7 @@ const StoryGenerator = ({ onStoryGenerated }: StoryGeneratorProps) => {
           userId: user?.id,
           source: 'admin', // Admin/Lehrer Modus → CORE + ELTERN-MODUL
         },
+        headers: getHeaders(),
       });
 
       if (error) {
