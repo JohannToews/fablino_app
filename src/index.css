@@ -53,6 +53,8 @@
     --steel-blue: 205 60% 55%;
     --ice-blue: 200 70% 95%;
     --navy-dark: 220 50% 25%;
+    --button-green: 120 80% 45%;
+    --button-green-hover: 120 80% 38%;
 
     /* Shadows */
     --shadow-soft: 0 4px 20px -4px hsl(215 30% 18% / 0.1);

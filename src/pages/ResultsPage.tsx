@@ -457,11 +457,13 @@ const ResultsPage = () => {
       </div>
 
       {/* Level Up Modal */}
-      <LevelUpModal
-        level={pendingLevelUp}
-        onClose={clearPendingLevelUp}
-        language={kidAppLanguage}
-      />
+      {pendingLevelUp && (
+        <LevelUpModal
+          level={null}
+          onClose={clearPendingLevelUp}
+          language={kidAppLanguage}
+        />
+      )}
     </div>
   );
 };

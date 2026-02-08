@@ -67,6 +67,8 @@ export default {
         "steel-blue": "hsl(var(--steel-blue))",
         "ice-blue": "hsl(var(--ice-blue))",
         "navy-dark": "hsl(var(--navy-dark))",
+        "button-green": "hsl(var(--button-green))",
+        "button-green-hover": "hsl(var(--button-green-hover))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
