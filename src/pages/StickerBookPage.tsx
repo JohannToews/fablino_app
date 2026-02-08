@@ -47,7 +47,9 @@ const StickerBookPage = () => {
           .from('stories')
           .select('id, title, cover_image_url, text_type, created_at, completed')
           .eq('kid_profile_id', selectedProfileId)
-          .eq('generation_status', 'completed')
+          // Stories are currently marked as 'verified' after processing in the backend.
+          // We treat both 'completed' and 'verified' as finished stories.
+          .in('generation_status', ['completed', 'verified'])
           .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
