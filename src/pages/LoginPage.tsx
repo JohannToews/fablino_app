@@ -9,23 +9,26 @@ import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, Lock, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
+  
+  // Check if input looks like an email (for "Forgot password" link)
+  const isEmailInput = identifier.includes('@');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const trimmedEmail = email.trim();
+    const trimmedIdentifier = identifier.trim();
     const trimmedPassword = password.trim();
     
-    if (!trimmedEmail || !trimmedPassword) {
+    if (!trimmedIdentifier || !trimmedPassword) {
       toast({
         title: "Error",
-        description: "Bitte E-Mail und Passwort eingeben.",
+        description: "Bitte E-Mail/Benutzername und Passwort eingeben.",
         variant: "destructive",
       });
       return;
@@ -34,7 +37,7 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const result = await login(trimmedEmail, trimmedPassword);
+      const result = await login(trimmedIdentifier, trimmedPassword);
 
       if (result.success) {
         toast({
@@ -97,14 +100,14 @@ const LoginPage = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-lg font-medium text-foreground">
+              <Label htmlFor="identifier" className="text-lg font-medium text-foreground">
                 E-Mail oder Benutzername
               </Label>
               <Input
-                id="email"
+                id="identifier"
                 type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="E-Mail oder Benutzername"
                 className="text-lg h-12 border-2 border-primary/20 focus:border-primary"
                 autoComplete="username"
@@ -139,11 +142,28 @@ const LoginPage = () => {
                 </span>
               )}
             </Button>
+            
+            {/* Forgot password link - only show when email is entered */}
+            {isEmailInput && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors underline"
+                  onClick={() => {
+                    toast({
+                      title: "Passwort vergessen",
+                      description: "Bitte kontaktiere einen Administrator.",
+                    });
+                  }}
+                >
+                  Passwort vergessen?
+                </button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
     </div>
   );
 };
-
 export default LoginPage;

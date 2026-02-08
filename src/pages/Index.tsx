@@ -8,6 +8,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { Language } from "@/lib/translations";
 import heroImage from "@/assets/hero-reading.jpg";
 import ScanStoryButton from "@/components/story-sharing/ScanStoryButton";
+import MigrationBanner from "@/components/MigrationBanner";
 
 // Home page translations
 const homeTranslations: Record<Language, {
@@ -158,9 +159,9 @@ const homeTranslations: Record<Language, {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, needsMigration } = useAuth();
   const { colors: paletteColors } = useColorPalette();
-  const { 
+  const {
     kidProfiles, 
     selectedProfileId, 
     selectedProfile, 
@@ -196,6 +197,13 @@ const Index = () => {
       </div>
 
       <div className={`relative container max-w-4xl mx-auto px-4 ${hasMultipleProfiles ? 'py-4 md:py-6' : 'py-8 md:py-12'} flex flex-col items-center min-h-screen`}>
+        {/* Migration Banner for legacy users */}
+        {needsMigration && (
+          <div className="w-full mb-4">
+            <MigrationBanner language={kidAppLanguage} />
+          </div>
+        )}
+        
         {/* Top Right Icons */}
         <div className="absolute top-4 right-4 flex items-center gap-2">
           {/* Scan QR Button */}

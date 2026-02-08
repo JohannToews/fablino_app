@@ -80,6 +80,8 @@ Deno.serve(async (req) => {
           appLanguage: user.app_language,
           textLanguage: user.text_language,
           systemPrompt: user.system_prompt,
+          email: user.email || null,
+          authMigrated: user.auth_migrated || false,
           role: userRole
         }
       }),
