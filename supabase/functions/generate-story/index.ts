@@ -653,12 +653,25 @@ async function generateImageWithCache(
   return imageUrl;
 }
 
+// Performance tracking interface
+interface PerfMetrics {
+  storyLLM: number;
+  parsing: number;
+  consistency: number | 'skipped';
+  imagePromptBuild: number;
+  imageGeneration: number;
+  imageProvider: string;
+  dbSave: number;
+  total: number;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const startTime = Date.now();
+  const perf: Partial<PerfMetrics> = {};
 
   try {
     const { 
@@ -1045,8 +1058,16 @@ Wähle genau 10 Vokabelwörter aus.`;
         ? userPrompt 
         : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
+      // [PERF] Story LLM call - START
+      const llmStart = Date.now();
       const content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+      const llmDuration = Date.now() - llmStart;
+      perf.storyLLM = (perf.storyLLM || 0) + llmDuration;
+      console.log(`[generate-story] [PERF] Story LLM call: ${llmDuration}ms`);
+      // [PERF] Story LLM call - END
 
+      // [PERF] Response parsing - START
+      const parseStart = Date.now();
       // Parse the JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -1055,12 +1076,18 @@ Wähle genau 10 Vokabelwörter aus.`;
       }
 
       story = JSON.parse(jsonMatch[0]);
+      const parseDuration = Date.now() - parseStart;
+      perf.parsing = (perf.parsing || 0) + parseDuration;
+      console.log(`[generate-story] [PERF] Response parsing: ${parseDuration}ms`);
+      // [PERF] Response parsing - END
 
       // Quality check: Count words in the story content
       const wordCountActual = countWords(story.content);
       console.log(`Story word count: ${wordCountActual}, minimum required: ${minWordCount}`);
 
       if (wordCountActual >= minWordCount) {
+        console.log("Word count check PASSED");
+        break;
         console.log("Word count check PASSED");
         break;
       } else if (attempts < maxAttempts) {
@@ -1182,6 +1209,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     }
 
+    // [PERF] Image prompt build - START
+    const imagePromptStart = Date.now();
+    
     // Generate character description for image consistency
     let characterDescription = "";
     try {
@@ -1192,6 +1222,11 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     } catch (err) {
       console.error("Error generating character description:", err);
     }
+    
+    const imagePromptDuration = Date.now() - imagePromptStart;
+    perf.imagePromptBuild = imagePromptDuration;
+    console.log(`[generate-story] [PERF] Image prompt build: ${imagePromptDuration}ms`);
+    // [PERF] Image prompt build - END
 
     // Build cover image prompt
     const coverPrompt = `A captivating book cover illustration for a ${textType === "non-fiction" ? "non-fiction educational book" : "children's story"}. 
@@ -1264,13 +1299,20 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
     const storyImages: string[] = [];
 
     // Create parallel tasks
+    // [PERF] Consistency check timing
+    let consistencyStart = 0;
+    let consistencyDuration: number | 'skipped' = 'skipped';
+    
     const consistencyCheckTask = async () => {
       const consistencyCheckPrompt = await getConsistencyCheckPrompt(adminLanguage);
       
       if (!consistencyCheckPrompt) {
         console.log("No consistency check prompt configured, skipping check");
+        console.log(`[generate-story] [PERF] Consistency check: skipped`);
         return;
       }
+      
+      consistencyStart = Date.now();
       
       console.log("Starting consistency check...");
       const seriesContextForCheck = episodeNumber && episodeNumber > 1 && description
@@ -1332,20 +1374,44 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
       } catch (dbErr) {
         console.error("Error saving consistency check results:", dbErr);
       }
+      
+      consistencyDuration = Date.now() - consistencyStart;
+      console.log(`[generate-story] [PERF] Consistency check: ${consistencyDuration}ms`);
     };
 
+    // [PERF] Image generation timing
+    let imageGenStart = 0;
+    let imageProvider = 'none';
+    
     const coverImageTask = async () => {
       console.log("Generating cover image...");
-      coverImageBase64 = await generateImageWithCache(
-        supabase,
-        GEMINI_API_KEY,
-        LOVABLE_API_KEY,
-        coverPrompt
-      );
+      imageGenStart = Date.now();
+      
+      // Check cache first
+      const cachedCover = await getCachedImage(supabase, coverPrompt);
+      if (cachedCover) {
+        coverImageBase64 = cachedCover;
+        imageProvider = 'cache';
+        console.log("Cover image from cache");
+        return;
+      }
+      
+      // Try Gemini first
+      coverImageBase64 = await callGeminiImageAPI(GEMINI_API_KEY, coverPrompt);
       if (coverImageBase64) {
-        console.log("Cover image generated successfully");
+        imageProvider = 'gemini';
+        await cacheImage(supabase, coverPrompt, coverImageBase64);
+        console.log("Cover image generated successfully (Gemini)");
       } else {
-        console.log("Cover image generation failed");
+        // Fallback to Lovable Gateway
+        coverImageBase64 = await callLovableImageGenerate(LOVABLE_API_KEY, coverPrompt);
+        if (coverImageBase64) {
+          imageProvider = 'lovable-gateway';
+          await cacheImage(supabase, coverPrompt, coverImageBase64);
+          console.log("Cover image generated successfully (Lovable Gateway)");
+        } else {
+          console.log("Cover image generation failed");
+        }
       }
     };
 
@@ -1385,6 +1451,15 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
       }
     }
 
+    // [PERF] Image generation - END (covers all image work)
+    const imageGenDuration = imageGenStart > 0 ? Date.now() - imageGenStart : 0;
+    console.log(`[generate-story] [PERF] Image generation: ${imageGenDuration}ms (provider: ${imageProvider})`);
+    
+    // Update perf metrics
+    perf.consistency = consistencyDuration;
+    perf.imageGeneration = imageGenDuration;
+    perf.imageProvider = imageProvider;
+
     // ================== END PARALLEL EXECUTION ==================
 
     const totalTime = Date.now() - startTime;
@@ -1403,6 +1478,20 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
     console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
     console.log(`Structure classification: beginning=${structureBeginning}, middle=${structureMiddle}, ending=${structureEnding}`);
     console.log(`Emotional coloring: ${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}`);
+    
+    // [PERF] === SUMMARY ===
+    perf.storyLLM = perf.storyLLM || 0;
+    perf.parsing = perf.parsing || 0;
+    perf.imagePromptBuild = perf.imagePromptBuild || 0;
+    perf.total = totalTime;
+    
+    console.log(`[generate-story] [PERF] === SUMMARY ===`);
+    console.log(`[generate-story] [PERF]   Story LLM:        ${String(perf.storyLLM).padStart(6)}ms`);
+    console.log(`[generate-story] [PERF]   Parsing:          ${String(perf.parsing).padStart(6)}ms`);
+    console.log(`[generate-story] [PERF]   Consistency:      ${typeof perf.consistency === 'number' ? String(perf.consistency).padStart(6) + 'ms' : 'skipped'}`);
+    console.log(`[generate-story] [PERF]   Image prompt:     ${String(perf.imagePromptBuild).padStart(6)}ms`);
+    console.log(`[generate-story] [PERF]   Image generation: ${String(perf.imageGeneration || 0).padStart(6)}ms (provider: ${perf.imageProvider || 'none'})`);
+    console.log(`[generate-story] [PERF]   TOTAL:            ${String(perf.total).padStart(6)}ms`);
 
     return new Response(JSON.stringify({
       ...story,
