@@ -743,40 +743,39 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{t.schoolSystem}</Label>
-                <Select value={currentProfile.school_system} onValueChange={handleSchoolSystemChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(schoolSystems).map(([key, system]) => (
-                      <SelectItem key={key} value={key}>
-                        {system.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{t.schoolClass}</Label>
-                <Select 
-                  value={currentProfile.school_class} 
-                  onValueChange={(value) => updateCurrentProfile({ school_class: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableClasses.map((cls) => (
-                      <SelectItem key={cls} value={cls}>
-                        {cls}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+               <div className="space-y-2">
+                 <Label>Schule</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                   <Select value={currentProfile.school_system} onValueChange={handleSchoolSystemChange}>
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {Object.entries(schoolSystems).map(([key, system]) => (
+                         <SelectItem key={key} value={key}>
+                           {system.name}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                   <Select 
+                     value={currentProfile.school_class} 
+                     onValueChange={(value) => updateCurrentProfile({ school_class: value })}
+                   >
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {availableClasses.map((cls) => (
+                         <SelectItem key={cls} value={cls}>
+                           {cls}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+               </div>
+             </div>
 
             <div className="space-y-2">
               <Label htmlFor="hobbies">{t.hobbies}</Label>
