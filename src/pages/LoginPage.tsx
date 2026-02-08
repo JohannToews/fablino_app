@@ -98,16 +98,16 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-lg font-medium text-foreground">
-                E-Mail
+                E-Mail oder Benutzername
               </Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="deine@email.com"
+                placeholder="E-Mail oder Benutzername"
                 className="text-lg h-12 border-2 border-primary/20 focus:border-primary"
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">

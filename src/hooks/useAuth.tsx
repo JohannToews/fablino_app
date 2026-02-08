@@ -113,7 +113,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  // Login via Supabase Auth (email/password)
+  const loginWithEmail = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -127,11 +128,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.user) {
         const profile = await fetchUserProfile(data.user);
         if (!profile) {
-          // User exists in auth but not in user_profiles - this shouldn't happen normally
           await supabase.auth.signOut();
           return { success: false, error: 'Benutzerprofil nicht gefunden' };
         }
-        // Set state immediately before returning success
         setSession(data.session);
         setUser(profile);
         return { success: true };
@@ -139,8 +138,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       return { success: false, error: 'Login fehlgeschlagen' };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Email login error:', error);
       return { success: false, error: 'Ein Fehler ist aufgetreten' };
+    }
+  };
+
+  // Login via simple username/password (legacy approach)
+  const loginWithUsername = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-login', {
+        body: { username, password }
+      });
+
+      if (error) {
+        console.error('Username login error:', error);
+        return { success: false, error: 'Login fehlgeschlagen' };
+      }
+
+      if (data?.success && data?.user) {
+        // Create a mock session for simple login
+        const mockSession = {
+          access_token: data.token || 'simple-auth-token',
+          refresh_token: '',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: { id: data.user.id } as any
+        } as Session;
+        
+        setSession(mockSession);
+        setUser({
+          id: data.user.id,
+          username: data.user.username,
+          displayName: data.user.displayName,
+          adminLanguage: data.user.adminLanguage,
+          appLanguage: data.user.appLanguage,
+          textLanguage: data.user.textLanguage,
+          systemPrompt: data.user.systemPrompt,
+          role: data.user.role || 'standard',
+        });
+        return { success: true };
+      }
+
+      return { success: false, error: data?.error || 'Ungültige Anmeldedaten' };
+    } catch (error) {
+      console.error('Username login error:', error);
+      return { success: false, error: 'Ein Fehler ist aufgetreten' };
+    }
+  };
+
+  // Dual login: detect email vs username
+  const login = async (identifier: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const isEmail = identifier.includes('@');
+    
+    if (isEmail) {
+      return loginWithEmail(identifier, password);
+    } else {
+      return loginWithUsername(identifier, password);
     }
   };
 
