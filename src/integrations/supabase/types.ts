@@ -1137,6 +1137,7 @@ export type Database = {
         Row: {
           admin_language: string
           app_language: string
+          auth_id: string | null
           created_at: string
           display_name: string
           id: string
@@ -1149,6 +1150,7 @@ export type Database = {
         Insert: {
           admin_language?: string
           app_language?: string
+          auth_id?: string | null
           created_at?: string
           display_name: string
           id?: string
@@ -1161,6 +1163,7 @@ export type Database = {
         Update: {
           admin_language?: string
           app_language?: string
+          auth_id?: string | null
           created_at?: string
           display_name?: string
           id?: string
