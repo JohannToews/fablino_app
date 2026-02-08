@@ -1,28 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useGamification } from "@/hooks/useGamification";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import { getTranslations } from "@/lib/translations";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Star } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Plus, Star } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface Story {
   id: string;
   title: string;
   cover_image_url: string | null;
-  text_type: string | null;
   created_at: string;
-  completed: boolean | null;
 }
 
 const StickerBookPage = () => {
   const navigate = useNavigate();
   const { selectedProfileId, kidAppLanguage, isLoading: isProfilesLoading } = useKidProfile();
-  const { state: gamification } = useGamification();
-  const { colors } = useColorPalette();
   const t = getTranslations(kidAppLanguage);
 
   const [stories, setStories] = useState<Story[]>([]);
@@ -30,8 +23,6 @@ const StickerBookPage = () => {
 
   useEffect(() => {
     const loadStories = async () => {
-      // Wait until profiles are loaded; otherwise selectedProfileId can be null
-      // and we'd get stuck on the loading screen.
       if (isProfilesLoading) return;
 
       if (!selectedProfileId) {
@@ -45,11 +36,10 @@ const StickerBookPage = () => {
       try {
         const { data, error } = await supabase
           .from('stories')
-          .select('id, title, cover_image_url, text_type, created_at, completed')
+          .select('id, title, cover_image_url, created_at')
           .eq('kid_profile_id', selectedProfileId)
-          // Stories are currently marked as 'verified' after processing in the backend.
-          // We treat both 'completed' and 'verified' as finished stories.
           .in('generation_status', ['completed', 'verified'])
+          .eq('completed', true)
           .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
@@ -65,48 +55,110 @@ const StickerBookPage = () => {
     loadStories();
   }, [selectedProfileId, isProfilesLoading]);
 
-  const completedStories = stories.filter(s => s.completed);
-  
-  // Always show 3 empty placeholders after the last sticker
-  const emptySlots = 3;
-  
-  // Show empty state when no completed stories exist
-  const showEmptyState = completedStories.length === 0;
+  // Calculate grid slots - fill current row + one extra row
+  const { totalSlots, emptySlots, nextGoal, progressPercent } = useMemo(() => {
+    const count = stories.length;
+    const cols = 3; // mobile default, but we calculate for worst case
+    
+    // Round up to next 5 for the goal
+    const goal = count === 0 ? 5 : Math.ceil((count + 1) / 5) * 5;
+    
+    // Calculate slots: fill to complete rows + 1 extra row
+    const currentRowEnd = Math.ceil(count / cols) * cols;
+    const total = Math.max(currentRowEnd + cols, cols * 2); // minimum 2 rows
+    const empty = total - count;
+    
+    const percent = count === 0 ? 0 : Math.min((count / goal) * 100, 100);
+    
+    return { totalSlots: total, emptySlots: empty, nextGoal: goal, progressPercent: percent };
+  }, [stories.length]);
+
+  // Rotation patterns for stickers
+  const getRotation = (index: number) => {
+    const rotations = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', 'rotate-0'];
+    return rotations[index % rotations.length];
+  };
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${colors.bg} flex items-center justify-center`}>
-        <Star className="h-12 w-12 text-primary animate-pulse" />
+      <div className="min-h-screen bg-amber-50/50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Star className="h-10 w-10 text-amber-500 animate-pulse" />
+          <p className="text-amber-700 font-medium">{t.loading || "Laden..."}</p>
+        </div>
       </div>
     );
   }
 
+  const showEmptyState = stories.length === 0;
+
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${colors.bg} pb-safe`}>
+    <div className="min-h-screen bg-amber-50/50 pb-safe">
+      {/* Subtle grid texture overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-30"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(217, 119, 6, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(217, 119, 6, 0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '24px 24px'
+        }}
+      />
+
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="flex items-center justify-between p-4">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+      <header className="sticky top-0 z-10 bg-amber-50/95 backdrop-blur-sm border-b border-amber-200">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 text-amber-700 hover:text-amber-900 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
 
-          <h1 className="text-xl font-baloo font-bold text-foreground">
-            {t.stickerBook}
-          </h1>
+            <h1 className="text-xl font-baloo font-bold text-amber-900">
+              {t.stickerBook}
+            </h1>
 
-          <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full">
-            <Star className="h-4 w-4 text-primary fill-primary" />
-            <span className="font-bold text-primary text-sm">
-              {gamification?.stars || 0}
-            </span>
+            <div className="w-10" /> {/* Spacer for centering */}
           </div>
+
+          {/* Fablino + Message + Progress */}
+          {!showEmptyState && (
+            <div className="flex items-start gap-3">
+              <img
+                src="/mascot/1_happy_success.png"
+                alt="Fablino"
+                className="w-16 h-16 object-contain flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-amber-100 relative">
+                  {/* Speech bubble tail */}
+                  <div className="absolute left-0 top-4 -translate-x-2 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white" />
+                  <p className="text-sm font-medium text-amber-800">
+                    {t.storiesCollected?.replace('{count}', String(stories.length)) || 
+                      `${stories.length} Geschichten gesammelt! Weiter so!`}
+                  </p>
+                </div>
+                
+                {/* Progress bar */}
+                <div className="mt-2 flex items-center gap-2">
+                  <Progress 
+                    value={progressPercent} 
+                    className="h-3 flex-1 bg-amber-200"
+                  />
+                  <span className="text-xs font-bold text-amber-700 whitespace-nowrap">
+                    {stories.length} / {nextGoal}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="p-4 max-w-4xl mx-auto">
+      <main className="p-4 max-w-2xl mx-auto relative">
         {/* Empty State */}
         {showEmptyState ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -115,110 +167,115 @@ const StickerBookPage = () => {
               alt="Fablino"
               className="w-32 h-32 object-contain mb-6"
             />
-            <h2 className="text-xl font-baloo font-bold text-foreground mb-2">
+            <h2 className="text-xl font-baloo font-bold text-amber-900 mb-2">
               {t.stickerBook}
             </h2>
-            <p className="text-muted-foreground mb-6 max-w-xs">
+            <p className="text-amber-700 mb-6 max-w-xs">
               {t.fablinoEncourage}
             </p>
-            <Button
+            <button
               onClick={() => navigate('/create-story')}
-              className="btn-primary-kid"
+              className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
             >
               {t.createStory}
-            </Button>
+            </button>
           </div>
         ) : (
-          <>
-            {/* Fablino Message */}
-            <div className="flex items-center gap-3 mb-6 p-3 bg-card rounded-xl border border-border">
-              <img
-                src="/mascot/1_happy_success.png"
-                alt="Fablino"
-                className="w-10 h-10 object-contain flex-shrink-0"
-              />
-              <p className="text-sm font-medium text-foreground">
-                {completedStories.length > 0
-                  ? t.storiesCollected.replace('{count}', String(completedStories.length))
-                  : t.fablinoEncourage}
-              </p>
-            </div>
-
-            {/* Sticker Grid */}
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mb-6">
-              {/* Completed Stories */}
-              {completedStories.map((story) => (
-                <button
-                  key={story.id}
-                  onClick={() => navigate(`/read/${story.id}`)}
-                  className="group relative aspect-square"
-                >
-                  <Card className="h-full w-full overflow-hidden border-2 border-border hover:border-primary/50 transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg">
-                    {story.cover_image_url ? (
-                      <img
-                        src={story.cover_image_url}
-                        alt={story.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                        <span className="text-3xl">📖</span>
-                      </div>
-                    )}
-                    {/* Star Badge */}
-                    <div className="absolute top-1 right-1 bg-primary rounded-full p-1">
-                      <Star className="h-3 w-3 text-primary-foreground fill-primary-foreground" />
-                    </div>
-                  </Card>
-                  <p className="mt-1.5 text-xs font-medium text-center text-foreground line-clamp-2 leading-tight">
-                    {story.title}
-                  </p>
-                </button>
-              ))}
-
-              {/* Empty Slots */}
-              {Array.from({ length: emptySlots }).map((_, index) => (
-                index === 0 ? (
-                  // First empty slot is clickable
-                  <button
-                    key={`empty-${index}`}
-                    onClick={() => navigate('/create-story')}
-                    className="group relative aspect-square"
-                  >
-                    <Card className="h-full w-full bg-muted border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-all duration-200 group-hover:scale-105 flex flex-col items-center justify-center gap-1 p-2">
-                      <span className="text-2xl">✨</span>
-                      <span className="text-[10px] text-muted-foreground text-center leading-tight">
-                        {t.nextStory}
-                      </span>
-                    </Card>
-                    <p className="mt-1.5 text-xs font-medium text-center text-muted-foreground line-clamp-2 leading-tight">
-                      {t.nextStory}
-                    </p>
-                  </button>
-                ) : (
-                  // Other empty slots are not clickable
-                  <div key={`empty-${index}`} className="relative aspect-square">
-                    <Card className="h-full w-full bg-muted border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
-                      <span className="text-3xl text-muted-foreground/40">?</span>
-                    </Card>
-                  </div>
-                )
-              ))}
-            </div>
-
-            {/* CTA Button - only show if there's at least 1 completed story */}
-            {completedStories.length > 0 && (
-              <Button
-                onClick={() => navigate('/create-story')}
-                className="w-full btn-primary-kid flex items-center justify-center gap-2"
+          /* Sticker Grid */
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+            {/* Completed Stickers */}
+            {stories.map((story, index) => (
+              <button
+                key={story.id}
+                onClick={() => navigate(`/read/${story.id}`)}
+                className="group flex flex-col items-center"
+                style={{
+                  animation: `stickerReveal 300ms ease-out ${index * 80}ms both`
+                }}
               >
-                <span>✨</span>
-                {t.createStory}
-              </Button>
-            )}
-          </>
+                <div 
+                  className={`
+                    relative aspect-square w-full p-1.5 bg-white rounded-xl shadow-md
+                    transition-all duration-200 
+                    group-hover:scale-105 group-hover:shadow-lg
+                    ${getRotation(index)}
+                  `}
+                >
+                  {story.cover_image_url ? (
+                    <img
+                      src={story.cover_image_url}
+                      alt={story.title}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
+                      <span className="text-4xl">📖</span>
+                    </div>
+                  )}
+                  
+                  {/* Star badge */}
+                  <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-1 shadow-sm">
+                    <Star className="h-3 w-3 text-white fill-white" />
+                  </div>
+                </div>
+                
+                <p className="mt-2 text-xs font-medium text-center text-amber-900 line-clamp-2 leading-tight max-w-full px-1">
+                  {story.title}
+                </p>
+              </button>
+            ))}
+
+            {/* Empty Slots */}
+            {Array.from({ length: emptySlots }).map((_, index) => (
+              index === 0 ? (
+                /* First empty slot - clickable "next story" */
+                <button
+                  key={`empty-${index}`}
+                  onClick={() => navigate('/create-story')}
+                  className="group flex flex-col items-center"
+                  style={{
+                    animation: `stickerReveal 300ms ease-out ${(stories.length + index) * 80}ms both`
+                  }}
+                >
+                  <div className="aspect-square w-full border-2 border-dashed border-amber-400 bg-amber-100/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all group-hover:bg-amber-200/50 group-hover:border-amber-500 group-hover:scale-105">
+                    <Plus className="h-8 w-8 text-amber-500" />
+                    <span className="text-[10px] font-medium text-amber-600 text-center px-1 leading-tight">
+                      {t.nextStory || "Nächste Geschichte"}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                /* Other empty slots */
+                <div 
+                  key={`empty-${index}`} 
+                  className="flex flex-col items-center"
+                  style={{
+                    animation: `stickerReveal 300ms ease-out ${(stories.length + index) * 80}ms both`
+                  }}
+                >
+                  <div className="aspect-square w-full border-2 border-dashed border-amber-300 bg-amber-100/50 rounded-xl flex items-center justify-center">
+                    <span className="text-4xl font-bold text-amber-300">?</span>
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
         )}
       </main>
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes stickerReveal {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 };
