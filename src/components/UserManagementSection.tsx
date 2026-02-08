@@ -29,7 +29,7 @@ interface UserManagementSectionProps {
 
 const UserManagementSection = ({ language, currentUserId }: UserManagementSectionProps) => {
   const t = useTranslations(language);
-  const { user: currentUser, login } = useAuth();
+  const { user: currentUser, refreshUserProfile } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -153,14 +153,9 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
         } : u
       ));
 
-      // If this is the current user, update their session
-      if (userId === currentUserId && currentUser) {
-        const updatedUser = { 
-          ...currentUser, 
-          ...(langType === 'admin' ? { adminLanguage: newLang } : { appLanguage: newLang })
-        };
-        const token = sessionStorage.getItem('liremagie_session') || '';
-        login(token, updatedUser);
+      // If this is the current user, refresh their profile
+      if (userId === currentUserId) {
+        await refreshUserProfile();
       }
 
       toast.success(
