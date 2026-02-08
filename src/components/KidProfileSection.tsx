@@ -377,35 +377,65 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       for (const otherKid of allKidProfiles || []) {
         if (otherKid.id === currentProfile.id) continue;
 
-        // For siblings: add the CURRENT PROFILE as sibling to otherKid, not the new character
-        // This way, if Mateo adds "Mikel" as brother, Mikel's profile gets "Mateo" as sibling
         if (isSiblingRelation) {
-          // Determine current profile's sibling relation (based on gender)
-          const currentGender = currentProfile.gender;
-          const currentSiblingRelation = currentGender === 'female' ? 'Schwester' : 'Bruder';
+          // Smart sibling sync:
+          // - If otherKid IS the sibling being added (name match): add currentProfile to them
+          // - Otherwise: add the new sibling to them too
           
-          // Check if current profile already exists as sibling in otherKid's characters
-          const { data: existing } = await supabase
-            .from('kid_characters')
-            .select('id')
-            .eq('kid_profile_id', otherKid.id)
-            .eq('name', currentProfile.name)
-            .eq('role', 'family')
-            .in('relation', ['Bruder', 'Schwester'])
-            .eq('is_active', true)
-            .maybeSingle();
+          const isTheSiblingBeingAdded = otherKid.name.toLowerCase() === charName.trim().toLowerCase();
+          
+          if (isTheSiblingBeingAdded) {
+            // This profile IS the sibling we're adding - give them the current profile as sibling
+            const currentGender = currentProfile.gender;
+            const currentSiblingRelation = currentGender === 'female' ? 'Schwester' : 'Bruder';
+            
+            const { data: existing } = await supabase
+              .from('kid_characters')
+              .select('id')
+              .eq('kid_profile_id', otherKid.id)
+              .eq('name', currentProfile.name)
+              .eq('role', 'family')
+              .in('relation', ['Bruder', 'Schwester'])
+              .eq('is_active', true)
+              .maybeSingle();
 
-          if (!existing) {
-            await supabase.from('kid_characters').insert({
-              kid_profile_id: otherKid.id,
-              name: currentProfile.name,
-              role: 'family',
-              relation: currentSiblingRelation,
-              age: currentProfile.age || null,
-              description: null,
-              is_active: true,
-              sort_order: 0,
-            } as any);
+            if (!existing) {
+              await supabase.from('kid_characters').insert({
+                kid_profile_id: otherKid.id,
+                name: currentProfile.name,
+                role: 'family',
+                relation: currentSiblingRelation,
+                age: currentProfile.age || null,
+                description: null,
+                is_active: true,
+                sort_order: 0,
+              } as any);
+            }
+          } else {
+            // This is another sibling (e.g., Marie when Peter adds Paul)
+            // Add the new sibling to them too
+            const { data: existing } = await supabase
+              .from('kid_characters')
+              .select('id')
+              .eq('kid_profile_id', otherKid.id)
+              .eq('name', charName.trim())
+              .eq('role', 'family')
+              .in('relation', ['Bruder', 'Schwester'])
+              .eq('is_active', true)
+              .maybeSingle();
+
+            if (!existing) {
+              await supabase.from('kid_characters').insert({
+                kid_profile_id: otherKid.id,
+                name: charName.trim(),
+                role: 'family',
+                relation: charRelation || null,
+                age: charAge ? parseInt(charAge) : null,
+                description: null,
+                is_active: true,
+                sort_order: 0,
+              } as any);
+            }
           }
         } else {
           // For non-sibling family members (Mama, Papa, Oma, Opa, etc.), sync the same character
