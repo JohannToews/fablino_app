@@ -398,18 +398,21 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Main System Prompt */}
+      {/* Main System Prompt - CORE SLIM (AKTIV) */}
       <Collapsible open={openSections.system} onOpenChange={() => toggleSection('system')}>
-        <Card className="border-2 border-primary/30">
+        <Card className="border-2 border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20">
           <CollapsibleTrigger asChild>
             <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-lg">
                   {openSections.system ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  <FileText className="h-5 w-5 text-primary" />
-                  {language === 'de' ? 'System-Prompt' : 
-                   language === 'fr' ? 'Prompt Système' : 
-                   'System Prompt'}
+                  <FileText className="h-5 w-5 text-emerald-500" />
+                  {language === 'de' ? 'CORE SLIM System-Prompt' : 
+                   language === 'fr' ? 'Prompt Système CORE SLIM' : 
+                   'CORE SLIM System Prompt'}
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-emerald-500 text-white rounded-full">
+                    AKTIV
+                  </span>
                 </div>
                 <span className="text-sm font-normal text-muted-foreground">
                   ({getLanguageLabel()})
@@ -419,6 +422,15 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4 pt-0">
+              <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-md border border-emerald-300/50">
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                  {language === 'de' 
+                    ? '✨ CORE SLIM: Kompakter Basis-Prompt für Story-Generierung. Wird mit dynamischem Kontext (Kategorien, Charaktere, Spezialeffekte) kombiniert.'
+                    : language === 'fr'
+                    ? '✨ CORE SLIM: Prompt de base compact pour la génération d\'histoires. Combiné avec un contexte dynamique (catégories, personnages, effets spéciaux).'
+                    : '✨ CORE SLIM: Compact base prompt for story generation. Combined with dynamic context (categories, characters, special effects).'}
+                </p>
+              </div>
               <p className="text-sm text-muted-foreground">
                 {language === 'de' 
                   ? 'Dieser globale System-Prompt wird bei der Generierung aller Lesetexte verwendet. Er definiert die pädagogischen Richtlinien für verschiedene Schulklassen und Schwierigkeitsgrade. Fordere explizit den Ende-Typ an (A=Abgeschlossen, B=Offen, C=Cliffhanger).'
