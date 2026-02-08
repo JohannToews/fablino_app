@@ -1138,8 +1138,10 @@ export type Database = {
           admin_language: string
           app_language: string
           auth_id: string | null
+          auth_migrated: boolean | null
           created_at: string
           display_name: string
+          email: string | null
           id: string
           password_hash: string
           system_prompt: string | null
@@ -1151,8 +1153,10 @@ export type Database = {
           admin_language?: string
           app_language?: string
           auth_id?: string | null
+          auth_migrated?: boolean | null
           created_at?: string
           display_name: string
+          email?: string | null
           id?: string
           password_hash: string
           system_prompt?: string | null
@@ -1164,8 +1168,10 @@ export type Database = {
           admin_language?: string
           app_language?: string
           auth_id?: string | null
+          auth_migrated?: boolean | null
           created_at?: string
           display_name?: string
+          email?: string | null
           id?: string
           password_hash?: string
           system_prompt?: string | null
@@ -1300,18 +1306,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          auth_id: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          auth_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          auth_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
