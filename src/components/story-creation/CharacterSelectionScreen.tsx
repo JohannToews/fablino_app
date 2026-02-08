@@ -88,15 +88,26 @@ const CharacterSelectionScreen = ({
 
   // Load saved characters from DB
   useEffect(() => {
-    if (!kidProfileId) return;
+    if (!kidProfileId) {
+      console.log('[CharacterSelection] No kidProfileId, skipping load');
+      return;
+    }
     const loadSavedCharacters = async () => {
+      console.log('[CharacterSelection] Loading characters for profile:', kidProfileId);
       const { data, error } = await supabase
         .from('kid_characters')
         .select('*')
         .eq('kid_profile_id', kidProfileId)
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
-      if (data && !error) {
+      
+      if (error) {
+        console.error('[CharacterSelection] Error loading characters:', error);
+        return;
+      }
+      
+      console.log('[CharacterSelection] Loaded characters:', data?.length, data);
+      if (data) {
         setSavedCharacters(data as KidCharacterDB[]);
       }
     };
