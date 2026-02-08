@@ -86,7 +86,10 @@ const StoryTypeSelectionScreen = ({
     { type: "animals" as StoryType, image: animalsImg, label: translations.animals },
     { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday },
     { type: "humor" as StoryType, image: humorImg, label: translations.humor },
-    { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
+    // Educational temporarily disabled - will be re-enabled later
+    // { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
+    // Surprise Me as 6th tile in the grid
+    { type: "surprise" as StoryType, image: surpriseBoxImg, label: translations.surprise, isSurprise: true },
   ];
 
   const educationalTopicTiles = [
@@ -99,7 +102,10 @@ const StoryTypeSelectionScreen = ({
   ];
 
   const handleTypeClick = (type: StoryType) => {
-    if (type === "educational") {
+    if (type === "surprise") {
+      // Handle surprise directly
+      handleSurpriseClick();
+    } else if (type === "educational") {
       setSelectedType(type);
       setViewState("educational");
     } else {
@@ -282,43 +288,19 @@ const StoryTypeSelectionScreen = ({
 
         {/* Main Category Grid */}
         {viewState === "main" && (
-          <>
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
-              {mainCategoryTiles.map((tile) => (
-                <CharacterTile
-                  key={tile.type}
-                  image={tile.image}
-                  label={tile.label}
-                  onClick={() => handleTypeClick(tile.type)}
-                  selected={selectedType === tile.type}
-                  size="small"
-                  overlayClass={colors.overlay}
-                />
-              ))}
-            </div>
-
-            {/* Surprise Me Button - Separate */}
-            <Button
-              onClick={handleSurpriseClick}
-              variant="outline"
-              className="w-full h-14 md:h-16 rounded-xl md:rounded-2xl border-2 border-dashed border-primary/50 hover:border-primary hover:bg-primary/5 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden">
-                  <img 
-                    src={surpriseBoxImg} 
-                    alt="Surprise" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className={cn("absolute inset-0 pointer-events-none", colors.overlay)} />
-                </div>
-                <span className="text-base md:text-lg font-baloo font-semibold">
-                  {translations.surprise}
-                </span>
-                <Sparkles className="h-5 w-5 text-primary group-hover:animate-pulse" />
-              </div>
-            </Button>
-          </>
+          <div className="grid grid-cols-3 gap-2 md:gap-3">
+            {mainCategoryTiles.map((tile) => (
+              <CharacterTile
+                key={tile.type}
+                image={tile.image}
+                label={tile.label}
+                onClick={() => handleTypeClick(tile.type)}
+                selected={selectedType === tile.type}
+                size="small"
+                overlayClass={colors.overlay}
+              />
+            ))}
+          </div>
         )}
 
         {/* Educational Topics Grid */}
