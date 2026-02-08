@@ -658,6 +658,9 @@ export async function buildStoryPrompt(
   // Final instruction
   sections.push(headers.respondJson);
 
+  // Hard word-count constraint (last thing the model reads)
+  sections.push(`CRITICAL CONSTRAINT: The story MUST contain between ${minWords} and ${maxWords} words. This is a hard limit. Count your words carefully. A story that exceeds ${maxWords} words is a failure and will be rejected.`);
+
   return sections.join('\n\n');
 }
 
