@@ -1,189 +1,62 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, UserPlus, Loader2 } from "lucide-react";
-
-type AdminLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it';
+import { supabase } from "@/integrations/supabase/client";
+import { BookOpen, UserPlus, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 
 const RegisterPage = () => {
-  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [adminLanguage, setAdminLanguage] = useState<AdminLanguage>("de");
+  const [displayName, setDisplayName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login } = useAuth();
-
-  const getLabels = () => {
-    const labels = {
-      de: {
-        title: "Neuen Benutzer erstellen",
-        subtitle: "Erstelle ein Konto für Le Petit Lecteur",
-        name: "Name",
-        namePlaceholder: "Dein Name",
-        password: "Passwort",
-        passwordPlaceholder: "Wähle ein Passwort",
-        confirmPassword: "Passwort bestätigen",
-        confirmPlaceholder: "Passwort wiederholen",
-        language: "App-Sprache",
-        register: "Registrieren",
-        haveAccount: "Bereits ein Konto?",
-        login: "Anmelden",
-        errors: {
-          fillAll: "Bitte alle Felder ausfüllen",
-          passwordMatch: "Passwörter stimmen nicht überein",
-          passwordLength: "Passwort muss mindestens 4 Zeichen lang sein",
-          failed: "Registrierung fehlgeschlagen",
-        },
-        welcome: "Willkommen",
-      },
-      fr: {
-        title: "Créer un nouveau compte",
-        subtitle: "Créez un compte pour Le Petit Lecteur",
-        name: "Nom",
-        namePlaceholder: "Votre nom",
-        password: "Mot de passe",
-        passwordPlaceholder: "Choisissez un mot de passe",
-        confirmPassword: "Confirmer le mot de passe",
-        confirmPlaceholder: "Répétez le mot de passe",
-        language: "Langue de l'application",
-        register: "S'inscrire",
-        haveAccount: "Déjà un compte ?",
-        login: "Se connecter",
-        errors: {
-          fillAll: "Veuillez remplir tous les champs",
-          passwordMatch: "Les mots de passe ne correspondent pas",
-          passwordLength: "Le mot de passe doit contenir au moins 4 caractères",
-          failed: "Échec de l'inscription",
-        },
-        welcome: "Bienvenue",
-      },
-      en: {
-        title: "Create New Account",
-        subtitle: "Create an account for Le Petit Lecteur",
-        name: "Name",
-        namePlaceholder: "Your name",
-        password: "Password",
-        passwordPlaceholder: "Choose a password",
-        confirmPassword: "Confirm Password",
-        confirmPlaceholder: "Repeat password",
-        language: "App Language",
-        register: "Register",
-        haveAccount: "Already have an account?",
-        login: "Log in",
-        errors: {
-          fillAll: "Please fill in all fields",
-          passwordMatch: "Passwords do not match",
-          passwordLength: "Password must be at least 4 characters",
-          failed: "Registration failed",
-        },
-        welcome: "Welcome",
-      },
-      es: {
-        title: "Crear nueva cuenta",
-        subtitle: "Crea una cuenta para Le Petit Lecteur",
-        name: "Nombre",
-        namePlaceholder: "Tu nombre",
-        password: "Contraseña",
-        passwordPlaceholder: "Elige una contraseña",
-        confirmPassword: "Confirmar contraseña",
-        confirmPlaceholder: "Repetir contraseña",
-        language: "Idioma de la aplicación",
-        register: "Registrarse",
-        haveAccount: "¿Ya tienes cuenta?",
-        login: "Iniciar sesión",
-        errors: {
-          fillAll: "Por favor, rellena todos los campos",
-          passwordMatch: "Las contraseñas no coinciden",
-          passwordLength: "La contraseña debe tener al menos 4 caracteres",
-          failed: "Error en el registro",
-        },
-        welcome: "Bienvenido",
-      },
-      nl: {
-        title: "Nieuw account aanmaken",
-        subtitle: "Maak een account voor Le Petit Lecteur",
-        name: "Naam",
-        namePlaceholder: "Je naam",
-        password: "Wachtwoord",
-        passwordPlaceholder: "Kies een wachtwoord",
-        confirmPassword: "Bevestig wachtwoord",
-        confirmPlaceholder: "Herhaal wachtwoord",
-        language: "App-taal",
-        register: "Registreren",
-        haveAccount: "Heb je al een account?",
-        login: "Inloggen",
-        errors: {
-          fillAll: "Vul alle velden in",
-          passwordMatch: "Wachtwoorden komen niet overeen",
-          passwordLength: "Wachtwoord moet minimaal 4 tekens bevatten",
-          failed: "Registratie mislukt",
-        },
-        welcome: "Welkom",
-      },
-      it: {
-        title: "Crea nuovo account",
-        subtitle: "Crea un account per Le Petit Lecteur",
-        name: "Nome",
-        namePlaceholder: "Il tuo nome",
-        password: "Password",
-        passwordPlaceholder: "Scegli una password",
-        confirmPassword: "Conferma password",
-        confirmPlaceholder: "Ripeti password",
-        language: "Lingua app",
-        register: "Registrati",
-        haveAccount: "Hai già un account?",
-        login: "Accedi",
-        errors: {
-          fillAll: "Compila tutti i campi",
-          passwordMatch: "Le password non corrispondono",
-          passwordLength: "La password deve essere di almeno 4 caratteri",
-          failed: "Registrazione fallita",
-        },
-        welcome: "Benvenuto",
-      },
-    };
-    return labels[adminLanguage];
-  };
-
-  const l = getLabels();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const trimmedName = displayName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedDisplayName = displayName.trim();
     const trimmedPassword = password.trim();
     
-    if (!trimmedName || !trimmedPassword || !confirmPassword.trim()) {
+    // Validation
+    if (!trimmedEmail || !trimmedPassword || !trimmedDisplayName) {
       toast({
-        title: "Error",
-        description: l.errors.fillAll,
+        title: "Fehler",
+        description: "Bitte alle Felder ausfüllen.",
         variant: "destructive",
       });
       return;
     }
 
-    if (trimmedPassword !== confirmPassword.trim()) {
+    if (!trimmedEmail.includes('@')) {
       toast({
-        title: "Error",
-        description: l.errors.passwordMatch,
+        title: "Fehler",
+        description: "Bitte eine gültige E-Mail-Adresse eingeben.",
         variant: "destructive",
       });
       return;
     }
 
-    if (trimmedPassword.length < 4) {
+    if (trimmedPassword.length < 6) {
       toast({
-        title: "Error",
-        description: l.errors.passwordLength,
+        title: "Fehler",
+        description: "Das Passwort muss mindestens 6 Zeichen lang sein.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Fehler",
+        description: "Die Passwörter stimmen nicht überein.",
         variant: "destructive",
       });
       return;
@@ -192,35 +65,56 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('register-user', {
-        body: { 
-          displayName: trimmedName, 
-          password: trimmedPassword,
-          adminLanguage,
-        }
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password: trimmedPassword,
+        options: {
+          data: {
+            display_name: trimmedDisplayName,
+          },
+          emailRedirectTo: window.location.origin,
+        },
       });
 
-      if (error) throw error;
-
-      if (data.success) {
-        login(data.token, data.user);
+      if (error) {
+        console.error('Registration error:', error);
+        let errorMessage = "Registrierung fehlgeschlagen.";
+        
+        if (error.message.includes("already registered")) {
+          errorMessage = "Diese E-Mail-Adresse ist bereits registriert.";
+        } else if (error.message.includes("Invalid email")) {
+          errorMessage = "Ungültige E-Mail-Adresse.";
+        } else if (error.message.includes("Password")) {
+          errorMessage = "Das Passwort erfüllt nicht die Anforderungen.";
+        }
+        
         toast({
-          title: l.welcome + "!",
-          description: `${l.welcome}, ${data.user.displayName}!`,
-        });
-        navigate("/admin", { replace: true });
-      } else {
-        toast({
-          title: "Error",
-          description: data.error || l.errors.failed,
+          title: "Fehler",
+          description: errorMessage,
           variant: "destructive",
         });
+        return;
+      }
+
+      if (data.user) {
+        // Check if email confirmation is required
+        if (data.session === null) {
+          // Email confirmation required
+          setIsSuccess(true);
+        } else {
+          // Auto-confirmed (shouldn't happen with our settings)
+          toast({
+            title: "Willkommen!",
+            description: "Registrierung erfolgreich.",
+          });
+          navigate("/", { replace: true });
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
       toast({
-        title: "Error",
-        description: l.errors.failed,
+        title: "Fehler",
+        description: "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
         variant: "destructive",
       });
     } finally {
@@ -228,95 +122,143 @@ const RegisterPage = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-pink-50 to-yellow-50 flex items-center justify-center p-4">
-      {/* Decorative elements */}
-      <div className="fixed top-10 left-10 text-6xl animate-bounce opacity-50">✨</div>
-      <div className="fixed top-20 right-20 text-4xl animate-pulse opacity-50">🌟</div>
-      <div className="fixed bottom-20 left-20 text-5xl animate-bounce opacity-50" style={{ animationDelay: '0.5s' }}>🦋</div>
-      <div className="fixed bottom-10 right-10 text-4xl animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}>🌈</div>
+  // Success state - show email confirmation message
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-cyan-50 to-teal-100 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[10%] left-[8%] text-5xl opacity-20 animate-bounce" style={{ animationDuration: '4s' }}>📧</div>
+          <div className="absolute top-[15%] right-[12%] text-4xl opacity-15 animate-bounce" style={{ animationDelay: '1s', animationDuration: '5s' }}>✉️</div>
+          <div className="absolute bottom-[20%] left-[15%] text-4xl opacity-20 animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '4.5s' }}>📬</div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-secondary/10 to-transparent rounded-tr-full" />
+        </div>
 
-      <Card className="w-full max-w-md shadow-2xl border-4 border-violet-200 bg-white/90 backdrop-blur">
+        <Card className="w-full max-w-md shadow-2xl border-2 border-green-500/30 bg-white/95 backdrop-blur relative z-10">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="bg-gradient-to-br from-green-400 to-green-600 p-4 rounded-full shadow-lg">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold text-green-600">
+              E-Mail bestätigen
+            </CardTitle>
+            <CardDescription className="text-base text-muted-foreground">
+              Fast geschafft! Wir haben dir eine E-Mail an <strong>{email}</strong> gesendet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Klicke auf den Bestätigungslink in der E-Mail, um dein Konto zu aktivieren.
+              </p>
+            </div>
+            
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Keine E-Mail erhalten?</p>
+              <p className="mt-1">Überprüfe deinen Spam-Ordner.</p>
+            </div>
+
+            <Button
+              onClick={() => navigate("/login")}
+              variant="outline"
+              className="w-full"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Zurück zum Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-cyan-50 to-teal-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Reading-themed background decorations */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[10%] left-[8%] text-5xl opacity-20 animate-bounce" style={{ animationDuration: '4s' }}>📖</div>
+        <div className="absolute top-[15%] right-[12%] text-4xl opacity-15 animate-bounce" style={{ animationDelay: '1s', animationDuration: '5s' }}>📚</div>
+        <div className="absolute bottom-[20%] left-[15%] text-4xl opacity-20 animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '4.5s' }}>📕</div>
+        <div className="absolute bottom-[15%] right-[10%] text-5xl opacity-15 animate-bounce" style={{ animationDelay: '1.5s', animationDuration: '5s' }}>📗</div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-secondary/10 to-transparent rounded-tr-full" />
+      </div>
+
+      <Card className="w-full max-w-md shadow-2xl border-2 border-primary/20 bg-white/95 backdrop-blur relative z-10">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-violet-500 to-pink-500 p-4 rounded-full">
-              <UserPlus className="w-8 h-8 text-white" />
+            <div className="bg-gradient-to-br from-primary to-secondary p-4 rounded-full shadow-lg">
+              <BookOpen className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent flex items-center justify-center gap-2">
-            <Sparkles className="w-6 h-6 text-yellow-500" />
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex items-center justify-center gap-2">
+            <span className="text-2xl">📖</span>
             Le Petit Lecteur
-            <Sparkles className="w-6 h-6 text-yellow-500" />
+            <span className="text-2xl">📖</span>
           </CardTitle>
-          <CardDescription className="text-base">{l.subtitle}</CardDescription>
+          <CardDescription className="text-base text-muted-foreground">Neues Konto erstellen</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleRegister} className="space-y-5">
-            {/* Language Selection first - so user can see labels in their language */}
+          <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="language" className="text-base font-medium">
-                🌍 {l.language}
-              </Label>
-              <Select value={adminLanguage} onValueChange={(v) => setAdminLanguage(v as AdminLanguage)}>
-                <SelectTrigger className="h-12 border-2 border-violet-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
-                  <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                  <SelectItem value="en">🇬🇧 English</SelectItem>
-                  <SelectItem value="es">🇪🇸 Español</SelectItem>
-                  <SelectItem value="nl">🇳🇱 Nederlands</SelectItem>
-                  <SelectItem value="it">🇮🇹 Italiano</SelectItem>
-                  <SelectItem value="bs">🇧🇦 Bosanski</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="displayName" className="text-base font-medium">
-                {l.name}
+              <Label htmlFor="displayName" className="text-base font-medium text-foreground">
+                Name
               </Label>
               <Input
                 id="displayName"
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder={l.namePlaceholder}
-                className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
-                maxLength={50}
+                placeholder="Dein Name..."
+                className="text-base h-11 border-2 border-primary/20 focus:border-primary"
                 autoComplete="name"
               />
             </div>
-
+            
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-base font-medium">
-                {l.password}
+              <Label htmlFor="email" className="text-base font-medium text-foreground">
+                E-Mail-Adresse
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="deine@email.com"
+                className="text-base h-11 border-2 border-primary/20 focus:border-primary"
+                autoComplete="email"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-base font-medium text-foreground">
+                Passwort
               </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={l.passwordPlaceholder}
-                className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
-                maxLength={100}
+                placeholder="Mindestens 6 Zeichen..."
+                className="text-base h-11 border-2 border-primary/20 focus:border-primary"
                 autoComplete="new-password"
               />
             </div>
-
+            
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-base font-medium">
-                {l.confirmPassword}
+              <Label htmlFor="confirmPassword" className="text-base font-medium text-foreground">
+                Passwort bestätigen
               </Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={l.confirmPlaceholder}
-                className="text-lg h-12 border-2 border-violet-200 focus:border-violet-400"
-                maxLength={100}
+                placeholder="Passwort wiederholen..."
+                className="text-base h-11 border-2 border-primary/20 focus:border-primary"
                 autoComplete="new-password"
               />
             </div>
@@ -324,7 +266,7 @@ const RegisterPage = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 text-xl font-bold bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white shadow-lg"
+              className="w-full h-12 text-lg font-bold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-lg mt-2"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -332,17 +274,22 @@ const RegisterPage = () => {
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  ✨ {l.register}
+                  <UserPlus className="h-5 w-5" /> Registrieren
                 </span>
               )}
             </Button>
-
-            <p className="text-center text-sm text-muted-foreground pt-2">
-              {l.haveAccount}{" "}
-              <Link to="/login" className="text-violet-600 hover:underline font-medium">
-                {l.login}
-              </Link>
-            </p>
+            
+            <div className="text-center pt-2">
+              <p className="text-sm text-muted-foreground">
+                Bereits ein Konto?{" "}
+                <Link 
+                  to="/login" 
+                  className="text-primary hover:underline font-medium"
+                >
+                  Anmelden
+                </Link>
+              </p>
+            </div>
           </form>
         </CardContent>
       </Card>

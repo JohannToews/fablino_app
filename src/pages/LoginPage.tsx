@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,20 +146,27 @@ const LoginPage = () => {
             {/* Forgot password link - only show when email is entered */}
             {isEmailInput && (
               <div className="text-center">
-                <button
-                  type="button"
+                <Link 
+                  to="/reset-password"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors underline"
-                  onClick={() => {
-                    toast({
-                      title: "Passwort vergessen",
-                      description: "Bitte kontaktiere einen Administrator.",
-                    });
-                  }}
                 >
                   Passwort vergessen?
-                </button>
+                </Link>
               </div>
             )}
+            
+            {/* Registration link */}
+            <div className="text-center pt-2 border-t border-border mt-4">
+              <p className="text-sm text-muted-foreground pt-4">
+                Noch kein Konto?{" "}
+                <Link 
+                  to="/register" 
+                  className="text-primary hover:underline font-medium"
+                >
+                  Jetzt registrieren
+                </Link>
+              </p>
+            </div>
           </form>
         </CardContent>
       </Card>

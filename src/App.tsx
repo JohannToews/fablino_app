@@ -16,10 +16,12 @@ import ResultsPage from "./pages/ResultsPage";
 import CollectionPage from "./pages/CollectionPage";
 import FeedbackStatsPage from "./pages/FeedbackStatsPage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import CreateStoryPage from "./pages/CreateStoryPage";
 import InstallPage from "./pages/InstallPage";
 import ShareRedirectPage from "./pages/ShareRedirectPage";
-// Registration disabled - users are created by admin only
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,9 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/update-password" element={<UpdatePasswordPage />} />
             <Route path="/install" element={<InstallPage />} />
             <Route path="/s/:token" element={<ShareRedirectPage />} />
             <Route path="/" element={
