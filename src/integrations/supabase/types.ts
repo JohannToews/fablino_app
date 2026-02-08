@@ -861,7 +861,7 @@ export type Database = {
       }
       stories: {
         Row: {
-          completed: boolean
+          completed: boolean | null
           concrete_theme: string | null
           content: string
           cover_image_status: string | null
@@ -897,7 +897,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          completed?: boolean
+          completed?: boolean | null
           concrete_theme?: string | null
           content: string
           cover_image_status?: string | null
@@ -933,7 +933,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          completed?: boolean
+          completed?: boolean | null
           concrete_theme?: string | null
           content?: string
           cover_image_status?: string | null
@@ -1195,14 +1195,14 @@ export type Database = {
           longest_streak: number
           quizzes_passed: number
           quizzes_perfect: number
-          stories_completed: number
+          stories_completed: number | null
           stories_read_total: number
           streak_freeze_available: boolean
           streak_freeze_used_this_week: string | null
           total_points: number
           updated_at: string
           user_id: string
-          words_learned: number
+          words_learned: number | null
         }
         Insert: {
           created_at?: string
@@ -1214,14 +1214,14 @@ export type Database = {
           longest_streak?: number
           quizzes_passed?: number
           quizzes_perfect?: number
-          stories_completed?: number
+          stories_completed?: number | null
           stories_read_total?: number
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
           updated_at?: string
           user_id: string
-          words_learned?: number
+          words_learned?: number | null
         }
         Update: {
           created_at?: string
@@ -1233,14 +1233,14 @@ export type Database = {
           longest_streak?: number
           quizzes_passed?: number
           quizzes_perfect?: number
-          stories_completed?: number
+          stories_completed?: number | null
           stories_read_total?: number
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
           updated_at?: string
           user_id?: string
-          words_learned?: number
+          words_learned?: number | null
         }
         Relationships: [
           {
