@@ -354,6 +354,16 @@ function buildCharactersSection(
   return `## ${headers.characters}\n${lines.join('\n')}`;
 }
 
+// ─── Scene Count by Story Length (Block 2.4) ────────────────────
+
+function getSceneCount(length: string): number {
+  switch (length) {
+    case 'short': return 1;   // 1 scene + cover
+    case 'long': return 3;    // 3 scenes + cover
+    default: return 2;        // 2 scenes + cover (medium)
+  }
+}
+
 // ─── Variety Block Builder ──────────────────────────────────────
 
 function buildVarietyBlock(recentStories: any[], headers: Record<string, string>): string {
@@ -628,6 +638,22 @@ export async function buildStoryPrompt(
   if (request.is_series && request.series_context) {
     sections.push(`## ${headers.series}\n${request.series_context}`);
   }
+
+  // IMAGE PLAN INSTRUCTIONS (Block 2.4)
+  const sceneCount = getSceneCount(request.length || 'medium');
+  const sceneGuidance = sceneCount === 1
+    ? 'Scene should capture the emotional highlight of the story.'
+    : sceneCount === 2
+    ? 'Scene 1: turning point or discovery. Scene 2: resolution or triumph.'
+    : 'Scene 1: departure/beginning (curiosity). Scene 2: conflict/discovery (tension). Scene 3: resolution/return (joy/relief).';
+  
+  const imagePlanSection = [
+    '## IMAGE PLAN INSTRUCTIONS',
+    `Generate exactly ${sceneCount} scene(s) in the image_plan.`,
+    sceneGuidance,
+    'All descriptions in ENGLISH. No text, signs, or readable writing in any scene.',
+  ].join('\n');
+  sections.push(imagePlanSection);
 
   // Final instruction
   sections.push(headers.respondJson);

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildStoryPrompt, injectLearningTheme, StoryRequest } from '../_shared/promptBuilder.ts';
 import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
+import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, ImagePromptResult } from '../_shared/imagePromptBuilder.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1041,18 +1042,6 @@ Deno.serve(async (req) => {
     const baseSystemPrompt = fullSystemPromptFinal;
 
     // Determine how many images to generate based on length
-    const imageCountMap: Record<string, number> = {
-      very_short: 1, // Cover only
-      short: 1,      // Cover only
-      medium: 2,     // Cover + 1 progress image
-      long: 3,       // Cover + 2 progress images
-      very_long: 4,  // Cover + 3 progress images
-    };
-    // Use length parameter from request (e.g., 'medium', 'long')
-    const effectiveLength = storyLength || length || 'medium';
-    const totalImageCount = imageCountMap[effectiveLength] || 1;
-    console.log(`[generate-story] Image count config: length="${length}", storyLength="${storyLength}", effectiveLength="${effectiveLength}", totalImageCount=${totalImageCount}`);
-
     // Get API keys
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -1322,162 +1311,95 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     const storyGenerationTime = Date.now() - startTime;
     console.log(`Story text generated in ${storyGenerationTime}ms`);
 
-    // ================== PARALLEL: CONSISTENCY CHECK + IMAGES ==================
-    // Start consistency check and image generation in PARALLEL
-    
-    const adminLangMap: Record<string, string> = { DE: 'de', FR: 'fr', EN: 'en' };
-    const adminLanguage = adminLangMap[textLanguage] || 'de';
-    
-    // Prepare image generation parameters
-    const effectiveSchoolLevel = schoolLevel || "CE2";
-    const schoolLevelLower = effectiveSchoolLevel.toLowerCase();
-    let artStyle: string;
-    let targetAudience: string;
-    
-    if (textType === "non-fiction") {
-      if (schoolLevelLower.includes("cp") || schoolLevelLower.includes("1e") || schoolLevelLower.includes("ce1") || schoolLevelLower.includes("2e") || schoolLevelLower.includes("grade 2") || schoolLevelLower.includes("groep 4") || schoolLevelLower.includes("2. klasse") || schoolLevelLower.includes("2º")) {
-        artStyle = "Clean educational illustration style, accurate and informative, friendly but realistic depictions, clear visual hierarchy, similar to quality children's encyclopedia or National Geographic Kids.";
-        targetAudience = "early primary school children (ages 6-7)";
-      } else if (schoolLevelLower.includes("ce2") || schoolLevelLower.includes("3e") || schoolLevelLower.includes("grade 3") || schoolLevelLower.includes("groep 5") || schoolLevelLower.includes("3. klasse") || schoolLevelLower.includes("3º")) {
-        artStyle = "Detailed educational illustration, realistic proportions, informative visual elements, documentary photography inspired, similar to DK Eyewitness or Usborne educational books.";
-        targetAudience = "mid primary school children (ages 8-9)";
-      } else if (schoolLevelLower.includes("cm1") || schoolLevelLower.includes("4e") || schoolLevelLower.includes("grade 4") || schoolLevelLower.includes("groep 6") || schoolLevelLower.includes("4. klasse") || schoolLevelLower.includes("4º")) {
-        artStyle = "Sophisticated documentary illustration style, realistic and accurate, scientific visualization quality, infographic elements, similar to educational textbooks or science magazines.";
-        targetAudience = "upper primary school children (ages 9-10)";
+    // ================== Block 2.4: PARSE image_plan FROM LLM RESPONSE ==================
+    let imagePlan: any = null;
+    try {
+      if ((story as any).image_plan) {
+        imagePlan = (story as any).image_plan;
+        console.log('[generate-story] image_plan extracted:',
+          `character_anchor: ${imagePlan.character_anchor?.substring(0, 50)}...`,
+          `world_anchor: ${imagePlan.world_anchor?.substring(0, 50)}...`,
+          `scenes: ${imagePlan.scenes?.length || 0}`
+        );
       } else {
-        artStyle = "Professional documentary or photorealistic illustration style, highly detailed and accurate, educational diagram quality, similar to scientific publications or high-quality textbooks.";
-        targetAudience = "upper primary school children (ages 10-11)";
+        console.log('[generate-story] No image_plan in LLM response, using fallback');
       }
-    } else {
-      if (schoolLevelLower.includes("cp") || schoolLevelLower.includes("1e") || schoolLevelLower.includes("ce1") || schoolLevelLower.includes("2e") || schoolLevelLower.includes("grade 2") || schoolLevelLower.includes("groep 4") || schoolLevelLower.includes("2. klasse") || schoolLevelLower.includes("2º")) {
-        artStyle = "Colorful cartoon style, friendly characters with expressive faces, slightly more detailed backgrounds, similar to Disney Junior or Paw Patrol style.";
-        targetAudience = "early primary school children (ages 6-7)";
-      } else if (schoolLevelLower.includes("ce2") || schoolLevelLower.includes("3e") || schoolLevelLower.includes("grade 3") || schoolLevelLower.includes("groep 5") || schoolLevelLower.includes("3. klasse") || schoolLevelLower.includes("3º")) {
-        artStyle = "Dynamic comic book style, more mature character designs with personality, action-oriented poses, vibrant colors, similar to modern animated movies like Pixar or DreamWorks.";
-        targetAudience = "mid primary school children (ages 8-9)";
-      } else if (schoolLevelLower.includes("cm1") || schoolLevelLower.includes("4e") || schoolLevelLower.includes("grade 4") || schoolLevelLower.includes("groep 6") || schoolLevelLower.includes("4. klasse") || schoolLevelLower.includes("4º")) {
-        artStyle = "Dynamic comic book style with more sophisticated compositions, detailed character designs, vibrant colors, similar to high-quality animated movies.";
-        targetAudience = "upper primary school children (ages 9-10)";
-      } else {
-        artStyle = "Semi-realistic illustration style, detailed environments, characters with realistic proportions, dynamic compositions, similar to graphic novel or manga-inspired art.";
-        targetAudience = "upper primary school children (ages 10-11)";
-      }
+    } catch (e) {
+      console.error('[generate-story] Error parsing image_plan:', e);
     }
 
-    // [PERF] Image prompt build - START
-    const imagePromptStart = Date.now();
-    
-    // Generate character description for image consistency
-    let characterDescription = "";
-    try {
-      const characterDescriptionPrompt = `Analysiere diese Geschichte und erstelle eine kurze, präzise visuelle Beschreibung der Hauptcharaktere (Aussehen, Kleidung, besondere Merkmale). Maximal 100 Wörter. Antwort auf Englisch für den Bildgenerator.`;
-      const characterContext = `Geschichte: "${story.title}"\n${story.content.substring(0, 500)}...`;
-      characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
-      console.log("Character description generated:", characterDescription.substring(0, 100));
-    } catch (err) {
-      console.error("Error generating character description:", err);
+    // ================== Block 2.4: LOAD IMAGE RULES FROM DB ==================
+    function getAgeGroup(age: number): string {
+      if (age <= 6) return '4-6';
+      if (age <= 9) return '7-9';
+      return '10-12';
     }
-    
+
+    const childAge = kidAge || 8;
+    const ageGroup = getAgeGroup(childAge);
+    const resolvedThemeKeyForImages = themeKey || storyType || null;
+
+    const imageRulesStart = Date.now();
+    const { ageRules: imageAgeRules, themeRules: imageThemeRules } = await loadImageRules(
+      supabase,
+      ageGroup,
+      resolvedThemeKeyForImages,
+      effectiveStoryLanguage
+    );
+    console.log(`[generate-story] [PERF] Image rules loaded in ${Date.now() - imageRulesStart}ms`);
+
+    // ================== Block 2.4: BUILD IMAGE PROMPTS ==================
+    const imagePromptStart = Date.now();
+    let imagePrompts: ImagePromptResult[];
+    let characterDescription = "";
+
+    if (imagePlan && imagePlan.character_anchor && imagePlan.scenes?.length > 0) {
+      // ═══ NEW PATH: Structured image_plan from LLM ═══
+      console.log('[generate-story] Using NEW image path: structured image_plan');
+      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge);
+    } else {
+      // ═══ FALLBACK: Simple cover prompt (previous behavior) ═══
+      console.log('[generate-story] Using FALLBACK image path: simple cover prompt');
+      try {
+        const characterDescriptionPrompt = `Analysiere diese Geschichte und erstelle eine kurze, präzise visuelle Beschreibung der Hauptcharaktere (Aussehen, Kleidung, besondere Merkmale). Maximal 100 Wörter. Antwort auf Englisch für den Bildgenerator.`;
+        const characterContext = `Geschichte: "${story.title}"\n${story.content.substring(0, 500)}...`;
+        characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
+        console.log("Character description generated:", characterDescription.substring(0, 100));
+      } catch (err) {
+        console.error("Error generating character description:", err);
+      }
+
+      const fallbackPrompt = buildFallbackImagePrompt(
+        story.title,
+        characterDescription,
+        imageAgeRules,
+        imageThemeRules,
+      );
+      imagePrompts = [fallbackPrompt];
+    }
+
     const imagePromptDuration = Date.now() - imagePromptStart;
     perf.imagePromptBuild = imagePromptDuration;
     console.log(`[generate-story] [PERF] Image prompt build: ${imagePromptDuration}ms`);
-    // [PERF] Image prompt build - END
+    console.log('[generate-story] Image prompts built:', imagePrompts.length,
+      'prompts:', imagePrompts.map(p => p.label).join(', '));
 
-    // Build cover image prompt
-    const coverPrompt = `A captivating book cover illustration for a ${textType === "non-fiction" ? "non-fiction educational book" : "children's story"}. 
-Theme: ${description}. 
-Story title: "${story.title}"
-${characterDescription ? `Main characters: ${characterDescription}` : ""}
-Art Style: ${artStyle}
-Target audience: ${targetAudience}.
-Requirements: High quality ${textType === "non-fiction" ? "educational and informative" : "imaginative and engaging"} illustration.
-IMPORTANT: Create distinctive, memorable character designs that can be recognized in follow-up illustrations.
-CRITICAL: The image must contain ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind. Pure illustration only.`;
-
-    // Prepare progress image prompts
-    // Normalize escaped newlines (LLM sometimes returns literal "\n" strings)
-    // ROBUST: Handle multiple escape patterns and ensure clean paragraph splitting
-    let normalizedContent = story.content;
-    
-    // Pattern 1: Literal escaped sequences (\\n\\n or \\n)
-    normalizedContent = normalizedContent.replace(/\\n\\n/g, '\n\n').replace(/\\n/g, '\n');
-    
-    // Pattern 2: Mixed single backslash (sometimes JSON parsing leaves single backslash)
-    if (normalizedContent.includes('\\n')) {
-      normalizedContent = normalizedContent.replace(/\n/g, '\n');  // Already real newlines, skip
-    }
-    
-    // Pattern 3: Multiple consecutive newlines → collapse to double newline (paragraph boundary)
-    normalizedContent = normalizedContent.replace(/\n\n\n+/g, '\n\n');
-    
-    // Pattern 4: Trailing/leading whitespace in paragraphs
-    const storyParts = normalizedContent
-      .split('\n\n')
-      .map(p => p.trim())
-      .filter((p: string) => p.length > 0);
-    
-    const partCount = storyParts.length;
-    console.log(`[generate-story] Story has ${partCount} paragraphs (after normalization), totalImageCount=${totalImageCount}, will generate ${Math.min(totalImageCount - 1, partCount > 1 ? 1 : 0)} progress images`);
-    console.log(`[generate-story] Debug - Raw content length: ${story.content.length}, normalized length: ${normalizedContent.length}`);
-    if (partCount <= 1) {
-      console.log(`[generate-story] Debug - Full normalized content:\n${normalizedContent.substring(0, 500)}`);
-    }
-    
-    const styleReference = `
-CRITICAL - VISUAL CONSISTENCY REQUIREMENTS:
-- Use EXACTLY the same art style as the cover image: ${artStyle}
-- Keep the SAME character designs, faces, clothing, and distinctive features as the cover
-- Maintain consistent color palette and lighting style
-- Characters must be immediately recognizable from the cover image
-${characterDescription ? `- Character reference: ${characterDescription}` : ""}
-- ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind in the image
-`;
-
-    const progressPrompts: string[] = [];
-    
-    if (totalImageCount >= 2 && partCount > 1) {
-      const middleIndex = Math.floor(partCount / 2);
-      const middleContext = storyParts[middleIndex]?.substring(0, 200) || description;
-      progressPrompts.push(`Continue the visual story from the cover image. Scene from the middle of the story: "${middleContext}".
-
-${styleReference}
-
-Art Style: ${textType === "non-fiction" ? "Simplified documentary sketch style" : "Gentle, slightly muted version of the cover style"} with softer, pastel tones.
-The image should maintain the same characters but with reduced visual intensity - think soft colors and gentle washes.
-Target audience: ${targetAudience}. 
-The characters MUST look exactly like they do on the cover - same faces, hair, clothing, proportions.
-CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind. Pure illustration only.`);
-    }
-    
-    if (totalImageCount >= 3 && partCount > 2) {
-      const nearEndIndex = Math.floor(partCount * 0.75);
-      const nearEndContext = storyParts[nearEndIndex]?.substring(0, 200) || description;
-      progressPrompts.push(`Continue the visual story. Scene near the end: "${nearEndContext}".
-
-${styleReference}
-
-Art Style: ${textType === "non-fiction" ? "Simple line-art sketch with minimal color" : "Soft pencil sketch style matching the cover"} using desaturated, calm tones.
-Very understated visual style - muted colors, intentionally reduced saturation.
-Target audience: ${targetAudience}. 
-CRITICAL: The characters MUST be the exact same as in the cover image - identical faces, features, and clothing.
-CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of any kind. Pure illustration only.`);
-    }
-
-    // ================== PARALLEL EXECUTION ==================
+    // ================== PARALLEL: CONSISTENCY CHECK + ALL IMAGES ==================
     console.log("Starting PARALLEL execution: consistency check + image generation...");
+
+    const adminLangMap: Record<string, string> = { DE: 'de', FR: 'fr', EN: 'en' };
+    const adminLanguage = adminLangMap[textLanguage] || 'de';
 
     // Track consistency check results
     let totalIssuesFound = 0;
     let totalIssuesCorrected = 0;
     let allIssueDetails: string[] = [];
-    let coverImageBase64: string | null = null;
-    const storyImages: string[] = [];
 
-    // Create parallel tasks
     // [PERF] Consistency check timing
     let consistencyStart = 0;
     let consistencyDuration: number | 'skipped' = 'skipped';
-    
+
+    // ── Task 1: Consistency Check (v2) ──
     const consistencyCheckTask = async () => {
       // Load v2 consistency check prompts (with placeholders)
       const { basePrompt: rawPrompt, seriesAddon } = await getConsistencyCheckPromptV2(supabase);
@@ -1598,91 +1520,122 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
       console.log(`[generate-story] [PERF] Consistency check: ${consistencyDuration}ms`);
     };
 
-    // [PERF] Image generation timing
-    let imageGenStart = 0;
-    let imageProvider = 'none';
-    
-    const coverImageTask = async () => {
-      console.log("Generating cover image...");
-      imageGenStart = Date.now();
-      
-      // Check cache first
-      const cachedCover = await getCachedImage(supabase, coverPrompt);
-      if (cachedCover) {
-        coverImageBase64 = cachedCover;
-        imageProvider = 'cache';
-        console.log("Cover image from cache");
-        return;
-      }
-      
-      // Try Gemini first
-      coverImageBase64 = await callGeminiImageAPI(GEMINI_API_KEY, coverPrompt);
-      if (coverImageBase64) {
-        imageProvider = 'gemini';
-        await cacheImage(supabase, coverPrompt, coverImageBase64);
-        console.log("Cover image generated successfully (Gemini)");
-      } else {
-        // Fallback to Lovable Gateway
-        coverImageBase64 = await callLovableImageGenerate(LOVABLE_API_KEY, coverPrompt);
-        if (coverImageBase64) {
-          imageProvider = 'lovable-gateway';
-          await cacheImage(supabase, coverPrompt, coverImageBase64);
-          console.log("Cover image generated successfully (Lovable Gateway)");
-        } else {
-          console.log("Cover image generation failed");
-        }
-      }
+    // ── Task 2: Generate ALL images in parallel (Block 2.4) ──
+    const generateAllImagesTask = async (): Promise<Array<{ label: string; url: string | null; cached: boolean }>> => {
+      const imageGenerationStart = Date.now();
+
+      const imageResults = await Promise.allSettled(
+        imagePrompts.map(async (imgPrompt) => {
+          const imgStart = Date.now();
+
+          // 1. Check cache
+          const cached = await getCachedImage(supabase, imgPrompt.prompt);
+          if (cached) {
+            console.log(`[generate-story] Cache HIT for ${imgPrompt.label}`);
+            return { label: imgPrompt.label, url: cached, cached: true };
+          }
+          console.log(`[generate-story] Cache MISS for ${imgPrompt.label}`);
+
+          // 2. Generate image (Gemini → Lovable Gateway fallback chain)
+          let imageUrl: string | null = null;
+
+          try {
+            imageUrl = await callGeminiImageAPI(GEMINI_API_KEY!, imgPrompt.prompt);
+          } catch (geminiError) {
+            console.log(`[generate-story] Gemini failed for ${imgPrompt.label}, trying Lovable Gateway`);
+          }
+
+          if (!imageUrl) {
+            try {
+              imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY!, imgPrompt.prompt);
+            } catch (lovableError) {
+              console.error(`[generate-story] Lovable Gateway failed for ${imgPrompt.label}:`, lovableError);
+            }
+          }
+
+          if (imageUrl) {
+            await cacheImage(supabase, imgPrompt.prompt, imageUrl);
+            console.log(`[generate-story] Image generated for ${imgPrompt.label} in ${Date.now() - imgStart}ms`);
+          } else {
+            console.log(`[generate-story] Image generation FAILED for ${imgPrompt.label}`);
+          }
+
+          return { label: imgPrompt.label, url: imageUrl, cached: false };
+        })
+      );
+
+      const imageGenerationTime = Date.now() - imageGenerationStart;
+      console.log(`[generate-story] [PERF] All ${imagePrompts.length} images generated in ${imageGenerationTime}ms (parallel)`);
+
+      return imageResults.map(result => {
+        if (result.status === 'fulfilled') return result.value;
+        console.error('[generate-story] Image generation rejected:', result.reason);
+        return { label: 'unknown', url: null, cached: false };
+      });
     };
 
-    // Execute cover image and consistency check in PARALLEL
-    await Promise.all([
-      consistencyCheckTask(),
-      coverImageTask()
-    ]);
+    // ── Execute consistency check + ALL images PARALLEL with timeout ──
+    const PARALLEL_TIMEOUT_MS = 90000; // 90 seconds for consistency + ALL images together
+    const parallelStart = Date.now();
 
-    // Now generate progress images in PARALLEL (they need cover as reference)
-    if (coverImageBase64 && progressPrompts.length > 0) {
-      console.log(`Generating ${progressPrompts.length} progress image(s) in PARALLEL...`);
-      
-      const progressImageTasks = progressPrompts.map(async (prompt, index) => {
-        console.log(`Starting progress image ${index + 1}...`);
-        const image = await generateImageWithCache(
-          supabase,
-          GEMINI_API_KEY,
-          LOVABLE_API_KEY,
-          prompt,
-          true, // useEdit
-          coverImageBase64!
-        );
-        if (image) {
-          console.log(`Progress image ${index + 1} generated`);
-        }
-        return image;
-      });
+    let allImageResults: Array<{ label: string; url: string | null; cached: boolean }> = [];
 
-      const progressResults = await Promise.all(progressImageTasks);
-      
-      // Filter out nulls and add to storyImages
-      for (const img of progressResults) {
-        if (img) {
-          storyImages.push(img);
+    try {
+      const results = await Promise.race([
+        Promise.allSettled([
+          consistencyCheckTask(),
+          generateAllImagesTask(),
+        ]),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Parallel block timeout')), PARALLEL_TIMEOUT_MS)
+        ),
+      ]);
+
+      const settledResults = results as PromiseSettledResult<any>[];
+      if (settledResults[1]?.status === 'fulfilled') {
+        allImageResults = settledResults[1].value || [];
+      } else if (settledResults[1]?.status === 'rejected') {
+        console.error('[generate-story] Image generation task rejected:', settledResults[1].reason);
+      }
+
+    } catch (timeoutError) {
+      console.error(`[generate-story] Parallel block timed out after ${PARALLEL_TIMEOUT_MS}ms`);
+    }
+
+    const parallelDuration = Date.now() - parallelStart;
+    console.log(`[generate-story] [PERF] Parallel block (consistency + images): ${parallelDuration}ms`);
+
+    // ── Sort image results: cover vs. scene images ──
+    let coverImageBase64: string | null = null;
+    const storyImages: string[] = [];
+
+    for (const result of allImageResults) {
+      if (result.url) {
+        if (result.label === 'cover') {
+          coverImageBase64 = result.url;
+        } else {
+          storyImages.push(result.url);
         }
       }
     }
 
-    // [PERF] Image generation - END (covers all image work)
-    const imageGenDuration = imageGenStart > 0 ? Date.now() - imageGenStart : 0;
-    console.log(`[generate-story] [PERF] Image generation: ${imageGenDuration}ms (provider: ${imageProvider})`);
-    
+    // Fallback: If cover failed but scene images exist → use first scene as cover
+    if (!coverImageBase64 && storyImages.length > 0) {
+      coverImageBase64 = storyImages[0];
+      console.log('[generate-story] Using first scene image as cover fallback');
+    }
+
+    console.log(`[generate-story] Final images: cover=${!!coverImageBase64}, scenes=${storyImages.length}`);
+
     // Update perf metrics
     perf.consistency = consistencyDuration;
-    perf.imageGeneration = imageGenDuration;
-    perf.imageProvider = imageProvider;
+    perf.imageGeneration = parallelDuration;
+    perf.imageProvider = allImageResults.some(r => r.cached) ? 'cache+generated' : 'generated';
 
     // ================== END PARALLEL EXECUTION ==================
 
     const totalTime = Date.now() - startTime;
-    console.log(`Total generation time: ${totalTime}ms (story: ${storyGenerationTime}ms, images+check: ${totalTime - storyGenerationTime}ms)`);
+    console.log(`[PERF] TOTAL generation time: ${totalTime}ms (story: ${storyGenerationTime}ms, parallel: ${totalTime - storyGenerationTime}ms)`);
 
     // Final word count log
     const finalWordCount = countWords(story.content);
@@ -1690,8 +1643,8 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
 
     const imageWarning = !coverImageBase64
       ? "cover_generation_failed"
-      : (totalImageCount > 1 && storyImages.length < (totalImageCount - 1))
-        ? "some_progress_images_failed"
+      : (imagePrompts.length > 1 && storyImages.length < (imagePrompts.length - 1))
+        ? "some_scene_images_failed"
         : null;
 
     console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
@@ -1728,9 +1681,10 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
       summary: summary,
       learning_theme_applied: learningThemeApplied,
       parent_prompt_text: learningThemeResponse?.parent_prompt_text || null,
-      // Existing fields
+      // Block 2.4: Image results
       coverImageBase64,
       storyImages,
+      image_count: 1 + storyImages.length,
       imageWarning,
       generationTimeMs: totalTime,
       usedNewPromptPath,

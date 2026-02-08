@@ -441,8 +441,11 @@ export type Database = {
         Row: {
           age_group: string
           art_style: string | null
+          character_style: string | null
           color_palette: string | null
+          complexity_level: string | null
           created_at: string | null
+          forbidden_elements: string | null
           id: string
           negative_prompt: string | null
           style_prompt: string
@@ -452,8 +455,11 @@ export type Database = {
         Insert: {
           age_group: string
           art_style?: string | null
+          character_style?: string | null
           color_palette?: string | null
+          complexity_level?: string | null
           created_at?: string | null
+          forbidden_elements?: string | null
           id?: string
           negative_prompt?: string | null
           style_prompt: string
@@ -463,8 +469,11 @@ export type Database = {
         Update: {
           age_group?: string
           art_style?: string | null
+          character_style?: string | null
           color_palette?: string | null
+          complexity_level?: string | null
           created_at?: string | null
+          forbidden_elements?: string | null
           id?: string
           negative_prompt?: string | null
           style_prompt?: string
@@ -876,6 +885,7 @@ export type Database = {
           generation_time_ms: number | null
           humor_level: number | null
           id: string
+          image_count: number | null
           is_deleted: boolean
           kid_profile_id: string | null
           learning_theme_applied: string | null
@@ -910,6 +920,7 @@ export type Database = {
           generation_time_ms?: number | null
           humor_level?: number | null
           id?: string
+          image_count?: number | null
           is_deleted?: boolean
           kid_profile_id?: string | null
           learning_theme_applied?: string | null
@@ -944,6 +955,7 @@ export type Database = {
           generation_time_ms?: number | null
           humor_level?: number | null
           id?: string
+          image_count?: number | null
           is_deleted?: boolean
           kid_profile_id?: string | null
           learning_theme_applied?: string | null
@@ -1093,6 +1105,9 @@ export type Database = {
           character_archetypes: string[] | null
           created_at: string | null
           id: string
+          image_color_palette: string | null
+          image_negative_prompt: string | null
+          image_style_prompt: string | null
           labels: Json
           language: string
           plot_templates: string[]
@@ -1106,6 +1121,9 @@ export type Database = {
           character_archetypes?: string[] | null
           created_at?: string | null
           id?: string
+          image_color_palette?: string | null
+          image_negative_prompt?: string | null
+          image_style_prompt?: string | null
           labels: Json
           language: string
           plot_templates: string[]
@@ -1119,6 +1137,9 @@ export type Database = {
           character_archetypes?: string[] | null
           created_at?: string | null
           id?: string
+          image_color_palette?: string | null
+          image_negative_prompt?: string | null
+          image_style_prompt?: string | null
           labels?: Json
           language?: string
           plot_templates?: string[]
