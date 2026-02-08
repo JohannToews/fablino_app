@@ -22,6 +22,7 @@ import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import CreateStoryPage from "./pages/CreateStoryPage";
 import InstallPage from "./pages/InstallPage";
 import ShareRedirectPage from "./pages/ShareRedirectPage";
+import StickerBookPage from "./pages/StickerBookPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -91,6 +92,12 @@ const App = () => (
                 <CollectionPage />
               </ProtectedRoute>
             } />
+            <Route path="/sticker-buch" element={
+              <ProtectedRoute>
+                <StickerBookPage />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
