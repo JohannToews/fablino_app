@@ -874,7 +874,10 @@ Deno.serve(async (req) => {
       long: 3,       // Cover + 2 progress images
       very_long: 4,  // Cover + 3 progress images
     };
-    const totalImageCount = imageCountMap[length] || 1;
+    // Use length parameter from request (e.g., 'medium', 'long')
+    const effectiveLength = storyLength || length || 'medium';
+    const totalImageCount = imageCountMap[effectiveLength] || 1;
+    console.log(`[generate-story] Image count config: length="${length}", storyLength="${storyLength}", effectiveLength="${effectiveLength}", totalImageCount=${totalImageCount}`);
 
     // Get API keys
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
