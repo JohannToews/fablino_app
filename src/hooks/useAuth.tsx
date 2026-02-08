@@ -131,6 +131,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await supabase.auth.signOut();
           return { success: false, error: 'Benutzerprofil nicht gefunden' };
         }
+        // Set state immediately before returning success
+        setSession(data.session);
+        setUser(profile);
         return { success: true };
       }
 
