@@ -50,6 +50,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}"],
+        // Exclude large mascot images from precache
+        globIgnores: ["**/mascot/head_only.png"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MiB limit
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
