@@ -180,20 +180,32 @@ interface ConsistencyCheckResult {
 }
 
 // Helper function to fetch consistency check prompt from database
-async function getConsistencyCheckPrompt(language: string): Promise<string | null> {
+// Uses a universal English prompt that works for all story languages
+async function getConsistencyCheckPrompt(): Promise<string | null> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    const promptKey = `system_prompt_consistency_check_${language}`;
+    // First try the new universal prompt, fallback to German if not found
     const { data } = await supabase
       .from("app_settings")
       .select("value")
-      .eq("key", promptKey)
+      .eq("key", "system_prompt_consistency_check")
       .maybeSingle();
     
-    return data?.value || null;
+    if (data?.value) {
+      return data.value;
+    }
+    
+    // Fallback to old German prompt for backwards compatibility
+    const { data: fallback } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "system_prompt_consistency_check_de")
+      .maybeSingle();
+    
+    return fallback?.value || null;
   } catch (error) {
     console.error("Error fetching consistency check prompt:", error);
     return null;
@@ -1304,7 +1316,8 @@ CRITICAL: ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO WRITING of an
     let consistencyDuration: number | 'skipped' = 'skipped';
     
     const consistencyCheckTask = async () => {
-      const consistencyCheckPrompt = await getConsistencyCheckPrompt(adminLanguage);
+      // Load universal consistency check prompt (language-independent)
+      const consistencyCheckPrompt = await getConsistencyCheckPrompt();
       
       if (!consistencyCheckPrompt) {
         console.log("No consistency check prompt configured, skipping check");
