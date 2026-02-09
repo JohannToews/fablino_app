@@ -11,7 +11,6 @@ import StoryAudioPlayer from "@/components/StoryAudioPlayer";
 import StoryFeedbackDialog from "@/components/StoryFeedbackDialog";
 import ReadingSettings, { FontSizeLevel, LineSpacingLevel, getReadingTextClasses } from "@/components/ReadingSettings";
 import SyllableText, { isSyllableModeSupported } from "@/components/SyllableText";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
@@ -198,7 +197,6 @@ const isStopWord = (word: string): boolean => {
 
 const ReadingPage = () => {
   const { user } = useAuth();
-  const { colors: paletteColors } = useColorPalette();
   const { selectedProfile, kidAppLanguage, kidExplanationLanguage } = useKidProfile();
   const { actions, pendingLevelUp, clearPendingLevelUp } = useGamification();
   const navigate = useNavigate();
@@ -1041,7 +1039,7 @@ const ReadingPage = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <div className="animate-bounce-soft">
           <Sparkles className="h-16 w-16 text-primary" />
         </div>
@@ -1050,7 +1048,7 @@ const ReadingPage = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       <PageHeader 
         title={story?.title || ""}
         backTo="/stories"
@@ -1168,7 +1166,7 @@ const ReadingPage = () => {
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-primary/20">
+                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-[#F0E8E0]">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="font-baloo text-xl font-bold break-words max-w-[200px]">
                         {selectedWord}
@@ -1294,7 +1292,7 @@ const ReadingPage = () => {
 
               {/* Comprehension Quiz Section */}
               {showQuiz && !quizCompleted && (
-                <div className="mt-8 pt-8 border-t-2 border-primary/30">
+                <div className="mt-8 pt-8 border-t-2 border-[#F0E8E0]">
                   <div className="flex items-center gap-3 mb-6">
                     <HelpCircle className="h-6 w-6 text-primary" />
                     <h2 className="text-2xl font-baloo font-bold">{readingLabels[textLang]?.comprehensionQuestions || readingLabels.fr.comprehensionQuestions}</h2>
@@ -1362,7 +1360,7 @@ const ReadingPage = () => {
               
               {/* Quiz Completion Result */}
               {quizCompleted && quizResult && (
-                <div className="mt-8 pt-8 border-t-2 border-primary/30">
+                <div className="mt-8 pt-8 border-t-2 border-[#F0E8E0]">
                   <QuizCompletionResult
                     correctCount={quizResult.correctCount}
                     totalCount={quizResult.totalCount}

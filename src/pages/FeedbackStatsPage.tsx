@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import PageHeader from "@/components/PageHeader";
 import ConsistencyCheckStats from "@/components/ConsistencyCheckStats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -524,7 +523,6 @@ const translations: Record<Language, {
 
 const FeedbackStatsPage = () => {
   const { user } = useAuth();
-  const { colors: paletteColors } = useColorPalette();
   const [ratings, setRatings] = useState<StoryRating[]>([]);
   const [stories, setStories] = useState<StoryStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -910,14 +908,14 @@ const FeedbackStatsPage = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       <div className="container max-w-7xl mx-auto px-4 py-8">
         <PageHeader title={t.title} backTo="/" />
         <p className="text-muted-foreground mb-6">{t.subtitle}</p>

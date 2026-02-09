@@ -85,7 +85,7 @@ const NameInputModal = ({
             enterKeyHint="done"
             autoComplete="off"
             autoCorrect="off"
-            className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
+            className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-orange-400"
           />
 
           <div className="flex gap-3">

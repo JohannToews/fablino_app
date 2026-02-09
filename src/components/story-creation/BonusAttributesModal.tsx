@@ -88,8 +88,8 @@ const BonusAttributesModal = ({
                     "border-2 transition-all duration-200",
                     "hover:scale-105 active:scale-95",
                     isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
+                      ? "border-orange-400 bg-orange-50"
+                      : "border-[#F0E8E0] hover:border-orange-400"
                   )}
                 >
                   <span className="text-2xl">{option.emoji}</span>

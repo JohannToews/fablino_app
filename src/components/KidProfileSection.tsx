@@ -793,6 +793,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                </div>
              </div>
 
+            {/* HIDDEN: Hobbies field – kept for future use
             <div className="space-y-2">
               <Label htmlFor="hobbies">{t.hobbies}</Label>
               <Textarea
@@ -803,7 +804,9 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 className="min-h-[80px]"
               />
             </div>
+            */}
 
+            {/* HIDDEN: Image style selector – kept for future use
             <div className="space-y-2">
               <Label>{t.imageStyle}</Label>
               <Select 
@@ -826,6 +829,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 </SelectContent>
               </Select>
             </div>
+            */}
 
             {/* Story Languages Multi-Select */}
             <div className="space-y-2">
@@ -860,6 +864,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               </div>
             </div>
 
+            {/* HIDDEN: Color palette selector – kept for future use
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
@@ -883,9 +888,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 ))}
               </div>
             </div>
+            */}
           </div>
 
-          {/* Right column: Cover preview */}
+          {/* HIDDEN: Cover image preview + generation – kept for future use
           <div className="space-y-4">
             <Label>{t.coverImage}</Label>
             <div className="relative aspect-video bg-muted rounded-xl overflow-hidden border-2 border-dashed border-muted-foreground/30">
@@ -920,6 +926,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               )}
             </Button>
           </div>
+          */}
         </div>
 
         {/* ── Important Characters Section ── */}

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Users, ArrowLeft, Sparkles } from "lucide-react";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useCollection, CollectibleCategory, Rarity } from "@/hooks/useCollection";
 import PageHeader from "@/components/PageHeader";
@@ -135,7 +134,6 @@ const rarityBgs: Record<Rarity, string> = {
 
 const CollectionPage = () => {
   const navigate = useNavigate();
-  const { colors: paletteColors } = useColorPalette();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
   const { items, stats, isLoading, getCategoryName, rarityGlows } = useCollection();
   const [activeTab, setActiveTab] = useState<'all' | CollectibleCategory>('all');
@@ -155,7 +153,7 @@ const CollectionPage = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <div className="animate-bounce-soft">
           <Sparkles className="h-16 w-16 text-primary" />
         </div>
@@ -164,7 +162,7 @@ const CollectionPage = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       <PageHeader title={t.title} backTo="/" />
 
       <div className="container max-w-4xl p-4 md:p-8">
@@ -198,7 +196,7 @@ const CollectionPage = () => {
         )}
 
         {/* Stats Overview */}
-        <Card className="mb-6 border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent">
+        <Card className="mb-6 border-2 border-[#F0E8E0] bg-gradient-to-br from-orange-50 to-transparent">
           <CardContent className="p-5">
             <div className="text-center mb-4">
               <p className="text-4xl font-baloo font-bold text-primary">{stats.total}</p>

@@ -146,7 +146,8 @@
   }
 
   .btn-primary-kid {
-    @apply btn-kid bg-primary text-primary-foreground hover:brightness-105;
+    @apply btn-kid text-white hover:brightness-105;
+    background: linear-gradient(135deg, #FF8C42, #FF6B00);
   }
 
   .btn-secondary-kid {

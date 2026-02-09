@@ -7,6 +7,7 @@ import VoiceInputField from "@/components/VoiceInputField";
 import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import FablinoPageHeader from "@/components/FablinoPageHeader";
 
 interface SpecialEffectsTranslations {
   header: string;
@@ -172,6 +173,7 @@ interface SpecialEffectsScreenProps {
   showSettings?: boolean;
   availableLanguages?: string[];
   defaultLanguage?: string;
+  fablinoMessage?: string;
 }
 
 const SpecialEffectsScreen = ({
@@ -180,6 +182,7 @@ const SpecialEffectsScreen = ({
   showSettings = false,
   availableLanguages = [],
   defaultLanguage = 'fr',
+  fablinoMessage,
 }: SpecialEffectsScreenProps) => {
   const { kidAppLanguage } = useKidProfile();
   const t = translations[kidAppLanguage] || translations.de;
@@ -224,18 +227,24 @@ const SpecialEffectsScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-28">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-base md:text-lg font-baloo font-bold flex-1">
-            {t.header}
-          </h1>
-        </div>
+    <div className="min-h-screen pb-24 md:pb-28" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      {/* Back button */}
+      <div className="px-4 pt-3 pb-0">
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
+
+      {/* Fablino Header */}
+      {fablinoMessage && (
+        <div className="container max-w-3xl mx-auto px-4">
+          <FablinoPageHeader
+            mascotImage="/mascot/5_new_story.png"
+            message={fablinoMessage}
+            mascotSize={130}
+          />
+        </div>
+      )}
 
       <div className="container max-w-3xl mx-auto px-4 py-4 md:py-6 space-y-6 md:space-y-8">
         {/* Story Settings (only for Weg A / free path) */}
@@ -252,7 +261,7 @@ const SpecialEffectsScreen = ({
                     size="sm"
                     className={cn(
                       "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyLength === len && "bg-primary text-primary-foreground"
+                      storyLength === len && "bg-orange-500 text-white"
                     )}
                     onClick={() => setStoryLength(len)}
                   >
@@ -273,7 +282,7 @@ const SpecialEffectsScreen = ({
                     size="sm"
                     className={cn(
                       "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyDifficulty === diff && "bg-primary text-primary-foreground"
+                      storyDifficulty === diff && "bg-orange-500 text-white"
                     )}
                     onClick={() => setStoryDifficulty(diff)}
                   >
@@ -307,7 +316,7 @@ const SpecialEffectsScreen = ({
                       size="sm"
                       className={cn(
                         "h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm px-2.5 md:px-3",
-                        storyLanguage === lang && "bg-primary text-primary-foreground"
+                        storyLanguage === lang && "bg-orange-500 text-white"
                       )}
                       onClick={() => setStoryLanguage(lang)}
                     >
@@ -337,10 +346,10 @@ const SpecialEffectsScreen = ({
                     "flex flex-col items-center gap-1 p-2 md:p-3 rounded-lg md:rounded-xl",
                     "border-2 transition-all duration-200",
                     "hover:scale-105 active:scale-95",
-                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+                    "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1",
                     isSelected
-                      ? "border-primary bg-primary/10 shadow-sm"
-                      : "border-border bg-card hover:border-primary/50"
+                      ? "border-orange-400 bg-orange-50 shadow-sm"
+                      : "border-[#F0E8E0] bg-card hover:border-orange-400"
                   )}
                 >
                   <span className="text-xl md:text-2xl">{option.emoji}</span>

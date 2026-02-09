@@ -17,6 +17,7 @@ import {
 } from "./types";
 import { cn } from "@/lib/utils";
 import { useColorPalette } from "@/hooks/useColorPalette";
+import FablinoPageHeader from "@/components/FablinoPageHeader";
 
 // Main category images
 import fantasyImg from "@/assets/story-types/fantasy.jpg";
@@ -56,6 +57,7 @@ interface StoryTypeSelectionScreenProps {
     selectedSubElements?: StorySubElement[]
   ) => void;
   onBack: () => void;
+  fablinoMessage?: string;
 }
 
 type ViewState = "main" | "educational";
@@ -67,6 +69,7 @@ const StoryTypeSelectionScreen = ({
   uiLanguage,
   onComplete,
   onBack,
+  fablinoMessage,
 }: StoryTypeSelectionScreenProps) => {
   const { colors } = useColorPalette();
   const [viewState, setViewState] = useState<ViewState>("main");
@@ -188,18 +191,24 @@ const StoryTypeSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-28">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-base md:text-lg font-baloo font-bold flex-1">
-            {getHeaderForView()}
-          </h1>
-        </div>
+    <div className="min-h-screen pb-24 md:pb-28" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      {/* Back button */}
+      <div className="px-4 pt-3 pb-0">
+        <Button variant="ghost" size="icon" onClick={handleBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
+
+      {/* Fablino Header */}
+      {fablinoMessage && (
+        <div className="container max-w-3xl mx-auto px-4">
+          <FablinoPageHeader
+            mascotImage="/mascot/6_Onboarding.png"
+            message={fablinoMessage}
+            mascotSize={130}
+          />
+        </div>
+      )}
 
       <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-3 md:space-y-4">
         {/* Story Settings (Length, Difficulty, Series) - Only on main view */}
@@ -216,7 +225,7 @@ const StoryTypeSelectionScreen = ({
                     size="sm"
                     className={cn(
                       "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyLength === len && "bg-primary text-primary-foreground"
+                      storyLength === len && "bg-orange-500 text-white"
                     )}
                     onClick={() => setStoryLength(len)}
                   >
@@ -237,7 +246,7 @@ const StoryTypeSelectionScreen = ({
                     size="sm"
                     className={cn(
                       "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyDifficulty === diff && "bg-primary text-primary-foreground"
+                      storyDifficulty === diff && "bg-orange-500 text-white"
                     )}
                     onClick={() => setStoryDifficulty(diff)}
                   >
@@ -273,7 +282,7 @@ const StoryTypeSelectionScreen = ({
                       size="sm"
                       className={cn(
                         "h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm px-2.5 md:px-3",
-                        storyLanguage === lang && "bg-primary text-primary-foreground"
+                        storyLanguage === lang && "bg-orange-500 text-white"
                       )}
                       onClick={() => setStoryLanguage(lang)}
                     >
@@ -322,7 +331,7 @@ const StoryTypeSelectionScreen = ({
 
             {/* Custom Topic Input (appears when any topic is selected) */}
             {selectedTopic && (
-              <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-primary/20 space-y-3">
+              <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-[#F0E8E0] space-y-3">
                 <h3 className="text-base md:text-lg font-baloo font-semibold text-center">
                   {selectedTopic === "other" 
                     ? translations.other 
@@ -332,7 +341,7 @@ const StoryTypeSelectionScreen = ({
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
                   placeholder={getTopicPlaceholder(selectedTopic)}
-                  className="h-12 md:h-14 text-base md:text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
+                  className="h-12 md:h-14 text-base md:text-lg font-medium text-center rounded-xl border-2 focus:border-orange-400"
                   maxLength={100}
                 />
               </div>

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, Brain, Sparkles, Users, ChevronRight } from "lucide-react";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
@@ -183,7 +182,6 @@ const STREAK_MILESTONE_POINTS: Record<number, number> = {
 const ResultsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { colors: paletteColors } = useColorPalette();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
   const { progress, isLoading, pendingLevelUp, clearPendingLevelUp } = useGamification();
   const [levels, setLevels] = useState<LevelSetting[]>([]);
@@ -240,7 +238,7 @@ const ResultsPage = () => {
 
   if (isLoading || !progress) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <div className="animate-bounce-soft">
           <StreakFlame streak={3} flameType="gold" size="lg" showCount={false} />
         </div>
@@ -253,7 +251,7 @@ const ResultsPage = () => {
     : 0;
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       <PageHeader title={t.title} backTo="/" />
 
       <div className="container max-w-4xl p-4 md:p-8">
@@ -288,7 +286,7 @@ const ResultsPage = () => {
         )}
 
         {/* Hero Section - Points, Level, Streak */}
-        <Card className="mb-6 border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent overflow-hidden">
+        <Card className="mb-6 border-2 border-[#F0E8E0] bg-gradient-to-br from-orange-50 to-transparent overflow-hidden">
           <CardContent className="p-5">
             {/* Top Row: Points and Streak */}
             <div className="flex items-center justify-between mb-4">

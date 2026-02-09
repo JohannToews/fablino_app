@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, BookText, GraduationCap, CheckCircle2, Users, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, type Translations } from "@/lib/translations";
 import { toast } from "sonner";
@@ -38,7 +37,6 @@ const StorySelectPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { colors: paletteColors } = useColorPalette();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
   const appLang = kidAppLanguage;
   const t = useTranslations(appLang);
@@ -291,7 +289,7 @@ const StorySelectPage = () => {
   const seriesStories = stories.filter(s => isPartOfSeries(s));
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       <PageHeader 
         title={appLang === 'de' ? 'Wähle eine Geschichte' : 
                appLang === 'fr' ? 'Choisis une histoire' :

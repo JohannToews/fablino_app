@@ -28,10 +28,10 @@ const CharacterTile = ({
         "group relative flex flex-col items-center gap-1.5 md:gap-2 p-2 md:p-3 rounded-xl md:rounded-2xl",
         "bg-card border-2 transition-all duration-200",
         "hover:scale-105 hover:shadow-lg active:scale-95",
-        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+        "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2",
         selected
-          ? "border-primary bg-primary/5 shadow-md"
-          : "border-border hover:border-primary/50",
+          ? "border-orange-400 bg-orange-50 shadow-md"
+          : "border-[#F0E8E0] hover:border-orange-400",
         size === "small" && "p-1.5 md:p-2 gap-1",
         className
       )}
@@ -56,10 +56,10 @@ const CharacterTile = ({
         
         {/* Selection Indicator */}
         {selected && (
-          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-primary flex items-center justify-center">
+          <div className="absolute inset-0 bg-orange-400/20 flex items-center justify-center">
+            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-500 flex items-center justify-center">
               <svg
-                className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground"
+                className="w-4 h-4 md:w-5 md:h-5 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

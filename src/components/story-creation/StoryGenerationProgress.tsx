@@ -89,10 +89,18 @@ const funFacts: Record<string, string[]> = {
   ],
 };
 
+// Cycling mascot images for the generation screen
+const MASCOT_CYCLE = [
+  "/mascot/3_wating_story_generated.png",
+  "/mascot/6_Onboarding.png",
+  "/mascot/5_new_story.png",
+];
+
 const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [currentFact, setCurrentFact] = useState(0);
+  const [mascotIndex, setMascotIndex] = useState(0);
 
   const facts = funFacts[language] || funFacts.de;
 
@@ -118,13 +126,25 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
     return () => clearInterval(factInterval);
   }, [facts.length]);
 
+  // Cycle mascot image every 3s
+  useEffect(() => {
+    const mascotTimer = setInterval(() => {
+      setMascotIndex(prev => (prev + 1) % MASCOT_CYCLE.length);
+    }, 3000);
+    return () => clearInterval(mascotTimer);
+  }, []);
+
   return (
-    <div className="text-center space-y-8 p-8 max-w-md mx-auto">
-      {/* Main animation - Book icon */}
+    <div className="text-center space-y-6 p-8 max-w-md mx-auto">
+      {/* Fablino mascot — cycles between emotions */}
       <div className="relative">
-        <div className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-          <BookOpen className="w-12 h-12 text-primary" />
-        </div>
+        <img
+          key={mascotIndex}
+          src={MASCOT_CYCLE[mascotIndex]}
+          alt="Fablino"
+          className="w-[150px] h-auto mx-auto object-contain drop-shadow-lg transition-opacity duration-500"
+          style={{ animation: "gentleBounce 2.2s ease-in-out infinite" }}
+        />
         {/* Sparkles around */}
         <Sparkles className="absolute top-0 right-1/4 w-6 h-6 text-yellow-400 animate-bounce" style={{ animationDelay: "0.5s" }} />
         <Sparkles className="absolute bottom-0 left-1/4 w-5 h-5 text-yellow-400 animate-bounce" style={{ animationDelay: "1s" }} />
@@ -149,15 +169,15 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
               key={step.id}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-500",
-                isCompleted && "bg-green-100 dark:bg-green-900/30",
-                isCurrent && "bg-primary/10 scale-105",
+                isCompleted && "bg-orange-100 dark:bg-orange-900/30",
+                isCurrent && "bg-orange-50 scale-105",
                 isPending && "opacity-40"
               )}
             >
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                isCompleted && "bg-green-500 text-white",
-                isCurrent && "bg-primary text-primary-foreground",
+                isCompleted && "bg-orange-500 text-white",
+                isCurrent && "bg-orange-400 text-white",
                 isPending && "bg-muted text-muted-foreground"
               )}>
                 {isCompleted ? (
@@ -170,7 +190,7 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
               </div>
               <span className={cn(
                 "text-sm font-medium transition-all",
-                isCompleted && "text-green-700 dark:text-green-300",
+                isCompleted && "text-orange-700 dark:text-orange-300",
                 isCurrent && "text-foreground font-semibold",
                 isPending && "text-muted-foreground"
               )}>
@@ -181,12 +201,19 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
         })}
       </div>
 
-      {/* Fun fact */}
-      <div className="mt-8 p-4 bg-muted/50 rounded-xl border border-border/50">
-        <p className="text-sm text-muted-foreground animate-fade-in" key={currentFact}>
+      {/* Fun fact — speech bubble style */}
+      <div className="p-4 bg-white rounded-2xl" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #F0E8E0" }}>
+        <p className="text-sm font-medium animate-fade-in" style={{ color: "#555" }} key={currentFact}>
           {facts[currentFact]}
         </p>
       </div>
+
+      <style>{`
+        @keyframes gentleBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+      `}</style>
     </div>
   );
 };

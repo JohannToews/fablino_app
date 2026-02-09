@@ -4,6 +4,7 @@ import { useGamification } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
 import { Settings, BarChart3 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 // ═══ Speech Bubble Component ═══
 interface SpeechBubbleProps {
@@ -18,10 +19,10 @@ const SpeechBubble = ({ children, variant = "hero" }: SpeechBubbleProps) => {
     <div className="relative">
       <div
         className={`
-          relative rounded-[18px] px-5 py-3
+          relative rounded-[18px]
           ${isHero 
-            ? "bg-white shadow-[0_3px_16px_rgba(0,0,0,0.08)] animate-speech-bubble text-left" 
-            : "bg-orange-50 border border-orange-100 text-center"
+            ? "px-4 py-2.5 bg-white shadow-[0_3px_16px_rgba(0,0,0,0.08)] animate-speech-bubble text-left" 
+            : "px-5 py-3 bg-orange-50 border border-orange-100 text-center"
           }
         `}
         style={{
@@ -29,7 +30,7 @@ const SpeechBubble = ({ children, variant = "hero" }: SpeechBubbleProps) => {
           animationFillMode: "both",
         }}
       >
-        <span className={`font-nunito ${isHero ? "text-[20px] font-semibold" : "text-[13px] font-semibold"}`} style={{ color: "#2D1810" }}>
+        <span className={`font-nunito ${isHero ? "text-[16px] font-semibold leading-snug" : "text-[13px] font-semibold"}`} style={{ color: "#2D1810" }}>
           {children}
         </span>
       </div>
@@ -53,23 +54,28 @@ const SpeechBubble = ({ children, variant = "hero" }: SpeechBubbleProps) => {
 // ═══ Localized texts ═══
 
 const GREETINGS: Record<string, { withName: (name: string) => string; withoutName: string }> = {
-  fr: { withName: (n) => `Bonjour ${n} ! Envie d'une histoire ? 📖`, withoutName: "Bonjour ! Envie d'une histoire ? 📖" },
-  de: { withName: (n) => `Hallo ${n}! Lust auf eine Geschichte? 📖`, withoutName: "Hallo! Lust auf eine Geschichte? 📖" },
-  en: { withName: (n) => `Hi ${n}! Ready for a story? 📖`, withoutName: "Hi! Ready for a story? 📖" },
-  es: { withName: (n) => `¡Hola ${n}! ¿Quieres un cuento? 📖`, withoutName: "¡Hola! ¿Quieres un cuento? 📖" },
-  nl: { withName: (n) => `Hoi ${n}! Zin in een verhaal? 📖`, withoutName: "Hoi! Zin in een verhaal? 📖" },
-  it: { withName: (n) => `Ciao ${n}! Voglia di una storia? 📖`, withoutName: "Ciao! Voglia di una storia? 📖" },
-  bs: { withName: (n) => `Zdravo ${n}! Želiš li priču? 📖`, withoutName: "Zdravo! Želiš li priču? 📖" },
+  fr: { withName: (n) => `Salut ${n} ! 😊 Envie d'une chouette histoire ?`, withoutName: "Salut ! 😊 Envie d'une chouette histoire ?" },
+  de: { withName: (n) => `Hey ${n}! 😊 Lust auf eine tolle Geschichte?`, withoutName: "Hey! 😊 Lust auf eine tolle Geschichte?" },
+  en: { withName: (n) => `Hey ${n}! 😊 Ready for an awesome story?`, withoutName: "Hey! 😊 Ready for an awesome story?" },
+  es: { withName: (n) => `¡Hola ${n}! 😊 ¿Quieres una historia genial?`, withoutName: "¡Hola! 😊 ¿Quieres una historia genial?" },
+  nl: { withName: (n) => `Hoi ${n}! 😊 Zin in een gaaf verhaal?`, withoutName: "Hoi! 😊 Zin in een gaaf verhaal?" },
+  it: { withName: (n) => `Ciao ${n}! 😊 Voglia di una bella storia?`, withoutName: "Ciao! 😊 Voglia di una bella storia?" },
+  bs: { withName: (n) => `Hej ${n}! 😊 Želiš li super priču?`, withoutName: "Hej! 😊 Želiš li super priču?" },
 };
 
-const UI_TEXTS: Record<string, { newStory: string; myStories: string; collection: string; stars: string; stories: string; quiz: string; stickers: string }> = {
-  fr: { newStory: '📖 Nouvelle histoire', myStories: '📚 Mes histoires', collection: 'Ma collection 🏆', stars: 'Étoiles', stories: 'Histoires', quiz: 'Quiz', stickers: 'Voir tous les stickers →' },
-  de: { newStory: '📖 Neue Geschichte starten', myStories: '📚 Meine Geschichten', collection: 'Meine Sammlung 🏆', stars: 'Sterne', stories: 'Geschichten', quiz: 'Quiz', stickers: 'Alle Sticker ansehen →' },
-  en: { newStory: '📖 New story', myStories: '📚 My stories', collection: 'My collection 🏆', stars: 'Stars', stories: 'Stories', quiz: 'Quiz', stickers: 'See all stickers →' },
-  es: { newStory: '📖 Nueva historia', myStories: '📚 Mis historias', collection: 'Mi colección 🏆', stars: 'Estrellas', stories: 'Historias', quiz: 'Quiz', stickers: 'Ver todos los stickers →' },
-  nl: { newStory: '📖 Nieuw verhaal', myStories: '📚 Mijn verhalen', collection: 'Mijn verzameling 🏆', stars: 'Sterren', stories: 'Verhalen', quiz: 'Quiz', stickers: 'Alle stickers bekijken →' },
-  it: { newStory: '📖 Nuova storia', myStories: '📚 Le mie storie', collection: 'La mia collezione 🏆', stars: 'Stelle', stories: 'Storie', quiz: 'Quiz', stickers: 'Vedi tutti gli sticker →' },
-  bs: { newStory: '📖 Nova priča', myStories: '📚 Moje priče', collection: 'Moja kolekcija 🏆', stars: 'Zvjezdice', stories: 'Priče', quiz: 'Kviz', stickers: 'Pogledaj sve stikere →' },
+const UI_TEXTS: Record<string, {
+  newStory: string;
+  myStories: string;
+  myWeek: string;
+  seeAll: string;
+}> = {
+  fr: { newStory: '📖 Nouvelle histoire', myStories: '📚 Mes histoires', myWeek: 'Ma semaine 🏆', seeAll: 'Tout voir →' },
+  de: { newStory: '📖 Neue Geschichte starten', myStories: '📚 Meine Geschichten', myWeek: 'Meine Woche 🏆', seeAll: 'Alle Ergebnisse →' },
+  en: { newStory: '📖 New story', myStories: '📚 My stories', myWeek: 'My week 🏆', seeAll: 'See all →' },
+  es: { newStory: '📖 Nueva historia', myStories: '📚 Mis historias', myWeek: 'Mi semana 🏆', seeAll: 'Ver todo →' },
+  nl: { newStory: '📖 Nieuw verhaal', myStories: '📚 Mijn verhalen', myWeek: 'Mijn week 🏆', seeAll: 'Alles bekijken →' },
+  it: { newStory: '📖 Nuova storia', myStories: '📚 Le mie storie', myWeek: 'La mia settimana 🏆', seeAll: 'Vedi tutto →' },
+  bs: { newStory: '📖 Nova priča', myStories: '📚 Moje priče', myWeek: 'Moja sedmica 🏆', seeAll: 'Pogledaj sve →' },
 };
 
 const FABLINO_TIPS: Record<string, string[]> = {
@@ -110,6 +116,17 @@ const FABLINO_TIPS: Record<string, string[]> = {
   ],
 };
 
+// ═══ Helper: Monday 00:00 of current week ═══
+function getMondayOfCurrentWeek(): string {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon, ...
+  const diff = day === 0 ? -6 : 1 - day; // distance to Monday
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString();
+}
+
 // ═══ Main Component ═══
 const HomeFablino = () => {
   const navigate = useNavigate();
@@ -128,6 +145,11 @@ const HomeFablino = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Weekly stats
+  const [weeklyStars, setWeeklyStars] = useState(0);
+  const [weeklyStories, setWeeklyStories] = useState(0);
+  const [weeklyQuizzes, setWeeklyQuizzes] = useState(0);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -140,6 +162,36 @@ const HomeFablino = () => {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showProfileDropdown]);
+
+  // Load weekly data from user_results
+  useEffect(() => {
+    if (!selectedProfileId) return;
+    const mondayISO = getMondayOfCurrentWeek();
+
+    const loadWeeklyData = async () => {
+      const { data } = await supabase
+        .from("user_results")
+        .select("activity_type, points_earned")
+        .eq("kid_profile_id", selectedProfileId)
+        .gte("created_at", mondayISO);
+
+      if (!data) return;
+
+      let stars = 0;
+      let stories = 0;
+      let quizzes = 0;
+      for (const row of data) {
+        stars += row.points_earned || 0;
+        if (row.activity_type === "story_completed") stories++;
+        if (row.activity_type === "quiz_completed" || row.activity_type === "quiz_passed") quizzes++;
+      }
+      setWeeklyStars(stars);
+      setWeeklyStories(stories);
+      setWeeklyQuizzes(quizzes);
+    };
+
+    loadWeeklyData();
+  }, [selectedProfileId]);
 
   // Resolve language (fallback to 'de')
   const lang = kidAppLanguage || 'de';
@@ -155,10 +207,10 @@ const HomeFablino = () => {
   const kidName = selectedProfile?.name || "";
   const greeting = kidName ? greet.withName(kidName) : greet.withoutName;
 
-  // Stats
-  const stars = gamificationState?.stars ?? 0;
-  const storiesCompleted = gamificationState?.storiesCompleted ?? 0;
-  const quizzesPassed = gamificationState?.quizzesPassed ?? 0;
+  // Capped values for visual display
+  const starsDisplay = Math.min(weeklyStars, 15);
+  const storiesDisplay = Math.min(weeklyStories, 5);
+  const quizzesDisplay = Math.min(weeklyQuizzes, 5);
 
   return (
     <div 
@@ -180,7 +232,7 @@ const HomeFablino = () => {
                 style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
               >
                 <span className="font-nunito text-[14px] font-bold" style={{ color: "#92400E" }}>
-                  {selectedProfile?.name || "Kind"} ▼
+                  {selectedProfile?.name || ""} ▼
                 </span>
               </button>
 
@@ -237,22 +289,20 @@ const HomeFablino = () => {
         </div>
 
         {/* ═══ 1. FABLINO GREETING (Hero) — side by side ═══ */}
-        <div className="flex items-center justify-center gap-4 pt-4 mb-3">
-          {/* Mascot with gentle bounce */}
-          <div 
-            className="w-[130px] h-[130px] flex-shrink-0 flex items-center justify-center"
+        <div className="flex items-center pt-4 mb-3" style={{ marginLeft: -24, gap: 0 }}>
+          {/* Mascot with gentle bounce — 250px, pushed left */}
+          <img 
+            src="/mascot/6_Onboarding.png" 
+            alt="Fablino Fuchs" 
+            className="flex-shrink-0 object-contain drop-shadow-lg"
             style={{
+              width: 250,
+              height: "auto",
               animation: "gentleBounce 2.2s ease-in-out infinite",
             }}
-          >
-            <img 
-              src="/mascot/6_onboarding_vec.svg" 
-              alt="Fablino Fuchs" 
-              className="w-[130px] h-[130px] object-contain drop-shadow-lg"
-            />
-          </div>
+          />
 
-          {/* Speech Bubble to the right */}
+          {/* Speech Bubble — close to Fablino */}
           <div className="flex-1 min-w-0">
             <SpeechBubble variant="hero">
               {greeting}
@@ -288,44 +338,125 @@ const HomeFablino = () => {
           </button>
         </div>
 
-        {/* ═══ 3. GAMIFICATION CARD (dezent) ═══ */}
-        <div className="bg-orange-50 rounded-2xl p-4 mb-4 border border-orange-100">
-          {/* Title */}
-          <h3 className="font-extrabold text-[14px] mb-3" style={{ color: "#92400E" }}>
-            {ui.collection}
-          </h3>
-
-          {/* Stats Row */}
-          <div className="flex justify-between mb-4 text-[13px] font-semibold" style={{ color: "#2D1810" }}>
-            <span>⭐ {stars} {ui.stars}</span>
-            <span>📖 {storiesCompleted} {ui.stories}</span>
-            <span>🎯 {quizzesPassed} {ui.quiz}</span>
+        {/* ═══ 3. WEEKLY TRACKER CARD ═══ */}
+        <div 
+          className="rounded-[20px] p-5 mb-4"
+          style={{
+            background: "white",
+            border: "1px solid #F0E8E0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}
+        >
+          {/* Title row: heading left, "See all" link right */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-extrabold text-[18px]" style={{ color: "#2D1810" }}>
+              {ui.myWeek}
+            </h3>
+            <button
+              onClick={() => navigate("/results")}
+              className="font-semibold text-[13px] hover:underline"
+              style={{ color: "#FF8C42" }}
+            >
+              {ui.seeAll}
+            </button>
           </div>
 
-          {/* Sticker Preview */}
-          <div className="flex justify-center gap-2 mb-3">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="w-9 h-9 rounded-full border-2 border-dashed flex items-center justify-center text-gray-400 text-[12px] font-bold"
-                style={{ 
-                  background: "#FFF7ED", 
-                  borderColor: "#D1D5DB",
-                }}
-              >
-                ?
-              </div>
-            ))}
-          </div>
-
-          {/* Link to all stickers */}
-          <button 
-            onClick={() => navigate("/sticker-buch")}
-            className="w-full text-center font-bold text-[11px] hover:underline"
-            style={{ color: "#FF8C42" }}
+          {/* 2-column grid: Stars left | Stories+Quiz right */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "auto 1fr",
+              gap: "12px 20px",
+              alignItems: "center",
+            }}
           >
-            {ui.stickers}
-          </button>
+            {/* LEFT: 3×5 Star Grid (spans 2 rows visually via gridRow) */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(5, 24px)",
+                gridTemplateRows: "repeat(3, 24px)",
+                gap: "6px 4px",
+                gridRow: "1 / 3",
+              }}
+            >
+              {[...Array(15)].map((_, i) => {
+                const filled = i < starsDisplay;
+                return (
+                  <div
+                    key={`star-${i}`}
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      background: filled ? "#FFD700" : "transparent",
+                      border: filled ? "1.5px solid #E5B800" : "1.5px solid #E0E0E0",
+                      fontSize: 13,
+                      lineHeight: 1,
+                      color: filled ? "#B8860B" : "#E0E0E0",
+                    }}
+                  >
+                    {filled ? "★" : "☆"}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* RIGHT TOP: Stories row */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[24px] flex-shrink-0">📖</span>
+              <div className="flex gap-2">
+                {[...Array(5)].map((_, i) => {
+                  const filled = i < storiesDisplay;
+                  return (
+                    <div
+                      key={`story-${i}`}
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: filled ? "#FFF7ED" : "transparent",
+                        border: filled ? "2px solid #FF8C42" : "2px dashed #E5E5E5",
+                        fontSize: 14,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {filled ? "😊" : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* RIGHT BOTTOM: Quiz row */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[24px] flex-shrink-0">🎯</span>
+              <div className="flex gap-2">
+                {[...Array(5)].map((_, i) => {
+                  const filled = i < quizzesDisplay;
+                  return (
+                    <div
+                      key={`quiz-${i}`}
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: filled ? "#F0FFF4" : "transparent",
+                        border: filled ? "2px solid #50C878" : "2px dashed #E5E5E5",
+                        fontSize: 14,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {filled ? "✅" : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ═══ 4. FABLINO TIP ═══ */}

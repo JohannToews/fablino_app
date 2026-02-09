@@ -16,6 +16,7 @@ import {
   SelectedCharacter,
   CharacterSelectionTranslations,
 } from "./types";
+import FablinoPageHeader from "@/components/FablinoPageHeader";
 
 // Import images
 import heroKidImg from "@/assets/characters/hero-kid.jpg";
@@ -48,6 +49,7 @@ interface CharacterSelectionScreenProps {
   kidAge?: number | null;
   onComplete: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
   onBack: () => void;
+  fablinoMessage?: string;
 }
 
 type ViewState = "main" | "family";
@@ -62,6 +64,7 @@ const CharacterSelectionScreen = ({
   kidAge,
   onComplete,
   onBack,
+  fablinoMessage,
 }: CharacterSelectionScreenProps) => {
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
@@ -393,22 +396,28 @@ const CharacterSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-28">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={viewState === "main" ? onBack : () => setViewState("main")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-base md:text-lg font-baloo font-bold flex-1">
-            {translations.header}
-          </h1>
-        </div>
+    <div className="min-h-screen pb-24 md:pb-28" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      {/* Back button */}
+      <div className="px-4 pt-3 pb-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={viewState === "main" ? onBack : () => setViewState("main")}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
       </div>
+
+      {/* Fablino Header */}
+      {fablinoMessage && viewState === "main" && (
+        <div className="container max-w-3xl mx-auto px-4">
+          <FablinoPageHeader
+            mascotImage="/mascot/4_come_back.png"
+            message={fablinoMessage}
+            mascotSize={130}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-2">

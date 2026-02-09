@@ -119,7 +119,7 @@ const SiblingInputModal = ({
                 className={cn(
                   "flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl",
                   "border-2 border-border transition-all duration-200",
-                  "hover:scale-105 hover:border-primary/50 active:scale-95"
+                  "hover:scale-105 hover:border-orange-400 active:scale-95"
                 )}
               >
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden">
@@ -139,7 +139,7 @@ const SiblingInputModal = ({
                 className={cn(
                   "flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl",
                   "border-2 border-border transition-all duration-200",
-                  "hover:scale-105 hover:border-primary/50 active:scale-95"
+                  "hover:scale-105 hover:border-orange-400 active:scale-95"
                 )}
               >
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden">
@@ -169,7 +169,7 @@ const SiblingInputModal = ({
                 enterKeyHint="next"
                 autoComplete="off"
                 autoCorrect="off"
-                className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
+                className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-orange-400"
               />
 
               <div className="flex gap-3">
@@ -207,7 +207,7 @@ const SiblingInputModal = ({
                 placeholder={translations.siblingAge}
                 enterKeyHint="done"
                 autoComplete="off"
-                className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-primary"
+                className="h-14 text-lg font-medium text-center rounded-xl border-2 focus:border-orange-400"
               />
 
               <div className="flex gap-3">

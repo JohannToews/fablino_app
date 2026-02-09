@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw, Users } from "lucide-react";
 import confetti from "canvas-confetti";
-import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
@@ -280,7 +279,6 @@ interface Story {
 
 const VocabularyQuizPage = () => {
   const { user } = useAuth();
-  const { colors: paletteColors } = useColorPalette();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
   const { actions, pendingLevelUp, clearPendingLevelUp } = useGamification();
   const tGlobal = getTranslations(kidAppLanguage as Language);
@@ -677,7 +675,7 @@ const VocabularyQuizPage = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <div className="animate-bounce-soft">
           <Sparkles className="h-16 w-16 text-primary" />
         </div>
@@ -687,7 +685,7 @@ const VocabularyQuizPage = () => {
 
   if (words.length === 0) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+      <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <PageHeader title={t.title} backTo="/stories" />
 
         <div className="container max-w-2xl p-8 text-center">
@@ -710,7 +708,7 @@ const VocabularyQuizPage = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg}`}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       <PageHeader 
         title={t.title} 
         backTo="/stories"

@@ -40,7 +40,7 @@ const SelectionSummary = ({
           {characters.map((char) => (
             <div
               key={char.id}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20"
+              className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-200"
             >
               <span className="text-sm font-medium text-foreground">
                 {char.name || char.label}

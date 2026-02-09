@@ -159,7 +159,7 @@ const SettingSelectionScreen = ({
 
           {/* Selected Time Display */}
           <div className="flex flex-col items-center gap-2">
-            <div className="relative w-24 h-16 md:w-32 md:h-20 rounded-xl overflow-hidden shadow-lg border-2 border-primary">
+            <div className="relative w-24 h-16 md:w-32 md:h-20 rounded-xl overflow-hidden shadow-lg border-2 border-orange-400">
               <img
                 src={selectedTimeData.image}
                 alt={selectedTimeData.label}

@@ -64,7 +64,7 @@ const HomeClassic = () => {
 
   if (isLoading || gamLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
         <div className="animate-pulse flex flex-col items-center gap-4">
           <Star className="h-12 w-12 text-primary animate-spin" />
         </div>
@@ -73,7 +73,7 @@ const HomeClassic = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} overflow-hidden`}>
+    <div className="min-h-screen overflow-hidden" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       {/* Decorative blurs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className={`absolute top-10 left-10 w-20 h-20 ${paletteColors.accent} rounded-full blur-2xl animate-bounce-soft`} />
