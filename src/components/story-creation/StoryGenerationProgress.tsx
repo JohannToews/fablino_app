@@ -1,213 +1,136 @@
-import { useState, useEffect } from "react";
-import { Check, Loader2, Sparkles, Pencil, Search, Palette, BookOpen } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import FablinoMascot from "@/components/FablinoMascot";
+import SpeechBubble from "@/components/SpeechBubble";
 
 interface StoryGenerationProgressProps {
   language: string;
 }
 
-interface ProgressStep {
-  id: string;
-  icon: React.ReactNode;
-  label: Record<string, string>;
-  duration: number; // ms to show this step
-}
-
-const progressSteps: ProgressStep[] = [
-  {
-    id: "writing",
-    icon: <Pencil className="w-5 h-5" />,
-    label: {
-      de: "Geschichte wird geschrieben...",
-      fr: "L'histoire est en cours d'écriture...",
-      en: "Writing the story...",
-    },
-    duration: 8000,
-  },
-  {
-    id: "checking",
-    icon: <Search className="w-5 h-5" />,
-    label: {
-      de: "Qualitätsprüfung läuft...",
-      fr: "Vérification de la qualité...",
-      en: "Quality check in progress...",
-    },
-    duration: 6000,
-  },
-  {
-    id: "images",
-    icon: <Palette className="w-5 h-5" />,
-    label: {
-      de: "Bilder werden gemalt...",
-      fr: "Les images sont en cours de création...",
-      en: "Creating images...",
-    },
-    duration: 12000,
-  },
-  {
-    id: "finishing",
-    icon: <Sparkles className="w-5 h-5" />,
-    label: {
-      de: "Fast fertig...",
-      fr: "Presque terminé...",
-      en: "Almost done...",
-    },
-    duration: 60000, // Long duration - this step waits until actual completion
-  },
-];
-
-const funFacts: Record<string, string[]> = {
-  de: [
-    "Wusstest du? Ein Oktopus hat drei Herzen! 🐙",
-    "Wusstest du? Sterne funkeln, weil die Luft sie zum Tanzen bringt! ⭐",
-    "Wusstest du? Elefanten können nicht springen! 🐘",
-    "Wusstest du? Ein Regenbogen ist eigentlich ein Kreis! 🌈",
-    "Wusstest du? Delfine schlafen mit einem Auge offen! 🐬",
-    "Wusstest du? Der Eiffelturm wächst im Sommer! 🗼",
-    "Wusstest du? Hunde träumen auch von Abenteuern! 🐕",
-    "Wusstest du? Honig wird niemals schlecht! 🍯",
-  ],
-  fr: [
-    "Le savais-tu ? Une pieuvre a trois cœurs ! 🐙",
-    "Le savais-tu ? Les étoiles scintillent parce que l'air les fait danser ! ⭐",
-    "Le savais-tu ? Les éléphants ne peuvent pas sauter ! 🐘",
-    "Le savais-tu ? Un arc-en-ciel est en fait un cercle ! 🌈",
-    "Le savais-tu ? Les dauphins dorment avec un œil ouvert ! 🐬",
-    "Le savais-tu ? La tour Eiffel grandit en été ! 🗼",
-    "Le savais-tu ? Les chiens rêvent aussi d'aventures ! 🐕",
-    "Le savais-tu ? Le miel ne se périme jamais ! 🍯",
-  ],
-  en: [
-    "Did you know? An octopus has three hearts! 🐙",
-    "Did you know? Stars twinkle because the air makes them dance! ⭐",
-    "Did you know? Elephants can't jump! 🐘",
-    "Did you know? A rainbow is actually a circle! 🌈",
-    "Did you know? Dolphins sleep with one eye open! 🐬",
-    "Did you know? The Eiffel Tower grows in summer! 🗼",
-    "Did you know? Dogs dream about adventures too! 🐕",
-    "Did you know? Honey never goes bad! 🍯",
-  ],
-};
-
-// Cycling mascot images for the generation screen
+// Cycling mascot images
 const MASCOT_CYCLE = [
   "/mascot/3_wating_story_generated.png",
   "/mascot/6_Onboarding.png",
   "/mascot/5_new_story.png",
 ];
 
+const SHOW_DURATION = 2500; // ms visible
+const HIDE_DURATION = 800;  // ms hidden (transition)
+
 const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  const [currentFact, setCurrentFact] = useState(0);
+  const [facts, setFacts] = useState<string[]>([]);
+  const [shuffledFacts, setShuffledFacts] = useState<string[]>([]);
+  const [factIndex, setFactIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
   const [mascotIndex, setMascotIndex] = useState(0);
 
-  const facts = funFacts[language] || funFacts.de;
-
-  // Progress through steps with timing
+  // Load fun facts from DB
   useEffect(() => {
-    if (currentStepIndex >= progressSteps.length - 1) return;
+    const loadFacts = async () => {
+      const { data, error } = await supabase
+        .from("fun_facts")
+        .select("translations, emoji");
 
-    const currentStep = progressSteps[currentStepIndex];
-    const timer = setTimeout(() => {
-      setCompletedSteps(prev => new Set([...prev, currentStep.id]));
-      setCurrentStepIndex(prev => prev + 1);
-    }, currentStep.duration);
+      if (error || !data?.length) return;
 
-    return () => clearTimeout(timer);
-  }, [currentStepIndex]);
+      const lang = language || "de";
+      const extracted = data
+        .map((row) => {
+          const translations = row.translations as Record<string, string>;
+          const text = translations?.[lang] || translations?.de || translations?.en;
+          return text ? `${text} ${row.emoji}` : null;
+        })
+        .filter(Boolean) as string[];
 
-  // Rotate fun facts
-  useEffect(() => {
-    const factInterval = setInterval(() => {
-      setCurrentFact(prev => (prev + 1) % facts.length);
-    }, 5000);
+      setFacts(extracted);
+      // Shuffle for first round
+      setShuffledFacts(shuffle(extracted));
+    };
+    loadFacts();
+  }, [language]);
 
-    return () => clearInterval(factInterval);
-  }, [facts.length]);
-
-  // Cycle mascot image every 3s
-  useEffect(() => {
-    const mascotTimer = setInterval(() => {
-      setMascotIndex(prev => (prev + 1) % MASCOT_CYCLE.length);
-    }, 3000);
-    return () => clearInterval(mascotTimer);
+  // Shuffle helper
+  const shuffle = useCallback((arr: string[]) => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
   }, []);
 
-  return (
-    <div className="text-center space-y-6 p-8 max-w-md mx-auto">
-      {/* Fablino mascot — cycles between emotions */}
-      <div className="relative flex justify-center">
-        <FablinoMascot
-          key={mascotIndex}
-          src={MASCOT_CYCLE[mascotIndex]}
-          size="md"
-          className="transition-opacity duration-500"
-        />
-        {/* Sparkles around */}
-        <Sparkles className="absolute top-0 right-1/4 w-6 h-6 text-yellow-400 animate-bounce" style={{ animationDelay: "0.5s" }} />
-        <Sparkles className="absolute bottom-0 left-1/4 w-5 h-5 text-yellow-400 animate-bounce" style={{ animationDelay: "1s" }} />
-      </div>
+  // Cycle: show 2.5s → fade out → 0.8s hidden → next fact + mascot → fade in
+  useEffect(() => {
+    if (shuffledFacts.length === 0) return;
 
+    const timer = setTimeout(() => {
+      if (visible) {
+        // Start hiding
+        setVisible(false);
+      } else {
+        // Advance to next fact
+        let nextIndex = factIndex + 1;
+        if (nextIndex >= shuffledFacts.length) {
+          // Reshuffle for new round
+          setShuffledFacts(shuffle(facts));
+          nextIndex = 0;
+        }
+        setFactIndex(nextIndex);
+        setMascotIndex((prev) => (prev + 1) % MASCOT_CYCLE.length);
+        setVisible(true);
+      }
+    }, visible ? SHOW_DURATION : HIDE_DURATION);
+
+    return () => clearTimeout(timer);
+  }, [visible, factIndex, shuffledFacts, facts, shuffle]);
+
+  const currentFact = shuffledFacts[factIndex] || "";
+
+  // Waiting title per language
+  const title: Record<string, string> = {
+    de: "Deine Geschichte wird erstellt...",
+    fr: "Ton histoire est en cours de création...",
+    en: "Your story is being created...",
+    es: "Tu historia se está creando...",
+    nl: "Je verhaal wordt gemaakt...",
+    it: "La tua storia è in fase di creazione...",
+    bs: "Tvoja priča se pravi...",
+  };
+
+  return (
+    <div className="text-center space-y-8 p-6 max-w-sm mx-auto">
       {/* Title */}
-      <h2 className="text-2xl font-baloo font-bold text-foreground">
-        {language === "de" ? "Deine Geschichte wird erstellt..." :
-         language === "fr" ? "Ton histoire est en cours de création..." :
-         "Your story is being created..."}
+      <h2 className="text-xl font-baloo font-bold text-foreground">
+        {title[language] || title.de}
       </h2>
 
-      {/* Progress steps */}
-      <div className="space-y-3">
-        {progressSteps.map((step, index) => {
-          const isCompleted = completedSteps.has(step.id);
-          const isCurrent = index === currentStepIndex;
-          const isPending = index > currentStepIndex;
-
-          return (
-            <div
-              key={step.id}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-500",
-                isCompleted && "bg-orange-100 dark:bg-orange-900/30",
-                isCurrent && "bg-orange-50 scale-105",
-                isPending && "opacity-40"
-              )}
-            >
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                isCompleted && "bg-orange-500 text-white",
-                isCurrent && "bg-orange-400 text-white",
-                isPending && "bg-muted text-muted-foreground"
-              )}>
-                {isCompleted ? (
-                  <Check className="w-5 h-5" />
-                ) : isCurrent ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  step.icon
-                )}
-              </div>
-              <span className={cn(
-                "text-sm font-medium transition-all",
-                isCompleted && "text-orange-700 dark:text-orange-300",
-                isCurrent && "text-foreground font-semibold",
-                isPending && "text-muted-foreground"
-              )}>
-                {step.label[language] || step.label.de}
-              </span>
-            </div>
-          );
-        })}
+      {/* Fablino + Speech bubble */}
+      <div
+        className="flex items-center gap-3 justify-center transition-opacity duration-500"
+        style={{ opacity: visible ? 1 : 0 }}
+      >
+        <FablinoMascot
+          src={MASCOT_CYCLE[mascotIndex]}
+          size="md"
+          bounce={visible}
+        />
+        {currentFact && (
+          <SpeechBubble variant="hero">
+            {currentFact}
+          </SpeechBubble>
+        )}
       </div>
 
-      {/* Fun fact — speech bubble style */}
-      <div className="p-4 bg-white rounded-2xl" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #F0E8E0" }}>
-        <p className="text-sm font-medium animate-fade-in" style={{ color: "#555" }} key={currentFact}>
-          {facts[currentFact]}
-        </p>
+      {/* Simple loading dots */}
+      <div className="flex justify-center gap-2">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-3 h-3 rounded-full bg-[#E8863A] animate-bounce"
+            style={{ animationDelay: `${i * 0.2}s` }}
+          />
+        ))}
       </div>
-
     </div>
   );
 };
