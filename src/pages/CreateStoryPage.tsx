@@ -658,7 +658,7 @@ const CreateStoryPage = () => {
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#F0E8E0")}
             >
               <div className="flex items-start gap-4">
-                <span className="text-[32px]">🎤</span>
+                <span className="text-[32px]">✏️</span>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-[17px] font-extrabold" style={{ color: "#2D1810" }}>
                     {t.wizardPathFree}
