@@ -17,7 +17,7 @@ interface VoiceInputFieldProps {
   compact?: boolean;
 }
 
-// Map language codes to speech recognition language codes
+// DEPRECATED — no longer used (STT now auto-detects language)
 const getRecognitionLang = (lang: string): string => {
   const langMap: Record<string, string> = {
     de: "de-DE",
@@ -158,7 +158,8 @@ const VoiceInputField = ({
     if (!SpeechRecognitionAPI) return;
 
     const recognition = new SpeechRecognitionAPI();
-    recognition.lang = getRecognitionLang(language);
+    // STT auto-detects language — user can speak in any language
+    recognition.lang = '';
     recognition.continuous = false; // Use non-continuous for better reliability
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;

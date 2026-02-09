@@ -28,20 +28,11 @@ Deno.serve(async (req) => {
 
     console.log(`Transcribing audio file: ${audioFile.name}, size: ${audioFile.size}, language: ${language}`);
 
-    // Map language codes to ISO 639-3
-    const languageMap: Record<string, string> = {
-      de: "deu",
-      fr: "fra",
-      en: "eng",
-      es: "spa",
-      nl: "nld",
-      it: "ita",
-    };
-
+    // Let ElevenLabs Scribe v2 auto-detect the spoken language
+    // (supports 90+ languages with automatic detection)
     const apiFormData = new FormData();
     apiFormData.append("file", audioFile);
     apiFormData.append("model_id", "scribe_v2");
-    apiFormData.append("language_code", languageMap[language] || "deu");
 
     const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
       method: "POST",

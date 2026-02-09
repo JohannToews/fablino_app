@@ -112,7 +112,7 @@ const translations: Record<Language, {
   },
 };
 
-// Language code mapping for speech recognition
+// DEPRECATED — no longer used (STT now auto-detects language)
 const languageToLocale: Record<string, string> = {
   de: "de-DE",
   fr: "fr-FR",
@@ -154,7 +154,8 @@ const StoryFeedbackDialog = ({
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    recognition.lang = languageToLocale[language] || "fr-FR";
+    // STT auto-detects language — user can speak in any language
+    recognition.lang = '';
     recognition.continuous = false;
     recognition.interimResults = false;
 
