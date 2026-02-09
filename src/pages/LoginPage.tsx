@@ -172,17 +172,14 @@ const LoginPage = () => {
               )}
             </Button>
             
-            {/* Forgot password link - only show when email is entered */}
-            {isEmailInput && (
-              <div className="text-center">
-                <Link 
-                  to="/reset-password"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors underline"
-                >
-                  Passwort vergessen?
-                </Link>
-              </div>
-            )}
+            <div className="text-center">
+              <Link 
+                to="/reset-password"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors underline"
+              >
+                Passwort vergessen?
+              </Link>
+            </div>
             
             {/* Registration link */}
             <div className="text-center pt-2 border-t border-border mt-4">
