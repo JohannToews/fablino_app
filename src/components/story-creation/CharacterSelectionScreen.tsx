@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
-import { ArrowLeft, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import CharacterTile from "./CharacterTile";
 import NameInputModal from "./NameInputModal";
 import FamilyMemberModal from "./FamilyMemberModal";
+import SavedCharactersModal from "./SavedCharactersModal";
 import SelectionSummary from "./SelectionSummary";
 import {
   CharacterType,
@@ -16,13 +16,13 @@ import {
 } from "./types";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 
-// Character images (Vite imports – reliable with Dropbox Smart Sync)
+// Character images
 import heroKidImg from "@/assets/people/me.png";
 import familyImg from "@/assets/people/family.png";
 import boysFriendsImg from "@/assets/people/friends.png";
 import surpriseBoxImg from "@/assets/people/surprise.png";
 
-// Family sub-tile images (kept as asset imports)
+// Family sub-tile images
 import momImg from "@/assets/characters/mom.jpg";
 import dadImg from "@/assets/characters/dad.jpg";
 import grandmaImg from "@/assets/characters/grandma.jpg";
@@ -52,9 +52,6 @@ interface CharacterSelectionScreenProps {
 
 type ViewState = "main" | "family";
 
-// Which category tile is expanded to show saved characters
-type ExpandedCategory = "family" | "friends" | null;
-
 const CharacterSelectionScreen = ({
   translations,
   kidProfileId,
@@ -66,8 +63,10 @@ const CharacterSelectionScreen = ({
 }: CharacterSelectionScreenProps) => {
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
-  const [expandedCategory, setExpandedCategory] = useState<ExpandedCategory>(null);
   const [surpriseCharacters, setSurpriseCharacters] = useState(false);
+
+  // Modal state for saved characters (family/friends)
+  const [savedModalCategory, setSavedModalCategory] = useState<"family" | "friends" | null>(null);
   
   // Modal states
   const [nameModalOpen, setNameModalOpen] = useState(false);
@@ -88,7 +87,6 @@ const CharacterSelectionScreen = ({
   // Load saved characters from DB
   useEffect(() => {
     const effectiveKidProfileId = kidProfileId ?? sessionStorage.getItem('selected_kid_profile_id') ?? undefined;
-
     if (!effectiveKidProfileId) return;
 
     const loadSavedCharacters = async () => {
@@ -103,7 +101,6 @@ const CharacterSelectionScreen = ({
         console.error('[CharacterSelection] Error loading characters:', error);
         return;
       }
-
       setSavedCharacters((data || []) as KidCharacterDB[]);
     };
 
@@ -133,39 +130,44 @@ const CharacterSelectionScreen = ({
     { type: "opa" as FamilyMember, image: grandpaImg, label: translations.opa },
   ];
 
-  const openNameModal = (type: CharacterType, label: string) => {
-    setNameModalTarget({ type, label });
-    setNameModalOpen(true);
-  };
-
   const openFamilyModal = (type: FamilyMember, label: string) => {
     setFamilyModalTarget({ type, label });
     setFamilyModalOpen(true);
   };
 
-  // Toggle a saved character in the selection
-  const toggleSavedCharacter = (char: KidCharacterDB) => {
-    const charId = `saved-${char.id}`;
-    const isAlreadySelected = selectedCharacters.some(c => c.id === charId);
-    
-    if (isAlreadySelected) {
-      setSelectedCharacters(prev => prev.filter(c => c.id !== charId));
-    } else {
+  // Get IDs of currently selected saved characters for a category
+  const getSelectedSavedIds = (category: "family" | "friends"): string[] => {
+    const chars = category === "family" ? familyChars : friendChars;
+    return chars
+      .filter(c => selectedCharacters.some(sc => sc.id === `saved-${c.id}`))
+      .map(c => c.id);
+  };
+
+  // Handle modal confirm: sync selected saved characters
+  const handleSavedModalConfirm = (category: "family" | "friends", confirmedIds: string[]) => {
+    const chars = category === "family" ? familyChars : friendChars;
+    const typeMap: Record<string, CharacterType> = {
+      family: "family",
+      friend: "friends",
+      known_figure: "famous",
+    };
+
+    // Remove all saved chars of this category first
+    const prefixedIds = chars.map(c => `saved-${c.id}`);
+    let updated = selectedCharacters.filter(sc => !prefixedIds.includes(sc.id));
+
+    // Add confirmed ones
+    for (const id of confirmedIds) {
+      const char = chars.find(c => c.id === id);
+      if (!char) continue;
       const charLabel = [
         char.name,
         char.relation ? char.relation : null,
         char.age ? `${char.age} J.` : null,
       ].filter(Boolean).join(', ');
-      
-      // Map DB role to CharacterType
-      const typeMap: Record<string, CharacterType> = {
-        family: "family",
-        friend: "friends",
-        known_figure: "famous",
-      };
-      
-      const newChar: SelectedCharacter = {
-        id: charId,
+
+      updated.push({
+        id: `saved-${char.id}`,
         type: typeMap[char.role] || "friends",
         name: char.name,
         label: charLabel,
@@ -173,63 +175,22 @@ const CharacterSelectionScreen = ({
         role: char.role,
         relation: char.relation || undefined,
         description: char.description || undefined,
-      };
-      setSelectedCharacters(prev => [...prev, newChar]);
-      toast.success(`\u2713 ${char.name} ${translations.nameSaved}`);
-    }
-  };
-
-  // Get saved characters for a category and render checkboxes
-  const renderSavedCheckboxes = (category: ExpandedCategory) => {
-    let chars: KidCharacterDB[] = [];
-    if (category === "family") chars = familyChars;
-    else if (category === "friends") chars = friendChars;
-    
-    if (chars.length === 0) {
-      return (
-        <p className="text-xs text-muted-foreground italic py-2 px-1">
-          {translations.noCharactersSaved}
-        </p>
-      );
+      });
     }
 
-    return (
-      <div className="space-y-1.5">
-        {chars.map((char) => {
-          const charId = `saved-${char.id}`;
-          const isChecked = selectedCharacters.some(c => c.id === charId);
-          const charLabel = [
-            char.name,
-            char.relation ? `(${char.relation})` : null,
-            char.age ? `${char.age} J.` : null,
-          ].filter(Boolean).join(' ');
-          
-          return (
-            <label
-              key={char.id}
-              className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-            >
-              <Checkbox
-                checked={isChecked}
-                onCheckedChange={() => toggleSavedCharacter(char)}
-              />
-              <span className="text-xs md:text-sm font-medium">{charLabel}</span>
-            </label>
-          );
-        })}
-      </div>
-    );
+    setSelectedCharacters(updated);
+    if (confirmedIds.length > 0) {
+      toast.success(`✓ ${confirmedIds.length} ${translations.nameSaved}`);
+    }
   };
 
   const handleMainTileClick = (type: CharacterType) => {
-    // If user clicks any tile other than "surprise", deselect surprise mode
     if (type !== "surprise" && surpriseCharacters) {
       setSurpriseCharacters(false);
     }
     
     switch (type) {
       case "me": {
-        // Toggle "me" selection
         const meExists = selectedCharacters.some(c => c.type === "me");
         if (meExists) {
           setSelectedCharacters(prev => prev.filter(c => c.type !== "me"));
@@ -244,17 +205,17 @@ const CharacterSelectionScreen = ({
             age: kidAge || undefined,
           };
           setSelectedCharacters((prev) => [...prev, meCharacter]);
-          toast.success(`\u2713 ${meName} ${translations.nameSaved}`);
+          toast.success(`✓ ${meName} ${translations.nameSaved}`);
         }
         break;
       }
       case "family":
-        // Toggle expansion of saved family characters
-        setExpandedCategory(prev => prev === "family" ? null : "family");
+        // Open modal with saved family characters
+        setSavedModalCategory("family");
         break;
       case "friends":
-        // Toggle expansion of saved friend characters
-        setExpandedCategory(prev => prev === "friends" ? null : "friends");
+        // Open modal with saved friend characters
+        setSavedModalCategory("friends");
         break;
       case "surprise":
         handleSurprise();
@@ -271,15 +232,11 @@ const CharacterSelectionScreen = ({
       other: translations.other,
     };
     
-    // For mama, papa, oma, opa - toggle selection (multi-select)
     if (type !== "other") {
       const existingIndex = selectedCharacters.findIndex((c) => c.type === type);
-      
       if (existingIndex >= 0) {
-        // Already selected - remove it
         setSelectedCharacters((prev) => prev.filter((c) => c.type !== type));
       } else {
-        // Not selected - add it
         const familyCharacter: SelectedCharacter = {
           id: `${type}-${Date.now()}`,
           type: type,
@@ -287,43 +244,35 @@ const CharacterSelectionScreen = ({
           label: labels[type],
         };
         setSelectedCharacters((prev) => [...prev, familyCharacter]);
-        toast.success(`\u2713 ${labels[type]} ${translations.nameSaved}`);
+        toast.success(`✓ ${labels[type]} ${translations.nameSaved}`);
       }
-      // Stay in family view for multi-select
     } else {
-      // "Other" still opens name modal
       openFamilyModal(type, labels[type]);
     }
   };
 
   const handleSaveName = useCallback((name: string) => {
     if (!nameModalTarget) return;
-
     const newCharacter: SelectedCharacter = {
       id: `${nameModalTarget.type}-${Date.now()}`,
       type: nameModalTarget.type,
       name,
       label: nameModalTarget.label,
     };
-
     setSelectedCharacters((prev) => [...prev, newCharacter]);
-    toast.success(`\u2713 ${name} ${translations.nameSaved}`);
+    toast.success(`✓ ${name} ${translations.nameSaved}`);
   }, [nameModalTarget, translations.nameSaved]);
 
   const handleSaveFamilyMember = useCallback((name: string, useDefault: boolean) => {
     if (!familyModalTarget) return;
-
     const newCharacter: SelectedCharacter = {
       id: `${familyModalTarget.type}-${Date.now()}`,
       type: familyModalTarget.type,
       name,
       label: useDefault ? familyModalTarget.label : name,
     };
-
     setSelectedCharacters((prev) => [...prev, newCharacter]);
-    toast.success(`\u2713 ${name} ${translations.nameSaved}`);
-    
-    // Return to main view
+    toast.success(`✓ ${name} ${translations.nameSaved}`);
     setViewState("main");
   }, [familyModalTarget, translations.nameSaved]);
 
@@ -332,22 +281,16 @@ const CharacterSelectionScreen = ({
   };
 
   const handleSurprise = () => {
-    // "Überrasch mich" on Screen 2 = exclusive: no real persons, only fictional characters
-    // Clear all other selections and set surprise flag
     setSelectedCharacters([]);
     setSurpriseCharacters(true);
-    setExpandedCategory(null);
-    // Go directly to next screen with empty characters + surprise flag
     onComplete([], true);
   };
 
   const handleContinue = () => {
-    // If in family view, go back to main view first
     if (viewState === "family") {
       setViewState("main");
       return;
     }
-    // From main view, proceed directly to next screen
     onComplete(selectedCharacters, surpriseCharacters);
   };
 
@@ -356,11 +299,15 @@ const CharacterSelectionScreen = ({
   };
 
   // Check if any saved character from a category is selected
-  const hasSavedSelections = (category: ExpandedCategory): boolean => {
-    let chars: KidCharacterDB[] = [];
-    if (category === "family") chars = familyChars;
-    else if (category === "friends") chars = friendChars;
+  const hasSavedSelections = (category: "family" | "friends"): boolean => {
+    const chars = category === "family" ? familyChars : friendChars;
     return chars.some(c => selectedCharacters.some(sc => sc.id === `saved-${c.id}`));
+  };
+
+  // Modal title based on category
+  const getModalTitle = (category: "family" | "friends") => {
+    // Use a generic "Who comes along?" phrasing
+    return category === "family" ? translations.family : translations.friends;
   };
 
   return (
@@ -393,9 +340,7 @@ const CharacterSelectionScreen = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {mainTiles.map((tile) => {
                 const isExpandable = tile.type === "family" || tile.type === "friends";
-                const isExpanded = expandedCategory === tile.type;
-                const hasSelections = isExpandable && hasSavedSelections(tile.type as ExpandedCategory);
-                // "Überrasch mich" tile is selected when surpriseCharacters is true
+                const hasSelections = isExpandable && hasSavedSelections(tile.type as "family" | "friends");
                 const isTileSelected = tile.type === "surprise"
                   ? surpriseCharacters
                   : (isSelected(tile.type) || hasSelections);
@@ -416,30 +361,10 @@ const CharacterSelectionScreen = ({
                         {translations.surpriseMeCharactersHint}
                       </p>
                     )}
-                    {/* Expand indicator for categories with saved characters */}
-                    {isExpandable && (
-                      <div className="absolute bottom-6 right-1 md:bottom-7 md:right-1.5">
-                        {isExpanded ? (
-                          <ChevronUp className="w-3.5 h-3.5 text-primary" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
             </div>
-
-            {/* Expanded saved characters checkboxes */}
-            {expandedCategory && (
-              <div className="animate-fade-in bg-card rounded-xl border border-border p-3">
-                <h3 className="text-xs font-medium text-muted-foreground mb-2">
-                  {translations.savedCharactersLabel}
-                </h3>
-                {renderSavedCheckboxes(expandedCategory)}
-              </div>
-            )}
           </div>
         )}
 
@@ -477,6 +402,22 @@ const CharacterSelectionScreen = ({
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
         translations={translations}
+      />
+
+      {/* Saved Characters Modal (for family/friends) */}
+      <SavedCharactersModal
+        open={savedModalCategory !== null}
+        onClose={() => setSavedModalCategory(null)}
+        characters={savedModalCategory === "family" ? familyChars : friendChars}
+        selectedIds={savedModalCategory ? getSelectedSavedIds(savedModalCategory) : []}
+        onConfirm={(ids) => {
+          if (savedModalCategory) {
+            handleSavedModalConfirm(savedModalCategory, ids);
+          }
+        }}
+        title={savedModalCategory ? getModalTitle(savedModalCategory) : ""}
+        emptyMessage={translations.noCharactersSaved}
+        doneLabel={translations.save}
       />
 
       {/* Name Input Modal (for me, friends, famous) */}
