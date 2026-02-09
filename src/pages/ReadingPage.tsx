@@ -751,10 +751,17 @@ const ReadingPage = () => {
   };
 
   const handleWordClick = async (word: string, event: React.MouseEvent) => {
-    // Check if there's a text selection - if so, don't handle the click
+    // Check if there's a multi-word text selection - if so, don't handle the click
+    // Allow single-word selections (browser auto-selects clicked word on some devices)
     const selection = window.getSelection();
-    if (selection && !selection.isCollapsed && selection.toString().trim().length > 0) {
+    const selectedText = selection?.toString().trim() || '';
+    const wordCount = selectedText.split(/\s+/).filter(w => w.length > 0).length;
+    if (wordCount > 1) {
       return;
+    }
+    // Clear any single-word selection from the browser
+    if (selection && !selection.isCollapsed) {
+      selection.removeAllRanges();
     }
     
     const cleanWord = word.replace(/[.,!?;:'"«»]/g, "").toLowerCase();
