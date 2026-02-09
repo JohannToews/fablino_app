@@ -1102,7 +1102,7 @@ const ReadingPage = () => {
               </div>
             )}
             
-            {/* Audio Player - only visible for papa (testing) */}
+            {/* Audio Player disabled for now
             {story && user?.username === 'papa' && (
               <div className="mb-6">
                 <StoryAudioPlayer
@@ -1113,6 +1113,7 @@ const ReadingPage = () => {
                 />
               </div>
             )}
+            */}
 
             {/* Reading Settings */}
             <div className="mb-4">
@@ -1129,11 +1130,11 @@ const ReadingPage = () => {
               />
             </div>
 
-            {/* Reading Card - only show when not in listening mode or always show */}
-            <div className={`bg-card rounded-2xl p-6 md:p-10 shadow-card relative ${isListeningMode && user?.username === 'papa' ? 'opacity-50' : ''}`}>
+            {/* Reading Card */}
+            <div className={`bg-card rounded-2xl p-6 md:p-10 shadow-card relative`}>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
                 <Sparkles className="h-4 w-4" />
-                <span>{isListeningMode && user?.username === 'papa' ? (readingLabels[textLang]?.listeningMode || readingLabels.fr.listeningMode) : (readingLabels[textLang]?.touchWord || readingLabels.fr.touchWord)}</span>
+                <span>{readingLabels[textLang]?.touchWord || readingLabels.fr.touchWord}</span>
               </div>
               
               {/* Floating button for phrase selection - optimized for touch */}
