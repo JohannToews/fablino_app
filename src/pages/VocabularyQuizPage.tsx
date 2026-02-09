@@ -624,8 +624,9 @@ const VocabularyQuizPage = () => {
           p_metadata: { score, max_score: totalQuestions },
         });
 
-        if (result.data?.new_badges?.length > 0) {
-          setPendingBadges(result.data.new_badges);
+        const data = result.data as any;
+        if (data?.new_badges?.length > 0) {
+          setPendingBadges(data.new_badges);
         }
       } catch (e) {
         // Silent fail – gamification should not block UX

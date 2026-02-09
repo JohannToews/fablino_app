@@ -3,7 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import VoiceInputField from "@/components/VoiceInputField";
+import { Textarea } from "@/components/ui/textarea";
+import { Pencil } from "lucide-react";
 import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
@@ -369,14 +370,19 @@ const SpecialEffectsScreen = ({
           </h2>
           
           <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border">
-            <VoiceInputField
-              value={additionalDescription}
-              onChange={setAdditionalDescription}
-              placeholder={t.descriptionPlaceholder}
-              language={kidAppLanguage}
-              multiline
-              compact
-            />
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <Textarea
+                  value={additionalDescription}
+                  onChange={(e) => setAdditionalDescription(e.target.value)}
+                  placeholder={t.descriptionPlaceholder}
+                  className="min-h-[60px] text-sm resize-none"
+                />
+              </div>
+              <div className="flex-shrink-0 h-12 w-12 md:h-14 md:w-14 rounded-full bg-primary flex items-center justify-center">
+                <Pencil className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
+              </div>
+            </div>
           </div>
         </section>
       </div>

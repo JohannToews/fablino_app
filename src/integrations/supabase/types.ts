@@ -23,8 +23,6 @@ export type Database = {
           id: string
           language: string
           max_age: number
-          max_characters: number
-          max_plot_twists: number
           max_sentence_length: number
           max_word_count: number
           min_age: number
@@ -32,7 +30,6 @@ export type Database = {
           narrative_guidelines: string
           narrative_perspective: string | null
           paragraph_length: string | null
-          plot_complexity: string
           sentence_structures: string
           updated_at: string | null
         }
@@ -44,8 +41,6 @@ export type Database = {
           id?: string
           language: string
           max_age: number
-          max_characters?: number
-          max_plot_twists?: number
           max_sentence_length: number
           max_word_count: number
           min_age: number
@@ -53,7 +48,6 @@ export type Database = {
           narrative_guidelines: string
           narrative_perspective?: string | null
           paragraph_length?: string | null
-          plot_complexity?: string
           sentence_structures: string
           updated_at?: string | null
         }
@@ -65,8 +59,6 @@ export type Database = {
           id?: string
           language?: string
           max_age?: number
-          max_characters?: number
-          max_plot_twists?: number
           max_sentence_length?: number
           max_word_count?: number
           min_age?: number
@@ -74,7 +66,6 @@ export type Database = {
           narrative_guidelines?: string
           narrative_perspective?: string | null
           paragraph_length?: string | null
-          plot_complexity?: string
           sentence_structures?: string
           updated_at?: string | null
         }
@@ -101,6 +92,45 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          category: string
+          condition_type: string
+          condition_value: number
+          created_at: string | null
+          description: string
+          emoji: string
+          icon_url: string | null
+          id: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          category: string
+          condition_type: string
+          condition_value: number
+          created_at?: string | null
+          description: string
+          emoji?: string
+          icon_url?: string | null
+          id?: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          category?: string
+          condition_type?: string
+          condition_value?: number
+          created_at?: string | null
+          description?: string
+          emoji?: string
+          icon_url?: string | null
+          id?: string
+          name?: string
+          sort_order?: number | null
         }
         Relationships: []
       }
@@ -671,108 +701,30 @@ export type Database = {
       }
       levels: {
         Row: {
+          color: string
+          emoji: string
           id: number
           name: string
-          emoji: string
-          stars_required: number
           sort_order: number
-          color: string
+          stars_required: number
         }
         Insert: {
+          color: string
+          emoji: string
           id?: number
           name: string
-          emoji: string
-          stars_required: number
           sort_order: number
-          color: string
+          stars_required: number
         }
         Update: {
-          id?: number
-          name?: string
-          emoji?: string
-          stars_required?: number
-          sort_order?: number
           color?: string
-        }
-        Relationships: []
-      }
-      badges: {
-        Row: {
-          id: string
-          name: string
-          description: string
-          icon_url: string | null
-          emoji: string
-          category: string
-          condition_type: string
-          condition_value: number
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description: string
-          icon_url?: string | null
           emoji?: string
-          category: string
-          condition_type: string
-          condition_value: number
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
+          id?: number
           name?: string
-          description?: string
-          icon_url?: string | null
-          emoji?: string
-          category?: string
-          condition_type?: string
-          condition_value?: number
           sort_order?: number
-          created_at?: string
+          stars_required?: number
         }
         Relationships: []
-      }
-      user_badges: {
-        Row: {
-          id: string
-          child_id: string
-          badge_id: string
-          earned_at: string
-          is_new: boolean
-        }
-        Insert: {
-          id?: string
-          child_id: string
-          badge_id: string
-          earned_at?: string
-          is_new?: boolean
-        }
-        Update: {
-          id?: string
-          child_id?: string
-          badge_id?: string
-          earned_at?: string
-          is_new?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_badges_child_id_fkey"
-            columns: ["child_id"]
-            isOneToOne: false
-            referencedRelation: "kid_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_badges_badge_id_fkey"
-            columns: ["badge_id"]
-            isOneToOne: false
-            referencedRelation: "badges"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       marked_words: {
         Row: {
@@ -1250,6 +1202,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          child_id: string
+          earned_at: string | null
+          id: string
+          is_new: boolean | null
+        }
+        Insert: {
+          badge_id: string
+          child_id: string
+          earned_at?: string | null
+          id?: string
+          is_new?: boolean | null
+        }
+        Update: {
+          badge_id?: string
+          child_id?: string
+          earned_at?: string | null
+          id?: string
+          is_new?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           admin_language: string
@@ -1315,7 +1306,7 @@ export type Database = {
           streak_freeze_available: boolean
           streak_freeze_used_this_week: string | null
           total_points: number
-          total_stars: number
+          total_stars: number | null
           updated_at: string
           user_id: string
           words_learned: number | null
@@ -1336,7 +1327,7 @@ export type Database = {
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
-          total_stars?: number
+          total_stars?: number | null
           updated_at?: string
           user_id: string
           words_learned?: number | null
@@ -1357,7 +1348,7 @@ export type Database = {
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
-          total_stars?: number
+          total_stars?: number | null
           updated_at?: string
           user_id?: string
           words_learned?: number | null
@@ -1387,10 +1378,10 @@ export type Database = {
           difficulty: string | null
           id: string
           kid_profile_id: string | null
-          metadata: Record<string, unknown>
+          metadata: Json | null
           points_earned: number
           reference_id: string | null
-          stars_earned: number
+          stars_earned: number | null
           total_questions: number | null
           user_id: string | null
         }
@@ -1401,10 +1392,10 @@ export type Database = {
           difficulty?: string | null
           id?: string
           kid_profile_id?: string | null
-          metadata?: Record<string, unknown>
+          metadata?: Json | null
           points_earned?: number
           reference_id?: string | null
-          stars_earned?: number
+          stars_earned?: number | null
           total_questions?: number | null
           user_id?: string | null
         }
@@ -1415,10 +1406,10 @@ export type Database = {
           difficulty?: string | null
           id?: string
           kid_profile_id?: string | null
-          metadata?: Record<string, unknown>
+          metadata?: Json | null
           points_earned?: number
           reference_id?: string | null
-          stars_earned?: number
+          stars_earned?: number | null
           total_questions?: number | null
           user_id?: string | null
         }
@@ -1476,6 +1467,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_award_badges: { Args: { p_child_id: string }; Returns: Json }
+      get_results_page: { Args: { p_child_id: string }; Returns: Json }
       get_user_profile_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -1483,6 +1476,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_activity: {
+        Args: {
+          p_activity_type: string
+          p_child_id: string
+          p_metadata?: Json
+          p_stars?: number
+        }
+        Returns: Json
       }
     }
     Enums: {
