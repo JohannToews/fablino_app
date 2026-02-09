@@ -1,467 +1,583 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { BookOpen, Brain, Sparkles, Users, ChevronRight } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useGamification } from "@/hooks/useGamification";
-import PageHeader from "@/components/PageHeader";
-import { StreakFlame, StreakMilestoneCard } from "@/components/gamification/StreakFlame";
-import { LevelBadge, LevelCard } from "@/components/gamification/LevelBadge";
-import { PointsDisplay } from "@/components/gamification/PointsDisplay";
-import { LevelUpModal } from "@/components/gamification/LevelUpModal";
-import { getTranslatedLevelName } from "@/lib/levelTranslations";
+import { useResultsPage, LevelInfo, BadgeInfo, BadgeHint } from "@/hooks/useResultsPage";
+import { ArrowLeft } from "lucide-react";
 
-// Translations for results page
-const resultsTranslations: Record<string, {
-  title: string;
-  totalPoints: string;
-  pointsToNext: string;
-  stories: string;
-  storiesRead: string;
-  quiz: string;
-  quizPerfect: string;
-  quizPassed: string;
-  vocabulary: string;
-  wordsLearned: string;
-  learnedHint: string;
-  readStory: string;
-  takeQuiz: string;
-  streak: string;
-  streakDays: string;
-  longestStreak: string;
-  streakMilestones: string;
-  levels: string;
-  currentLevel: string;
-}> = {
-  de: {
-    title: "Meine Ergebnisse",
-    totalPoints: "Punkte",
-    pointsToNext: "Noch {n} Punkte bis {level}",
-    stories: "Geschichten",
-    storiesRead: "{n} gelesen",
-    quiz: "Quiz",
-    quizPerfect: "{n} perfekt",
-    quizPassed: "{n} bestanden",
-    vocabulary: "Wortschatz",
-    wordsLearned: "Wörter gelernt",
-    learnedHint: "(3x richtig = gelernt)",
-    readStory: "Geschichte lesen",
-    takeQuiz: "Quiz machen",
-    streak: "Lese-Flamme",
-    streakDays: "{n} Tage",
-    longestStreak: "Längste Serie: {n} Tage",
-    streakMilestones: "Streak-Meilensteine",
-    levels: "Stufen",
-    currentLevel: "Aktuelles Level"
-  },
-  fr: {
-    title: "Mes Résultats",
-    totalPoints: "Points",
-    pointsToNext: "Encore {n} points pour {level}",
-    stories: "Histoires",
-    storiesRead: "{n} lues",
-    quiz: "Quiz",
-    quizPerfect: "{n} parfaits",
-    quizPassed: "{n} réussis",
-    vocabulary: "Vocabulaire",
-    wordsLearned: "mots appris",
-    learnedHint: "(3x correct = appris)",
-    readStory: "Lire une histoire",
-    takeQuiz: "Faire un quiz",
-    streak: "Flamme de lecture",
-    streakDays: "{n} jours",
-    longestStreak: "Plus longue série: {n} jours",
-    streakMilestones: "Jalons de série",
-    levels: "Niveaux",
-    currentLevel: "Niveau actuel"
-  },
-  en: {
-    title: "My Results",
-    totalPoints: "Points",
-    pointsToNext: "{n} more points to {level}",
-    stories: "Stories",
-    storiesRead: "{n} read",
-    quiz: "Quiz",
-    quizPerfect: "{n} perfect",
-    quizPassed: "{n} passed",
-    vocabulary: "Vocabulary",
-    wordsLearned: "words learned",
-    learnedHint: "(3x correct = learned)",
-    readStory: "Read a story",
-    takeQuiz: "Take a quiz",
-    streak: "Reading Flame",
-    streakDays: "{n} days",
-    longestStreak: "Longest streak: {n} days",
-    streakMilestones: "Streak Milestones",
-    levels: "Levels",
-    currentLevel: "Current Level"
-  },
-  es: {
-    title: "Mis Resultados",
-    totalPoints: "Puntos",
-    pointsToNext: "{n} puntos más para {level}",
-    stories: "Historias",
-    storiesRead: "{n} leídas",
-    quiz: "Quiz",
-    quizPerfect: "{n} perfectos",
-    quizPassed: "{n} aprobados",
-    vocabulary: "Vocabulario",
-    wordsLearned: "palabras aprendidas",
-    learnedHint: "(3x correcto = aprendido)",
-    readStory: "Leer una historia",
-    takeQuiz: "Hacer un quiz",
-    streak: "Llama de lectura",
-    streakDays: "{n} días",
-    longestStreak: "Mayor racha: {n} días",
-    streakMilestones: "Hitos de racha",
-    levels: "Niveles",
-    currentLevel: "Nivel actual"
-  },
-  nl: {
-    title: "Mijn Resultaten",
-    totalPoints: "Punten",
-    pointsToNext: "Nog {n} punten voor {level}",
-    stories: "Verhalen",
-    storiesRead: "{n} gelezen",
-    quiz: "Quiz",
-    quizPerfect: "{n} perfect",
-    quizPassed: "{n} geslaagd",
-    vocabulary: "Woordenschat",
-    wordsLearned: "woorden geleerd",
-    learnedHint: "(3x correct = geleerd)",
-    readStory: "Verhaal lezen",
-    takeQuiz: "Quiz doen",
-    streak: "Leesvlam",
-    streakDays: "{n} dagen",
-    longestStreak: "Langste reeks: {n} dagen",
-    streakMilestones: "Reeks mijlpalen",
-    levels: "Niveaus",
-    currentLevel: "Huidig niveau"
-  },
-  bs: {
-    title: "Moji rezultati",
-    totalPoints: "Bodova",
-    pointsToNext: "Još {n} bodova do {level}",
-    stories: "Priče",
-    storiesRead: "{n} pročitano",
-    quiz: "Kviz",
-    quizPerfect: "{n} savršeno",
-    quizPassed: "{n} položeno",
-    vocabulary: "Vokabular",
-    wordsLearned: "riječi naučeno",
-    learnedHint: "(3x tačno = naučeno)",
-    readStory: "Čitaj priču",
-    takeQuiz: "Riješi kviz",
-    streak: "Plamen čitanja",
-    streakDays: "{n} dana",
-    longestStreak: "Najduži niz: {n} dana",
-    streakMilestones: "Prekretnice niza",
-    levels: "Nivoi",
-    currentLevel: "Trenutni nivo"
+// ── Helpers ──
+
+/** Find the current level and next level from sorted levels array */
+function getLevelProgress(levels: LevelInfo[], totalStars: number) {
+  const sorted = [...levels].sort((a, b) => a.sort_order - b.sort_order);
+  let current = sorted[0];
+  let next: LevelInfo | null = null;
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (totalStars >= sorted[i].stars_required) {
+      current = sorted[i];
+      next = sorted[i + 1] || null;
+    }
   }
-};
-
-interface LevelSetting {
-  level_number: number;
-  title: string;
-  min_points: number;
-  icon: string | null;
+  return { current, next, sorted };
 }
 
-const STREAK_MILESTONE_POINTS: Record<number, number> = {
-  3: 10,
-  7: 25,
-  14: 50,
-  30: 100
+/** Build Fablino's motivational message */
+function getFablinoMessage(
+  name: string,
+  totalStars: number,
+  streak: number,
+  current: LevelInfo,
+  next: LevelInfo | null,
+) {
+  // Edge case: brand new user with 0 stars
+  if (totalStars === 0) {
+    return `Willkommen, ${name}! Lies deine erste Geschichte! 📖`;
+  }
+  // Edge case: Meister reached (no next level)
+  if (!next) {
+    return `Wow, ${name}! Du bist ${current.emoji} ${current.name}! 👑`;
+  }
+  const remaining = next.stars_required - totalStars;
+  if (streak >= 5) {
+    return `${streak} Tage in Folge, ${name}! 🔥 Noch ${remaining} Sterne bis ${next.emoji} ${next.name}!`;
+  }
+  if (remaining <= 10) {
+    return `Fast geschafft, ${name}! 🎉 Nur noch ${remaining} Sterne!`;
+  }
+  return `Toll gemacht, ${name}! Noch ${remaining} Sterne bis ${next.emoji} ${next.name}. Lies weiter! 🧡`;
+}
+
+/** Build hint text for a badge */
+function getBadgeHintText(hint: BadgeHint): string {
+  const remaining = hint.condition_value - hint.current_progress;
+  switch (hint.condition_type) {
+    case "streak_days":
+      return `Lies ${hint.condition_value} Tage hintereinander und bekomme den ${hint.emoji} ${hint.name} Sticker!`;
+    case "stories_total":
+      return `Noch ${remaining} Geschichte${remaining !== 1 ? "n" : ""} bis zum ${hint.emoji} ${hint.name} Sticker!`;
+    case "quizzes_passed":
+      return `Noch ${remaining} Quiz${remaining !== 1 ? "ze" : ""} bis zum ${hint.emoji} ${hint.name} Sticker!`;
+    case "stars_total":
+      return `Noch ${remaining} Sterne bis zum ${hint.emoji} ${hint.name} Sticker!`;
+    default:
+      return `Weiter so — ${hint.emoji} ${hint.name} kommt bald!`;
+  }
+}
+
+// ── Animated Counter Hook ──
+
+function useAnimatedCounter(target: number, duration = 1000, enabled = true) {
+  const [value, setValue] = useState(0);
+  const frameRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const start = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out quad
+      const eased = 1 - (1 - progress) * (1 - progress);
+      setValue(Math.round(eased * target));
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate);
+      }
+    };
+    frameRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameRef.current);
+  }, [target, duration, enabled]);
+
+  return value;
+}
+
+// ── Skeleton Loader ──
+
+const SkeletonCard = ({ className = "" }: { className?: string }) => (
+  <div className={`bg-white rounded-[20px] p-5 animate-pulse ${className}`} style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.05)" }}>
+    <div className="h-5 bg-gray-200 rounded w-1/3 mb-4" />
+    <div className="h-8 bg-gray-200 rounded w-2/3 mb-3" />
+    <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+    <div className="h-3 bg-gray-100 rounded w-4/5" />
+  </div>
+);
+
+// ── Section 1: Fablino Message ──
+
+const FablinoSection = ({ message, delay }: { message: string; delay: number }) => (
+  <div
+    className="flex items-end gap-3 px-1"
+    style={{ animation: `fadeSlideUp 0.5s ease-out ${delay}s both` }}
+  >
+    <img
+      src="/mascot/6_Onboarding.png"
+      alt="Fablino"
+      className="w-[90px] h-auto flex-shrink-0 drop-shadow-md"
+      style={{ animation: "gentleBounce 3s ease-in-out infinite" }}
+    />
+    <div className="relative flex-1 mb-2">
+      <div
+        className="bg-white rounded-2xl px-4 py-3"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
+      >
+        <p className="font-nunito text-[15px] font-semibold leading-snug" style={{ color: "#2D1810" }}>
+          {message}
+        </p>
+      </div>
+      {/* Triangle pointing down-left */}
+      <div
+        className="absolute -bottom-2 left-6"
+        style={{
+          width: 0,
+          height: 0,
+          borderLeft: "8px solid transparent",
+          borderRight: "8px solid transparent",
+          borderTop: "10px solid white",
+        }}
+      />
+    </div>
+  </div>
+);
+
+// ── Section 2: Level Card ──
+
+const LevelCard = ({
+  current,
+  next,
+  totalStars,
+  delay,
+}: {
+  current: LevelInfo;
+  next: LevelInfo | null;
+  totalStars: number;
+  delay: number;
+}) => {
+  const progressMin = current.stars_required;
+  const progressMax = next ? next.stars_required : current.stars_required;
+  const targetPct = next
+    ? Math.min(100, ((totalStars - progressMin) / (progressMax - progressMin)) * 100)
+    : 100;
+
+  // Animated counter for total stars
+  const animatedStars = useAnimatedCounter(totalStars, 1200);
+
+  // Animated progress bar (0 → target %)
+  const [barPct, setBarPct] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setBarPct(targetPct), 300);
+    return () => clearTimeout(t);
+  }, [targetPct]);
+
+  // Edge case: Meister reached
+  const isMeister = !next;
+
+  return (
+    <div
+      className="bg-white rounded-[20px] p-5 relative overflow-hidden"
+      style={{
+        boxShadow: "0 1px 8px rgba(0,0,0,0.05)",
+        animation: `fadeSlideUp 0.5s ease-out ${delay}s both`,
+      }}
+    >
+      {/* Faint level-colored background */}
+      <div
+        className="absolute inset-0 opacity-[0.07] rounded-[20px]"
+        style={{ background: current.color }}
+      />
+      <div className="relative z-10">
+        {/* Top row */}
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <span
+              className="text-[11px] font-bold uppercase tracking-wider"
+              style={{ color: current.color }}
+            >
+              {isMeister ? "Höchste Stufe" : "Aktuelle Stufe"}
+            </span>
+            <h2 className="font-fredoka text-[24px] font-bold leading-tight" style={{ color: "#2D1810" }}>
+              {current.emoji} {current.name}
+            </h2>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 border border-gray-100" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <span className="text-[15px]">⭐</span>
+            <span className="font-bold text-[15px]" style={{ color: "#2D1810" }}>{animatedStars}</span>
+          </div>
+        </div>
+
+        {/* Progress bar – hidden when Meister */}
+        {!isMeister ? (
+          <div className="mt-4">
+            <div className="flex justify-between text-[11px] font-semibold mb-1.5" style={{ color: "#888" }}>
+              <span>{current.emoji} {current.stars_required}⭐</span>
+              {next && <span>{next.emoji} {next.stars_required}⭐</span>}
+            </div>
+            <div className="relative h-[14px] bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{
+                  width: `${barPct}%`,
+                  background: next
+                    ? `linear-gradient(90deg, ${current.color}, ${next.color})`
+                    : current.color,
+                  transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              />
+              {/* Shimmer */}
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
+                  animation: "shimmer 2.5s infinite",
+                }}
+              />
+            </div>
+            {next && (
+              <p className="text-center text-[12px] font-medium mt-2" style={{ color: "#888" }}>
+                Noch {next.stars_required - totalStars} Sterne bis {next.emoji} {next.name}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-center text-[13px] font-semibold mt-3" style={{ color: current.color }}>
+            🏆 Du hast die höchste Stufe erreicht!
+          </p>
+        )}
+      </div>
+    </div>
+  );
 };
+
+// ── Section 3: Level Roadmap ──
+
+const LevelRoadmap = ({
+  levels,
+  totalStars,
+  delay,
+}: {
+  levels: LevelInfo[];
+  totalStars: number;
+  delay: number;
+}) => {
+  const sorted = [...levels].sort((a, b) => a.sort_order - b.sort_order);
+  const currentIdx = sorted.reduce((acc, l, i) => (totalStars >= l.stars_required ? i : acc), 0);
+
+  return (
+    <div
+      className="bg-white rounded-[20px] p-5"
+      style={{
+        boxShadow: "0 1px 8px rgba(0,0,0,0.05)",
+        animation: `fadeSlideUp 0.5s ease-out ${delay}s both`,
+      }}
+    >
+      <h3 className="font-fredoka text-[17px] font-bold mb-4" style={{ color: "#2D1810" }}>
+        🗺️ Dein Weg zum Meister
+      </h3>
+
+      <div className="overflow-x-auto pb-2 -mx-1">
+        <div className="flex items-center gap-0 min-w-max px-1">
+          {sorted.map((level, idx) => {
+            const isCompleted = idx < currentIdx;
+            const isCurrent = idx === currentIdx;
+            const isFuture = idx > currentIdx;
+            const isLast = idx === sorted.length - 1;
+
+            return (
+              <div
+                key={level.id}
+                className="flex items-center"
+                style={{ animation: `fadeSlideUp 0.4s ease-out ${delay + 0.1 * idx}s both` }}
+              >
+                {/* Level circle + label */}
+                <div className="flex flex-col items-center" style={{ width: 64 }}>
+                  <div
+                    className="relative flex items-center justify-center rounded-full transition-all"
+                    style={{
+                      width: isCurrent ? 52 : 42,
+                      height: isCurrent ? 52 : 42,
+                      background: isFuture ? "#F3F4F6" : level.color,
+                      border: isFuture ? "2px dashed #D1D5DB" : `3px solid ${level.color}`,
+                      boxShadow: isCurrent ? `0 0 0 4px ${level.color}33` : "none",
+                      animation: isCurrent ? "pulse-ring 2s infinite" : "none",
+                    }}
+                  >
+                    <span
+                      className="text-[20px]"
+                      style={{ opacity: isFuture ? 0.35 : 1 }}
+                    >
+                      {level.emoji}
+                    </span>
+                  </div>
+                  <span
+                    className="text-[10px] font-bold mt-1.5 text-center leading-tight"
+                    style={{ color: isFuture ? "#aaa" : "#2D1810", maxWidth: 60 }}
+                  >
+                    {level.name}
+                  </span>
+                  <span
+                    className="text-[9px] font-medium"
+                    style={{ color: isFuture ? "#ccc" : "#888" }}
+                  >
+                    {level.stars_required}⭐
+                  </span>
+                </div>
+
+                {/* Connector line */}
+                {!isLast && (
+                  <div className="relative w-8 h-[3px] mx-0.5" style={{ background: "#E5E7EB" }}>
+                    <div
+                      className="absolute inset-y-0 left-0 transition-all duration-500"
+                      style={{
+                        width: isCompleted ? "100%" : isCurrent ? "50%" : "0%",
+                        background: sorted[idx].color,
+                        borderRadius: 2,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Section 4: Badges ──
+
+const BadgeHintBar = ({ hint }: { hint: BadgeHint }) => {
+  const targetPct = Math.min(100, (hint.current_progress / hint.condition_value) * 100);
+  const [barPct, setBarPct] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setBarPct(targetPct), 400);
+    return () => clearTimeout(t);
+  }, [targetPct]);
+
+  return (
+    <div
+      className="rounded-xl p-3.5 mb-4"
+      style={{ background: "linear-gradient(135deg, #FFF7ED, #FEF3C7)" }}
+    >
+      <p className="text-[13px] font-semibold mb-2" style={{ color: "#92400E" }}>
+        {getBadgeHintText(hint)}
+      </p>
+      <div className="relative h-[10px] bg-white/60 rounded-full overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{
+            width: `${barPct}%`,
+            background: "linear-gradient(90deg, #F97316, #FBBF24)",
+            transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+      </div>
+      <div className="flex justify-between text-[10px] font-medium mt-1" style={{ color: "#92400E" }}>
+        <span>{hint.current_progress}</span>
+        <span>{hint.condition_value}</span>
+      </div>
+    </div>
+  );
+};
+
+const BadgesSection = ({
+  earnedBadges,
+  hints,
+  allBadgeCount,
+  delay,
+}: {
+  earnedBadges: BadgeInfo[];
+  hints: BadgeHint[];
+  allBadgeCount: number;
+  delay: number;
+}) => {
+  const lockedCount = Math.max(0, allBadgeCount - earnedBadges.length);
+  const primaryHint = hints[0] || null;
+  const allEarned = earnedBadges.length >= allBadgeCount;
+
+  return (
+    <div
+      className="bg-white rounded-[20px] p-5"
+      style={{
+        boxShadow: "0 1px 8px rgba(0,0,0,0.05)",
+        animation: `fadeSlideUp 0.5s ease-out ${delay}s both`,
+      }}
+    >
+      <h3 className="font-fredoka text-[17px] font-bold mb-4" style={{ color: "#2D1810" }}>
+        🏷️ Sticker & Badges
+      </h3>
+
+      {/* All earned celebration */}
+      {allEarned && (
+        <div className="text-center py-3 mb-4 rounded-xl" style={{ background: "linear-gradient(135deg, #FEF3C7, #FFF7ED)" }}>
+          <p className="text-[15px] font-bold" style={{ color: "#92400E" }}>
+            🎉 Alle Sticker gesammelt!
+          </p>
+        </div>
+      )}
+
+      {/* Earned badges grid */}
+      {earnedBadges.length > 0 && (
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          {earnedBadges.map((badge) => (
+            <div
+              key={badge.id}
+              className="relative flex flex-col items-center gap-1 p-3 rounded-xl border"
+              style={{
+                background: badge.category === "reading" ? "#FFF7ED" :
+                            badge.category === "streak" ? "#FEF3C7" :
+                            badge.category === "quiz" ? "#ECFDF5" :
+                            "#F0F9FF",
+                borderColor: badge.category === "reading" ? "#FDBA74" :
+                             badge.category === "streak" ? "#FCD34D" :
+                             badge.category === "quiz" ? "#6EE7B7" :
+                             "#93C5FD",
+              }}
+            >
+              {badge.is_new && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-orange-500 border-2 border-white" />
+              )}
+              <span className="text-[28px]">{badge.emoji}</span>
+              <span className="text-[10px] font-bold text-center leading-tight" style={{ color: "#2D1810" }}>
+                {badge.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Next badge hint – only if not all earned */}
+      {!allEarned && primaryHint && (
+        <BadgeHintBar hint={primaryHint} />
+      )}
+
+      {/* Locked badges – only if not all earned */}
+      {!allEarned && lockedCount > 0 && (
+        <div className="grid grid-cols-3 gap-2.5">
+          {Array.from({ length: lockedCount }).map((_, i) => (
+            <div
+              key={`locked-${i}`}
+              className="flex flex-col items-center gap-1 p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50"
+              style={{ opacity: 0.5 }}
+            >
+              <span className="text-[24px]">🔒</span>
+              <span className="text-[10px] font-medium text-gray-400">???</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {earnedBadges.length === 0 && !primaryHint && lockedCount === 0 && (
+        <p className="text-center text-sm text-gray-400 py-4">
+          Lies eine Geschichte, um deinen ersten Sticker zu verdienen!
+        </p>
+      )}
+    </div>
+  );
+};
+
+// ── Main Page ──
 
 const ResultsPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
-  const { progress, isLoading, pendingLevelUp, clearPendingLevelUp } = useGamification();
-  const [levels, setLevels] = useState<LevelSetting[]>([]);
-  const [wordsLearned, setWordsLearned] = useState(0);
-  const [claimedMilestones, setClaimedMilestones] = useState<number[]>([]);
+  const { selectedProfileId } = useKidProfile();
+  const { data, loading } = useResultsPage(selectedProfileId);
 
-  // Load additional data
+  // Mark all is_new badges as read after 2 seconds on the page
   useEffect(() => {
-    const loadData = async () => {
-      if (!user || !selectedProfileId) return;
-
-      // Load level settings
-      const { data: levelData } = await supabase
-        .from("level_settings")
-        .select("*")
-        .order("level_number");
-      
-      if (levelData) setLevels(levelData);
-
-      // Load learned words count
-      const { data: storiesData } = await supabase
-        .from("stories")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("kid_profile_id", selectedProfileId);
-      
-      const storyIds = storiesData?.map(s => s.id) || [];
-
-      if (storyIds.length > 0) {
-        const { data: learnedData } = await supabase
-          .from("marked_words")
-          .select("id")
-          .eq("is_learned", true)
-          .in("story_id", storyIds);
-        
-        setWordsLearned(learnedData?.length || 0);
+    if (!selectedProfileId || !data || data.earned_badges.every((b) => !b.is_new)) return;
+    const timer = setTimeout(async () => {
+      try {
+        await supabase
+          .from("user_badges")
+          .update({ is_new: false })
+          .eq("child_id", selectedProfileId)
+          .eq("is_new", true);
+      } catch {
+        // Silent fail
       }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [selectedProfileId, data]);
 
-      // Load claimed streak milestones
-      const { data: milestonesData } = await supabase
-        .from("streak_milestones")
-        .select("milestone_days")
-        .eq("kid_profile_id", selectedProfileId);
-      
-      if (milestonesData) {
-        setClaimedMilestones([...new Set(milestonesData.map(m => m.milestone_days))]);
-      }
-    };
-
-    loadData();
-  }, [user, selectedProfileId]);
-
-  const t = resultsTranslations[kidAppLanguage] || resultsTranslations.de;
-
-  if (isLoading || !progress) {
+  // Loading
+  if (loading || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
-        <div className="animate-bounce-soft">
-          <StreakFlame streak={3} flameType="gold" size="lg" showCount={false} />
+      <div
+        className="min-h-screen pb-safe"
+        style={{ background: "linear-gradient(180deg, #FFF7ED 0%, #FFFBF5 40%, #F0F9FF 100%)" }}
+      >
+        <div className="px-4 pt-3 pb-0">
+          <button onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-white/30 transition-colors">
+            <ArrowLeft className="h-5 w-5 text-gray-700" />
+          </button>
+        </div>
+        <div className="max-w-lg mx-auto px-4 space-y-4 pt-2">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard className="h-[120px]" />
+          <SkeletonCard className="h-[200px]" />
         </div>
       </div>
     );
   }
 
-  const pointsToNextLevel = progress.level.nextLevelPoints 
-    ? progress.level.nextLevelPoints - progress.totalPoints 
-    : 0;
+  const { current, next, sorted } = getLevelProgress(data.levels, data.total_stars);
+  const fablinoMsg = getFablinoMessage(data.child_name, data.total_stars, data.current_streak, current, next);
+  // Total badge count = earned + hints remaining (hints are next 3, but total locked = all badges - earned)
+  const totalBadgeCount = data.earned_badges.length + data.next_badge_hints.length +
+    Math.max(0, 11 - data.earned_badges.length - data.next_badge_hints.length); // 11 total badges seeded
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
-      <PageHeader title={t.title} backTo="/" />
-
-      <div className="container max-w-4xl p-4 md:p-8">
-        {/* Kid Profile Selector */}
-        {hasMultipleProfiles && (
-          <div className="mb-6 flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
-            {kidProfiles.map((profile) => (
-              <button
-                key={profile.id}
-                onClick={() => setSelectedProfileId(profile.id)}
-                className={`
-                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all
-                  ${selectedProfileId === profile.id 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                  }
-                `}
-              >
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
-                  {profile.cover_image_url ? (
-                    <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <span className="font-medium text-sm">{profile.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Hero Section - Points, Level, Streak */}
-        <Card className="mb-6 border-2 border-[#F0E8E0] bg-gradient-to-br from-orange-50 to-transparent overflow-hidden">
-          <CardContent className="p-5">
-            {/* Top Row: Points and Streak */}
-            <div className="flex items-center justify-between mb-4">
-              <PointsDisplay points={progress.totalPoints} size="lg" />
-              
-              <div className="flex items-center gap-2 bg-card/60 rounded-full px-4 py-2">
-                <StreakFlame 
-                  streak={progress.streak.current} 
-                  flameType={progress.streak.flameType}
-                  size="md"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {t.streakDays.replace('{n}', String(progress.streak.current))}
-                </span>
-              </div>
-            </div>
-
-            {/* Level Badge and Progress */}
-            <div className="text-center space-y-3">
-              <LevelBadge 
-                level={{
-                  ...progress.level,
-                  title: getTranslatedLevelName(progress.level.level, kidAppLanguage)
-                }} 
-                totalPoints={progress.totalPoints}
-                size="lg"
-                className="justify-center"
-              />
-              
-              {!progress.level.isMaxLevel && (
-                <div className="max-w-md mx-auto space-y-1">
-                  <Progress 
-                    value={((progress.totalPoints - progress.level.minPoints) / 
-                      ((progress.level.nextLevelPoints || 0) - progress.level.minPoints)) * 100} 
-                    className="h-3"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t.pointsToNext
-                      .replace('{n}', String(pointsToNextLevel))
-                      .replace('{level}', getTranslatedLevelName(progress.level.level + 1, kidAppLanguage))}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Profile name */}
-            {selectedProfile && (
-              <p className="text-center text-sm text-muted-foreground mt-3">
-                {selectedProfile.name}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {/* Stories Read */}
-          <Card className="border border-primary/20">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="h-8 w-8 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-bold text-primary">{progress.storiesReadTotal}</p>
-              <p className="text-xs text-muted-foreground">{t.stories}</p>
-            </CardContent>
-          </Card>
-
-          {/* Quiz Perfect */}
-          <Card className="border border-secondary/20">
-            <CardContent className="p-4 text-center">
-              <Brain className="h-8 w-8 text-secondary mx-auto mb-2" />
-              <p className="text-2xl font-bold text-secondary">{progress.quizzesPerfect}</p>
-              <p className="text-xs text-muted-foreground">{t.quizPerfect.replace('{n}', '')}</p>
-            </CardContent>
-          </Card>
-
-          {/* Words Learned */}
-          <Card className="border border-accent/20">
-            <CardContent className="p-4 text-center">
-              <Sparkles className="h-8 w-8 text-accent mx-auto mb-2" />
-              <p className="text-2xl font-bold text-accent">{wordsLearned}</p>
-              <p className="text-xs text-muted-foreground">{t.vocabulary}</p>
-            </CardContent>
-          </Card>
-
-          {/* Longest Streak */}
-          <Card className="border border-border">
-            <CardContent className="p-4 text-center">
-              <StreakFlame 
-                streak={progress.streak.longest} 
-                flameType={progress.streak.longest >= 30 ? 'diamond' : progress.streak.longest >= 14 ? 'gold' : progress.streak.longest >= 7 ? 'silver' : progress.streak.longest >= 3 ? 'bronze' : 'none'}
-                showCount={false}
-                size="md"
-                className="justify-center mb-2"
-              />
-              <p className="text-2xl font-bold">{progress.streak.longest}</p>
-              <p className="text-xs text-muted-foreground">Beste Serie</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Streak Milestones */}
-        <Card className="mb-6 border border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-baloo flex items-center gap-2">
-              <StreakFlame streak={7} flameType="gold" showCount={false} size="sm" />
-              {t.streakMilestones}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[3, 7, 14, 30].map((milestone) => (
-                <StreakMilestoneCard
-                  key={milestone}
-                  milestone={milestone}
-                  achieved={progress.streak.longest >= milestone}
-                  points={STREAK_MILESTONE_POINTS[milestone]}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Level Overview */}
-        <Card className="mb-8 border border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-baloo flex items-center gap-2">
-              {progress.level.icon}
-              {t.levels}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {levels.map((level) => (
-                <LevelCard
-                  key={level.level_number}
-                  levelNumber={level.level_number}
-                  title={getTranslatedLevelName(level.level_number, kidAppLanguage)}
-                  icon={level.icon || '🔒'}
-                  minPoints={level.min_points}
-                  isUnlocked={progress.totalPoints >= level.min_points}
-                  isCurrent={progress.level.level === level.level_number}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            onClick={() => navigate("/stories")}
-            className="btn-primary-kid"
-          >
-            <BookOpen className="h-5 w-5 mr-2" />
-            {t.readStory}
-            <ChevronRight className="h-5 w-5 ml-2" />
-          </Button>
-          <Button
-            onClick={() => navigate("/quiz")}
-            variant="outline"
-            className="btn-kid"
-          >
-            <Brain className="h-5 w-5 mr-2" />
-            {t.takeQuiz}
-          </Button>
-        </div>
+    <div
+      className="min-h-screen pb-safe"
+      style={{ background: "linear-gradient(180deg, #FFF7ED 0%, #FFFBF5 40%, #F0F9FF 100%)" }}
+    >
+      {/* Back button */}
+      <div className="px-4 pt-3 pb-0">
+        <button onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-white/30 transition-colors">
+          <ArrowLeft className="h-5 w-5 text-gray-700" />
+        </button>
       </div>
 
-      {/* Level Up Modal */}
-      {pendingLevelUp && (
-        <LevelUpModal
-          level={null}
-          onClose={clearPendingLevelUp}
-          language={kidAppLanguage}
+      <div className="max-w-lg mx-auto px-4 space-y-4 pt-1 pb-8">
+        {/* Section 1: Fablino */}
+        <FablinoSection message={fablinoMsg} delay={0} />
+
+        {/* Section 2: Level Card */}
+        <LevelCard current={current} next={next} totalStars={data.total_stars} delay={0.1} />
+
+        {/* Section 3: Roadmap */}
+        <LevelRoadmap levels={sorted} totalStars={data.total_stars} delay={0.2} />
+
+        {/* Section 4: Badges */}
+        <BadgesSection
+          earnedBadges={data.earned_badges}
+          hints={data.next_badge_hints}
+          allBadgeCount={11}
+          delay={0.3}
         />
-      )}
+      </div>
+
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes fadeSlideUp {
+          0% { opacity: 0; transform: translateY(16px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gentleBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes pulse-ring {
+          0% { box-shadow: 0 0 0 0 currentColor; }
+          70% { box-shadow: 0 0 0 8px transparent; }
+          100% { box-shadow: 0 0 0 0 transparent; }
+        }
+      `}</style>
     </div>
   );
 };

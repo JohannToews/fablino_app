@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
+import BadgeCelebrationModal, { EarnedBadge } from "@/components/BadgeCelebrationModal";
 import { getTranslations, Language } from "@/lib/translations";
 import PageHeader from "@/components/PageHeader";
 import {
@@ -308,6 +309,8 @@ const VocabularyQuizPage = () => {
     stars?: number;
     autoClose?: number;
   } | null>(null);
+  // Badge celebration
+  const [pendingBadges, setPendingBadges] = useState<EarnedBadge[]>([]);
 
   // Get translations based on kid's school system language
   const t = quizTranslations[kidAppLanguage] || quizTranslations.fr;
@@ -604,31 +607,33 @@ const VocabularyQuizPage = () => {
     
     if (nextIndex >= totalQuestions || nextIndex >= preGeneratedQuestions.length) {
       setQuizComplete(true);
-      // Save result if passed
-      if (score >= getPassThreshold()) {
-        const isPerfect = score === totalQuestions;
-        const totalStars = score * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
-        const earnedPoints = totalStars;
-        setPointsEarned(earnedPoints);
-        
-        // Award stars
-        if (totalStars > 0) {
-          await actions.awardStars(totalStars, isPerfect ? 'quiz_perfect' : 'quiz_passed');
+
+      const passed = score >= getPassThreshold();
+      const isPerfect = score === totalQuestions;
+      const stars = !passed ? 0 : isPerfect ? 2 : 1;
+      // Keep totalStars for Fablino display (backward compat)
+      const totalStars = score * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
+      setPointsEarned(totalStars);
+
+      // Log activity via RPC (handles stars, streak, badges, user_results)
+      try {
+        const result = await supabase.rpc('log_activity', {
+          p_child_id: selectedProfileId,
+          p_activity_type: passed ? 'quiz_passed' : 'quiz_failed',
+          p_stars: stars,
+          p_metadata: { score, max_score: totalQuestions },
+        });
+
+        if (result.data?.new_badges?.length > 0) {
+          setPendingBadges(result.data.new_badges);
         }
-        await actions.markQuizPassed();
-        
+      } catch (e) {
+        // Silent fail – gamification should not block UX
+      }
+
+      if (passed) {
         // Trigger big celebration!
         setTimeout(() => triggerBigConfetti(), 300);
-        
-        await supabase.from("user_results").insert({
-          activity_type: "quiz_passed",
-          difficulty: "medium",
-          points_earned: earnedPoints,
-          correct_answers: score,
-          total_questions: totalQuestions,
-          user_id: user?.id,
-          kid_profile_id: selectedProfileId || null,
-        });
 
         // Fablino feedback
         if (isPerfect) {
@@ -956,6 +961,14 @@ const VocabularyQuizPage = () => {
           message={tGlobal.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
           buttonLabel={tGlobal.continueButton}
           onClose={clearPendingLevelUp}
+        />
+      )}
+
+      {/* Badge Celebration Modal */}
+      {pendingBadges.length > 0 && (
+        <BadgeCelebrationModal
+          badges={pendingBadges}
+          onDismiss={() => setPendingBadges([])}
         />
       )}
     </div>

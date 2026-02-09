@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
+import BadgeCelebrationModal, { EarnedBadge } from "@/components/BadgeCelebrationModal";
 import PageHeader from "@/components/PageHeader";
 import { Language, getTranslations } from "@/lib/translations";
 
@@ -248,6 +249,8 @@ const ReadingPage = () => {
   const [lineSpacing, setLineSpacing] = useState<LineSpacingLevel>(2);
   // Syllable mode for reading assistance (German only)
   const [syllableMode, setSyllableMode] = useState(false);
+  // Badge celebration
+  const [pendingBadges, setPendingBadges] = useState<EarnedBadge[]>([]);
   // Series continuation state
   const [isGeneratingContinuation, setIsGeneratingContinuation] = useState(false);
   // System prompt for story generation
@@ -1256,20 +1259,26 @@ const ReadingPage = () => {
                   onSubmit={async () => {
                     setShowFeedbackDialog(false);
                     
-                    // Award stars + mark story complete
-                    await actions.awardStars(STAR_REWARDS.STORY_READ, 'story_read');
+                    const childId = story?.kid_profile_id || selectedProfile?.id || null;
+
+                    // Mark story as completed in stories table
                     await actions.markStoryComplete(id!);
-                    await actions.checkAndUpdateStreak();
-                    
-                    // Also save to user_results for history/tracking
-                    await supabase.from("user_results").insert({
-                      activity_type: "story_completed",
-                      reference_id: id,
-                      difficulty: story?.difficulty || "medium",
-                      points_earned: STAR_REWARDS.STORY_READ,
-                      user_id: user?.id,
-                      kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
-                    });
+
+                    // Log activity via RPC (handles stars, streak, badges, user_results)
+                    try {
+                      const result = await supabase.rpc('log_activity', {
+                        p_child_id: childId,
+                        p_activity_type: 'story_completed',
+                        p_stars: 2,
+                        p_metadata: { story_id: id, difficulty: story?.difficulty || 'medium' },
+                      });
+
+                      if (result.data?.new_badges?.length > 0) {
+                        setPendingBadges(result.data.new_badges);
+                      }
+                    } catch (e) {
+                      // Silent fail – gamification should not block UX
+                    }
                     
                     // Show Fablino celebration
                     setFablinoReaction({
@@ -1306,28 +1315,27 @@ const ReadingPage = () => {
                       setQuizResult({ correctCount, totalCount });
                       setQuizCompleted(true);
                       
-                      // Calculate stars
+                      const childId = story?.kid_profile_id || selectedProfile?.id || null;
+                      const passed = totalCount > 0 && (correctCount / totalCount) >= 0.6;
                       const isPerfect = correctCount === totalCount;
+                      const stars = !passed ? 0 : isPerfect ? 2 : 1;
+                      // Keep totalStars for Fablino display (backward compat)
                       const totalStars = correctCount * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
-                      
-                      // Award quiz stars
-                      if (totalStars > 0) {
-                        await actions.awardStars(totalStars, isPerfect ? 'quiz_perfect' : 'quiz_passed');
-                      }
-                      await actions.markQuizPassed();
-                      
-                      // Also save to user_results for history/tracking
-                      if (totalStars > 0) {
-                        await supabase.from("user_results").insert({
-                          activity_type: "quiz_completed",
-                          reference_id: id,
-                          difficulty: story?.difficulty || "medium",
-                          points_earned: totalStars,
-                          correct_answers: correctCount,
-                          total_questions: totalCount,
-                          user_id: user?.id,
-                          kid_profile_id: story?.kid_profile_id || selectedProfile?.id || null,
+
+                      // Log activity via RPC (handles stars, streak, badges, user_results)
+                      try {
+                        const result = await supabase.rpc('log_activity', {
+                          p_child_id: childId,
+                          p_activity_type: passed ? 'quiz_passed' : 'quiz_failed',
+                          p_stars: stars,
+                          p_metadata: { quiz_id: id, score: correctCount, max_score: totalCount, difficulty: story?.difficulty || 'medium' },
                         });
+
+                        if (result.data?.new_badges?.length > 0) {
+                          setPendingBadges(result.data.new_badges);
+                        }
+                      } catch (e) {
+                        // Silent fail – gamification should not block UX
                       }
 
                       // Show Fablino feedback
@@ -1531,6 +1539,14 @@ const ReadingPage = () => {
           message={t.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
           buttonLabel={t.continueButton}
           onClose={clearPendingLevelUp}
+        />
+      )}
+
+      {/* Badge Celebration Modal */}
+      {pendingBadges.length > 0 && (
+        <BadgeCelebrationModal
+          badges={pendingBadges}
+          onDismiss={() => setPendingBadges([])}
         />
       )}
     </div>
