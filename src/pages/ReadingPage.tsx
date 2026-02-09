@@ -1273,8 +1273,9 @@ const ReadingPage = () => {
                         p_metadata: { story_id: id, difficulty: story?.difficulty || 'medium' },
                       });
 
-                      if (result.data?.new_badges?.length > 0) {
-                        setPendingBadges(result.data.new_badges);
+                      const data = result.data as any;
+                      if (data?.new_badges?.length > 0) {
+                        setPendingBadges(data.new_badges);
                       }
                     } catch (e) {
                       // Silent fail – gamification should not block UX
@@ -1331,8 +1332,9 @@ const ReadingPage = () => {
                           p_metadata: { quiz_id: id, score: correctCount, max_score: totalCount, difficulty: story?.difficulty || 'medium' },
                         });
 
-                        if (result.data?.new_badges?.length > 0) {
-                          setPendingBadges(result.data.new_badges);
+                        const data = result.data as any;
+                        if (data?.new_badges?.length > 0) {
+                          setPendingBadges(data.new_badges);
                         }
                       } catch (e) {
                         // Silent fail – gamification should not block UX
