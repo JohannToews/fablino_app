@@ -14,7 +14,7 @@ const FablinoPageHeader = ({
   mascotSize = 150,
 }: FablinoPageHeaderProps) => {
   return (
-    <div className="flex items-center gap-1 px-2 py-3" style={{ marginLeft: -8 }}>
+    <div className="flex items-center gap-0 px-2 py-3" style={{ marginLeft: -8 }}>
       {/* Fablino mascot */}
       <img
         src={mascotImage}
@@ -34,7 +34,7 @@ const FablinoPageHeader = ({
           style={{ boxShadow: "0 3px 16px rgba(0,0,0,0.08)" }}
         >
           <span
-            className="font-nunito text-[15px] font-semibold leading-snug"
+            className="font-nunito text-[17px] font-semibold leading-snug"
             style={{ color: "#2D1810" }}
           >
             {message}
