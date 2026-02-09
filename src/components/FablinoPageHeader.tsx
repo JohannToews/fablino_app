@@ -18,7 +18,7 @@ const FablinoPageHeader = ({
   mascotSize = "md",
 }: FablinoPageHeaderProps) => {
   return (
-    <div className="flex flex-row items-center gap-2 px-2 py-3 justify-start">
+    <div className="flex flex-row items-center gap-2 px-0 py-3 justify-start w-full self-start">
       <FablinoMascot src={mascotImage} size={mascotSize} />
       <div className="flex-1 min-w-0">
         <SpeechBubble>{message}</SpeechBubble>
