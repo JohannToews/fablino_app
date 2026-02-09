@@ -38,7 +38,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LEGACY_SESSION_KEY = 'liremagie_session';
 const LEGACY_USER_KEY = 'liremagie_user';
 const MIGRATION_DISMISSED_KEY = 'migration_banner_dismissed';
+const REMEMBER_ME_KEY = 'liremagie_remember';
 
+// Helper to get the right storage based on remember-me preference
+const getStorage = (): Storage => {
+  return localStorage.getItem(REMEMBER_ME_KEY) === 'true' ? localStorage : sessionStorage;
+};
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<UserSettings | null>(null);
@@ -101,11 +106,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setMigrationBannerDismissed(true);
   };
 
-  // Check for legacy session in sessionStorage
+  // Check for legacy session in storage
   const checkLegacySession = (): UserSettings | null => {
     try {
-      const legacySession = sessionStorage.getItem(LEGACY_SESSION_KEY);
-      const legacyUserStr = sessionStorage.getItem(LEGACY_USER_KEY);
+      // Check both storages
+      const storage = getStorage();
+      let legacySession = storage.getItem(LEGACY_SESSION_KEY);
+      let legacyUserStr = storage.getItem(LEGACY_USER_KEY);
+      
+      // Fallback: check the other storage too
+      if (!legacySession) {
+        const otherStorage = storage === localStorage ? sessionStorage : localStorage;
+        legacySession = otherStorage.getItem(LEGACY_SESSION_KEY);
+        legacyUserStr = otherStorage.getItem(LEGACY_USER_KEY);
+      }
       
       if (legacySession && legacyUserStr) {
         const legacyUser = JSON.parse(legacyUserStr);
@@ -128,17 +142,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return null;
   };
 
-  // Save legacy session to sessionStorage
+  // Save legacy session to storage
   const saveLegacySession = (token: string, userData: UserSettings) => {
-    sessionStorage.setItem(LEGACY_SESSION_KEY, token);
-    sessionStorage.setItem(LEGACY_USER_KEY, JSON.stringify(userData));
+    const storage = getStorage();
+    storage.setItem(LEGACY_SESSION_KEY, token);
+    storage.setItem(LEGACY_USER_KEY, JSON.stringify(userData));
   };
 
-  // Clear legacy session from sessionStorage
+  // Clear legacy session from both storages
   const clearLegacySession = () => {
     sessionStorage.removeItem(LEGACY_SESSION_KEY);
     sessionStorage.removeItem(LEGACY_USER_KEY);
     sessionStorage.removeItem(MIGRATION_DISMISSED_KEY);
+    localStorage.removeItem(LEGACY_SESSION_KEY);
+    localStorage.removeItem(LEGACY_USER_KEY);
   };
 
   useEffect(() => {
