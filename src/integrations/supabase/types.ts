@@ -669,6 +669,111 @@ export type Database = {
         }
         Relationships: []
       }
+      levels: {
+        Row: {
+          id: number
+          name: string
+          emoji: string
+          stars_required: number
+          sort_order: number
+          color: string
+        }
+        Insert: {
+          id?: number
+          name: string
+          emoji: string
+          stars_required: number
+          sort_order: number
+          color: string
+        }
+        Update: {
+          id?: number
+          name?: string
+          emoji?: string
+          stars_required?: number
+          sort_order?: number
+          color?: string
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          icon_url: string | null
+          emoji: string
+          category: string
+          condition_type: string
+          condition_value: number
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          icon_url?: string | null
+          emoji?: string
+          category: string
+          condition_type: string
+          condition_value: number
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          icon_url?: string | null
+          emoji?: string
+          category?: string
+          condition_type?: string
+          condition_value?: number
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          id: string
+          child_id: string
+          badge_id: string
+          earned_at: string
+          is_new: boolean
+        }
+        Insert: {
+          id?: string
+          child_id: string
+          badge_id: string
+          earned_at?: string
+          is_new?: boolean
+        }
+        Update: {
+          id?: string
+          child_id?: string
+          badge_id?: string
+          earned_at?: string
+          is_new?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marked_words: {
         Row: {
           created_at: string
@@ -1200,6 +1305,7 @@ export type Database = {
           current_streak: number
           id: string
           kid_profile_id: string
+          last_activity_date: string | null
           last_read_date: string | null
           longest_streak: number
           quizzes_passed: number
@@ -1209,6 +1315,7 @@ export type Database = {
           streak_freeze_available: boolean
           streak_freeze_used_this_week: string | null
           total_points: number
+          total_stars: number
           updated_at: string
           user_id: string
           words_learned: number | null
@@ -1219,6 +1326,7 @@ export type Database = {
           current_streak?: number
           id?: string
           kid_profile_id: string
+          last_activity_date?: string | null
           last_read_date?: string | null
           longest_streak?: number
           quizzes_passed?: number
@@ -1228,6 +1336,7 @@ export type Database = {
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
+          total_stars?: number
           updated_at?: string
           user_id: string
           words_learned?: number | null
@@ -1238,6 +1347,7 @@ export type Database = {
           current_streak?: number
           id?: string
           kid_profile_id?: string
+          last_activity_date?: string | null
           last_read_date?: string | null
           longest_streak?: number
           quizzes_passed?: number
@@ -1247,6 +1357,7 @@ export type Database = {
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
           total_points?: number
+          total_stars?: number
           updated_at?: string
           user_id?: string
           words_learned?: number | null
@@ -1276,8 +1387,10 @@ export type Database = {
           difficulty: string | null
           id: string
           kid_profile_id: string | null
+          metadata: Record<string, unknown>
           points_earned: number
           reference_id: string | null
+          stars_earned: number
           total_questions: number | null
           user_id: string | null
         }
@@ -1288,8 +1401,10 @@ export type Database = {
           difficulty?: string | null
           id?: string
           kid_profile_id?: string | null
+          metadata?: Record<string, unknown>
           points_earned?: number
           reference_id?: string | null
+          stars_earned?: number
           total_questions?: number | null
           user_id?: string | null
         }
@@ -1300,8 +1415,10 @@ export type Database = {
           difficulty?: string | null
           id?: string
           kid_profile_id?: string | null
+          metadata?: Record<string, unknown>
           points_earned?: number
           reference_id?: string | null
+          stars_earned?: number
           total_questions?: number | null
           user_id?: string | null
         }
