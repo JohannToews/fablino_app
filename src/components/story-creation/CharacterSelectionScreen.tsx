@@ -7,24 +7,22 @@ import { supabase } from "@/integrations/supabase/client";
 import CharacterTile from "./CharacterTile";
 import NameInputModal from "./NameInputModal";
 import FamilyMemberModal from "./FamilyMemberModal";
-import SiblingInputModal from "./SiblingInputModal";
 import SelectionSummary from "./SelectionSummary";
 import {
   CharacterType,
   FamilyMember,
-  SiblingGender,
   SelectedCharacter,
   CharacterSelectionTranslations,
 } from "./types";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 
-// Import images
-import heroKidImg from "@/assets/characters/hero-kid.jpg";
-import familyImg from "@/assets/characters/family.jpg";
-import siblingsImg from "@/assets/characters/siblings.jpg";
-import boysFriendsImg from "@/assets/characters/boys-friends.jpg";
-import famousCharactersImg from "@/assets/characters/famous-characters.jpg";
-import surpriseBoxImg from "@/assets/characters/surprise-box.jpg";
+// Character images (new illustrations)
+import heroKidImg from "@/assets/people/me.png";
+import familyImg from "@/assets/people/family.png";
+import boysFriendsImg from "@/assets/people/friends.png";
+import surpriseBoxImg from "@/assets/people/surprise.png";
+
+// Family sub-tile images (kept as asset imports)
 import momImg from "@/assets/characters/mom.jpg";
 import dadImg from "@/assets/characters/dad.jpg";
 import grandmaImg from "@/assets/characters/grandma.jpg";
@@ -55,7 +53,7 @@ interface CharacterSelectionScreenProps {
 type ViewState = "main" | "family";
 
 // Which category tile is expanded to show saved characters
-type ExpandedCategory = "family" | "friends" | "famous" | null;
+type ExpandedCategory = "family" | "friends" | null;
 
 const CharacterSelectionScreen = ({
   translations,
@@ -83,8 +81,6 @@ const CharacterSelectionScreen = ({
     type: FamilyMember;
     label: string;
   } | null>(null);
-  
-  const [siblingModalOpen, setSiblingModalOpen] = useState(false);
 
   // Saved kid_characters from DB
   const [savedCharacters, setSavedCharacters] = useState<KidCharacterDB[]>([]);
@@ -117,7 +113,6 @@ const CharacterSelectionScreen = ({
   // Filter saved characters by role
   const familyChars = savedCharacters.filter(c => c.role === 'family');
   const friendChars = savedCharacters.filter(c => c.role === 'friend');
-  const knownChars = savedCharacters.filter(c => c.role === 'known_figure');
 
   // "Ich" tile shows actual kid name + age
   const meLabel = kidName
@@ -127,9 +122,7 @@ const CharacterSelectionScreen = ({
   const mainTiles = [
     { type: "me" as CharacterType, image: heroKidImg, label: meLabel, badge: "\u2B50" },
     { type: "family" as CharacterType, image: familyImg, label: translations.family },
-    { type: "siblings" as CharacterType, image: siblingsImg, label: translations.siblings },
     { type: "friends" as CharacterType, image: boysFriendsImg, label: translations.friends },
-    { type: "famous" as CharacterType, image: famousCharactersImg, label: translations.famous },
     { type: "surprise" as CharacterType, image: surpriseBoxImg, label: translations.surprise, badge: "\u2B50" },
   ];
 
@@ -191,7 +184,6 @@ const CharacterSelectionScreen = ({
     let chars: KidCharacterDB[] = [];
     if (category === "family") chars = familyChars;
     else if (category === "friends") chars = friendChars;
-    else if (category === "famous") chars = knownChars;
     
     if (chars.length === 0) {
       return (
@@ -260,16 +252,9 @@ const CharacterSelectionScreen = ({
         // Toggle expansion of saved family characters
         setExpandedCategory(prev => prev === "family" ? null : "family");
         break;
-      case "siblings":
-        setSiblingModalOpen(true);
-        break;
       case "friends":
         // Toggle expansion of saved friend characters
         setExpandedCategory(prev => prev === "friends" ? null : "friends");
-        break;
-      case "famous":
-        // Toggle expansion of saved known figure characters
-        setExpandedCategory(prev => prev === "famous" ? null : "famous");
         break;
       case "surprise":
         handleSurprise();
@@ -342,22 +327,6 @@ const CharacterSelectionScreen = ({
     setViewState("main");
   }, [familyModalTarget, translations.nameSaved]);
 
-  const handleSaveSibling = useCallback((name: string, gender: SiblingGender, age: number) => {
-    const genderLabel = gender === "brother" ? translations.brother : translations.sister;
-    
-    const newCharacter: SelectedCharacter = {
-      id: `sibling-${Date.now()}`,
-      type: gender,
-      name,
-      label: `${name} (${genderLabel}, ${age})`,
-      age,
-      gender,
-    };
-
-    setSelectedCharacters((prev) => [...prev, newCharacter]);
-    toast.success(`\u2713 ${name} ${translations.nameSaved}`);
-  }, [translations.brother, translations.sister, translations.nameSaved]);
-
   const handleRemoveCharacter = (id: string) => {
     setSelectedCharacters((prev) => prev.filter((c) => c.id !== id));
   };
@@ -391,7 +360,6 @@ const CharacterSelectionScreen = ({
     let chars: KidCharacterDB[] = [];
     if (category === "family") chars = familyChars;
     else if (category === "friends") chars = friendChars;
-    else if (category === "famous") chars = knownChars;
     return chars.some(c => selectedCharacters.some(sc => sc.id === `saved-${c.id}`));
   };
 
@@ -423,9 +391,9 @@ const CharacterSelectionScreen = ({
       <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-2">
         {viewState === "main" && (
           <>
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
+            <div className="grid grid-cols-2 gap-2 md:gap-3 max-w-sm mx-auto">
               {mainTiles.map((tile) => {
-                const isExpandable = tile.type === "family" || tile.type === "friends" || tile.type === "famous";
+                const isExpandable = tile.type === "family" || tile.type === "friends";
                 const isExpanded = expandedCategory === tile.type;
                 const hasSelections = isExpandable && hasSavedSelections(tile.type as ExpandedCategory);
                 // "Überrasch mich" tile is selected when surpriseCharacters is true
@@ -528,14 +496,6 @@ const CharacterSelectionScreen = ({
         onSave={handleSaveFamilyMember}
         memberType={familyModalTarget?.type || "other"}
         defaultLabel={familyModalTarget?.label || ""}
-        translations={translations}
-      />
-
-      {/* Sibling Input Modal */}
-      <SiblingInputModal
-        open={siblingModalOpen}
-        onClose={() => setSiblingModalOpen(false)}
-        onSave={handleSaveSibling}
         translations={translations}
       />
     </div>

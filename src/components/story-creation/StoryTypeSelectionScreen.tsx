@@ -19,16 +19,18 @@ import { cn } from "@/lib/utils";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 
-// Main category images
-import fantasyImg from "@/assets/story-types/fantasy.jpg";
-import actionImg from "@/assets/story-types/action.jpg";
-import animalsImg from "@/assets/story-types/animals-new.jpg";
-import everydayImg from "@/assets/story-types/everyday.jpg";
-import humorImg from "@/assets/story-types/humor.jpg";
+// Main category images (new theme illustrations)
+import fantasyImg from "@/assets/themes/magic.png";
+import actionImg from "@/assets/themes/action.png";
+import animalsImg from "@/assets/themes/animals.png";
+import everydayImg from "@/assets/themes/friends.png";
+import humorImg from "@/assets/themes/chaos.png";
+import surpriseBoxImg from "@/assets/themes/surprise.png";
+
+// Educational images (kept as asset imports)
 import educationalImg from "@/assets/story-types/educational.jpg";
 import musicArtImg from "@/assets/story-types/music-art.jpg";
 import otherTopicImg from "@/assets/story-types/other-topic.jpg";
-import surpriseBoxImg from "@/assets/characters/surprise-box.jpg";
 
 // Educational topic images
 import natureAnimalsImg from "@/assets/story-types/nature-animals.jpg";
