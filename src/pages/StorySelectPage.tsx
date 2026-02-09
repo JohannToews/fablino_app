@@ -314,37 +314,7 @@ const StorySelectPage = () => {
         />
       </div>
 
-      {/* Kid Profile Selector */}
-      {hasMultipleProfiles && (
-        <div className="container max-w-5xl px-4 pb-4">
-          <div className="flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-2">
-            {kidProfiles.map((profile) => (
-              <button
-                key={profile.id}
-                onClick={() => setSelectedProfileId(profile.id)}
-                className={`
-                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all
-                  ${selectedProfileId === profile.id 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'hover:bg-muted'
-                  }
-                `}
-              >
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
-                  {profile.cover_image_url ? (
-                    <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <span className="font-medium text-sm">{profile.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Kid Profile Selector removed – selection happens only on homepage */}
 
       {/* Tabs for Fiction / Non-Fiction */}
       <div className="container max-w-5xl px-4 pb-12">
