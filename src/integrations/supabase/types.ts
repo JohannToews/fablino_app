@@ -446,6 +446,30 @@ export type Database = {
         }
         Relationships: []
       }
+      fun_facts: {
+        Row: {
+          category: string
+          created_at: string | null
+          emoji: string
+          id: string
+          translations: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          translations?: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          translations?: Json
+        }
+        Relationships: []
+      }
       image_cache: {
         Row: {
           created_at: string | null
