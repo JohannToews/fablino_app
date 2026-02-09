@@ -25,28 +25,22 @@ const CharacterTile = ({
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col items-center gap-1.5 md:gap-2 p-2 md:p-3 rounded-xl md:rounded-2xl",
-        "bg-card border-2 transition-all duration-200",
-        "hover:scale-105 hover:shadow-lg active:scale-95",
+        "group relative flex flex-col items-center gap-1.5 p-2 rounded-xl",
+        "bg-white border transition-all duration-200 cursor-pointer",
+        "hover:shadow-md active:scale-[0.97]",
         "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2",
         selected
-          ? "border-orange-400 bg-orange-50 shadow-md"
-          : "border-[#F0E8E0] hover:border-orange-400",
-        size === "small" && "p-1.5 md:p-2 gap-1",
+          ? "ring-2 ring-[#E8863A] border-[#E8863A] bg-orange-50 shadow-md"
+          : "border-[#E8863A]/10 hover:border-[#E8863A]/30",
         className
       )}
     >
       {/* Image Container */}
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-lg md:rounded-xl",
-          size === "normal" ? "w-full aspect-[4/3]" : "w-full aspect-square"
-        )}
-      >
+      <div className="relative w-full overflow-hidden rounded-lg aspect-square">
         <img
           src={image}
           alt={label}
-          className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
         />
         
         {/* Color palette overlay filter */}
@@ -57,9 +51,9 @@ const CharacterTile = ({
         {/* Selection Indicator */}
         {selected && (
           <div className="absolute inset-0 bg-orange-400/20 flex items-center justify-center">
-            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
               <svg
-                className="w-4 h-4 md:w-5 md:h-5 text-white"
+                className="w-4 h-4 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -77,17 +71,12 @@ const CharacterTile = ({
 
         {/* Badge (e.g., star for "Surprise me") */}
         {badge && (
-          <div className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-sm md:text-lg">{badge}</div>
+          <div className="absolute top-1 right-1 text-base">{badge}</div>
         )}
       </div>
 
       {/* Label */}
-      <span
-        className={cn(
-          "font-baloo font-medium text-center text-foreground leading-tight",
-          size === "normal" ? "text-xs md:text-sm" : "text-[10px] md:text-xs"
-        )}
-      >
+      <span className="font-baloo font-semibold text-center text-[#2D1810] leading-tight text-sm">
         {label}
       </span>
     </button>

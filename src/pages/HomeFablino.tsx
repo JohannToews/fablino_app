@@ -3,53 +3,10 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
 import { Settings, BarChart3 } from "lucide-react";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-// ═══ Speech Bubble Component ═══
-interface SpeechBubbleProps {
-  children: React.ReactNode;
-  variant?: "hero" | "tip";
-}
-
-const SpeechBubble = ({ children, variant = "hero" }: SpeechBubbleProps) => {
-  const isHero = variant === "hero";
-  
-  return (
-    <div className="relative">
-      <div
-        className={`
-          relative rounded-[18px]
-          ${isHero 
-            ? "px-4 py-2.5 bg-white shadow-[0_3px_16px_rgba(0,0,0,0.08)] animate-speech-bubble text-left" 
-            : "px-5 py-3 bg-orange-50 border border-orange-100 text-center"
-          }
-        `}
-        style={{
-          animationDelay: isHero ? "0.1s" : "0s",
-          animationFillMode: "both",
-        }}
-      >
-        <span className={`font-nunito ${isHero ? "text-[16px] font-semibold leading-snug" : "text-[13px] font-semibold"}`} style={{ color: "#2D1810" }}>
-          {children}
-        </span>
-      </div>
-      {/* Triangle pointing LEFT toward Fablino */}
-      {isHero && (
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 -left-2"
-          style={{
-            width: 0,
-            height: 0,
-            borderTop: "10px solid transparent",
-            borderBottom: "10px solid transparent",
-            borderRight: "10px solid white",
-          }}
-        />
-      )}
-    </div>
-  );
-};
+import FablinoPageHeader from "@/components/FablinoPageHeader";
+import { FABLINO_STYLES } from "@/constants/design-tokens";
 
 // ═══ Localized texts ═══
 
@@ -78,43 +35,7 @@ const UI_TEXTS: Record<string, {
   bs: { newStory: '📖 Nova priča', myStories: '📚 Moje priče', myWeek: 'Moja sedmica 🏆', seeAll: 'Pogledaj sve →' },
 };
 
-const FABLINO_TIPS: Record<string, string[]> = {
-  fr: [
-    "Astuce : Plus tu lis, plus tu gagnes de stickers ! 🌟",
-    "Le savais-tu ? Une histoire par jour fait de toi un pro ! 📚",
-    "Astuce : Après chaque histoire, il y a un quiz ! Tu les réussis tous ? 💪",
-  ],
-  de: [
-    "Tipp: Je mehr du liest, desto mehr Sticker sammelst du! 🌟",
-    "Wusstest du? Jeden Tag eine Geschichte macht dich zum Leseprofi! 📚",
-    "Tipp: Nach jeder Geschichte gibt es ein Quiz! Schaffst du alle? 💪",
-  ],
-  en: [
-    "Tip: The more you read, the more stickers you collect! 🌟",
-    "Did you know? A story every day makes you a reading pro! 📚",
-    "Tip: After every story there's a quiz! Can you ace them all? 💪",
-  ],
-  es: [
-    "Consejo: ¡Cuanto más leas, más stickers coleccionas! 🌟",
-    "¿Sabías que? ¡Una historia al día te hace un experto lector! 📚",
-    "Consejo: ¡Después de cada historia hay un quiz! ¿Los superas todos? 💪",
-  ],
-  nl: [
-    "Tip: Hoe meer je leest, hoe meer stickers je verzamelt! 🌟",
-    "Wist je dat? Elke dag een verhaal maakt je een leesexpert! 📚",
-    "Tip: Na elk verhaal is er een quiz! Kun je ze allemaal halen? 💪",
-  ],
-  it: [
-    "Suggerimento: Più leggi, più sticker collezioni! 🌟",
-    "Lo sapevi? Una storia al giorno ti rende un esperto lettore! 📚",
-    "Suggerimento: Dopo ogni storia c'è un quiz! Riesci a superarli tutti? 💪",
-  ],
-  bs: [
-    "Savjet: Što više čitaš, više stikera skupiš! 🌟",
-    "Jesi li znao/la? Priča svaki dan čini te profesionalcem! 📚",
-    "Savjet: Nakon svake priče dolazi kviz! Možeš li sve riješiti? 💪",
-  ],
-};
+// Tips removed – section no longer shown on home screen
 
 // ═══ Helper: Monday 00:00 of current week ═══
 function getMondayOfCurrentWeek(): string {
@@ -197,12 +118,6 @@ const HomeFablino = () => {
   const lang = kidAppLanguage || 'de';
   const greet = GREETINGS[lang] || GREETINGS['de'];
   const ui = UI_TEXTS[lang] || UI_TEXTS['de'];
-  const tips = FABLINO_TIPS[lang] || FABLINO_TIPS['de'];
-
-  // Random tip on each load (re-pick when language changes)
-  const randomTip = useMemo(() => {
-    return tips[Math.floor(Math.random() * tips.length)];
-  }, [tips]);
 
   const kidName = selectedProfile?.name || "";
   const greeting = kidName ? greet.withName(kidName) : greet.withoutName;
@@ -288,38 +203,19 @@ const HomeFablino = () => {
           </div>
         </div>
 
-        {/* ═══ 1. FABLINO GREETING (Hero) — side by side ═══ */}
-        <div className="flex items-center pt-4 mb-3" style={{ marginLeft: -24, gap: 0 }}>
-          {/* Mascot with gentle bounce — 250px, pushed left */}
-          <img 
-            src="/mascot/6_Onboarding.png" 
-            alt="Fablino Fuchs" 
-            className="flex-shrink-0 object-contain drop-shadow-lg"
-            style={{
-              width: 250,
-              height: "auto",
-              animation: "gentleBounce 2.2s ease-in-out infinite",
-            }}
-          />
-
-          {/* Speech Bubble — close to Fablino */}
-          <div className="flex-1 min-w-0">
-            <SpeechBubble variant="hero">
-              {greeting}
-            </SpeechBubble>
-          </div>
-        </div>
+        {/* ═══ 1. FABLINO GREETING (Hero) — uses shared FablinoPageHeader ═══ */}
+        <FablinoPageHeader
+          mascotImage="/mascot/6_Onboarding.png"
+          message={greeting}
+          mascotSize="md"
+        />
 
         {/* ═══ 2. MAIN ACTIONS ═══ */}
-        <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col gap-3 mb-4 items-center">
           {/* Primary Button - New Story */}
           <button
             onClick={() => navigate("/create-story")}
-            className="w-full py-4 px-6 rounded-2xl text-white font-extrabold text-[17px] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: "linear-gradient(135deg, #FF8C42, #FF6B00)",
-              boxShadow: "0 4px 14px rgba(255,107,0,0.25)",
-            }}
+            className={FABLINO_STYLES.primaryButton}
           >
             {ui.newStory}
           </button>
@@ -327,12 +223,7 @@ const HomeFablino = () => {
           {/* Secondary Button - My Stories */}
           <button
             onClick={() => navigate("/stories")}
-            className="w-full py-4 px-6 rounded-2xl font-extrabold text-[17px] border-2 transition-all duration-200 hover:bg-orange-50 hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: "white",
-              borderColor: "#FF8C42",
-              color: "#FF8C42",
-            }}
+            className={FABLINO_STYLES.secondaryButton}
           >
             {ui.myStories}
           </button>
@@ -459,40 +350,9 @@ const HomeFablino = () => {
           </div>
         </div>
 
-        {/* ═══ 4. FABLINO TIP ═══ */}
-        <div className="flex items-start gap-3 px-1 pb-3">
-          {/* Small Fablino */}
-          <img 
-            src="/mascot/head_only.png" 
-            alt="Fablino" 
-            className="w-10 h-10 object-contain flex-shrink-0"
-          />
-          {/* Tip bubble */}
-          <div className="flex-1">
-            <SpeechBubble variant="tip">
-              {randomTip}
-            </SpeechBubble>
-          </div>
-        </div>
+        {/* Tip section removed – saves vertical space on tablet */}
       </div>
 
-      {/* ═══ Custom Keyframes ═══ */}
-      <style>{`
-        @keyframes gentleBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-
-        @keyframes speechBubbleIn {
-          0% { transform: scale(0.6); opacity: 0; }
-          70% { transform: scale(1.04); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-
-        .animate-speech-bubble {
-          animation: speechBubbleIn 0.4s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 };

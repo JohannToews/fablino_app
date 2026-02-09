@@ -16,7 +16,7 @@ import {
 } from "./types";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 
-// Character images (new illustrations)
+// Character images (Vite imports – reliable with Dropbox Smart Sync)
 import heroKidImg from "@/assets/people/me.png";
 import familyImg from "@/assets/people/family.png";
 import boysFriendsImg from "@/assets/people/friends.png";
@@ -364,7 +364,7 @@ const CharacterSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-28" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       {/* Back button */}
       <div className="px-4 pt-3 pb-0">
         <Button
@@ -376,22 +376,21 @@ const CharacterSelectionScreen = ({
         </Button>
       </div>
 
-      {/* Fablino Header */}
-      {fablinoMessage && viewState === "main" && (
-        <div className="container max-w-3xl mx-auto px-4">
+      {/* Vertically centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 max-w-lg mx-auto w-full gap-4 pb-20">
+        {/* Fablino Header */}
+        {fablinoMessage && viewState === "main" && (
           <FablinoPageHeader
             mascotImage="/mascot/4_come_back.png"
             message={fablinoMessage}
-            mascotSize={130}
+            mascotSize="md"
           />
-        </div>
-      )}
+        )}
 
-      {/* Main Content */}
-      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-2">
+        {/* Main Content */}
         {viewState === "main" && (
-          <>
-            <div className="grid grid-cols-2 gap-2 md:gap-3 max-w-sm mx-auto">
+          <div className="w-full space-y-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {mainTiles.map((tile) => {
                 const isExpandable = tile.type === "family" || tile.type === "friends";
                 const isExpanded = expandedCategory === tile.type;
@@ -435,18 +434,18 @@ const CharacterSelectionScreen = ({
             {/* Expanded saved characters checkboxes */}
             {expandedCategory && (
               <div className="animate-fade-in bg-card rounded-xl border border-border p-3">
-                <h3 className="text-xs md:text-sm font-medium text-muted-foreground mb-2">
+                <h3 className="text-xs font-medium text-muted-foreground mb-2">
                   {translations.savedCharactersLabel}
                 </h3>
                 {renderSavedCheckboxes(expandedCategory)}
               </div>
             )}
-          </>
+          </div>
         )}
 
         {viewState === "family" && (
-          <div className="space-y-3 md:space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+          <div className="w-full space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {familyTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
@@ -462,7 +461,7 @@ const CharacterSelectionScreen = ({
             {/* Add More Button */}
             <Button
               variant="outline"
-              className="w-full h-12 md:h-14 rounded-xl border-dashed border-2"
+              className="w-full h-14 rounded-2xl border-dashed border-2"
               onClick={() => openFamilyModal("other", translations.other)}
             >
               <Plus className="w-5 h-5 mr-2" />

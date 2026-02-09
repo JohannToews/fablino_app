@@ -5,6 +5,8 @@ import { getTranslations } from "@/lib/translations";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Star } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import FablinoMascot from "@/components/FablinoMascot";
+import SpeechBubble from "@/components/SpeechBubble";
 
 interface Story {
   id: string;
@@ -126,32 +128,26 @@ const StickerBookPage = () => {
 
           {/* Fablino + Message + Progress */}
           {!showEmptyState && (
-            <div className="flex items-start gap-3">
-              <img
-                src="/mascot/1_happy_success.png"
-                alt="Fablino"
-                className="w-16 h-16 object-contain flex-shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="bg-white rounded-xl p-3 shadow-sm border border-amber-100 relative">
-                  {/* Speech bubble tail */}
-                  <div className="absolute left-0 top-4 -translate-x-2 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white" />
-                  <p className="text-sm font-medium text-amber-800">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <FablinoMascot src="/mascot/1_happy_success.png" size="sm" />
+                <div className="flex-1 min-w-0">
+                  <SpeechBubble variant="tip">
                     {t.storiesCollected?.replace('{count}', String(stories.length)) || 
                       `${stories.length} Geschichten gesammelt! Weiter so!`}
-                  </p>
+                  </SpeechBubble>
                 </div>
-                
-                {/* Progress bar */}
-                <div className="mt-2 flex items-center gap-2">
-                  <Progress 
-                    value={progressPercent} 
-                    className="h-3 flex-1 bg-amber-200"
-                  />
-                  <span className="text-xs font-bold text-amber-700 whitespace-nowrap">
-                    {stories.length} / {nextGoal}
-                  </span>
-                </div>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="flex items-center gap-2">
+                <Progress 
+                  value={progressPercent} 
+                  className="h-3 flex-1 bg-amber-200"
+                />
+                <span className="text-xs font-bold text-amber-700 whitespace-nowrap">
+                  {stories.length} / {nextGoal}
+                </span>
               </div>
             </div>
           )}
@@ -162,11 +158,9 @@ const StickerBookPage = () => {
         {/* Empty State */}
         {showEmptyState ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <img
-              src="/mascot/6_Onboarding.png"
-              alt="Fablino"
-              className="w-32 h-32 object-contain mb-6"
-            />
+            <div className="mb-6">
+              <FablinoMascot src="/mascot/6_Onboarding.png" size="lg" />
+            </div>
             <h2 className="text-xl font-baloo font-bold text-amber-900 mb-2">
               {t.stickerBook}
             </h2>

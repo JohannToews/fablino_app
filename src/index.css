@@ -302,4 +302,54 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Fablino mascot gentle bounce (used globally by FablinoMascot component) */
+  @keyframes gentleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  /* Speech bubble entrance animation (used by HomeFablino) */
+  @keyframes speechBubbleIn {
+    0% { transform: scale(0.6); opacity: 0; }
+    70% { transform: scale(1.04); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-speech-bubble {
+    animation: speechBubbleIn 0.4s ease-out forwards;
+  }
+
+  /* Fade-slide-up animation (used by ResultsPage cards) */
+  @keyframes fadeSlideUp {
+    0% { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Shimmer effect for progress bars */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* Pulse ring animation for active level node */
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 currentColor; }
+    70% { box-shadow: 0 0 0 8px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  /* Confetti fall for badge celebrations */
+  @keyframes confettiFall {
+    0% { transform: translateY(-40px) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* Badge pop-in animation */
+  @keyframes badgePop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
 }

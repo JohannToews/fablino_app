@@ -2,8 +2,6 @@ import { useState } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import CharacterTile from "./CharacterTile";
 import { 
   StoryType, 
@@ -12,14 +10,11 @@ import {
   StoryTypeSelectionTranslations, 
   StoryLength, 
   StoryDifficulty,
-  LANGUAGE_FLAGS,
-  LANGUAGE_LABELS,
 } from "./types";
-import { cn } from "@/lib/utils";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 
-// Main category images (new theme illustrations)
+// Main category images (Vite imports – reliable with Dropbox Smart Sync)
 import fantasyImg from "@/assets/themes/magic.png";
 import actionImg from "@/assets/themes/action.png";
 import animalsImg from "@/assets/themes/animals.png";
@@ -193,7 +188,7 @@ const StoryTypeSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-28" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       {/* Back button */}
       <div className="px-4 pt-3 pb-0">
         <Button variant="ghost" size="icon" onClick={handleBack}>
@@ -201,105 +196,20 @@ const StoryTypeSelectionScreen = ({
         </Button>
       </div>
 
-      {/* Fablino Header */}
-      {fablinoMessage && (
-        <div className="container max-w-3xl mx-auto px-4">
+      {/* Vertically centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 max-w-md mx-auto w-full gap-4 pb-6">
+        {/* Fablino Header */}
+        {fablinoMessage && (
           <FablinoPageHeader
             mascotImage="/mascot/6_Onboarding.png"
             message={fablinoMessage}
-            mascotSize={130}
+            mascotSize="md"
           />
-        </div>
-      )}
-
-      <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4 space-y-3 md:space-y-4">
-        {/* Story Settings (Length, Difficulty, Series) - Only on main view */}
-        {viewState === "main" && (
-          <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border space-y-3 md:space-y-4">
-            {/* Length Selection */}
-            <div className="flex items-center gap-3">
-              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{translations.lengthLabel}</Label>
-              <div className="flex gap-1.5 md:gap-2 flex-1">
-                {(["short", "medium", "long"] as StoryLength[]).map((len) => (
-                  <Button
-                    key={len}
-                    variant={storyLength === len ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyLength === len && "bg-orange-500 text-white"
-                    )}
-                    onClick={() => setStoryLength(len)}
-                  >
-                    {len === "short" ? translations.lengthShort : len === "medium" ? translations.lengthMedium : translations.lengthLong}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Difficulty Selection */}
-            <div className="flex items-center gap-3">
-              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{translations.difficultyLabel}</Label>
-              <div className="flex gap-1.5 md:gap-2 flex-1">
-                {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
-                  <Button
-                    key={diff}
-                    variant={storyDifficulty === diff ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyDifficulty === diff && "bg-orange-500 text-white"
-                    )}
-                    onClick={() => setStoryDifficulty(diff)}
-                  >
-                    {diff === "easy" ? translations.difficultyEasy : diff === "medium" ? translations.difficultyMedium : translations.difficultyHard}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Series Toggle */}
-            <div className="flex items-center justify-between">
-              <Label className="text-xs md:text-sm font-medium text-muted-foreground">{translations.seriesLabel}</Label>
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className={cn("text-xs md:text-sm", !isSeries && "font-semibold text-foreground")}>{translations.seriesNo}</span>
-                <Switch
-                  checked={isSeries}
-                  onCheckedChange={setIsSeries}
-                  className="scale-90 md:scale-100"
-                />
-                <span className={cn("text-xs md:text-sm", isSeries && "font-semibold text-foreground")}>{translations.seriesYes}</span>
-              </div>
-            </div>
-
-            {/* Language Picker – only show if more than 1 language available */}
-            {availableLanguages.length > 1 && (
-              <div className="flex items-center gap-3">
-                <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{translations.storyLanguageLabel}</Label>
-                <div className="flex gap-1.5 md:gap-2 flex-1 flex-wrap">
-                  {availableLanguages.map((lang) => (
-                    <Button
-                      key={lang}
-                      variant={storyLanguage === lang ? "default" : "outline"}
-                      size="sm"
-                      className={cn(
-                        "h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm px-2.5 md:px-3",
-                        storyLanguage === lang && "bg-orange-500 text-white"
-                      )}
-                      onClick={() => setStoryLanguage(lang)}
-                    >
-                      {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[uiLanguage] || lang.toUpperCase()}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         )}
 
-        {/* Main Category Grid */}
+        {/* Main Category Grid – 3 columns on tablet (3×2), 2 columns on mobile */}
         {viewState === "main" && (
-          <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full">
             {mainCategoryTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
@@ -314,10 +224,10 @@ const StoryTypeSelectionScreen = ({
           </div>
         )}
 
-        {/* Educational Topics Grid */}
+        {/* Educational Topics Grid – 3 columns on tablet, 2 on mobile */}
         {viewState === "educational" && (
-          <>
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="w-full space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {educationalTopicTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
@@ -333,8 +243,8 @@ const StoryTypeSelectionScreen = ({
 
             {/* Custom Topic Input (appears when any topic is selected) */}
             {selectedTopic && (
-              <div className="animate-fade-in bg-card rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-[#F0E8E0] space-y-3">
-                <h3 className="text-base md:text-lg font-baloo font-semibold text-center">
+              <div className="animate-fade-in bg-card rounded-xl p-4 border-2 border-[#F0E8E0] space-y-3">
+                <h3 className="text-base font-baloo font-semibold text-center">
                   {selectedTopic === "other" 
                     ? translations.other 
                     : translations.specifyTopic}
@@ -343,31 +253,23 @@ const StoryTypeSelectionScreen = ({
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
                   placeholder={getTopicPlaceholder(selectedTopic)}
-                  className="h-12 md:h-14 text-base md:text-lg font-medium text-center rounded-xl border-2 focus:border-orange-400"
+                  className="h-12 text-base font-medium text-center rounded-xl border-2 focus:border-orange-400"
                   maxLength={100}
                 />
               </div>
             )}
-          </>
-        )}
-      </div>
 
-      {/* Bottom Continue Button - Only show for educational */}
-      {viewState === "educational" && (
-        <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border pb-safe">
-          <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
+            {/* Continue Button (inline, not fixed) */}
             <Button
               onClick={handleContinue}
               disabled={!canContinue()}
-              className={cn(
-                "w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
-              )}
+              className="w-full h-14 rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors"
             >
               {translations.continue} →
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

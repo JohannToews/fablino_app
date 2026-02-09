@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Check, Loader2, Sparkles, Pencil, Search, Palette, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import FablinoMascot from "@/components/FablinoMascot";
 
 interface StoryGenerationProgressProps {
   language: string;
@@ -137,13 +138,12 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
   return (
     <div className="text-center space-y-6 p-8 max-w-md mx-auto">
       {/* Fablino mascot — cycles between emotions */}
-      <div className="relative">
-        <img
+      <div className="relative flex justify-center">
+        <FablinoMascot
           key={mascotIndex}
           src={MASCOT_CYCLE[mascotIndex]}
-          alt="Fablino"
-          className="w-[150px] h-auto mx-auto object-contain drop-shadow-lg transition-opacity duration-500"
-          style={{ animation: "gentleBounce 2.2s ease-in-out infinite" }}
+          size="md"
+          className="transition-opacity duration-500"
         />
         {/* Sparkles around */}
         <Sparkles className="absolute top-0 right-1/4 w-6 h-6 text-yellow-400 animate-bounce" style={{ animationDelay: "0.5s" }} />
@@ -208,12 +208,6 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
         </p>
       </div>
 
-      <style>{`
-        @keyframes gentleBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-      `}</style>
     </div>
   );
 };

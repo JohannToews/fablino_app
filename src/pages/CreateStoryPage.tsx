@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useTranslations } from "@/lib/translations";
 import StoryGenerationProgress from "@/components/story-creation/StoryGenerationProgress";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
+import { FABLINO_STYLES, FABLINO_COLORS } from "@/constants/design-tokens";
 
 // Fablino messages for the entry screen (per language)
 const FABLINO_ENTRY_MSG: Record<string, (name: string) => string> = {
@@ -635,64 +636,53 @@ const CreateStoryPage = () => {
             </button>
           </div>
 
-          {/* Fablino greeting */}
-          <div className="max-w-lg mx-auto w-full px-4">
+          {/* Content centered in available space */}
+          <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4 max-w-md mx-auto w-full">
+            {/* Fablino greeting – same FablinoPageHeader as all screens */}
             <FablinoPageHeader
               mascotImage="/mascot/5_new_story.png"
               message={(FABLINO_ENTRY_MSG[kidAppLanguage] || FABLINO_ENTRY_MSG.de)(selectedProfile?.name || "")}
-              mascotSize={150}
+              mascotSize="md"
             />
-          </div>
 
-          {/* Two path cards */}
-          <div className="flex-1 flex flex-col items-center px-4 pt-2 pb-8 gap-4 max-w-lg mx-auto w-full">
-            {/* Weg A: Free */}
-            <button
-              onClick={() => handlePathSelect("free")}
-              className="w-full rounded-2xl p-5 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
-              style={{
-                background: "white",
-                border: "2px solid #F0E8E0",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#FF8C42")}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#F0E8E0")}
-            >
-              <div className="flex items-start gap-4">
-                <span className="text-[32px]">✏️</span>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-[17px] font-extrabold" style={{ color: "#2D1810" }}>
-                    {t.wizardPathFree}
-                  </h2>
-                  <p className="text-[14px] font-medium mt-1" style={{ color: "#888" }}>
-                    {t.wizardPathFreeHint}
-                  </p>
+            {/* Two path cards */}
+            <div className="flex flex-col items-center gap-3 w-full">
+              {/* Weg A: Free */}
+              <button
+                onClick={() => handlePathSelect("free")}
+                className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#E8863A]/10 p-5 text-left cursor-pointer transition-all hover:shadow-md hover:border-[#E8863A]/30"
+              >
+                <div className="flex flex-row items-center gap-4">
+                  <span className="text-[32px] flex-shrink-0 w-10 text-center">✏️</span>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold" style={{ color: FABLINO_COLORS.text }}>
+                      {t.wizardPathFree}
+                    </h2>
+                    <p className="text-sm mt-0.5" style={{ color: `${FABLINO_COLORS.text}99` }}>
+                      {t.wizardPathFreeHint}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
 
-            {/* Weg B: Guided */}
-            <button
-              onClick={() => handlePathSelect("guided")}
-              className="w-full rounded-2xl p-5 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
-              style={{
-                background: "white",
-                border: "2px solid #F0E8E0",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#FF8C42")}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#F0E8E0")}
-            >
-              <div className="flex items-start gap-4">
-                <span className="text-[32px]">🧩</span>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-[17px] font-extrabold" style={{ color: "#2D1810" }}>
-                    {t.wizardPathGuided}
-                  </h2>
-                  <p className="text-[14px] font-medium mt-1" style={{ color: "#888" }}>
-                    {t.wizardPathGuidedHint}
-                  </p>
+              {/* Weg B: Guided */}
+              <button
+                onClick={() => handlePathSelect("guided")}
+                className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#E8863A]/10 p-5 text-left cursor-pointer transition-all hover:shadow-md hover:border-[#E8863A]/30"
+              >
+                <div className="flex flex-row items-center gap-4">
+                  <span className="text-[32px] flex-shrink-0 w-10 text-center">🧩</span>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold" style={{ color: FABLINO_COLORS.text }}>
+                      {t.wizardPathGuided}
+                    </h2>
+                    <p className="text-sm mt-0.5" style={{ color: `${FABLINO_COLORS.text}99` }}>
+                      {t.wizardPathGuidedHint}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -725,7 +715,7 @@ const CreateStoryPage = () => {
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
           onBack={handleBack}
-          showSettings={wizardPath === "free"}
+          showSettings={true}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
           fablinoMessage={(FABLINO_EFFECTS_MSG[kidAppLanguage] || FABLINO_EFFECTS_MSG.de)}

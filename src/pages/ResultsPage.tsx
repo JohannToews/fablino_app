@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useResultsPage, LevelInfo, BadgeInfo, BadgeHint } from "@/hooks/useResultsPage";
 import { ArrowLeft } from "lucide-react";
+import FablinoMascot from "@/components/FablinoMascot";
+import SpeechBubble from "@/components/SpeechBubble";
 
 // ── Helpers ──
 
@@ -106,35 +108,12 @@ const SkeletonCard = ({ className = "" }: { className?: string }) => (
 
 const FablinoSection = ({ message, delay }: { message: string; delay: number }) => (
   <div
-    className="flex items-end gap-3 px-1"
+    className="flex items-center gap-4 px-1"
     style={{ animation: `fadeSlideUp 0.5s ease-out ${delay}s both` }}
   >
-    <img
-      src="/mascot/6_Onboarding.png"
-      alt="Fablino"
-      className="w-[90px] h-auto flex-shrink-0 drop-shadow-md"
-      style={{ animation: "gentleBounce 3s ease-in-out infinite" }}
-    />
-    <div className="relative flex-1 mb-2">
-      <div
-        className="bg-white rounded-2xl px-4 py-3"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
-      >
-        <p className="font-nunito text-[15px] font-semibold leading-snug" style={{ color: "#2D1810" }}>
-          {message}
-        </p>
-      </div>
-      {/* Triangle pointing down-left */}
-      <div
-        className="absolute -bottom-2 left-6"
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: "8px solid transparent",
-          borderRight: "8px solid transparent",
-          borderTop: "10px solid white",
-        }}
-      />
+    <FablinoMascot src="/mascot/6_Onboarding.png" size="md" />
+    <div className="flex-1 min-w-0">
+      <SpeechBubble>{message}</SpeechBubble>
     </div>
   </div>
 );
@@ -558,26 +537,6 @@ const ResultsPage = () => {
         />
       </div>
 
-      {/* Keyframe animations */}
-      <style>{`
-        @keyframes fadeSlideUp {
-          0% { opacity: 0; transform: translateY(16px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes gentleBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
-        }
-        @keyframes pulse-ring {
-          0% { box-shadow: 0 0 0 0 currentColor; }
-          70% { box-shadow: 0 0 0 8px transparent; }
-          100% { box-shadow: 0 0 0 0 transparent; }
-        }
-      `}</style>
     </div>
   );
 };

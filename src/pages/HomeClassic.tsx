@@ -7,6 +7,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { getTranslations } from "@/lib/translations";
 import { useGamification } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
+import FablinoMascot from "@/components/FablinoMascot";
 import MigrationBanner from "@/components/MigrationBanner";
 
 const HomeClassic = () => {
@@ -180,11 +181,7 @@ const HomeClassic = () => {
 
             {/* Fablino-Sprechblase */}
             <div className="flex items-end gap-2 mt-3">
-              <img
-                src="/mascot/6_Onboarding.png"
-                alt="Fablino"
-                className="w-12 h-12 object-contain flex-shrink-0"
-              />
+              <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" bounce={false} className="!max-h-[48px]" />
               <div className="bg-primary/10 rounded-xl rounded-bl-none px-3 py-2 max-w-[220px]">
                 <p className="text-sm font-medium text-foreground leading-snug">
                   {getFablinoGreeting()}

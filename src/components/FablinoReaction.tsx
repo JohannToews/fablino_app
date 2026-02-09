@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import FablinoMascot from "./FablinoMascot";
 
 // ═══ Types ═══
 
@@ -178,16 +179,13 @@ export default function FablinoReaction({
         {/* Content */}
         <div className="relative flex flex-col items-center gap-4 pt-2">
           {/* Fablino image */}
-          <img
-            src={FABLINO_IMAGES[type]}
-            alt="Fablino"
-            aria-label={`Fablino ${type}`}
-            className={`
-              w-[120px] h-[120px] object-contain
-              transition-all duration-700 ease-out
-              ${visible ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}
-            `}
-          />
+          <div className={`transition-all duration-700 ease-out ${visible ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
+            <FablinoMascot
+              src={FABLINO_IMAGES[type]}
+              size="lg"
+              bounce={false}
+            />
+          </div>
 
           {/* Message */}
           <p className="text-lg font-bold text-center text-gray-800 leading-snug">

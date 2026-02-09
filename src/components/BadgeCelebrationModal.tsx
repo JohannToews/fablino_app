@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import FablinoMascot from "./FablinoMascot";
 
 export interface EarnedBadge {
   name: string;
@@ -98,12 +99,7 @@ const BadgeCelebrationModal = ({ badges, onDismiss }: BadgeCelebrationModalProps
 
         {/* Fablino mini */}
         <div className="flex items-end justify-center gap-2 mt-3 mb-4">
-          <img
-            src="/mascot/6_Onboarding.png"
-            alt="Fablino"
-            className="w-[50px] h-auto"
-            style={{ animation: "gentleBounce 2.5s ease-in-out infinite" }}
-          />
+          <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" className="!max-h-[50px]" />
           <div
             className="bg-orange-50 rounded-xl px-3 py-2 relative"
             style={{ border: "1px solid #FDBA74" }}
@@ -141,22 +137,7 @@ const BadgeCelebrationModal = ({ badges, onDismiss }: BadgeCelebrationModalProps
         )}
       </div>
 
-      <style>{`
-        @keyframes confettiFall {
-          0% { transform: translateY(-40px) rotate(0deg); opacity: 0; }
-          10% { opacity: 1; }
-          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
-        @keyframes badgePop {
-          0% { transform: scale(0); opacity: 0; }
-          60% { transform: scale(1.2); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes gentleBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-      `}</style>
+      {/* Keyframes (gentleBounce, confettiFall, badgePop) are defined globally in index.css */}
     </div>
   );
 };

@@ -14,7 +14,8 @@
 6. [External APIs & Integrations](#external-apis--integrations)
 7. [Database Schema](#database-schema)
 8. [Services & Hooks](#services--hooks)
-9. [Technical Debt & Code Smells](#technical-debt--code-smells)
+9. [Reusable UI Components](#reusable-ui-components)
+10. [Technical Debt & Code Smells](#technical-debt--code-smells)
 
 ---
 
@@ -22,14 +23,15 @@
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, TypeScript, Vite 7 |
-| UI | shadcn/ui, Tailwind CSS, Radix UI |
-| State | React Context, TanStack React Query |
-| Backend | Supabase (Edge Functions, Database, Storage, Realtime) |
+| Frontend | React 18.3, TypeScript 5.8, Vite 5.4 |
+| UI | shadcn/ui (50+ Radix UI components), Tailwind CSS 3.4, Framer Motion 12 |
+| State | React Context, TanStack React Query 5 |
+| Backend | Supabase (Edge Functions, PostgreSQL, Storage, Realtime) |
 | AI / LLM | Google Gemini (2.0 Flash, 2.5 Flash, 3 Flash Preview), Lovable AI Gateway |
 | Speech | ElevenLabs (TTS + STT) |
 | Routing | React Router v6 |
-| PWA | Installable via InstallPage |
+| PWA | Installable via vite-plugin-pwa + InstallPage |
+| Testing | Vitest, Testing Library |
 
 ---
 
@@ -37,78 +39,125 @@
 
 ```
 kinder-wort-trainer/
-├── public/                        # Static assets (icons, PWA assets)
+├── public/                            # Static assets
+│   ├── mascot/                        # 10 Fablino mascot states (happy, encouraging, waiting…)
+│   ├── themes/                        # 6 story theme images (magic, action, animals, friends, chaos, surprise)
+│   └── people/                        # 4 character category images (me, family, friends, surprise)
 ├── src/
-│   ├── assets/                    # Images
-│   │   ├── characters/            # 19 character images (boy, girl, family…)
-│   │   ├── settings/              # 9 setting images (castle, space, jungle…)
-│   │   ├── story-types/           # 18 story type images (adventure, fantasy…)
-│   │   └── timeline/              # 10 timeline images (dinosaurs, medieval…)
+│   ├── assets/
+│   │   ├── characters/                # 19 character images (boy, girl, family…)
+│   │   ├── people/                    # 4 character images (Vite imports)
+│   │   ├── settings/                  # 9 setting images (castle, space, jungle…)
+│   │   ├── story-types/               # 18 story type images (adventure, fantasy…)
+│   │   ├── themes/                    # 6 theme images (Vite imports)
+│   │   └── timeline/                  # 10 timeline images (dinosaurs, medieval…)
 │   ├── components/
-│   │   ├── ui/                    # 50+ shadcn/ui components
-│   │   ├── gamification/          # Points, levels, streaks, collectibles
-│   │   ├── story-creation/        # Multi-step story creation wizard
-│   │   ├── story-sharing/         # QR code sharing, import/export
-│   │   ├── ComprehensionQuiz.tsx  # Story comprehension quiz
-│   │   ├── SeriesGrid.tsx         # Series display grid (uses central translations)
-│   │   ├── KidProfileSection.tsx  # Kid profile editor (saves multilingual fields)
-│   │   ├── ParentSettingsPanel.tsx # Learning themes & content guardrails (Block 2.1)
-│   │   ├── ProtectedRoute.tsx     # Route guard
-│   │   ├── ReadingSettings.tsx    # Font size, line spacing, syllable mode
-│   │   ├── StoryAudioPlayer.tsx   # Audio player for TTS narration
-│   │   ├── StoryGenerator.tsx     # Admin story generation component
-│   │   ├── SyllableText.tsx       # German syllable highlighting
-│   │   ├── VoiceInputField.tsx    # Voice input via speech recognition
-│   │   └── …                      # ~20 more components
+│   │   ├── ui/                        # 50+ shadcn/ui components
+│   │   ├── gamification/              # PointsDisplay, LevelBadge, LevelUpModal, StreakFlame, CollectibleModal
+│   │   ├── story-creation/            # 12 files – multi-step story creation wizard
+│   │   ├── story-sharing/             # 5 files – QR code sharing, import/export
+│   │   ├── BadgeCelebrationModal.tsx  # Fullscreen modal celebrating new badges (confetti, animations)
+│   │   ├── ComprehensionQuiz.tsx      # Story comprehension quiz
+│   │   ├── FablinoMascot.tsx          # Reusable mascot image (sm/md/lg sizing, bounce animation)
+│   │   ├── FablinoPageHeader.tsx      # Mascot + SpeechBubble header for story creation pages
+│   │   ├── FablinoReaction.tsx        # Animated mascot reactions (celebrate, encourage, levelUp…)
+│   │   ├── SpeechBubble.tsx           # Reusable speech bubble (hero/tip variants)
+│   │   ├── HorizontalImageCarousel.tsx # Horizontal scrolling image carousel
+│   │   ├── ImageCarousel.tsx          # Vertical scrolling image carousel
+│   │   ├── ImageSkeleton.tsx          # Skeleton loader for images with status indicators
+│   │   ├── KidProfileSection.tsx      # Kid profile editor (multilingual fields, character management)
+│   │   ├── LevelConfigSection.tsx     # Admin: level settings config
+│   │   ├── NavLink.tsx                # react-router NavLink wrapper
+│   │   ├── PageHeader.tsx             # Standard page header (title, back button)
+│   │   ├── ParentSettingsPanel.tsx     # Learning themes & content guardrails (Block 2.1)
+│   │   ├── PointsConfigSection.tsx    # Admin: point values per category/difficulty
+│   │   ├── ProtectedRoute.tsx         # Route guard
+│   │   ├── QuizCompletionResult.tsx   # Result display after quiz
+│   │   ├── ReadingSettings.tsx        # Font size, line spacing, syllable mode
+│   │   ├── SeriesGrid.tsx             # Series display grid
+│   │   ├── StoryAudioPlayer.tsx       # Audio player for TTS narration
+│   │   ├── StoryFeedbackDialog.tsx    # Story feedback dialog (rating, weakest part)
+│   │   ├── StoryGenerator.tsx         # Admin: story generation with custom prompts
+│   │   ├── SyllableText.tsx           # German syllable highlighting
+│   │   ├── SystemPromptSection.tsx    # Admin: system prompt editing
+│   │   ├── UserManagementSection.tsx  # Admin: user/role management
+│   │   ├── VoiceInputField.tsx        # Voice input via Web Speech API
+│   │   └── MigrationBanner.tsx        # Migration notification banner
+│   ├── config/
+│   │   └── features.ts                # Feature flags (NEW_FABLINO_HOME: true)
 │   ├── hooks/
-│   │   ├── useAuth.tsx            # Auth context (login/logout, session)
-│   │   ├── useKidProfile.tsx      # Kid profile management (multi-profile)
-│   │   ├── useGamification.tsx    # Points, levels, streaks
-│   │   ├── useCollection.tsx      # Collectible items
-│   │   ├── useColorPalette.tsx    # Color themes per kid
-│   │   ├── useStoryRealtime.tsx   # Supabase realtime subscriptions
-│   │   ├── use-mobile.tsx         # Mobile detection
-│   │   └── use-toast.ts           # Toast notifications
+│   │   ├── useAuth.tsx                # Auth context (login/logout, session)
+│   │   ├── useKidProfile.tsx          # Kid profile management (multi-profile, language derivation)
+│   │   ├── useGamification.tsx        # Star rewards, level computation, streak logic
+│   │   ├── useResultsPage.tsx         # Results page data (calls get_results_page RPC)
+│   │   ├── useCollection.tsx          # Collectible items
+│   │   ├── useColorPalette.tsx        # Color themes per kid (ocean, sunset, forest, lavender, sunshine)
+│   │   ├── useEdgeFunctionHeaders.tsx # Headers for edge function requests
+│   │   ├── useStoryRealtime.tsx       # Supabase realtime subscriptions
+│   │   ├── use-mobile.tsx             # Mobile detection (768px breakpoint)
+│   │   └── use-toast.ts              # Toast notifications
 │   ├── integrations/
 │   │   └── supabase/
-│   │       ├── client.ts          # Supabase client init
-│   │       └── types.ts           # Generated DB types
+│   │       ├── client.ts              # Supabase client init
+│   │       └── types.ts               # Generated DB types (1600+ lines)
 │   ├── lib/
-│   │   ├── translations.ts        # i18n (7 languages: DE, FR, EN, ES, NL, IT, BS) – central translation hub
-│   │   ├── levelTranslations.ts   # Level name translations
-│   │   ├── schoolSystems.ts       # School systems (FR, DE, ES, NL, EN, IT, BS)
-│   │   └── utils.ts               # cn() utility
-│   ├── pages/
-│   │   ├── Index.tsx              # Home page (navigation cards)
-│   │   ├── LoginPage.tsx          # Login
-│   │   ├── StorySelectPage.tsx    # Story browser (fiction/non-fiction/series)
-│   │   ├── CreateStoryPage.tsx    # Story creation wizard
-│   │   ├── ReadingPage.tsx        # Reading interface (word tap, audio, quiz)
-│   │   ├── VocabularyQuizPage.tsx # Vocabulary quiz
-│   │   ├── VocabularyManagePage.tsx # Manage saved words
-│   │   ├── ResultsPage.tsx        # Progress dashboard
-│   │   ├── CollectionPage.tsx     # Collectibles
-│   │   ├── AdminPage.tsx          # Admin dashboard (tabs: Profile, Erziehung, Stories, Settings, Account, System)
-│   │   ├── FeedbackStatsPage.tsx  # Story quality stats
-│   │   ├── InstallPage.tsx        # PWA install prompt
-│   │   ├── ShareRedirectPage.tsx  # Handle shared story links
-│   │   └── NotFound.tsx           # 404
+│   │   ├── translations.ts            # i18n (7 languages: DE, FR, EN, ES, NL, IT, BS) – 2000+ lines
+│   │   ├── levelTranslations.ts       # Level name translations (7 languages)
+│   │   ├── schoolSystems.ts           # School systems (FR, DE, ES, NL, EN, IT, BS) with class names
+│   │   └── utils.ts                   # cn() utility (clsx + tailwind-merge)
+│   ├── pages/                         # 19 pages (see Routing below)
+│   ├── test/
+│   │   ├── example.test.ts
+│   │   └── setup.ts
 │   └── types/
 │       └── speech-recognition.d.ts
 ├── supabase/
-│   ├── functions/                 # 15 Edge Functions (see below)
-│   │   ├── generate-story/        # Main story generation (~1409 lines)
-│   │   ├── _shared/               # Shared modules for Edge Functions
-│   │   │   ├── promptBuilder.ts   # Block 2.3c: Dynamic prompt builder (queries rule tables)
-│   │   │   ├── imagePromptBuilder.ts  # Block 2.4: Image prompt construction (buildImagePrompts, loadImageRules)
-│   │   │   └── learningThemeRotation.ts  # Block 2.3c: Learning theme rotation logic
-│   │   └── …                      # 14 more Edge Functions
-│   └── migrations/                # 40+ SQL migrations (incl. multilingual fields, Block 2.1 learning/guardrails, Block 2.2 rule tables + difficulty_rules, Block 2.3a story classifications + kid_characters, Block 2.3c core slim prompt, Block 2.3d+ story_languages, Block 2.4 image generation rules)
+│   ├── functions/                     # 15 Edge Functions
+│   │   ├── _shared/                   # Shared modules
+│   │   │   ├── promptBuilder.ts       # Block 2.3c: Dynamic prompt builder
+│   │   │   ├── imagePromptBuilder.ts  # Block 2.4: Image prompt construction
+│   │   │   └── learningThemeRotation.ts # Block 2.3c: Learning theme rotation
+│   │   ├── generate-story/            # Main story generation (~1409 lines)
+│   │   └── …                          # 14 more Edge Functions
+│   └── migrations/                    # 60 SQL migrations + 3 standalone RPC files
+├── Architecture.md                    # This file
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.ts
 └── tsconfig.json
 ```
+
+---
+
+## Routing (src/App.tsx)
+
+### Public Routes
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/login` | LoginPage | Username/password login |
+| `/register` | RegisterPage | Registration (disabled in UI) |
+| `/reset-password` | ResetPasswordPage | Password reset request |
+| `/update-password` | UpdatePasswordPage | Password update after reset link |
+| `/install` | InstallPage | PWA installation prompt |
+| `/s/:token` | ShareRedirectPage | Shared story link handler |
+
+### Protected Routes (require authentication)
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | HomeFablino (or HomeClassic) | Home with Fablino mascot (feature flag controlled) |
+| `/admin` | AdminPage | Admin dashboard (Profile, Erziehung, Stories, Settings, Account, System tabs) |
+| `/stories` | StorySelectPage | Story browser (fiction/non-fiction/series) |
+| `/read/:id` | ReadingPage | Story reading interface (word tap, audio, comprehension quiz, scene images) |
+| `/quiz` | VocabularyQuizPage | Vocabulary quiz (multiple choice, awards stars) |
+| `/words` | VocabularyManagePage | Manage saved vocabulary words |
+| `/results` | ResultsPage | Progress dashboard (level card, badge roadmap, badge hints) |
+| `/feedback-stats` | FeedbackStatsPage | Story quality statistics dashboard |
+| `/create-story` | CreateStoryPage | Multi-step story creation wizard (4 screens) |
+| `/collection` | CollectionPage | Collectibles earned from stories |
+| `/sticker-buch` | StickerBookPage | Sticker book (story covers as collectibles) |
+| `*` | NotFound | 404 page |
 
 ---
 
@@ -120,7 +169,7 @@ kinder-wort-trainer/
 │                                                           │
 │  Pages → Hooks → Supabase Client → Edge Functions         │
 │                      ↕                                    │
-│              Supabase DB (direct queries)                 │
+│              Supabase DB (direct queries + RPC)           │
 └──────────────┬───────────────────────────┬───────────────┘
                │                           │
                ▼                           ▼
@@ -144,8 +193,9 @@ kinder-wort-trainer/
 │  Supabase Database   │
 │  (PostgreSQL)        │
 │                      │
-│  28 tables           │
+│  30+ tables          │
 │  3 enums             │
+│  3 RPC functions     │
 │  RLS policies        │
 └──────────────────────┘
 ```
@@ -154,11 +204,7 @@ kinder-wort-trainer/
 
 ## Authentication Flow
 
-### Overview
-
 Custom auth system (NOT Supabase Auth). Uses `user_profiles` table with username/password.
-
-### Flow
 
 ```
 User enters username + password
@@ -192,13 +238,6 @@ ProtectedRoute checks isAuthenticated
 - **Admin check**: UI-based only, not enforced server-side on most routes
 - **Registration**: Disabled in UI, users created by admin via `manage-users` function
 
-### ⚠️ Security Concerns
-
-- Passwords compared as plain text (`password_hash !== password`) – **no actual hashing**
-- Session tokens are UUIDs with no server-side validation or expiration
-- CORS allows all origins (`*`)
-- No rate limiting on login attempts
-
 ---
 
 ## Core Flows
@@ -215,16 +254,13 @@ CreateStoryPage.tsx (Wizard – Entry + 3-4 screens)
            + Length toggle (short/medium/long)
            + Difficulty toggle (easy/medium/hard)
            + Series toggle (yes/no)
-           + Language picker (Block 2.3d – only if >1 language available)
-  Screen 2: Character Selection
-           + "Überrasch mich" tile (Block 2.3e) – exclusive, fictional-only
-             → sets surprise_characters=true, clears all other selections
-           + "Ich" tile with kid name + age (Block 2.3d) – toggle on/off
-           + Family, siblings, friends, famous – expandable tiles
-           + Saved kid_characters as checkboxes behind category tiles (Block 2.3d Phase 3)
-           + Characters managed in profile only (no wizard save dialog)
+           + Language picker (from kid_profiles.story_languages)
+  Screen 2: Character Selection (4 tiles: Me, Family, Friends, Surprise)
+           + "Überrasch mich" tile – exclusive, fictional-only
+           + "Ich" tile with kid name + age
+           + Expandable category tiles with saved kid_characters as checkboxes
   Screen 3: Special Effects (attributes) + Optional free text
-           + Weg A: Also shows length/difficulty/series/language settings
+           + Always shows length/difficulty/series/language settings
   Screen 4: Generation progress animation
         │
         ▼
@@ -234,41 +270,31 @@ supabase.functions.invoke('generate-story')
 generate-story/index.ts:
   1. NEW PATH (Block 2.3c): Dynamic prompt building
      a. Load CORE Slim Prompt v2 from app_settings
-     b. Build StoryRequest from request parameters
-     c. promptBuilder.ts queries rule tables (age_rules, difficulty_rules,
+     b. promptBuilder.ts queries rule tables (age_rules, difficulty_rules,
         theme_rules, emotion_rules, content_themes_by_level)
-     d. Builds dynamic user message with word counts, guardrails, characters
-     e. learningThemeRotation.ts checks parent_learning_config for themes
-     f. Falls back to OLD PATH on any error
+     c. Builds dynamic user message with word counts, guardrails, characters
+     d. learningThemeRotation.ts checks parent_learning_config for themes
+     e. Falls back to OLD PATH on any error
   1b. OLD PATH (Fallback):
-     • Load modular prompts from app_settings (CORE, ELTERN/KINDER, SERIEN)
+     • Load modular prompts from app_settings
      • Build composite system prompt inline
   2. Call Lovable AI Gateway (Gemini 3 Flash Preview)
      → Generates: title, content, questions, vocabulary, structure ratings,
-        emotional classifications (humor_level, emotional_depth, moral_topic, etc.),
-        **image_plan** (character_anchor, world_anchor, scenes[]) (Block 2.4)
+        emotional classifications, image_plan (Block 2.4)
   3. Word count validation (retry if below minimum)
-  4. **Block 2.4: Image prompt building** (parallel with step 5):
+  4. Image prompt building (parallel with step 5):
      a. Parse image_plan from LLM response
-     b. Load image_style_rules (by age group) + theme_rules (image_*) from DB
+     b. Load image_style_rules + theme_rules from DB
      c. imagePromptBuilder.ts: buildImagePrompts() → cover + scene prompts
-        (or buildFallbackImagePrompt() if no image_plan)
-  5. **PARALLEL execution** (Promise.allSettled + 90s timeout):
+  5. PARALLEL execution (Promise.allSettled + 90s timeout):
      a. Consistency check v2 (up to 2 correction attempts)
-     b. ALL image generation in parallel:
-        • Cover image + 1-3 scene images (based on story length)
-        • Per image: Gemini 2.5 Flash → Lovable Gateway fallback
-        • image_cache check before generation
-  6. Parse LLM response: extract classifications (structure, emotion, humor, theme)
-  7. Save to DB (stories + comprehension_questions + marked_words + classifications + **image_count**)
-  8. Return everything to frontend (coverImageBase64, storyImages[], image_count)
+     b. ALL image generation in parallel (cover + 1-3 scenes)
+  6. Parse LLM response: extract classifications
+  7. Save to DB (stories + comprehension_questions + marked_words + classifications)
+  8. Return to frontend (coverImageBase64, storyImages[], image_count)
         │
         ▼
-CreateStoryPage.tsx saves to DB:
-  • stories table (content, images, metadata, text_language)
-  • comprehension_questions table (question_language from kidReadingLanguage)
-  • marked_words table (word_language, explanation_language from kid profile)
-  • Navigate to /read/{storyId}
+CreateStoryPage.tsx saves to DB → Navigate to /read/{storyId}
 ```
 
 ### 2. Reading Flow
@@ -278,31 +304,21 @@ ReadingPage.tsx loads story by ID
         │
         ├── Display cover image (top of page)
         ├── Display story text (with SyllableText for German)
-        │     • Block 2.4: Scene images (story_images[]) distributed
-        │       evenly between paragraphs via getImageInsertionMap()
-        │     • Lazy loading, responsive (max-w-full, max-h-64)
-        │     • Fallback: no scene images → cover only (pre-2.4 behavior)
+        │     • Scene images distributed evenly between paragraphs
         │
         ├── Word tap → explain-word function
-        │     • Checks cache (cachedExplanations Map)
-        │     • Calls Gemini 2.0 Flash (Lovable Gateway fallback)
-        │     • Uses kidExplanationLanguage for response language
-        │     • Returns child-friendly explanation (max 8 words)
-        │     • User can save → inserts into marked_words (with word_language, explanation_language)
+        │     • Gemini 2.0 Flash (Lovable Gateway fallback)
+        │     • Child-friendly explanation (max 8 words)
+        │     • Can save → inserts into marked_words
         │
-        ├── Audio playback (StoryAudioPlayer)
-        │     • Calls text-to-speech function
-        │     • ElevenLabs API (Alice voice, multilingual v2)
-        │     • Returns MP3 audio stream
+        ├── Audio playback (StoryAudioPlayer via ElevenLabs TTS)
         │
         ├── Comprehension Quiz (after "finished reading")
         │     • Multiple choice from comprehension_questions
-        │     • Awards points via useGamification
-        │     • Saves to user_results
+        │     • Awards stars via supabase.rpc('log_activity')
+        │     • Triggers badge check → BadgeCelebrationModal
         │
         └── Series continuation (if ending_type === 'C')
-              • Generates next episode
-              • Links via series_id
 ```
 
 ### 3. Vocabulary Quiz Flow
@@ -310,34 +326,54 @@ ReadingPage.tsx loads story by ID
 ```
 VocabularyQuizPage.tsx
   1. Load words from marked_words (not learned, has explanation)
-  2. For each word: call generate-quiz function
-     • Gemini 2.0 Flash generates 3 wrong options
-     • Converts conjugated verbs to infinitive form
-  3. Quiz execution:
-     • 4 options per question (1 correct + 3 wrong)
-     • Immediate feedback on selection
-     • Updates quiz_history in marked_words
+  2. For each word: call generate-quiz (Gemini 2.0 Flash → 3 wrong options)
+  3. Quiz execution: 4 options, immediate feedback
   4. Completion:
-     • Pass threshold: 80% (hardcoded)
-     • Awards points, saves to user_results
+     • Pass threshold: 80%
+     • Awards stars via supabase.rpc('log_activity')
+     • Triggers badge check → BadgeCelebrationModal
      • Words answered correctly 3x → marked as learned
 ```
 
-### 4. Gamification Flow
+### 4. Gamification Flow (Star System)
 
 ```
-useGamification.tsx manages:
-  • Points: Earned from reading, quizzes, streaks
-  • Levels: Configured in level_settings (7 levels)
-  • Streaks: Daily reading streaks with milestones (3, 7, 14, 30 days)
-  • Streak freeze: 1 per week available
+supabase.rpc('log_activity') is called from:
+  • ReadingPage (story_completed, quiz_passed)
+  • VocabularyQuizPage (quiz_passed)
 
-Data stored in:
-  • user_progress (aggregated stats)
-  • point_transactions (detailed history)
-  • streak_milestones (claimed bonuses)
-  • collected_items (collectibles earned from stories)
-  • collectible_pool (available items by rarity)
+log_activity(p_child_id, p_activity_type, p_stars, p_metadata):
+  1. Insert into user_results (activity log)
+  2. Upsert user_progress (total_stars, streak)
+  3. Streak logic:
+     • Same day → no change
+     • Consecutive day → streak + 1
+     • Gap > 1 day → streak resets to 1
+  4. Call check_and_award_badges(p_child_id):
+     • Compare current stats against all unearned badges
+     • Award new badges (insert into user_badges with is_new=true)
+  5. Return { total_stars, current_streak, new_badges }
+
+Star rewards (hardcoded in useGamification.tsx):
+  STORY_READ:   2 stars
+  QUIZ_CORRECT: 1 star per correct answer
+  QUIZ_PERFECT: 3 stars bonus (all correct)
+  WORD_LEARNED: 1 star
+  STREAK_BONUS: 1 star (daily from day 2+)
+
+Levels (5 tiers, star-based thresholds):
+  1. Bücherfuchs     🦊  (0+ stars)
+  2. Geschichtenentdecker 🧭  (25+ stars)
+  3. Leseheld        🦸  (75+ stars)
+  4. Wortmagier      🪄  (150+ stars)
+  5. Fablino Meister 👑  (300+ stars)
+
+ResultsPage.tsx (via get_results_page RPC):
+  • Level card with animated star count + progress bar
+  • Level roadmap (6 DB levels with staggered fadeIn animations)
+  • Earned badges section (with "Neu" indicator, auto-cleared after 2s)
+  • Badge hints (next 3 unearned badges with progress)
+  • BadgeCelebrationModal for newly earned badges
 ```
 
 ---
@@ -354,12 +390,9 @@ Data stored in:
 | `gemini-2.5-flash-image` | Profile covers, story images (via Lovable Gateway) | generate-profile-cover, generate-story (fallback) |
 | `gemini-3-pro-image-preview` | Image generation (via Lovable Gateway, 2nd fallback) | generate-story |
 
-**Environment variable**: `GEMINI_API_KEY`
-
 ### Lovable AI Gateway
 
 - **Endpoint**: `https://ai.gateway.lovable.dev/v1/chat/completions`
-- **Environment variable**: `LOVABLE_API_KEY`
 - Acts as proxy/gateway for Gemini models
 - Used as primary for story generation and as fallback for other functions
 
@@ -370,15 +403,13 @@ Data stored in:
 | Text-to-Speech | `eleven_multilingual_v2` | Voice: Alice (`Xb7hH8MSUJpSbSDYk0k2`), speed: 0.88 |
 | Speech-to-Text | `scribe_v2` | Supports: DE, FR, EN, ES, NL, IT |
 
-**Environment variable**: `ELEVENLABS_API_KEY`
-
 ### Supabase
 
 - **Database**: PostgreSQL with RLS
 - **Edge Functions**: 15 Deno functions
 - **Storage**: `covers` bucket for story/profile images
 - **Realtime**: Enabled for `stories` table (generation status updates)
-- **Environment variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- **RPC Functions**: `log_activity`, `check_and_award_badges`, `get_results_page`
 
 ---
 
@@ -392,11 +423,12 @@ user_profiles (1) ──── (N) kid_profiles
       │                       ├── (N) stories
       │                       ├── (N) kid_characters            ← Block 2.3a
       │                       ├── (1) parent_learning_config   ← Block 2.1
-      │                       ├── (N) user_progress (1:1 per kid)
+      │                       ├── (1) user_progress            ← (total_stars, streak)
+      │                       ├── (N) user_results             ← (activity log)
+      │                       ├── (N) user_badges              ← (earned badges)
       │                       ├── (N) point_transactions
       │                       ├── (N) collected_items
-      │                       ├── (N) streak_milestones
-      │                       └── (N) user_results
+      │                       └── (N) streak_milestones
       │
       ├── (1) user_roles
       ├── (N) story_ratings
@@ -408,52 +440,66 @@ user_profiles (1) ──── (N) kid_profiles
               ├── (N) consistency_check_results
               └── (N) stories (self-ref via series_id)
 
-learning_themes              ← Block 2.1 (standalone reference table, 15 entries)
-content_themes_by_level      ← Block 2.1 (standalone reference table, ~19 entries)
+levels                      ← (5 rows: star-based level definitions)
+badges                      ← (11 rows: badge/sticker definitions)
 
-age_rules                    ← Block 2.2 (standalone rule table, 9 entries: 3 age groups × 3 langs)
-theme_rules                  ← Block 2.2 (standalone rule table, 18 entries: 6 themes × 3 langs)
-emotion_rules                ← Block 2.2 (standalone rule table, 18 entries: 6 emotions × 3 langs)
-image_style_rules            ← Block 2.2 (standalone rule table, 6 entries: 3 age groups × 2 types)
-difficulty_rules             ← Block 2.2b (standalone rule table, 9 entries: 3 levels × 3 langs)
+learning_themes              ← Block 2.1 (15 entries)
+content_themes_by_level      ← Block 2.1 (~19 entries)
+
+age_rules                    ← Block 2.2 (12 entries: 4 age groups × 3 langs)
+theme_rules                  ← Block 2.2 (18 entries: 6 themes × 3 langs)
+emotion_rules                ← Block 2.2 (18 entries: 6 emotions × 3 langs)
+image_style_rules            ← Block 2.2 (6 entries: 3 age groups × 2 types)
+difficulty_rules             ← Block 2.2b (9 entries: 3 levels × 3 langs)
 ```
 
-### Tables
-
-#### Core Tables
+### Core Tables
 
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
 | `user_profiles` | User accounts | username, password_hash, display_name, admin_language, app_language, text_language |
-| `kid_profiles` | Child profiles (multi per user) | name, hobbies, school_system, school_class, color_palette, image_style, gender, age, **ui_language**, **reading_language**, **explanation_language**, **home_languages[]**, **story_languages[]** (Block 2.3d+), **content_safety_level** (1-4, default 2), **difficulty_level** (1-3, default 2) |
+| `kid_profiles` | Child profiles (multi per user) | name, hobbies, school_system, school_class, color_palette, image_style, gender, age, ui_language, reading_language, explanation_language, home_languages[], story_languages[], content_safety_level (1-4), difficulty_level (1-3) |
 | `user_roles` | Role assignments | user_id, role (admin/standard) |
-| `stories` | Story content and metadata | title, content, cover_image_url, story_images[], difficulty, text_type, **text_language** (NOT NULL, default 'fr'), generation_status, series_id, episode_number, ending_type, structure ratings, **learning_theme_applied**, **parent_prompt_text**, **emotional_secondary**, **humor_level** (1-5), **emotional_depth** (1-3), **moral_topic**, **concrete_theme**, **image_count** (Block 2.4, integer DEFAULT 1) |
-| `kid_characters` | Recurring story figures per kid (Block 2.3a) | kid_profile_id (FK CASCADE), name, role (sibling/friend/known_figure/custom), age, relation, description, is_active, sort_order |
-| `marked_words` | Vocabulary words with explanations | word, explanation, story_id, quiz_history[], is_learned, difficulty, **word_language**, **explanation_language** |
-| `comprehension_questions` | Story comprehension questions | question, expected_answer, options[], story_id, **question_language** |
+| `stories` | Story content and metadata | title, content, cover_image_url, story_images[], difficulty, text_language, generation_status, series_id, episode_number, ending_type, structure ratings, learning_theme_applied, parent_prompt_text, humor_level (1-5), emotional_depth (1-3), moral_topic, concrete_theme, image_count |
+| `kid_characters` | Recurring story figures per kid | kid_profile_id (FK CASCADE), name, role (family/friend/known_figure), age, relation, description, is_active, sort_order |
+| `marked_words` | Vocabulary words with explanations | word, explanation, story_id, quiz_history[], is_learned, difficulty, word_language, explanation_language |
+| `comprehension_questions` | Story comprehension questions | question, expected_answer, options[], story_id, question_language |
 
-#### Gamification Tables
-
-| Table | Purpose |
-|-------|---------|
-| `user_progress` | Aggregated stats (points, level, streak, stories read) |
-| `point_transactions` | Detailed point history per action |
-| `point_settings` | Configurable point values per category/difficulty |
-| `level_settings` | Level definitions (number, title, min_points, icon) |
-| `streak_milestones` | Claimed streak bonuses |
-| `collected_items` | Items collected by kids |
-| `collectible_pool` | Available collectible items (creature/place/object/star) |
-| `user_results` | Activity results (quiz scores, reading completions) |
-
-#### Learning & Guardrails Tables (Block 2.1 – Migration `20260207`)
+### Gamification Tables
 
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
-| `learning_themes` | Reference table: 15 educational themes in 4 categories (social, emotional, character, cognitive) | theme_key (UNIQUE), category, labels (JSONB, 7 langs), descriptions (JSONB, 7 langs), sort_order |
-| `content_themes_by_level` | Reference table: emotional content themes with safety levels (0=never, 1-4=allowed from level) | theme_key (UNIQUE), labels (JSONB), min_safety_level, min_age, example_texts (JSONB) |
-| `parent_learning_config` | Per-kid learning preferences (1:1 with kid_profiles) | kid_profile_id (UNIQUE FK), active_themes text[] (max 3), frequency (1-3) |
+| `levels` | Level definitions (5 tiers) | id, name, emoji, stars_required, sort_order, color |
+| `badges` | Badge/sticker definitions (11 entries) | id, name, emoji, description, category, condition_type, condition_value, sort_order |
+| `user_badges` | Earned badges per child | child_id (FK), badge_id (FK), earned_at, is_new (boolean) |
+| `user_progress` | Aggregated stats per child | kid_profile_id, total_stars, current_streak, longest_streak, last_activity_date |
+| `user_results` | Activity log (star transactions) | kid_profile_id, user_id, activity_type, stars_earned, points_earned, metadata (JSONB) |
+| `point_transactions` | Legacy: detailed point history | (pre-star-system, kept for backward compat) |
+| `point_settings` | Configurable point values | (pre-star-system) |
+| `level_settings` | Legacy: level definitions by points | (pre-star-system, coexists with `levels`) |
+| `streak_milestones` | Claimed streak bonuses | |
+| `collected_items` | Items collected by kids | |
+| `collectible_pool` | Available collectible items | creature/place/object/star |
 
-#### System Tables
+### Learning & Guardrails Tables (Block 2.1)
+
+| Table | Purpose |
+|-------|---------|
+| `learning_themes` | 15 educational themes in 4 categories (social, emotional, character, cognitive) – JSONB labels/descriptions in 7 langs |
+| `content_themes_by_level` | Emotional content themes with safety levels (0=never, 1-4=allowed from level) |
+| `parent_learning_config` | Per-kid learning preferences (active_themes text[] max 3, frequency 1-3) |
+
+### Story Generation Rule Tables (Block 2.2)
+
+| Table | Purpose | Entries |
+|-------|---------|---------|
+| `age_rules` | Language complexity rules by age group + language | 12 (4 age groups × FR/DE/EN) |
+| `theme_rules` | Plot templates, settings, conflicts per theme + image style columns | 18 (6 themes × FR/DE/EN) |
+| `emotion_rules` | Conflict patterns, character development per emotion | 18 (6 emotions × FR/DE/EN) |
+| `image_style_rules` | Visual style instructions per age group | 6 (3 age groups × 2 types) |
+| `difficulty_rules` | Vocabulary complexity per difficulty level | 9 (3 levels × FR/DE/EN) |
+
+### System Tables
 
 | Table | Purpose |
 |-------|---------|
@@ -462,6 +508,14 @@ difficulty_rules             ← Block 2.2b (standalone rule table, 9 entries: 3
 | `consistency_check_results` | LLM consistency check logs |
 | `image_cache` | Generated image cache (by prompt hash) |
 | `shared_stories` | QR code share tokens (24h expiry) |
+
+### RPC Functions (PostgreSQL)
+
+| Function | Purpose | Called From |
+|----------|---------|-------------|
+| `log_activity(p_child_id, p_activity_type, p_stars, p_metadata)` | Log activity, update stars + streak, trigger badge check. Returns `{total_stars, current_streak, new_badges}` | ReadingPage, VocabularyQuizPage |
+| `check_and_award_badges(p_child_id)` | Compare stats against all unearned badges, award new ones. Returns JSONB array of newly earned badges | Called by log_activity |
+| `get_results_page(p_child_id)` | Fetch all results page data in one query: child_name, total_stars, streak, levels, earned_badges, next_badge_hints | ResultsPage (via useResultsPage hook) |
 
 ### Enums
 
@@ -473,26 +527,12 @@ difficulty_rules             ← Block 2.2b (standalone rule table, 9 entries: 3
 
 ### Key Triggers
 
-- `update_updated_at_column()` – Auto-updates `updated_at` on 13 tables
+- `update_updated_at_column()` – Auto-updates `updated_at` on 13+ tables
 - `update_word_learned_status()` – Marks word as learned after 3 consecutive correct answers
 
-### Multilingual Fields (Block 1 – Migration `20260206150000`)
+### Multilingual Fields (Block 1)
 
-Added per-profile language separation to support families where the child reads in one language but gets explanations in another.
-
-| Table | New Column | Type | Default | Purpose |
-|-------|-----------|------|---------|---------|
-| `kid_profiles` | `ui_language` | text NOT NULL | `'fr'` | App interface language |
-| `kid_profiles` | `reading_language` | text NOT NULL | `'fr'` | Story generation language |
-| `kid_profiles` | `explanation_language` | text NOT NULL | `'de'` | Word explanation language |
-| `kid_profiles` | `home_languages` | text[] NOT NULL | `'{"de"}'` | Languages spoken at home |
-| `kid_profiles` | `story_languages` | text[] NOT NULL | `'{"fr"}'` | Languages available for story generation (Block 2.3d+) |
-| `marked_words` | `word_language` | text NOT NULL | `'fr'` | Language of the word |
-| `marked_words` | `explanation_language` | text NOT NULL | `'de'` | Language of the explanation |
-| `comprehension_questions` | `question_language` | text NOT NULL | `'fr'` | Language of the question |
-| `stories` | `text_language` | (altered) NOT NULL | `'fr'` | Was nullable, now NOT NULL |
-
-**Language derivation chain:**
+Per-profile language separation to support families where the child reads in one language but gets explanations in another.
 
 ```
 kid_profiles.school_system  (set by user via "Schule / App-Sprache" dropdown)
@@ -502,304 +542,8 @@ useKidProfile.tsx → getKidLanguage(school_system)
         │
         ├── kidAppLanguage      → UI translations (lib/translations.ts)
         ├── kidReadingLanguage   → Story generation language
-        └── kidExplanationLanguage → Word explanations (from explanation_language field)
+        └── kidExplanationLanguage → Word explanations
 ```
-
-**Note:** `school_system` is the primary source for `kidAppLanguage` and `kidReadingLanguage`. The `ui_language`/`reading_language` DB fields are kept in sync when saving but `school_system` takes priority at runtime for robustness (the migration may not have been deployed yet on all environments).
-
-### Learning Themes & Content Guardrails (Block 2.1 – Migration `20260207`)
-
-Added parental controls for story content: learning themes and emotional content safety levels.
-
-| Table / Column | Type | Purpose |
-|-------|------|---------|
-| `learning_themes` (new table) | 15 rows, 4 categories | Reference data for educational themes (sharing, empathy, honesty, etc.) with JSONB labels/descriptions in 7 languages |
-| `content_themes_by_level` (new table) | ~19 rows | Emotional content themes (friend_conflict, divorce, death, etc.) mapped to safety levels. Level 0 = globally excluded (violence, sexual content, etc.) |
-| `parent_learning_config` (new table) | 1:1 per kid_profile | Stores parent's selected learning themes (max 3) and frequency (1=occasional, 2=regular, 3=frequent) |
-| `kid_profiles.content_safety_level` | integer NOT NULL DEFAULT 2 | Safety level 1-4 controlling which emotional themes are allowed. Default set by age at migration time. |
-| `stories.learning_theme_applied` | text, nullable | Records which learning theme was woven into the story (for future use by story generator) |
-| `stories.parent_prompt_text` | text, nullable | Stores parent's custom story prompt (for future use) |
-
-**UI:** `ParentSettingsPanel.tsx` component, accessible as "Erziehung" tab in AdminPage. Two sections:
-1. **Learning Themes** – Toggle up to 3 themes across 4 categories, frequency slider
-2. **Content Guardrails** – Select safety level (1-4), see allowed/not-allowed emotional themes, global exclusions
-
-**RLS:** `learning_themes` and `content_themes_by_level` are read-only for all users. `parent_learning_config` is CRUD-scoped to the user who owns the kid profile.
-
-### Story Generation Rule Tables (Block 2.2 – Migration `20260207_block2_2`)
-
-Added structured rule tables to replace monolithic 30k-token system prompts with focused, queryable data. These tables will feed the `promptBuilder` in Block 2.3.
-
-| Table | Purpose | Key Columns | Entries |
-|-------|---------|-------------|---------|
-| `age_rules` | Language complexity rules by age group and language | min_age, max_age, language (UNIQUE), max_sentence_length, allowed_tenses[], sentence_structures, min/max_word_count, paragraph_length, dialogue_ratio, narrative_perspective, narrative_guidelines, example_sentences[] | 12 (4 age groups × FR/DE/EN) |
-| `theme_rules` | Plot templates, settings, and conflicts per story theme | theme_key + language (UNIQUE), labels (JSONB), plot_templates[], setting_descriptions, character_archetypes[], sensory_details, typical_conflicts[], **image_style_prompt**, **image_negative_prompt**, **image_color_palette** (Block 2.4) | 18 (6 themes × FR/DE/EN) |
-| `emotion_rules` | Conflict patterns and character development per emotional coloring | emotion_key + language (UNIQUE), labels (JSONB), conflict_patterns[], character_development, resolution_patterns[], emotional_vocabulary[] | 18 (6 emotions × FR/DE/EN) |
-| `image_style_rules` | Visual style instructions per age group and optional theme | age_group, theme_key (nullable), style_prompt, negative_prompt, color_palette, art_style, **character_style**, **complexity_level**, **forbidden_elements** (Block 2.4) | 6 (3 age groups general + 3 educational) |
-| `difficulty_rules` | Vocabulary complexity and language difficulty per level | difficulty_level + language (UNIQUE), label (JSONB), description (JSONB), vocabulary_scope, new_words_per_story, figurative_language, idiom_usage, humor_types[], repetition_strategy, example_vocabulary[] | 9 (3 levels × FR/DE/EN) |
-
-**Age groups in `age_rules`:** 6-7, 8-9, 10-11, 12-13 – each with language-specific tense rules (e.g. FR: présent/passé composé/imparfait, DE: Präsens/Perfekt/Präteritum, EN: simple present/simple past/past continuous). Age group 4-5 removed; vocabulary/complexity dimensions moved to `difficulty_rules`.
-
-**Themes in `theme_rules`:** fantasy, action, animals, everyday, humor, educational – matching the 6 story types in the creation wizard.
-
-**Emotions in `emotion_rules`:** joy (EM-J), thrill (EM-T), humor_emotion (EM-H), warmth (EM-W), curiosity (EM-C), depth (EM-D) – matching the emotional coloring codes in `generate-story`.
-
-**Difficulty levels in `difficulty_rules`:** 1 (easy), 2 (medium), 3 (hard) – controls vocabulary scope, figurative language, idiom usage, humor types, and repetition strategy. Stored per-kid as `kid_profiles.difficulty_level` (default 2).
-
-**RLS:** All 5 tables are SELECT-only for all users (read-only reference data). `updated_at` auto-trigger on all tables.
-
-**Note:** These tables are consumed by `generate-story` via `_shared/promptBuilder.ts` (Block 2.3c). The promptBuilder queries these tables at runtime to build dynamic, language-specific prompts.
-
-### Story Classifications & Kid Characters (Block 2.3a – Migration `20260207_block2_3a`)
-
-Added story classification columns for variety tracking and a kid_characters table for recurring story figures.
-
-**New columns on `stories`** (all nullable, populated by LLM from Block 2.3c onwards):
-
-| Column | Type | Purpose |
-|--------|------|---------|
-| `emotional_secondary` | text | Secondary emotional coloring (e.g. EM-J + EM-C) |
-| `humor_level` | integer (CHECK 1-5) | 1=barely, 2=light, 3=charming, 4=lots, 5=absurd |
-| `emotional_depth` | integer (CHECK 1-3) | 1=entertainment, 2=light message, 3=genuine moral depth |
-| `moral_topic` | text (nullable) | e.g. "Friendship", "Honesty", "Courage" – or NULL for entertainment |
-| `concrete_theme` | text | Specific theme chosen by LLM (e.g. "Pirates", "Detective") |
-
-**New table `kid_characters`:** Stores recurring figures (siblings, friends, known characters) per kid profile. Used by the story wizard (Block 2.3d) to offer saved characters as story protagonists.
-
-| Column | Type | Purpose |
-|--------|------|---------|
-| `kid_profile_id` | uuid FK (CASCADE) | Links to kid_profiles |
-| `name` | text NOT NULL | Character name |
-| `role` | text CHECK (family/friend/known_figure) | Character type (Block 2.3d: migrated from sibling/custom → family) |
-| `age` | integer | Character age |
-| `relation` | text | Relation label (Bruder, Schwester, Freund, etc.) |
-| `description` | text | Description (Batman, Gargamel, etc.) |
-| `is_active` | boolean DEFAULT true | Active/inactive toggle |
-| `sort_order` | integer DEFAULT 0 | Display order |
-
-**RLS:** kid_characters is fully CRUD-scoped per user (same pattern as parent_learning_config – SELECT/INSERT/UPDATE/DELETE only for characters belonging to the user's kid profiles). Index on `kid_profile_id`.
-
-### Dynamic Prompt Engine & Story Classifications (Block 2.3c)
-
-Replaced the monolithic 30k-token system prompt with a modular, database-driven prompt builder. The Edge Function `generate-story` now uses a **two-path architecture** with automatic fallback.
-
-#### Shared Modules (`supabase/functions/_shared/`)
-
-| Module | Purpose | Key Functions |
-|--------|---------|---------------|
-| `promptBuilder.ts` | Builds dynamic user message by querying rule tables | `buildStoryPrompt(request, supabase)` – fetches age_rules, difficulty_rules, theme_rules, emotion_rules, content_themes_by_level; calculates word counts; builds character (with relationship logic), guardrail, and variety sections. `buildCharactersSection()` (Block 2.3d) – intelligent relationship formatting: include_self=true → relations relative to child; include_self=false → parents as couple, siblings grouped, family hint, friends grouped. Block 2.3e: Handles `theme_key='surprise'` (skips theme_rules, instructs LLM to pick creative theme); `surprise_characters=true` (fictional-only characters section); enrichment hint for normal characters. `injectLearningTheme(prompt, label, lang)` – appends learning theme instruction. Block 2.4: `getSceneCount(length)` → maps story length to scene count (short=1, medium=2, long=3); adds `## IMAGE PLAN INSTRUCTIONS` section to dynamic prompt. |
-| `imagePromptBuilder.ts` | Block 2.4: Constructs image prompts from LLM image_plan + DB style rules | `buildImagePrompts(imagePlan, ageRules, themeRules, childAge)` – builds cover + scene prompts with character_anchor, world_anchor, per-scene descriptions, age-specific style modifiers (per year 5-12+). `buildFallbackImagePrompt(title, charDesc, ageRules, themeRules)` – simple cover prompt when no image_plan. `loadImageRules(supabase, ageGroup, themeKey, language)` – fetches image_style_rules + theme_rules image_* columns. `getAgeModifier(age)` – fine-grained style adjustments per year. |
-| `learningThemeRotation.ts` | Determines if a learning theme should be applied | `shouldApplyLearningTheme(kidProfileId, lang, supabase)` – checks parent_learning_config frequency, rotates through active_themes round-robin based on past stories |
-
-#### Prompt Architecture
-
-```
-NEW PATH (Block 2.3c):
-  System Prompt = CORE Slim v2 (from app_settings, ~500 tokens)
-  User Message  = Dynamic context built by promptBuilder.ts
-                  (age rules + difficulty rules + theme rules + emotion rules
-                   + word counts + characters + guardrails + variety hints
-                   + optional learning theme)
-
-OLD PATH (Fallback – used if NEW PATH throws):
-  System Prompt = Composite of 4 modular prompts from app_settings
-                  (CORE + ELTERN/KINDER + SERIEN modules, ~30k tokens)
-  User Message  = Inline dynamic context
-```
-
-#### New Story Classification Fields (populated by LLM)
-
-| Column | Type | Source | Purpose |
-|--------|------|--------|---------|
-| `structure_beginning` | integer (1-3) | LLM self-rating | Beginning quality (Block 2.3a) |
-| `structure_middle` | integer (1-3) | LLM self-rating | Middle quality (Block 2.3a) |
-| `structure_ending` | integer (1-3) | LLM self-rating | Ending quality (Block 2.3a) |
-| `emotional_secondary` | text | LLM classification | Secondary emotional coloring code (e.g. EM-C) |
-| `humor_level` | integer (1-5) | LLM classification | 1=barely, 3=charming, 5=absurd |
-| `emotional_depth` | integer (1-3) | LLM classification | 1=entertainment, 2=light message, 3=genuine depth |
-| `moral_topic` | text | LLM classification | E.g. "Friendship", "Honesty" – or NULL |
-| `concrete_theme` | text | LLM classification | Specific theme (e.g. "Pirates", "Detective") |
-| `learning_theme_applied` | text | learningThemeRotation | Which learning theme was woven in (or NULL) |
-| `parent_prompt_text` | text | promptBuilder | The dynamic prompt sent to the LLM |
-
-#### Data Flow
-
-```
-CreateStoryPage.tsx → generate-story Edge Function
-  │
-  ├── promptBuilder.ts
-  │     ├── SELECT * FROM age_rules WHERE language = ? AND min_age <= ? AND max_age >= ?
-  │     ├── SELECT * FROM difficulty_rules WHERE language = ? AND difficulty_level = ?
-  │     ├── SELECT * FROM theme_rules WHERE language = ? AND theme_key = ?
-  │     ├── SELECT * FROM emotion_rules WHERE language = ?  (random selection)
-  │     ├── SELECT * FROM content_themes_by_level WHERE min_safety_level <= ?
-  │     └── SELECT concrete_theme FROM stories WHERE kid_profile_id = ? ORDER BY created_at DESC LIMIT 10
-  │
-  ├── learningThemeRotation.ts
-  │     ├── SELECT * FROM parent_learning_config WHERE kid_profile_id = ?
-  │     ├── SELECT learning_theme_applied FROM stories WHERE kid_profile_id = ? ORDER BY created_at DESC
-  │     └── SELECT labels FROM learning_themes WHERE theme_key = ?
-  │
-  └── LLM Response parsing
-        ├── JSON.parse(content.match(/\{[\s\S]*\}/))
-        ├── Extract: title, content, questions, vocabulary, structure ratings
-        ├── Extract: emotional_secondary, humor_level, emotional_depth, moral_topic, concrete_theme
-        └── Extract: image_plan { character_anchor, world_anchor, scenes[] } (Block 2.4)
-```
-
-### Intelligent Image Generation (Block 2.4 – Migrations `20260208`)
-
-Replaced hardcoded image prompts with a structured, DB-driven image generation pipeline. The LLM now outputs an `image_plan` with visual descriptions, and a new shared module builds final image prompts using age- and theme-specific style rules from the database.
-
-#### Architecture
-
-```
-LLM Response (image_plan)
-  │  character_anchor: "A brave 8-year-old girl with red pigtails..."
-  │  world_anchor: "A magical forest with glowing mushrooms..."
-  │  scenes: [{ scene_id: 1, description: "...", emotion: "excited" }, ...]
-  │
-  ▼
-imagePromptBuilder.ts
-  │  + image_style_rules (by age_group: 4-6, 7-9, 10-12)
-  │    → style_prompt, negative_prompt, character_style, complexity_level, forbidden_elements
-  │  + theme_rules (image_* columns by theme_key)
-  │    → image_style_prompt, image_negative_prompt, image_color_palette
-  │  + getAgeModifier(childAge) → per-year fine-tuning (ages 5-12+)
-  │
-  ▼
-Image Prompts: [cover, scene_1, scene_2, ...]
-  │
-  ▼
-Parallel generation (Promise.allSettled + 90s timeout)
-  │  Per image: cache check → Gemini 2.5 Flash → Lovable Gateway fallback
-  │
-  ▼
-Results: coverImageBase64 + storyImages[]
-```
-
-#### New/Extended DB Columns
-
-| Table | New Columns (Block 2.4) | Purpose |
-|-------|------------------------|---------|
-| `theme_rules` | `image_style_prompt`, `image_negative_prompt`, `image_color_palette` | Theme-specific visual style for image generation (e.g. fantasy → "Magical fairy-tale illustration") |
-| `image_style_rules` | `character_style`, `complexity_level`, `forbidden_elements` | Age-appropriate character rendering (e.g. 4-6 → "Cute chibi-like proportions") |
-| `stories` | `image_count` (integer DEFAULT 1) | Total images generated (cover + scenes) |
-
-#### New Shared Module
-
-| Module | Key Exports |
-|--------|------------|
-| `imagePromptBuilder.ts` | `buildImagePrompts()` – structured prompts from image_plan + DB rules |
-| | `buildFallbackImagePrompt()` – simple cover when no image_plan |
-| | `loadImageRules()` – fetches image_style_rules + theme_rules image_* |
-| | `getAgeModifier()` – per-year style adjustments (5-12+) |
-
-#### LLM Output Format Extension
-
-The CORE Slim v2 system prompt now includes an `## IMAGE PLAN` section instructing the LLM to output:
-
-```json
-{
-  "image_plan": {
-    "character_anchor": "Visual description of main character(s)...",
-    "world_anchor": "Visual description of the setting/world...",
-    "scenes": [
-      { "scene_id": 1, "description": "Cover scene...", "emotion": "excited" },
-      { "scene_id": 2, "description": "Middle scene...", "emotion": "curious" }
-    ]
-  }
-}
-```
-
-Scene count is determined by story length: short=1 (cover only), medium=2 (cover + 1 scene), long=3 (cover + 2 scenes).
-
-#### Frontend Integration
-
-`ReadingPage.tsx` distributes scene images (`story_images[]`) evenly between story paragraphs using `getImageInsertionMap()`. Images are lazy-loaded and responsive. Cover image remains at the top. Stories without scene images (pre-2.4) display only the cover, as before.
-
-#### Image Count by Story Length
-
-| Length | Cover | Scene Images | Total |
-|--------|-------|-------------|-------|
-| short | 1 | 0 | 1 |
-| medium | 1 | 1 | 2 |
-| long | 1 | 2 | 3 |
-
-### Story Wizard Extensions (Block 2.3d + 2.3e)
-
-Extended the story creation wizard (`CreateStoryPage.tsx` + `src/components/story-creation/`) to expose the new Block 2.3c parameters to the user.
-
-#### Entry Screen (Block 2.3e – Screen 0)
-
-| Feature | Component | Details |
-|---------|-----------|---------|
-| **Dual-path entry** | `CreateStoryPage.tsx` | Two large cards: "Ich erzähle selbst" (Weg A) and "Schritt für Schritt" (Weg B). |
-| **Weg A (Free)** | `CreateStoryPage.tsx` | Skips Screen 1+2, jumps directly to Screen 3 (effects). Screen 3 shows settings panel (length, difficulty, series, language). No storyType, no characters → Edge Function handles empty fields gracefully. |
-| **Weg B (Guided)** | `CreateStoryPage.tsx` | Normal flow: Screen 1 → 2 → 3 as before. |
-
-#### Screen 1 Additions
-
-| Feature | Component | State | Notes |
-|---------|-----------|-------|-------|
-| Length toggle | `StoryTypeSelectionScreen` | `storyLength: 'short' \| 'medium' \| 'long'` | Already existed pre-2.3d; default "medium" |
-| Difficulty toggle | `StoryTypeSelectionScreen` | `storyDifficulty: 'easy' \| 'medium' \| 'hard'` | Already existed pre-2.3d |
-| Series toggle | `StoryTypeSelectionScreen` | `isSeries: boolean` | Already existed pre-2.3d |
-| **Language picker** | `StoryTypeSelectionScreen` | `storyLanguage: string` | New. Shows flags + labels. Only rendered when >1 language available. Source: `kid_profiles.story_languages` (Block 2.3d+). Default = `kidReadingLanguage`. Passed as `storyLanguage` to Edge Function. |
-| **"Überrasch mich" (surprise theme)** | `StoryTypeSelectionScreen` | `storyType='surprise'` | Block 2.3e. Passes `storyType='surprise'` to Edge Function. promptBuilder skips theme_rules and instructs LLM to choose a creative theme. |
-
-#### Screen 2 Additions (Block 2.3d Phase 3 + 2.3e)
-
-| Feature | Component | Details |
-|---------|-----------|---------|
-| **"Überrasch mich" (surprise characters)** | `CharacterSelectionScreen` | Block 2.3e. Exclusive tile: clears all other selections, sets `surprise_characters=true`. LLM invents 100% fictional characters (animals, creatures, etc.). Selecting any other tile deselects surprise. |
-| **"Ich" tile with kid data** | `CharacterSelectionScreen` | Shows actual kid name + age (e.g. "Emma (8)"). Toggle on/off. Sets `includeSelf = true` in Edge Function request. |
-| **Expandable category tiles** | `CharacterSelectionScreen` | Clicking "Familie", "Freunde", or "Bekannte Figuren" expands to show saved kid_characters as **checkboxes** (filtered by role: family/friend/known_figure). Chevron indicator. |
-| **No characters hint** | `CharacterSelectionScreen` | If a category has no saved characters, shows "Noch keine angelegt → Im Profil anlegen" (translated). |
-| **Character management in profile only** | `KidProfileSection` | "Save character" dialog removed from wizard. Characters are managed exclusively in the kid profile editor (Block 2.3d Phase 2: stepped dialog, family sync logic). |
-| **Character data with role** | `CharacterSelectionScreen → CreateStoryPage` | Selected saved characters carry `role`, `relation`, `description` to the Edge Function for intelligent relationship prompting. |
-
-#### Screen 3 Additions (Block 2.3e)
-
-| Feature | Details |
-|---------|---------|
-| "Optional" label | Free text header now prefixed with "Optional:" in all 7 languages |
-| Updated placeholders | Example prompts updated (e.g. "A story about pirates on the moon") |
-| **Weg A settings panel** | When accessed via Weg A, Screen 3 shows length/difficulty/series/language settings at the top (since Screen 1 was skipped) |
-
-#### New Parameters Sent to Edge Function
-
-| Parameter | Source | Edge Function Field |
-|-----------|--------|-------------------|
-| `storyLanguage` | Language picker (Screen 1 or Screen 3 via Weg A) | `storyLanguageParam` → `effectiveStoryLanguage` |
-| `includeSelf` | "Ich" tile (Screen 2) | `includeSelf` → `StoryRequest.protagonists.include_self` |
-| `surprise_characters` | "Überrasch mich" tile (Screen 2, Block 2.3e) | `surprise_characters` → `StoryRequest.surprise_characters` |
-| `kidProfileId` | `selectedProfile.id` | `kidProfileId` → `StoryRequest.kid_profile.id` |
-| `kidAge` | `selectedProfile.age` | `kidAge` → `StoryRequest.kid_profile.age` |
-| `difficultyLevel` | `selectedProfile.difficulty_level` | `difficultyLevel` → `StoryRequest.kid_profile.difficulty_level` |
-| `contentSafetyLevel` | `selectedProfile.content_safety_level` | `contentSafetyLevel` → `StoryRequest.kid_profile.content_safety_level` |
-| `characters[].role` | Saved kid_characters DB role | `characters[].role` → `StoryRequest.protagonists.characters[].role` (Block 2.3d Phase 4) |
-| `characters[].relation` | Saved kid_characters DB relation | `characters[].relation` → `StoryRequest.protagonists.characters[].relation` |
-| `characters[].description` | Saved kid_characters DB description | `characters[].description` → `StoryRequest.protagonists.characters[].description` |
-
-#### Story Languages Field (Block 2.3d+)
-
-Added `story_languages text[]` to `kid_profiles` – explicitly stores which languages a child can receive stories in. Replaces the implicit derivation from `reading_language + home_languages` in the wizard. Migration backfills existing profiles with `ARRAY[reading_language] || home_languages`.
-
-**UI**: Multi-select toggle buttons in `KidProfileSection.tsx` (Profile Editor). Shows all 6 supported languages with flags. At least 1 must be selected.
-
-**Wizard**: `CreateStoryPage.tsx` now reads `kidStoryLanguages` from `useKidProfile` context instead of computing from `reading_language + home_languages`.
-
-#### KidProfile Interface Extended
-
-Added `difficulty_level`, `age`, `gender`, and `story_languages` to the `KidProfile` interface in `useKidProfile.tsx` (with fallback defaults in the DB mapping). Context exposes `kidStoryLanguages` for the wizard.
-
-#### Translation Additions
-
-- `StoryTypeSelectionTranslations`: added `storyLanguageLabel` (7 languages)
-- `CharacterSelectionTranslations`: added `meDescription`, `savedCharactersLabel`, `addCharacter`, `characterName`, `characterRole`, `characterAge`, `characterRelation`, `characterDescription`, `roleSibling`, `roleFriend`, `roleKnownFigure`, `roleCustom` (7 languages)
-- `LANGUAGE_FLAGS` and `LANGUAGE_LABELS` maps added to `types.ts` for the language picker
-- `SpecialEffectsScreen`: updated `descriptionHeader` and `descriptionPlaceholder` in all 7 languages
 
 ---
 
@@ -807,23 +551,25 @@ Added `difficulty_level`, `age`, `gender`, and `story_languages` to the `KidProf
 
 ### Hooks
 
-| Hook | Purpose | State Stored |
-|------|---------|-------------|
-| `useAuth` | Authentication context | sessionStorage (token + user) |
-| `useKidProfile` | Kid profile selection, language derivation (app, reading, explanation) | React Context – derives `kidAppLanguage`, `kidReadingLanguage`, `kidExplanationLanguage` from `school_system` |
-| `useGamification` | Points, levels, streaks | Supabase DB (user_progress, point_transactions) |
-| `useCollection` | Collectible items | Supabase DB (collected_items) |
+| Hook | Purpose | Data Source |
+|------|---------|------------|
+| `useAuth` | Authentication context (login/logout, session) | sessionStorage |
+| `useKidProfile` | Kid profile selection, language derivation | React Context + Supabase kid_profiles |
+| `useGamification` | Star rewards constants, level computation, legacy points interface | Hardcoded constants + Supabase |
+| `useResultsPage` | Results page data (level, badges, hints) | Supabase RPC `get_results_page` |
+| `useCollection` | Collectible items | Supabase collected_items |
 | `useColorPalette` | Color theme per kid profile | Derived from kid_profiles.color_palette |
+| `useEdgeFunctionHeaders` | Headers for edge function requests | Auth session |
 | `useStoryRealtime` | Live story generation status | Supabase Realtime subscription |
-| `use-mobile` | Mobile device detection | Window resize listener |
+| `use-mobile` | Mobile device detection | Window resize listener (768px) |
 | `use-toast` | Toast notifications | React state |
 
 ### Edge Functions
 
 | Function | External API | DB Tables |
 |----------|-------------|-----------|
-| `generate-story` | Gemini 3 Flash (text), Gemini 2.5 Flash (images), Lovable Gateway | reads: app_settings, image_cache, age_rules, difficulty_rules, theme_rules, emotion_rules, image_style_rules, content_themes_by_level, parent_learning_config, learning_themes, stories (variety check); writes: stories, image_cache, consistency_check_results. Uses `_shared/promptBuilder.ts` + `_shared/imagePromptBuilder.ts` (Block 2.4) + `_shared/learningThemeRotation.ts` (Block 2.3c). Block 2.4: Parses image_plan from LLM, builds structured image prompts, generates all images in parallel (Promise.allSettled + 90s timeout). |
-| `explain-word` | Gemini 2.0 Flash, Lovable Gateway (fallback) | reads: app_settings. Accepts optional `explanationLanguage` param for multilingual explanations |
+| `generate-story` | Gemini 3 Flash (text), Gemini 2.5 Flash (images), Lovable Gateway | reads: app_settings, image_cache, age_rules, difficulty_rules, theme_rules, emotion_rules, image_style_rules, content_themes_by_level, parent_learning_config, learning_themes, stories; writes: stories, image_cache, consistency_check_results |
+| `explain-word` | Gemini 2.0 Flash, Lovable Gateway (fallback) | reads: app_settings |
 | `generate-quiz` | Gemini 2.0 Flash | — |
 | `evaluate-answer` | Gemini 2.0 Flash | — |
 | `generate-comprehension-questions` | Gemini 2.0 Flash | — |
@@ -835,59 +581,119 @@ Added `difficulty_level`, `age`, `gender`, and `story_languages` to the `KidProf
 | `register-user` | — | reads/writes: user_profiles |
 | `manage-users` | — | reads/writes: user_profiles, user_roles, app_settings, kid_profiles, stories, marked_words, comprehension_questions, user_results |
 | `create-share` | — | reads: stories; writes: shared_stories |
-| `get-share` | — | reads: shared_stories, stories; writes: shared_stories |
+| `get-share` | — | reads: shared_stories, stories |
 | `import-story` | — | reads: shared_stories, stories; writes: stories |
+
+---
+
+## Reusable UI Components
+
+### Design System Components (created for UI harmonization)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `FablinoMascot` | `src/components/FablinoMascot.tsx` | Reusable mascot image with consistent sizing. Sizes: `sm` (120px), `md` (180px, default), `lg` (220px) max-height. Optional bounce animation (`gentleBounce`). |
+| `SpeechBubble` | `src/components/SpeechBubble.tsx` | Reusable speech bubble next to Fablino. Variants: `hero` (large white, left-pointing triangle) and `tip` (smaller orange-tinted, centered). Consistent font, padding, shadow. |
+| `FablinoPageHeader` | `src/components/FablinoPageHeader.tsx` | Combines FablinoMascot + SpeechBubble in a flex row. Used across story creation wizard screens. |
+| `BadgeCelebrationModal` | `src/components/BadgeCelebrationModal.tsx` | Fullscreen modal for new badges. CSS confetti/star animations, badge emoji, Fablino mascot, "Weiter" button. Supports multiple badges (cycles through). Scale-up entrance animation. |
+| `FablinoReaction` | `src/components/FablinoReaction.tsx` | Animated mascot reactions: celebrate, encourage, welcome, levelUp, perfect. |
+
+### Story Creation Wizard (src/components/story-creation/)
+
+| Component | Description |
+|-----------|-------------|
+| `StoryTypeSelectionScreen` | Screen 1: Theme tiles (6 themes from `src/assets/themes/`), length/difficulty/series toggles, language picker |
+| `CharacterSelectionScreen` | Screen 2: 4 tiles (me, family, friends, surprise from `src/assets/people/`), expandable categories with kid_characters |
+| `SpecialEffectsScreen` | Screen 3: Attribute selection + free text + always-visible settings (length, difficulty, series, language) |
+| `StoryGenerationProgress` | Screen 4: Animated progress during generation |
+| `CharacterTile` | Reusable tile for character options with selection state |
+| `BonusAttributesModal` | Modal for special character attributes |
+| `FamilyMemberModal` | Modal for adding family members |
+| `NameInputModal` | Modal for custom character names |
+| `SiblingInputModal` | Modal for adding siblings |
+| `SelectionSummary` | Summary of selected characters |
+| `SettingSelectionScreen` | Story setting selection (currently unused in main flow) |
+| `types.ts` | TypeScript types + translation maps for wizard |
+
+---
+
+## Dynamic Prompt Engine (Block 2.3c)
+
+### Shared Modules (supabase/functions/_shared/)
+
+| Module | Purpose |
+|--------|---------|
+| `promptBuilder.ts` | Builds dynamic user message by querying rule tables (age_rules, difficulty_rules, theme_rules, emotion_rules). Handles surprise theme/characters, character relationships, learning themes, image plan instructions. |
+| `imagePromptBuilder.ts` | Constructs image prompts from LLM image_plan + DB style rules. Age-specific modifiers (per year 5-12+). Cover + scene prompts. |
+| `learningThemeRotation.ts` | Determines if a learning theme should be applied based on parent_learning_config frequency and round-robin rotation. |
+
+### Prompt Architecture
+
+```
+NEW PATH (Block 2.3c):
+  System Prompt = CORE Slim v2 (from app_settings, ~500 tokens)
+  User Message  = Dynamic context built by promptBuilder.ts
+                  (age rules + difficulty rules + theme rules + emotion rules
+                   + word counts + characters + guardrails + variety hints
+                   + optional learning theme + image plan instructions)
+
+OLD PATH (Fallback – used if NEW PATH throws):
+  System Prompt = Composite of 4 modular prompts from app_settings (~30k tokens)
+  User Message  = Inline dynamic context
+```
 
 ---
 
 ## Technical Debt & Code Smells
 
-### 🔴 Critical
+### Critical
 
 | Issue | Location | Impact |
 |-------|----------|--------|
-| **No password hashing** | `verify-login/index.ts` | Passwords stored/compared as plain text. Should use bcrypt/argon2. |
-| **No server-side session validation** | `useAuth.tsx` | Token (UUID) is never verified after login. Anyone with a valid UUID in sessionStorage is "authenticated". |
-| **No token expiration** | `useAuth.tsx`, `verify-login` | Sessions never expire (only cleared on tab close via sessionStorage). |
-| **CORS allows all origins** | All Edge Functions | `Access-Control-Allow-Origin: *` on every function. |
-| **RLS policies too permissive** | Most tables | Many tables have `USING (true)` policies – anyone with the Supabase anon key can read/write. |
-| **Hardcoded user check** | `ReadingPage.tsx:1077` | `username === 'papa'` enables audio feature. Should be a config flag. |
+| **No password hashing** | `verify-login/index.ts` | Passwords stored/compared as plain text |
+| **No server-side session validation** | `useAuth.tsx` | Token (UUID) never verified after login |
+| **No token expiration** | `useAuth.tsx`, `verify-login` | Sessions never expire |
+| **CORS allows all origins** | All Edge Functions | `Access-Control-Allow-Origin: *` |
+| **RLS policies too permissive** | Most tables | Many tables have `USING (true)` policies |
+| **Hardcoded user check** | `ReadingPage.tsx` | `username === 'papa'` enables audio feature |
 
-### 🟡 Significant
-
-| Issue | Location | Impact |
-|-------|----------|--------|
-| **Oversized components** | `ReadingPage.tsx` (1465 lines), `VocabularyQuizPage.tsx` (882 lines), `generate-story/index.ts` (1409 lines) | Hard to maintain, test, and review. Should be split. Note: generate-story now uses shared modules (_shared/promptBuilder.ts, _shared/learningThemeRotation.ts) which helps, but the main file is still large. |
-| **100+ console.log/error statements** | Throughout codebase | Debug logs in production. Should use proper logging. |
-| **Remaining inline translations** | `ReadingPage.tsx`, `VocabularyQuizPage.tsx`, `ResultsPage.tsx`, `Index.tsx`, and others | Page-specific translation objects (homeTranslations, readingLabels, etc.) still inline. Shared labels (status, difficulty, tabs, series, toasts, vocab) have been consolidated into `lib/translations.ts`. |
-| **Many `any` types** | Various files | `supabase: any`, `data: any` etc. Reduces type safety. |
-| **No error boundaries** | React app | API failures can crash the entire app. |
-| **No automated tests** | `src/test/` contains only example test | Zero test coverage for business logic. |
-| **Mixed toast systems** | Components | Both `sonner` and `shadcn/ui` toast used inconsistently. |
-
-### 🟢 Minor
+### Significant
 
 | Issue | Location | Impact |
 |-------|----------|--------|
-| **Magic numbers** | Various | Pass threshold 80%, quiz points 2, word count limits – should be configurable. |
-| **Inconsistent async patterns** | Edge Functions | Mix of `async/await` and `.then()` chains. |
-| **Unused imports** | Various files | Minor cleanup needed. |
-| **No code splitting** | `vite.config.ts` | All pages loaded upfront. Large pages should be lazy-loaded. |
-| **Image uploads duplicated** | `ReadingPage.tsx`, `CreateStoryPage.tsx` | Same Supabase storage upload logic repeated. |
+| **Oversized components** | `ReadingPage.tsx` (1465+ lines), `VocabularyQuizPage.tsx` (882+ lines), `generate-story/index.ts` (1409 lines) | Hard to maintain, test, review |
+| **Remaining inline translations** | `ReadingPage.tsx`, `VocabularyQuizPage.tsx`, `ResultsPage.tsx`, `HomeFablino.tsx` | Page-specific translation objects not yet in `lib/translations.ts` |
+| **Many `any` types** | Various files | `supabase: any`, `data: any` reduce type safety |
+| **No error boundaries** | React app | API failures can crash entire app |
+| **No automated tests** | `src/test/` contains only example test | Zero test coverage |
+| **Mixed toast systems** | Components | Both `sonner` and `shadcn/ui` toast used |
+| **Legacy gamification tables** | `point_transactions`, `point_settings`, `level_settings` | Pre-star-system tables coexist with new `levels`/`badges`/`user_badges` |
+
+### Minor
+
+| Issue | Location | Impact |
+|-------|----------|--------|
+| **Magic numbers** | Various | Pass threshold 80%, star rewards hardcoded |
+| **Inconsistent async patterns** | Edge Functions | Mix of `async/await` and `.then()` chains |
+| **Unused imports** | Various files | Minor cleanup needed |
+| **No code splitting** | `vite.config.ts` | All pages loaded upfront |
+| **Duplicate gentleBounce keyframes** | `FablinoMascot.tsx`, `FablinoPageHeader.tsx` | Animation defined in `style` tags in multiple places – should be in global CSS |
+| **UI harmonization incomplete** | Multiple pages | FablinoMascot/SpeechBubble components created but not yet adopted on all pages |
 
 ### Recommendations (Priority Order)
 
-1. **Security**: Implement proper password hashing (bcrypt), server-side session validation, and token expiration
-2. **Security**: Tighten RLS policies to scope data per user/kid profile
-3. **Security**: Restrict CORS origins, add rate limiting
-4. **Architecture**: Split large components (ReadingPage, VocabularyQuizPage) into smaller, testable units
-5. **Architecture**: Extract remaining inline translations (page-specific objects) into `lib/translations.ts`; extract image upload logic into shared utility
-6. **Quality**: Add error boundaries and proper error handling throughout
-7. **Quality**: Remove console.log statements, add structured logging
+1. **Security**: Implement proper password hashing, server-side session validation, token expiration
+2. **Security**: Tighten RLS policies, restrict CORS origins, add rate limiting
+3. **Architecture**: Split large components into smaller, testable units
+4. **Architecture**: Complete UI harmonization (adopt FablinoMascot/SpeechBubble across all pages)
+5. **Architecture**: Extract remaining inline translations into `lib/translations.ts`
+6. **Quality**: Add error boundaries and proper error handling
+7. **Quality**: Replace console.log with structured logging
 8. **Quality**: Add TypeScript strict mode, eliminate `any` types
-9. **Testing**: Add unit tests for hooks and Edge Functions, integration tests for core flows
-10. **Performance**: Implement code splitting, React.memo, and optimize re-renders
+9. **Testing**: Add unit tests for hooks and Edge Functions
+10. **Performance**: Implement code splitting, React.memo, optimize re-renders
+11. **Cleanup**: Remove legacy gamification tables or add migration path
 
 ---
 
-*Generated on 2026-02-06 by codebase analysis. Updated 2026-02-07 with Block 1 (multilingual DB model), translation consolidation, Block 2.1 (learning themes + content guardrails), Block 2.2 (story generation rule tables), Block 2.2b (difficulty_rules + age group adjustments), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine + CORE Slim v2 + story classifications + shared modules promptBuilder.ts + learningThemeRotation.ts). Updated 2026-02-08 with Block 2.3d full (5 phases): story_languages[] on kid_profiles, kid_characters role constraint migration (sibling/custom → family), character management UI in profile (stepped dialog, family sync), wizard redesign (expandable tiles with checkboxes, no save dialog), character role/relation/description passed to Edge Function, intelligent relationship logic in promptBuilder.ts (include_self vs. group relationships). Updated 2026-02-08 with Block 2.3e (4 phases): Wizard dual-path entry screen (Weg A: free text / Weg B: guided), "Überrasch mich" on Screen 1 (storyType='surprise' → LLM chooses theme), "Überrasch mich" on Screen 2 (surprise_characters=true → 100% fictional characters), enrichment hint for normal character selection, promptBuilder handles surprise theme + surprise characters. Updated 2026-02-08 with Block 2.4 (5 phases): Intelligent image generation – DB-driven image style rules (theme_rules image_*, image_style_rules character_style/complexity/forbidden), LLM image_plan output (character_anchor + world_anchor + scenes[]), imagePromptBuilder.ts shared module, parallel image generation (Promise.allSettled + 90s timeout), age-specific style modifiers (per year 5-12+), scene images in ReadingPage text flow (lazy, responsive, evenly distributed).*
+*Last updated: 2026-02-09. Covers: Block 1 (multilingual DB), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization (FablinoMascot, SpeechBubble, theme/character image migration).*

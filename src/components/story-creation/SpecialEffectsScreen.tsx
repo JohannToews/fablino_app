@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Pencil } from "lucide-react";
 import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
@@ -228,7 +225,7 @@ const SpecialEffectsScreen = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-28" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
       {/* Back button */}
       <div className="px-4 pt-3 pb-0">
         <Button variant="ghost" size="icon" onClick={onBack}>
@@ -236,93 +233,80 @@ const SpecialEffectsScreen = ({
         </Button>
       </div>
 
-      {/* Fablino Header */}
-      {fablinoMessage && (
-        <div className="container max-w-3xl mx-auto px-4">
+      {/* Vertically centered content – consistent with all other screens */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 max-w-md mx-auto w-full gap-4 pb-6">
+        {/* Fablino Header – identical to Home, Entry, Theme screens */}
+        {fablinoMessage && (
           <FablinoPageHeader
             mascotImage="/mascot/5_new_story.png"
             message={fablinoMessage}
-            mascotSize={130}
+            mascotSize="md"
           />
-        </div>
-      )}
+        )}
 
-      <div className="container max-w-3xl mx-auto px-4 py-4 md:py-6 space-y-6 md:space-y-8">
-        {/* Story Settings (only for Weg A / free path) */}
+        {/* Story Settings (only for Weg A / free path) – compact toggle rows */}
         {showSettings && (
-          <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border space-y-3 md:space-y-4">
-            {/* Length Selection */}
+          <div className="w-full space-y-2">
+            {/* Length */}
             <div className="flex items-center gap-3">
-              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{st.lengthLabel}</Label>
-              <div className="flex gap-1.5 md:gap-2 flex-1">
+              <span className="w-24 text-sm font-medium text-[#2D1810] shrink-0">{st.lengthLabel}</span>
+              <div className="inline-flex gap-1">
                 {(["short", "medium", "long"] as StoryLength[]).map((len) => (
-                  <Button
+                  <button
                     key={len}
-                    variant={storyLength === len ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyLength === len && "bg-orange-500 text-white"
-                    )}
                     onClick={() => setStoryLength(len)}
+                    className={cn(
+                      "px-3 py-1.5 text-sm rounded-xl transition-colors",
+                      storyLength === len
+                        ? "bg-[#E8863A] text-white"
+                        : "bg-white border border-gray-200 text-[#2D1810] hover:border-[#E8863A]/30"
+                    )}
                   >
                     {len === "short" ? st.short : len === "medium" ? st.medium : st.long}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Difficulty Selection */}
+            {/* Difficulty */}
             <div className="flex items-center gap-3">
-              <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{st.difficultyLabel}</Label>
-              <div className="flex gap-1.5 md:gap-2 flex-1">
+              <span className="w-24 text-sm font-medium text-[#2D1810] shrink-0">{st.difficultyLabel}</span>
+              <div className="inline-flex gap-1">
                 {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
-                  <Button
+                  <button
                     key={diff}
-                    variant={storyDifficulty === diff ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm",
-                      storyDifficulty === diff && "bg-orange-500 text-white"
-                    )}
                     onClick={() => setStoryDifficulty(diff)}
+                    className={cn(
+                      "px-3 py-1.5 text-sm rounded-xl transition-colors",
+                      storyDifficulty === diff
+                        ? "bg-[#E8863A] text-white"
+                        : "bg-white border border-gray-200 text-[#2D1810] hover:border-[#E8863A]/30"
+                    )}
                   >
                     {diff === "easy" ? st.easy : diff === "medium" ? st.medium : st.hard}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Series Toggle - TEMPORARILY DISABLED */}
-            {/* 
-            <div className="flex items-center justify-between">
-              <Label className="text-xs md:text-sm font-medium text-muted-foreground">{st.seriesLabel}</Label>
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className={cn("text-xs md:text-sm", !isSeries && "font-semibold text-foreground")}>{st.seriesNo}</span>
-                <Switch checked={isSeries} onCheckedChange={setIsSeries} className="scale-90 md:scale-100" />
-                <span className={cn("text-xs md:text-sm", isSeries && "font-semibold text-foreground")}>{st.seriesYes}</span>
-              </div>
-            </div>
-            */}
-
-            {/* Language Picker */}
-            {availableLanguages.length > 1 && (
+            {/* Language */}
+            {availableLanguages.length > 0 && (
               <div className="flex items-center gap-3">
-                <Label className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-fit">{st.languageLabel}</Label>
-                <div className="flex gap-1.5 md:gap-2 flex-1 flex-wrap">
+                <span className="w-24 text-sm font-medium text-[#2D1810] shrink-0">{st.languageLabel}</span>
+                <div className="inline-flex gap-1 flex-wrap">
                   {availableLanguages.map((lang) => (
-                    <Button
+                    <button
                       key={lang}
-                      variant={storyLanguage === lang ? "default" : "outline"}
-                      size="sm"
-                      className={cn(
-                        "h-8 md:h-9 rounded-lg md:rounded-xl font-medium text-xs md:text-sm px-2.5 md:px-3",
-                        storyLanguage === lang && "bg-orange-500 text-white"
-                      )}
                       onClick={() => setStoryLanguage(lang)}
+                      className={cn(
+                        "px-3 py-1.5 text-sm rounded-xl transition-colors",
+                        storyLanguage === lang
+                          ? "bg-[#E8863A] text-white"
+                          : "bg-white border border-gray-200 text-[#2D1810] hover:border-[#E8863A]/30"
+                      )}
                     >
                       {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[kidAppLanguage] || lang.toUpperCase()}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -330,13 +314,12 @@ const SpecialEffectsScreen = ({
           </div>
         )}
 
-        {/* Special Effects Checkboxes - Compact Grid */}
-        <section className="space-y-2 md:space-y-3">
-          <h2 className="text-sm md:text-base font-baloo font-semibold text-center">
+        {/* Special Attributes – compact square grid */}
+        <div className="w-full space-y-2">
+          <h2 className="text-sm font-semibold text-center text-[#2D1810]">
             {t.effectsHeader}
           </h2>
-          
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {attributeOptions.map((option) => {
               const isSelected = selectedAttributes.includes(option.id);
               return (
@@ -344,59 +327,45 @@ const SpecialEffectsScreen = ({
                   key={option.id}
                   onClick={() => toggleAttribute(option.id)}
                   className={cn(
-                    "flex flex-col items-center gap-1 p-2 md:p-3 rounded-lg md:rounded-xl",
-                    "border-2 transition-all duration-200",
+                    "flex flex-col items-center justify-center gap-1 w-full aspect-square rounded-xl",
+                    "transition-all duration-150 cursor-pointer",
                     "hover:scale-105 active:scale-95",
                     "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1",
                     isSelected
-                      ? "border-orange-400 bg-orange-50 shadow-sm"
-                      : "border-[#F0E8E0] bg-card hover:border-orange-400"
+                      ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
+                      : "border border-gray-200 bg-white hover:border-[#E8863A]/30"
                   )}
                 >
-                  <span className="text-xl md:text-2xl">{option.emoji}</span>
-                  <span className="text-[10px] md:text-xs font-medium text-center leading-tight">
+                  <span className="text-2xl leading-none">{option.emoji}</span>
+                  <span className="text-[10px] font-medium text-center leading-tight text-[#2D1810]">
                     {t[option.labelKey]}
                   </span>
                 </button>
               );
             })}
           </div>
-        </section>
+        </div>
 
-        {/* Additional Description with Voice Input - Compact Inline Layout */}
-        <section className="space-y-2">
-          <h2 className="text-sm md:text-base font-baloo font-semibold text-center">
+        {/* Additional Description – compact */}
+        <div className="w-full space-y-2">
+          <h2 className="text-sm font-semibold text-center text-[#2D1810]">
             {t.descriptionHeader}
           </h2>
-          
-          <div className="bg-card rounded-xl md:rounded-2xl p-3 md:p-4 border border-border">
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <Textarea
-                  value={additionalDescription}
-                  onChange={(e) => setAdditionalDescription(e.target.value)}
-                  placeholder={t.descriptionPlaceholder}
-                  className="min-h-[60px] text-sm resize-none"
-                />
-              </div>
-              <div className="flex-shrink-0 h-12 w-12 md:h-14 md:w-14 rounded-full bg-primary flex items-center justify-center">
-                <Pencil className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Bottom Continue Button */}
-      <div className="fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border pb-safe">
-        <div className="container max-w-3xl mx-auto px-4 py-3 md:py-4">
-          <Button
-            onClick={handleContinue}
-            className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-baloo bg-accent hover:bg-accent/90 text-accent-foreground"
-          >
-            {t.continue} ✨
-          </Button>
+          <Textarea
+            value={additionalDescription}
+            onChange={(e) => setAdditionalDescription(e.target.value)}
+            placeholder={t.descriptionPlaceholder}
+            className="min-h-[56px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A]"
+          />
         </div>
+
+        {/* Create Story Button – orange, inline (not fixed) */}
+        <button
+          onClick={handleContinue}
+          className="w-full h-14 rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors"
+        >
+          {t.continue} ✨
+        </button>
       </div>
     </div>
   );
