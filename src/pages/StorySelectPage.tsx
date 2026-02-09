@@ -9,7 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, type Translations } from "@/lib/translations";
 import { toast } from "sonner";
-import PageHeader from "@/components/PageHeader";
+import FablinoPageHeader from "@/components/FablinoPageHeader";
+import { ArrowLeft } from "lucide-react";
 import SeriesGrid from "@/components/SeriesGrid";
 
 interface Story {
@@ -289,15 +290,29 @@ const StorySelectPage = () => {
   const seriesStories = stories.filter(s => isPartOfSeries(s));
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
-      <PageHeader 
-        title={appLang === 'de' ? 'Wähle eine Geschichte' : 
-               appLang === 'fr' ? 'Choisis une histoire' :
-               appLang === 'es' ? 'Elige una historia' :
-               appLang === 'nl' ? 'Kies een verhaal' :
-               'Choose a story'} 
-        backTo="/" 
-      />
+    <div className="min-h-screen flex flex-col items-center font-nunito" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="w-full max-w-[480px] px-5 pt-6">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/")}
+          className="rounded-full hover:bg-primary/20 h-10 w-10 mb-1"
+        >
+          <ArrowLeft className="h-6 w-6 stroke-[2.5]" />
+        </Button>
+
+        {/* Fablino header - same position as homepage */}
+        <FablinoPageHeader
+          mascotImage="/mascot/6_Onboarding.png"
+          message={appLang === 'de' ? 'Welche Geschichte möchtest du lesen? 📚' :
+                   appLang === 'fr' ? 'Quelle histoire veux-tu lire ? 📚' :
+                   appLang === 'es' ? '¿Qué historia quieres leer? 📚' :
+                   appLang === 'nl' ? 'Welk verhaal wil je lezen? 📚' :
+                   'Which story do you want to read? 📚'}
+          mascotSize="md"
+        />
+      </div>
 
       {/* Kid Profile Selector */}
       {hasMultipleProfiles && (
