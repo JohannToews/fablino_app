@@ -1038,7 +1038,7 @@ const ReadingPage = () => {
             <img
               src={storyImages[imgIdx]}
               alt={`Story illustration ${imgIdx + 1}`}
-              className="rounded-xl shadow-md max-w-full sm:max-w-[80%] max-h-64 object-contain"
+              className="rounded-xl shadow-md max-w-full sm:max-w-[85%] md:max-w-[90%] max-h-64 md:max-h-96 lg:max-h-[28rem] object-contain"
               loading="lazy"
             />
           </div>
