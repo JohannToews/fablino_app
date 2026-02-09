@@ -636,10 +636,10 @@ const ReadingPage = () => {
 
   const fetchExplanation = async (text: string): Promise<string | null> => {
     try {
-      // Use story's text_language for word context, and kid's explanation_language for the explanation
-      const textLang = story?.text_language || 'fr';
+      // Use story's text_language for both word context and explanation language
+      const storyLang = story?.text_language || 'fr';
       const { data, error } = await supabase.functions.invoke("explain-word", {
-        body: { word: text, language: textLang, explanationLanguage: kidExplanationLanguage },
+        body: { word: text, language: storyLang, explanationLanguage: storyLang },
       });
 
       if (error) {
