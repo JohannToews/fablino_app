@@ -29,7 +29,7 @@ const LoginPage = () => {
     if (!trimmedIdentifier || !trimmedPassword) {
       toast({
         title: "Error",
-        description: "Bitte E-Mail/Benutzername und Passwort eingeben.",
+        description: "Please enter email/username and password.",
         variant: "destructive",
       });
       return;
@@ -42,14 +42,14 @@ const LoginPage = () => {
 
       if (result.success) {
         toast({
-          title: "Willkommen!",
-          description: "Login erfolgreich.",
+          title: "Welcome!",
+          description: "Login successful.",
         });
         navigate("/", { replace: true });
       } else {
         toast({
           title: "Error",
-          description: result.error || "Login fehlgeschlagen.",
+          description: result.error || "Login failed.",
           variant: "destructive",
         });
       }
@@ -57,7 +57,7 @@ const LoginPage = () => {
       console.error('Login error:', error);
       toast({
         title: "Error",
-        description: "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
+        description: "An error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -83,21 +83,21 @@ const LoginPage = () => {
           Fablino
         </h1>
         <p className="text-center text-sm mb-8" style={{ color: 'rgba(45, 24, 16, 0.6)' }}>
-          Histoires magiques pour petits lecteurs ✨
+          Magical stories for young readers ✨
         </p>
 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="identifier" className="text-base font-medium text-foreground">
-              E-Mail oder Benutzername
+              Email or Username
             </Label>
             <Input
               id="identifier"
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="E-Mail oder Benutzername"
+              placeholder="Email or Username"
               className="text-base h-12 rounded-xl border-2 focus:ring-2"
               style={{
                 borderColor: 'rgba(232, 134, 58, 0.3)',
@@ -110,7 +110,7 @@ const LoginPage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="password" className="text-base font-medium text-foreground">
-              Passwort
+              Password
             </Label>
             <div className="relative">
               <Input
@@ -118,7 +118,7 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Dein Passwort..."
+                placeholder="Your password..."
                 className="text-base h-12 rounded-xl border-2 pr-12 focus:ring-2"
                 style={{
                   borderColor: 'rgba(232, 134, 58, 0.3)',
@@ -150,7 +150,7 @@ const LoginPage = () => {
               className="data-[state=checked]:bg-[#E8863A] data-[state=checked]:border-[#E8863A]"
             />
             <Label htmlFor="rememberMe" className="text-sm text-muted-foreground cursor-pointer">
-              Angemeldet bleiben
+              Remember me
             </Label>
           </div>
 
@@ -166,7 +166,7 @@ const LoginPage = () => {
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <span className="flex items-center gap-2">
-                <Lock className="h-5 w-5" /> Anmelden
+                <Lock className="h-5 w-5" /> Sign In
               </span>
             )}
           </Button>
@@ -177,19 +177,19 @@ const LoginPage = () => {
               className="text-sm transition-colors underline"
               style={{ color: '#E8863A' }}
             >
-              Passwort vergessen?
+              Forgot password?
             </Link>
           </div>
 
           <div className="text-center pt-2 border-t border-border mt-4">
             <p className="text-sm text-muted-foreground pt-4">
-              Noch kein Konto?{" "}
+              Don't have an account?{" "}
               <Link
                 to="/register"
                 className="font-medium hover:underline"
                 style={{ color: '#E8863A' }}
               >
-                Jetzt registrieren
+                Register now
               </Link>
             </p>
           </div>
