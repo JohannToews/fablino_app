@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { useAuth } from "@/hooks/useAuth";
 import PageHeader from "@/components/PageHeader";
 import ConsistencyCheckStats from "@/components/ConsistencyCheckStats";
@@ -651,8 +652,8 @@ const FeedbackStatsPage = () => {
     });
 
     // Load user profiles to get usernames
-    const { data: usersData } = await supabase.functions.invoke("manage-users", {
-      body: { action: "list" },
+    const { data: usersData } = await invokeEdgeFunction("manage-users", {
+      action: "list",
     });
 
     const usersMap = new Map<string, string>();

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,12 +146,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_${language}`;
     
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey,
-          promptValue: systemPrompt,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey,
+        promptValue: systemPrompt,
       });
 
       if (error) {
@@ -178,12 +177,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_continuation_${language}`;
     
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey,
-          promptValue: continuationPrompt,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey,
+        promptValue: continuationPrompt,
       });
 
       if (error) {
@@ -211,12 +208,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_word_explanation_${language}`;
     
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey,
-          promptValue: wordExplanationPrompt,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey,
+        promptValue: wordExplanationPrompt,
       });
 
       if (error) {
@@ -244,12 +239,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_consistency_check_${language}`;
     
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey,
-          promptValue: consistencyCheckPrompt,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey,
+        promptValue: consistencyCheckPrompt,
       });
 
       if (error) {
@@ -277,20 +270,16 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     
     try {
       // Save both v2 prompts
-      const { error: error1 } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey: "consistency_check_prompt_v2",
-          promptValue: consistencyCheckPromptV2,
-        },
+      const { error: error1 } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey: "consistency_check_prompt_v2",
+        promptValue: consistencyCheckPromptV2,
       });
 
-      const { error: error2 } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey: "consistency_check_series_addon_v2",
-          promptValue: consistencyCheckSeriesAddon,
-        },
+      const { error: error2 } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey: "consistency_check_series_addon_v2",
+        promptValue: consistencyCheckSeriesAddon,
       });
 
       if (error1 || error2) {
@@ -318,12 +307,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_story_creation_${language}`;
     
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey,
-          promptValue: elternModulPrompt,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey,
+        promptValue: elternModulPrompt,
       });
 
       if (error) {
@@ -351,12 +338,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const promptKey = `system_prompt_kid_creation_${language}`;
     
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: {
-          action: "updateSystemPrompt",
-          promptKey,
-          promptValue: kinderModulPrompt,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateSystemPrompt",
+        promptKey,
+        promptValue: kinderModulPrompt,
       });
 
       if (error) {

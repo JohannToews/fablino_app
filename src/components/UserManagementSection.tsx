@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -57,8 +57,8 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "list" },
+      const { data, error } = await invokeEdgeFunction("manage-users", {
+        action: "list",
       });
 
       if (error) throw error;
@@ -95,15 +95,13 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
 
     setIsCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { 
-          action: "create", 
-          username: newUsername.trim(),
-          displayName: newDisplayName.trim(),
-          password: newPassword,
-          role: newRole,
-          adminLanguage: newAdminLanguage,
-        },
+      const { data, error } = await invokeEdgeFunction("manage-users", {
+        action: "create", 
+        username: newUsername.trim(),
+        displayName: newDisplayName.trim(),
+        password: newPassword,
+        role: newRole,
+        adminLanguage: newAdminLanguage,
       });
 
       if (error) throw error;
@@ -134,13 +132,11 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   const updateUserLanguage = async (userId: string, langType: 'admin' | 'app', newLang: Language) => {
     setUpdatingLangId(`${userId}-${langType}`);
     try {
-      const { error } = await supabase.functions.invoke("manage-users", {
-        body: { 
-          action: "updateLanguages", 
-          userId,
-          adminLanguage: langType === 'admin' ? newLang : undefined,
-          appLanguage: langType === 'app' ? newLang : undefined,
-        },
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateLanguages", 
+        userId,
+        adminLanguage: langType === 'admin' ? newLang : undefined,
+        appLanguage: langType === 'app' ? newLang : undefined,
       });
 
       if (error) throw error;
@@ -193,8 +189,8 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
 
     setDeletingId(userId);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "delete", userId },
+      const { data, error } = await invokeEdgeFunction("manage-users", {
+        action: "delete", userId,
       });
 
       if (error) throw error;
