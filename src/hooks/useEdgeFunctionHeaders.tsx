@@ -11,8 +11,14 @@ export function useEdgeFunctionHeaders() {
       const headers: Record<string, string> = {};
 
       if (authMode === 'legacy') {
-        const legacySession = sessionStorage.getItem('liremagie_session');
-        const legacyUserJson = sessionStorage.getItem('liremagie_user');
+        // Check both storages - user might have "remember me" enabled (localStorage)
+        let legacySession = sessionStorage.getItem('liremagie_session');
+        let legacyUserJson = sessionStorage.getItem('liremagie_user');
+        
+        if (!legacySession) {
+          legacySession = localStorage.getItem('liremagie_session');
+          legacyUserJson = localStorage.getItem('liremagie_user');
+        }
         
         if (legacySession && legacyUserJson) {
           headers['x-legacy-token'] = legacySession;

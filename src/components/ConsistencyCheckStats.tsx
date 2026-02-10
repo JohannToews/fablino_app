@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -55,8 +56,8 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
       setResults(checkResults || []);
 
       // Load user profiles for display names
-      const { data: usersData } = await supabase.functions.invoke("manage-users", {
-        body: { action: "list" },
+      const { data: usersData } = await invokeEdgeFunction("manage-users", {
+        action: "list",
       });
       
       if (usersData?.users) {
