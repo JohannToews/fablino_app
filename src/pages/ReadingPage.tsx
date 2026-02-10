@@ -231,7 +231,7 @@ const ReadingPage = () => {
   const [hasQuestions, setHasQuestions] = useState(false);
   // Quiz completion state
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [quizResult, setQuizResult] = useState<{ correctCount: number; totalCount: number } | null>(null);
+  const [quizResult, setQuizResult] = useState<{ correctCount: number; totalCount: number; starsEarned: number } | null>(null);
   // Current word position for saving
   const [currentPositionKey, setCurrentPositionKey] = useState<string | null>(null);
   // Mobile popup position (Y coordinate for positioning)
@@ -1357,12 +1357,10 @@ const ReadingPage = () => {
                         activityType = 'quiz_complete';
                       }
 
-                      setQuizResult({ correctCount, totalCount });
-                      setQuizCompleted(true);
-
                       const childId = story?.kid_profile_id || selectedProfile?.id || null;
 
                       // Log activity via RPC (handles stars, streak, badges, user_results)
+                      let actualStarsEarned = quizStars;
                       try {
                         const result = await supabase.rpc('log_activity', {
                           p_child_id: childId,
@@ -1378,6 +1376,9 @@ const ReadingPage = () => {
                         });
 
                         const data = result.data as any;
+                        if (data?.stars_earned != null) {
+                          actualStarsEarned = data.stars_earned;
+                        }
                         if (data?.new_badges?.length > 0) {
                           setPendingBadges(data.new_badges);
                         }
@@ -1385,6 +1386,9 @@ const ReadingPage = () => {
                         // Silent fail – gamification should not block UX
                       }
                       refreshProgress();
+
+                      setQuizResult({ correctCount, totalCount, starsEarned: actualStarsEarned });
+                      setQuizCompleted(true);
 
                       // Fablino-Feedback mit korrekten Stern-Zahlen
                       if (isPerfect) {
@@ -1426,6 +1430,7 @@ const ReadingPage = () => {
                   <QuizCompletionResult
                     correctCount={quizResult.correctCount}
                     totalCount={quizResult.totalCount}
+                    starsEarned={quizResult.starsEarned}
                     appLanguage={textLang}
                     onContinue={() => navigate("/stories")}
                   />
@@ -1586,22 +1591,24 @@ const ReadingPage = () => {
         />
       )}
 
-      {/* Level Up Overlay */}
-      {pendingLevelUp && (
-        <FablinoReaction
-          type="levelUp"
-          message={t.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
-          buttonLabel={t.continueButton}
-          onClose={clearPendingLevelUp}
-        />
-      )}
-
-      {/* Badge Celebration Modal */}
-      {pendingBadges.length > 0 && (
+      {/* Badge Celebration Modal – shows after Fablino reward is dismissed */}
+      {pendingBadges.length > 0 && !fablinoReaction && (
         <BadgeCelebrationModal
           badges={pendingBadges}
           onDismiss={() => setPendingBadges([])}
           language={textLang}
+        />
+      )}
+
+      {/* Level Up Overlay – shows last, after badges are dismissed */}
+      {pendingLevelUp && !fablinoReaction && pendingBadges.length === 0 && (
+        <FablinoReaction
+          type="levelUp"
+          message={t.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
+          levelEmoji={pendingLevelUp.icon}
+          levelTitle={pendingLevelUp.title}
+          buttonLabel={t.continueButton}
+          onClose={clearPendingLevelUp}
         />
       )}
     </div>

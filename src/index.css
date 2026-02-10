@@ -358,4 +358,17 @@
     0%, 100% { box-shadow: 0 0 6px 2px rgba(251, 191, 36, 0.3); }
     50% { box-shadow: 0 0 14px 4px rgba(251, 191, 36, 0.6); }
   }
+
+  /* Star fly animation (subtle, from center toward top-right) */
+  @keyframes starFly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    70% { opacity: 1; transform: translate(var(--fly-x, 60px), var(--fly-y, -120px)) scale(0.5); }
+    100% { opacity: 0; transform: translate(var(--fly-x, 60px), var(--fly-y, -120px)) scale(0.2); }
+  }
+
+  /* Score ring fill animation */
+  @keyframes scoreRingFill {
+    0% { stroke-dashoffset: 283; }
+    100% { stroke-dashoffset: var(--ring-offset, 0); }
+  }
 }

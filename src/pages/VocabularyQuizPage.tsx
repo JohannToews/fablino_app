@@ -10,6 +10,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
 import BadgeCelebrationModal, { EarnedBadge } from "@/components/BadgeCelebrationModal";
+import QuizCompletionResult from "@/components/QuizCompletionResult";
 import { getTranslations, Language } from "@/lib/translations";
 import PageHeader from "@/components/PageHeader";
 import {
@@ -896,45 +897,22 @@ const VocabularyQuizPage = () => {
 
         {/* Quiz complete */}
         {quizComplete && (
-          <div className="bg-card rounded-2xl p-8 md:p-12 shadow-card text-center">
-            <Trophy className={`h-20 w-20 mx-auto mb-6 ${isPassed() ? "text-primary" : "text-muted-foreground"}`} />
-            <h2 className="text-4xl font-baloo mb-4">
-              {isPassed() ? t.quizPassed : t.quizDone}
-            </h2>
-            
-            <div className={`rounded-2xl p-6 mb-8 ${isPassed() ? "bg-mint" : "bg-cotton-candy/30"}`}>
-              <p className="text-6xl font-baloo font-bold mb-2" style={{ color: isPassed() ? '#166534' : '#991b1b' }}>
-                {score} / {totalQuestions}
-              </p>
-              {isPassed() && (
-                <p className="text-2xl font-baloo text-green-700 mb-2">
-                  +{pointsEarned} {t.points}! 🎯
-                </p>
-              )}
-              <p className="text-muted-foreground mb-2">
-                {isPassed() 
-                  ? t.bravo 
-                  : t.needed.replace('{threshold}', String(getPassThreshold()))}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t.learnedInfo}
-              </p>
-            </div>
+          <div className="space-y-4">
+            <QuizCompletionResult
+              correctCount={score}
+              totalCount={totalQuestions}
+              starsEarned={pointsEarned}
+              appLanguage={kidAppLanguage}
+              onContinue={() => navigate("/stories")}
+            />
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center px-2">
               <Button
                 onClick={resetQuiz}
                 className="btn-primary-kid flex items-center gap-2"
               >
                 <RotateCcw className="h-5 w-5" />
                 {t.newQuiz}
-              </Button>
-              <Button
-                onClick={() => navigate("/stories")}
-                variant="outline"
-                className="btn-kid"
-              >
-                {t.backToStories}
               </Button>
             </div>
           </div>
@@ -953,22 +931,24 @@ const VocabularyQuizPage = () => {
         />
       )}
 
-      {/* Level Up Overlay */}
-      {pendingLevelUp && (
-        <FablinoReaction
-          type="levelUp"
-          message={tGlobal.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
-          buttonLabel={tGlobal.continueButton}
-          onClose={clearPendingLevelUp}
-        />
-      )}
-
-      {/* Badge Celebration Modal */}
-      {pendingBadges.length > 0 && (
+      {/* Badge Celebration Modal – shows after Fablino reward is dismissed */}
+      {pendingBadges.length > 0 && !fablinoReaction && (
         <BadgeCelebrationModal
           badges={pendingBadges}
           onDismiss={() => setPendingBadges([])}
           language={kidAppLanguage}
+        />
+      )}
+
+      {/* Level Up Overlay – shows last, after badges are dismissed */}
+      {pendingLevelUp && !fablinoReaction && pendingBadges.length === 0 && (
+        <FablinoReaction
+          type="levelUp"
+          message={tGlobal.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
+          levelEmoji={pendingLevelUp.icon}
+          levelTitle={pendingLevelUp.title}
+          buttonLabel={tGlobal.continueButton}
+          onClose={clearPendingLevelUp}
         />
       )}
     </div>

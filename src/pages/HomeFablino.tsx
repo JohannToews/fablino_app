@@ -25,17 +25,28 @@ const UI_TEXTS: Record<string, {
   myStories: string;
   myWeek: string;
   seeAll: string;
+  stars: string;
+  daysInARow: string;
 }> = {
-  fr: { newStory: '📖 Nouvelle histoire', myStories: '📚 Mes histoires', myWeek: 'Ma semaine 🏆', seeAll: 'Tout voir →' },
-  de: { newStory: '📖 Neue Geschichte starten', myStories: '📚 Meine Geschichten', myWeek: 'Meine Woche 🏆', seeAll: 'Alle Ergebnisse →' },
-  en: { newStory: '📖 New story', myStories: '📚 My stories', myWeek: 'My week 🏆', seeAll: 'See all →' },
-  es: { newStory: '📖 Nueva historia', myStories: '📚 Mis historias', myWeek: 'Mi semana 🏆', seeAll: 'Ver todo →' },
-  nl: { newStory: '📖 Nieuw verhaal', myStories: '📚 Mijn verhalen', myWeek: 'Mijn week 🏆', seeAll: 'Alles bekijken →' },
-  it: { newStory: '📖 Nuova storia', myStories: '📚 Le mie storie', myWeek: 'La mia settimana 🏆', seeAll: 'Vedi tutto →' },
-  bs: { newStory: '📖 Nova priča', myStories: '📚 Moje priče', myWeek: 'Moja sedmica 🏆', seeAll: 'Pogledaj sve →' },
+  fr: { newStory: '📖 Nouvelle histoire', myStories: '📚 Mes histoires', myWeek: 'Ma semaine 🏆', seeAll: 'Tout voir →', stars: 'Étoiles', daysInARow: 'Jours de suite' },
+  de: { newStory: '📖 Neue Geschichte starten', myStories: '📚 Meine Geschichten', myWeek: 'Meine Woche 🏆', seeAll: 'Alle Ergebnisse →', stars: 'Sterne', daysInARow: 'Tage in Folge' },
+  en: { newStory: '📖 New story', myStories: '📚 My stories', myWeek: 'My week 🏆', seeAll: 'See all →', stars: 'Stars', daysInARow: 'Days in a row' },
+  es: { newStory: '📖 Nueva historia', myStories: '📚 Mis historias', myWeek: 'Mi semana 🏆', seeAll: 'Ver todo →', stars: 'Estrellas', daysInARow: 'Días seguidos' },
+  nl: { newStory: '📖 Nieuw verhaal', myStories: '📚 Mijn verhalen', myWeek: 'Mijn week 🏆', seeAll: 'Alles bekijken →', stars: 'Sterren', daysInARow: 'Dagen op rij' },
+  it: { newStory: '📖 Nuova storia', myStories: '📚 Le mie storie', myWeek: 'La mia settimana 🏆', seeAll: 'Vedi tutto →', stars: 'Stelle', daysInARow: 'Giorni di fila' },
+  bs: { newStory: '📖 Nova priča', myStories: '📚 Moje priče', myWeek: 'Moja sedmica 🏆', seeAll: 'Pogledaj sve →', stars: 'Zvijezde', daysInARow: 'Dana zaredom' },
 };
 
-// Tips removed – section no longer shown on home screen
+// Weekday labels per language (Mon–Sun)
+const WEEKDAY_LABELS: Record<string, string[]> = {
+  de: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+  fr: ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'],
+  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+  es: ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'],
+  nl: ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'],
+  it: ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do'],
+  bs: ['Po', 'Ut', 'Sr', 'Če', 'Pe', 'Su', 'Ne'],
+};
 
 // ═══ Helper: Monday 00:00 of current week ═══
 function getMondayOfCurrentWeek(): string {
@@ -46,6 +57,21 @@ function getMondayOfCurrentWeek(): string {
   monday.setDate(now.getDate() + diff);
   monday.setHours(0, 0, 0, 0);
   return monday.toISOString();
+}
+
+// ═══ Helper: Current weekday index (0=Mon, 6=Sun) ═══
+function getCurrentWeekdayIndex(): number {
+  const day = new Date().getDay(); // 0=Sun, 1=Mon
+  return day === 0 ? 6 : day - 1;
+}
+
+// ═══ Streak diamond config ═══
+function getDiamondStyle(streak: number): { size: number; color: string; glow: string; animate: boolean } {
+  if (streak >= 14) return { size: 32, color: '#FFD700', glow: '0 0 12px rgba(255,215,0,0.5)', animate: true };
+  if (streak >= 7)  return { size: 32, color: '#B9F2FF', glow: '0 0 10px rgba(185,242,255,0.5)', animate: true };
+  if (streak >= 4)  return { size: 24, color: '#B9F2FF', glow: '0 0 6px rgba(185,242,255,0.3)', animate: false };
+  if (streak >= 1)  return { size: 16, color: '#B9F2FF', glow: 'none', animate: false };
+  return { size: 16, color: '#D1D5DB', glow: 'none', animate: false };
 }
 
 // ═══ Main Component ═══
@@ -75,9 +101,9 @@ const HomeFablino = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Weekly stats
-  const [weeklyStars, setWeeklyStars] = useState(0);
   const [weeklyStories, setWeeklyStories] = useState(0);
-  const [weeklyQuizzes, setWeeklyQuizzes] = useState(0);
+  // Per-day story tracking (Mon=0 .. Sun=6)
+  const [storyDays, setStoryDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -100,23 +126,27 @@ const HomeFablino = () => {
     const loadWeeklyData = async () => {
       const { data } = await supabase
         .from("user_results")
-        .select("activity_type, stars_earned")
+        .select("activity_type, created_at")
         .eq("kid_profile_id", selectedProfileId)
         .gte("created_at", mondayISO);
 
       if (!data) return;
 
-      let stars = 0;
       let stories = 0;
-      let quizzes = 0;
+      const days = [false, false, false, false, false, false, false];
+
       for (const row of data) {
-        stars += row.stars_earned || 0;
-        if (row.activity_type === "story_completed" || row.activity_type === "story_read") stories++;
-        if (row.activity_type === "quiz_complete" || row.activity_type === "quiz_completed") quizzes++;
+        if (row.activity_type === "story_completed" || row.activity_type === "story_read") {
+          stories++;
+          // Mark which day of the week this story was read
+          const d = new Date(row.created_at);
+          const dayOfWeek = d.getDay(); // 0=Sun
+          const idx = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // convert to Mon=0
+          days[idx] = true;
+        }
       }
-      setWeeklyStars(stars);
       setWeeklyStories(stories);
-      setWeeklyQuizzes(quizzes);
+      setStoryDays(days);
     };
 
     loadWeeklyData();
@@ -126,16 +156,15 @@ const HomeFablino = () => {
   const lang = kidAppLanguage || 'de';
   const greet = GREETINGS[lang] || GREETINGS['de'];
   const ui = UI_TEXTS[lang] || UI_TEXTS['de'];
+  const weekdays = WEEKDAY_LABELS[lang] || WEEKDAY_LABELS['de'];
 
   const kidName = selectedProfile?.name || "";
   const greeting = kidName ? greet.withName(kidName) : greet.withoutName;
 
-  // Capped values for visual display
-  // Stars: show total stars (from gamification state), consistent with ResultsPage
-  const totalStars = gamificationState?.stars ?? 0;
-  const starsDisplay = Math.min(totalStars, 15);
-  const storiesDisplay = Math.min(weeklyStories, 5);
-  const quizzesDisplay = Math.min(weeklyQuizzes, 5);
+  // Streak from gamification state (state has .currentStreak directly, not .streak.current)
+  const currentStreak = gamificationState?.currentStreak ?? 0;
+  const diamondStyle = getDiamondStyle(currentStreak);
+  const todayIdx = getCurrentWeekdayIndex();
 
   return (
     <div 
@@ -239,7 +268,7 @@ const HomeFablino = () => {
           </button>
         </div>
 
-        {/* ═══ 3. WEEKLY TRACKER CARD ═══ */}
+        {/* ═══ 3. WEEKLY TRACKER CARD (Redesigned) ═══ */}
         <div 
           className="rounded-[20px] p-5 mb-4"
           style={{
@@ -248,7 +277,7 @@ const HomeFablino = () => {
             boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           }}
         >
-          {/* Title row: heading left, "See all" link right */}
+          {/* Title row */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-extrabold text-[18px]" style={{ color: "#2D1810" }}>
               {ui.myWeek}
@@ -262,105 +291,89 @@ const HomeFablino = () => {
             </button>
           </div>
 
-          {/* 2-column grid: Stars left | Stories+Quiz right */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "auto 1fr",
-              gap: "12px 20px",
-              alignItems: "center",
-            }}
-          >
-            {/* LEFT: 3×5 Star Grid (spans 2 rows visually via gridRow) */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 24px)",
-                gridTemplateRows: "repeat(3, 24px)",
-                gap: "6px 4px",
-                gridRow: "1 / 3",
-              }}
-            >
-              {[...Array(15)].map((_, i) => {
-                const filled = i < starsDisplay;
-                return (
+          {/* Story tracker: 7 circles = 7 days */}
+          <div className="flex justify-between mb-4 px-1">
+            {weekdays.map((dayLabel, i) => {
+              const filled = storyDays[i];
+              const isToday = i === todayIdx;
+              return (
+                <div key={`day-${i}`} className="flex flex-col items-center gap-1">
                   <div
-                    key={`star-${i}`}
-                    className="flex items-center justify-center"
+                    className="flex items-center justify-center rounded-full transition-all"
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      background: filled ? "#FFD700" : "transparent",
-                      border: filled ? "1.5px solid #E5B800" : "1.5px solid #E0E0E0",
-                      fontSize: 13,
-                      lineHeight: 1,
-                      color: filled ? "#B8860B" : "#E0E0E0",
+                      width: 36,
+                      height: 36,
+                      background: filled ? '#E8863A' : 'transparent',
+                      border: isToday && !filled
+                        ? '2.5px solid #E8863A'
+                        : filled
+                          ? '2px solid #D4752E'
+                          : '2px solid #E0E0E0',
+                      boxShadow: isToday ? '0 0 0 3px rgba(232,134,58,0.15)' : 'none',
                     }}
                   >
-                    {filled ? "★" : "☆"}
+                    {filled && (
+                      <span style={{ fontSize: 16, lineHeight: 1, color: 'white' }}>✓</span>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+                  <span
+                    className="text-[10px] font-semibold"
+                    style={{ color: isToday ? '#E8863A' : filled ? '#2D1810' : '#aaa' }}
+                  >
+                    {dayLabel}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* RIGHT TOP: Stories row */}
-            <div className="flex items-center gap-2.5">
-              <span className="text-[24px] flex-shrink-0">📖</span>
-              <div className="flex gap-2">
-                {[...Array(5)].map((_, i) => {
-                  const filled = i < storiesDisplay;
-                  return (
-                    <div
-                      key={`story-${i}`}
-                      className="flex items-center justify-center"
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: filled ? "#FFF7ED" : "transparent",
-                        border: filled ? "2px solid #FF8C42" : "2px dashed #E5E5E5",
-                        fontSize: 14,
-                        lineHeight: 1,
-                      }}
-                    >
-                      {filled ? "😊" : ""}
-                    </div>
-                  );
-                })}
+          {/* Stats row: Stars + Streak side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Stars mini-card */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{ background: '#FFF7ED', border: '1px solid #FDBA74' }}
+            >
+              <span style={{ fontSize: 28, lineHeight: 1 }}>⭐</span>
+              <div>
+                <p className="font-extrabold text-[22px] leading-tight" style={{ color: '#2D1810' }}>
+                  {gamificationState?.stars ?? 0}
+                </p>
+                <p className="text-[11px] font-semibold" style={{ color: '#92400E' }}>
+                  {ui.stars}
+                </p>
               </div>
             </div>
 
-            {/* RIGHT BOTTOM: Quiz row */}
-            <div className="flex items-center gap-2.5">
-              <span className="text-[24px] flex-shrink-0">🎯</span>
-              <div className="flex gap-2">
-                {[...Array(5)].map((_, i) => {
-                  const filled = i < quizzesDisplay;
-                  return (
-                    <div
-                      key={`quiz-${i}`}
-                      className="flex items-center justify-center"
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: filled ? "#F0FFF4" : "transparent",
-                        border: filled ? "2px solid #50C878" : "2px dashed #E5E5E5",
-                        fontSize: 14,
-                        lineHeight: 1,
-                      }}
-                    >
-                      {filled ? "✅" : ""}
-                    </div>
-                  );
-                })}
+            {/* Streak diamond mini-card */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{ background: '#F0F9FF', border: '1px solid #93C5FD' }}
+            >
+              <span
+                style={{
+                  fontSize: diamondStyle.size,
+                  lineHeight: 1,
+                  filter: currentStreak === 0 ? 'grayscale(1) opacity(0.4)' : 'none',
+                  boxShadow: diamondStyle.glow,
+                  borderRadius: '50%',
+                  animation: diamondStyle.animate ? 'gentleBounce 2s ease-in-out infinite' : 'none',
+                }}
+              >
+                💎
+              </span>
+              <div>
+                <p className="font-extrabold text-[22px] leading-tight" style={{ color: '#2D1810' }}>
+                  {currentStreak}
+                </p>
+                <p className="text-[11px] font-semibold" style={{ color: '#1E40AF' }}>
+                  {ui.daysInARow}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tip section removed – saves vertical space on tablet */}
       </div>
 
     </div>

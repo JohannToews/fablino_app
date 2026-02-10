@@ -8,6 +8,8 @@ export interface FablinoReactionProps {
   type: 'celebrate' | 'encourage' | 'welcome' | 'levelUp' | 'perfect';
   message: string;
   stars?: number;
+  levelEmoji?: string;   // For levelUp: the level emoji (e.g. "🔍")
+  levelTitle?: string;   // For levelUp: the level name (e.g. "Geschichtenentdecker")
   onClose: () => void;
   autoClose?: number;
   buttonLabel?: string;
@@ -65,6 +67,34 @@ function FallingParticles() {
   );
 }
 
+// ═══ Star fly animation (subtle) ═══
+
+function StarFlyEffect({ count }: { count: number }) {
+  if (count <= 0) return null;
+  const starCount = Math.min(count, 3);
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      {Array.from({ length: starCount }, (_, i) => (
+        <span
+          key={`fly-${i}`}
+          className="absolute text-[22px]"
+          style={{
+            left: '50%',
+            top: '45%',
+            marginLeft: `${(i - 1) * 12}px`,
+            '--fly-x': `${40 + i * 20}px`,
+            '--fly-y': `${-100 - i * 15}px`,
+            animation: `starFly 0.8s ease-in-out ${0.3 + i * 0.15}s forwards`,
+            opacity: 0,
+          } as React.CSSProperties}
+        >
+          ⭐
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ═══ Animated star counter ═══
 
 function StarCounter({ target }: { target: number }) {
@@ -92,17 +122,43 @@ function StarCounter({ target }: { target: number }) {
   return (
     <div className="flex items-center justify-center gap-2 text-lg font-bold text-amber-600">
       <span className="text-2xl">⭐</span>
-      <span>{count} Sterne</span>
+      <span>+{count}</span>
     </div>
   );
 }
 
 // ═══ Main component ═══
 
+// ═══ Level-Up confetti (CSS-only, more prominent) ═══
+
+function LevelUpConfetti() {
+  const emojis = ['🎉', '✨', '⭐', '🌟', '🎊', '✨', '⭐', '🎉', '🌟', '🎊'];
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      {emojis.map((emoji, i) => (
+        <span
+          key={`conf-${i}`}
+          className="absolute"
+          style={{
+            left: `${5 + i * 10}%`,
+            fontSize: `${14 + Math.random() * 10}px`,
+            animation: `confettiFall ${2 + Math.random() * 1.5}s ease-in ${i * 0.1}s infinite`,
+            opacity: 0,
+          }}
+        >
+          {emoji}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function FablinoReaction({
   type,
   message,
   stars,
+  levelEmoji,
+  levelTitle,
   onClose,
   autoClose,
   buttonLabel = 'Weiter',
@@ -173,19 +229,53 @@ export default function FablinoReaction({
           className={`absolute inset-x-0 top-0 h-24 rounded-t-2xl bg-gradient-to-b ${ACCENT_COLORS[type]} pointer-events-none`}
         />
 
-        {/* Particles */}
-        {SHOW_PARTICLES.has(type) && <FallingParticles />}
+        {/* Particles / Confetti */}
+        {type === 'levelUp' ? <LevelUpConfetti /> : SHOW_PARTICLES.has(type) && <FallingParticles />}
+
+        {/* Star fly effect */}
+        {stars != null && stars > 0 && (type === 'celebrate' || type === 'perfect') && (
+          <StarFlyEffect count={stars} />
+        )}
 
         {/* Content */}
         <div className="relative flex flex-col items-center gap-4 pt-2">
+          {/* Level-Up: Big emoji badge first */}
+          {type === 'levelUp' && levelEmoji && (
+            <div
+              className="flex items-center justify-center rounded-full"
+              style={{
+                width: 80,
+                height: 80,
+                background: 'linear-gradient(135deg, #FEF3C7, #FFF7ED)',
+                border: '3px solid #FBBF24',
+                boxShadow: '0 0 20px rgba(251,191,36,0.3)',
+                animation: 'badgePop 0.6s ease-out 0.2s both',
+              }}
+            >
+              <span style={{ fontSize: 44, lineHeight: 1 }}>{levelEmoji}</span>
+            </div>
+          )}
+
           {/* Fablino image */}
           <div className={`transition-all duration-700 ease-out ${visible ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
             <FablinoMascot
               src={FABLINO_IMAGES[type]}
-              size="lg"
+              size={type === 'levelUp' ? 'md' : 'lg'}
               bounce={false}
             />
           </div>
+
+          {/* Level-Up title */}
+          {type === 'levelUp' && levelTitle && (
+            <div className="text-center">
+              <p className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: '#92400E' }}>
+                Level Up!
+              </p>
+              <p className="text-[20px] font-extrabold" style={{ color: '#2D1810' }}>
+                {levelEmoji} {levelTitle}
+              </p>
+            </div>
+          )}
 
           {/* Message */}
           <p className="text-lg font-bold text-center text-gray-800 leading-snug">
