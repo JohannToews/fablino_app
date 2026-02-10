@@ -97,39 +97,51 @@ export type Database = {
       }
       badges: {
         Row: {
+          bonus_stars: number | null
           category: string
           condition_type: string
           condition_value: number
           created_at: string | null
           description: string
           emoji: string
+          fablino_message: string | null
+          frame_color: string | null
           icon_url: string | null
           id: string
           name: string
+          repeatable: boolean | null
           sort_order: number | null
         }
         Insert: {
+          bonus_stars?: number | null
           category: string
           condition_type: string
           condition_value: number
           created_at?: string | null
           description: string
           emoji?: string
+          fablino_message?: string | null
+          frame_color?: string | null
           icon_url?: string | null
           id?: string
           name: string
+          repeatable?: boolean | null
           sort_order?: number | null
         }
         Update: {
+          bonus_stars?: number | null
           category?: string
           condition_type?: string
           condition_value?: number
           created_at?: string | null
           description?: string
           emoji?: string
+          fablino_message?: string | null
+          frame_color?: string | null
           icon_url?: string | null
           id?: string
           name?: string
+          repeatable?: boolean | null
           sort_order?: number | null
         }
         Relationships: []
@@ -727,26 +739,32 @@ export type Database = {
         Row: {
           color: string
           emoji: string
+          icon_url: string | null
           id: number
           name: string
           sort_order: number
           stars_required: number
+          unlock_feature: string | null
         }
         Insert: {
           color: string
           emoji: string
+          icon_url?: string | null
           id?: number
           name: string
           sort_order: number
           stars_required: number
+          unlock_feature?: string | null
         }
         Update: {
           color?: string
           emoji?: string
+          icon_url?: string | null
           id?: number
           name?: string
           sort_order?: number
           stars_required?: number
+          unlock_feature?: string | null
         }
         Relationships: []
       }
@@ -833,6 +851,24 @@ export type Database = {
         ]
       }
       point_settings: {
+        Row: {
+          description: string | null
+          setting_key: string
+          value: string
+        }
+        Insert: {
+          description?: string | null
+          setting_key: string
+          value: string
+        }
+        Update: {
+          description?: string | null
+          setting_key?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      point_settings_legacy: {
         Row: {
           category: string
           created_at: string
@@ -1315,11 +1351,13 @@ export type Database = {
       }
       user_progress: {
         Row: {
+          consecutive_perfect_quizzes: number | null
           created_at: string
           current_level: number
           current_streak: number
           id: string
           kid_profile_id: string
+          languages_read: string[] | null
           last_activity_date: string | null
           last_read_date: string | null
           longest_streak: number
@@ -1329,18 +1367,24 @@ export type Database = {
           stories_read_total: number
           streak_freeze_available: boolean
           streak_freeze_used_this_week: string | null
-          total_points: number
+          total_perfect_quizzes: number | null
           total_stars: number | null
+          total_stories_read: number | null
           updated_at: string
           user_id: string
+          weekly_bonus_claimed: string | null
+          weekly_reset_date: string | null
+          weekly_stories_count: number | null
           words_learned: number | null
         }
         Insert: {
+          consecutive_perfect_quizzes?: number | null
           created_at?: string
           current_level?: number
           current_streak?: number
           id?: string
           kid_profile_id: string
+          languages_read?: string[] | null
           last_activity_date?: string | null
           last_read_date?: string | null
           longest_streak?: number
@@ -1350,18 +1394,24 @@ export type Database = {
           stories_read_total?: number
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
-          total_points?: number
+          total_perfect_quizzes?: number | null
           total_stars?: number | null
+          total_stories_read?: number | null
           updated_at?: string
           user_id: string
+          weekly_bonus_claimed?: string | null
+          weekly_reset_date?: string | null
+          weekly_stories_count?: number | null
           words_learned?: number | null
         }
         Update: {
+          consecutive_perfect_quizzes?: number | null
           created_at?: string
           current_level?: number
           current_streak?: number
           id?: string
           kid_profile_id?: string
+          languages_read?: string[] | null
           last_activity_date?: string | null
           last_read_date?: string | null
           longest_streak?: number
@@ -1371,10 +1421,14 @@ export type Database = {
           stories_read_total?: number
           streak_freeze_available?: boolean
           streak_freeze_used_this_week?: string | null
-          total_points?: number
+          total_perfect_quizzes?: number | null
           total_stars?: number | null
+          total_stories_read?: number | null
           updated_at?: string
           user_id?: string
+          weekly_bonus_claimed?: string | null
+          weekly_reset_date?: string | null
+          weekly_stories_count?: number | null
           words_learned?: number | null
         }
         Relationships: [
