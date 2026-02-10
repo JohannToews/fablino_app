@@ -92,7 +92,7 @@ const HomeFablino = () => {
     const loadWeeklyData = async () => {
       const { data } = await supabase
         .from("user_results")
-        .select("activity_type, points_earned")
+        .select("activity_type, stars_earned")
         .eq("kid_profile_id", selectedProfileId)
         .gte("created_at", mondayISO);
 
@@ -102,9 +102,9 @@ const HomeFablino = () => {
       let stories = 0;
       let quizzes = 0;
       for (const row of data) {
-        stars += row.points_earned || 0;
-        if (row.activity_type === "story_completed") stories++;
-        if (row.activity_type === "quiz_completed" || row.activity_type === "quiz_passed") quizzes++;
+        stars += row.stars_earned || 0;
+        if (row.activity_type === "story_completed" || row.activity_type === "story_read") stories++;
+        if (row.activity_type === "quiz_complete" || row.activity_type === "quiz_completed") quizzes++;
       }
       setWeeklyStars(stars);
       setWeeklyStories(stories);
