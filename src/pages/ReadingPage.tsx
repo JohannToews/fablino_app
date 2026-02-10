@@ -1400,7 +1400,7 @@ const ReadingPage = () => {
                       } else {
                         setFablinoReaction({
                           type: 'encourage',
-                          message: t.fablinoEncourage,
+                          message: t.fablinoQuizEncourage,
                           stars: 0,
                         });
                       }

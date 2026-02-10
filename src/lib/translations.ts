@@ -266,6 +266,7 @@ export interface Translations {
   fablinoQuizPerfect: string;
   fablinoQuizGood: string;
   fablinoEncourage: string;
+  fablinoQuizEncourage: string;
   fablinoNewSticker: string;
   fablinoLevelUp: string;
   fablinoWordLearned: string;
@@ -523,6 +524,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: 'WOW! Alles richtig!',
     fablinoQuizGood: 'Super! {correct} von {total} richtig!',
     fablinoEncourage: 'Fast! Versuch\'s nochmal.',
+    fablinoQuizEncourage: 'Nicht schlimm! Nächstes Mal klappt\'s besser! 🦊',
     fablinoNewSticker: 'Ein neuer Sticker für dein Buch!',
     fablinoLevelUp: 'Du bist jetzt ein {title}!',
     fablinoWordLearned: 'Neues Wort gelernt!',
@@ -775,6 +777,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: 'WOW! All correct!',
     fablinoQuizGood: 'Great! {correct} out of {total} right!',
     fablinoEncourage: 'Almost! Try again.',
+    fablinoQuizEncourage: 'No worries! You\'ll do better next time! 🦊',
     fablinoNewSticker: 'A new sticker for your book!',
     fablinoLevelUp: 'You are now a {title}!',
     fablinoWordLearned: 'New word learned!',
@@ -1027,6 +1030,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: 'OUAH ! Tout juste !',
     fablinoQuizGood: 'Super ! {correct} sur {total} correct !',
     fablinoEncourage: 'Presque ! Réessaie.',
+    fablinoQuizEncourage: 'Ce n\'est pas grave ! Tu feras mieux la prochaine fois ! 🦊',
     fablinoNewSticker: 'Un nouveau sticker pour ton album !',
     fablinoLevelUp: 'Tu es maintenant un {title} !',
     fablinoWordLearned: 'Nouveau mot appris !',
@@ -1279,6 +1283,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: '¡GUAU! ¡Todo correcto!',
     fablinoQuizGood: '¡Genial! {correct} de {total} correctas!',
     fablinoEncourage: '¡Casi! Inténtalo de nuevo.',
+    fablinoQuizEncourage: '¡No pasa nada! ¡La próxima vez lo harás mejor! 🦊',
     fablinoNewSticker: '¡Un nuevo sticker para tu álbum!',
     fablinoLevelUp: '¡Ahora eres un {title}!',
     fablinoWordLearned: '¡Nueva palabra aprendida!',
@@ -1531,6 +1536,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: 'WAUW! Alles goed!',
     fablinoQuizGood: 'Super! {correct} van {total} goed!',
     fablinoEncourage: 'Bijna! Probeer opnieuw.',
+    fablinoQuizEncourage: 'Niet erg! De volgende keer lukt het beter! 🦊',
     fablinoNewSticker: 'Een nieuwe sticker voor je boek!',
     fablinoLevelUp: 'Je bent nu een {title}!',
     fablinoWordLearned: 'Nieuw woord geleerd!',
@@ -1783,6 +1789,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: 'WOW! Tutto giusto!',
     fablinoQuizGood: 'Super! {correct} su {total} corrette!',
     fablinoEncourage: 'Quasi! Riprova.',
+    fablinoQuizEncourage: 'Non preoccuparti! La prossima volta andrà meglio! 🦊',
     fablinoNewSticker: 'Un nuovo sticker per il tuo album!',
     fablinoLevelUp: 'Ora sei un {title}!',
     fablinoWordLearned: 'Nuova parola imparata!',
@@ -2035,6 +2042,7 @@ const translations: Record<Language, Translations> = {
     fablinoQuizPerfect: 'VAU! Sve tačno!',
     fablinoQuizGood: 'Super! {correct} od {total} tačno!',
     fablinoEncourage: 'Skoro! Pokušaj ponovo.',
+    fablinoQuizEncourage: 'Nema veze! Sljedeći put će biti bolje! 🦊',
     fablinoNewSticker: 'Novi stiker za tvoj album!',
     fablinoLevelUp: 'Sada si {title}!',
     fablinoWordLearned: 'Nova riječ naučena!',
