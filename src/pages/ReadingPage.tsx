@@ -486,7 +486,9 @@ const ReadingPage = () => {
           text_language: story.text_language,
           prompt: story.prompt,
           cover_image_url: null, // Will update after upload
+          cover_image_status: 'pending',
           story_images: null,     // Will update after upload
+          story_images_status: 'pending',
           user_id: user.id,
           kid_profile_id: story.kid_profile_id,
           ending_type: "C",
@@ -569,7 +571,9 @@ const ReadingPage = () => {
             .from("stories")
             .update({
               cover_image_url: coverUrl,
+              cover_image_status: coverUrl ? 'complete' : 'pending',
               story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
+              story_images_status: storyImageUrls.length > 0 ? 'complete' : 'pending',
             })
             .eq("id", newStory.id);
         }
