@@ -213,8 +213,8 @@ const MigrationBanner = ({ language = 'de' }: MigrationBannerProps) => {
               {t.description}
             </p>
 
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div className="w-full">
                 <Label htmlFor="migration-email" className="sr-only">
                   {t.emailLabel}
                 </Label>
@@ -236,7 +236,7 @@ const MigrationBanner = ({ language = 'de' }: MigrationBannerProps) => {
                 <Button
                   type="submit"
                   disabled={isLoading || !email.trim()}
-                  className="h-10 px-4"
+                  className="h-10 px-4 flex-1"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

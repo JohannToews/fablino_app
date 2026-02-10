@@ -1415,7 +1415,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     // ================== Block 2.4: BUILD IMAGE PROMPTS ==================
     const imagePromptStart = Date.now();
-    let imagePrompts: ImagePromptResult[];
+    let imagePrompts: ImagePromptResult[] | undefined;
     let characterDescription = "";
 
     if (imagePlan && imagePlan.character_anchor && imagePlan.scenes?.length > 0) {
