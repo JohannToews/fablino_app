@@ -9,15 +9,25 @@ import { Trophy, Save, Loader2 } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface PointSetting {
-  id: string;
-  category: string;
-  difficulty: string;
-  points: number;
+  setting_key: string;
+  value: string;
+  description: string | null;
 }
 
 interface PointsConfigSectionProps {
   language: Language;
 }
+
+const settingLabels: Record<string, string> = {
+  stars_story_read: "⭐ Story gelesen",
+  stars_quiz_perfect: "🏆 Quiz 100%",
+  stars_quiz_passed: "✅ Quiz bestanden",
+  stars_quiz_failed: "❌ Quiz nicht bestanden",
+  quiz_pass_threshold: "📊 Bestehens-Schwelle (%)",
+  weekly_bonus_3: "📅 Wochen-Bonus (3 Stories)",
+  weekly_bonus_5: "📅 Wochen-Bonus (5 Stories)",
+  weekly_bonus_7: "📅 Wochen-Bonus (7 Stories)",
+};
 
 const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
   const t = useTranslations(language);
@@ -32,9 +42,7 @@ const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
   const loadSettings = async () => {
     const { data, error } = await supabase
       .from("point_settings")
-      .select("*")
-      .order("category")
-      .order("difficulty");
+      .select("setting_key, value, description");
 
     if (data) {
       setSettings(data);
@@ -42,22 +50,22 @@ const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
     setIsLoading(false);
   };
 
-  const updatePoints = (id: string, points: number) => {
-    setSettings(prev => 
-      prev.map(s => s.id === id ? { ...s, points: Math.max(0, points) } : s)
+  const updateValue = (key: string, value: string) => {
+    setSettings(prev =>
+      prev.map(s => s.setting_key === key ? { ...s, value } : s)
     );
   };
 
   const saveSettings = async () => {
     setIsSaving(true);
-    
+
     try {
       for (const setting of settings) {
         const { error } = await supabase
           .from("point_settings")
-          .update({ points: setting.points })
-          .eq("id", setting.id);
-        
+          .update({ value: setting.value })
+          .eq("setting_key", setting.setting_key);
+
         if (error) {
           console.error("Error saving setting:", error);
           toast.error(t.errorSaving);
@@ -65,32 +73,14 @@ const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
           return;
         }
       }
-      
+
       toast.success(t.pointsConfigSaved);
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.errorSaving);
     }
-    
+
     setIsSaving(false);
-  };
-
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'story': return `📖 ${t.storyRead}`;
-      case 'question': return `❓ ${t.comprehensionQuestion}`;
-      case 'quiz': return `🧠 ${t.quizPerCorrectAnswer}`;
-      default: return category;
-    }
-  };
-
-  const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return t.easy;
-      case 'medium': return t.medium;
-      case 'difficult': return t.hard;
-      default: return difficulty;
-    }
   };
 
   if (isLoading) {
@@ -103,15 +93,6 @@ const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
     );
   }
 
-  // Group settings by category
-  const groupedSettings: Record<string, PointSetting[]> = {};
-  settings.forEach(s => {
-    if (!groupedSettings[s.category]) {
-      groupedSettings[s.category] = [];
-    }
-    groupedSettings[s.category].push(s);
-  });
-
   return (
     <Card className="border-2 border-sunshine/50 mt-8">
       <CardHeader>
@@ -120,38 +101,26 @@ const PointsConfigSection = ({ language }: PointsConfigSectionProps) => {
           {t.pointsConfiguration}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {Object.entries(groupedSettings).map(([category, categorySettings]) => (
-          <div key={category} className="space-y-3">
-            <h3 className="font-semibold text-lg">{getCategoryLabel(category)}</h3>
-            <div className="grid grid-cols-3 gap-4">
-              {categorySettings
-                .sort((a, b) => {
-                  const order = ['easy', 'medium', 'difficult'];
-                  return order.indexOf(a.difficulty) - order.indexOf(b.difficulty);
-                })
-                .map(setting => (
-                <div key={setting.id} className="space-y-1">
-                  <Label className="text-sm text-muted-foreground">
-                    {getDifficultyLabel(setting.difficulty)}
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={setting.points}
-                    onChange={(e) => updatePoints(setting.id, parseInt(e.target.value) || 0)}
-                    className="text-center font-bold"
-                  />
-                </div>
-              ))}
-            </div>
+      <CardContent className="space-y-4">
+        {settings.map(setting => (
+          <div key={setting.setting_key} className="flex items-center gap-4">
+            <Label className="w-64 text-sm font-medium">
+              {settingLabels[setting.setting_key] || setting.setting_key}
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={setting.value}
+              onChange={(e) => updateValue(setting.setting_key, e.target.value)}
+              className="w-24 text-center font-bold"
+            />
+            {setting.description && (
+              <span className="text-xs text-muted-foreground">{setting.description}</span>
+            )}
           </div>
         ))}
 
         <div className="pt-4 border-t">
-          <p className="text-sm text-muted-foreground mb-4">
-            <strong>{language === 'de' ? 'Hinweis' : language === 'en' ? 'Note' : 'Remarque'}:</strong> {t.pointsNote}
-          </p>
           <Button
             onClick={saveSettings}
             disabled={isSaving}

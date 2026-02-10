@@ -13,7 +13,7 @@ import ReadingSettings, { FontSizeLevel, LineSpacingLevel, getReadingTextClasses
 import SyllableText, { isSyllableModeSupported } from "@/components/SyllableText";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
+import { useGamification } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
 import BadgeCelebrationModal, { EarnedBadge } from "@/components/BadgeCelebrationModal";
 import PageHeader from "@/components/PageHeader";
@@ -199,7 +199,7 @@ const isStopWord = (word: string): boolean => {
 const ReadingPage = () => {
   const { user } = useAuth();
   const { selectedProfile, kidAppLanguage, kidExplanationLanguage } = useKidProfile();
-  const { actions, pendingLevelUp, clearPendingLevelUp } = useGamification();
+  const { actions, pendingLevelUp, clearPendingLevelUp, starRewards } = useGamification();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
@@ -1300,7 +1300,7 @@ const ReadingPage = () => {
                     setFablinoReaction({
                       type: 'celebrate',
                       message: t.fablinoStoryDone,
-                      stars: STAR_REWARDS.STORY_READ,
+                      stars: starRewards.stars_story_read,
                     });
                   }}
                   storyId={story.id}
@@ -1334,9 +1334,8 @@ const ReadingPage = () => {
                       const childId = story?.kid_profile_id || selectedProfile?.id || null;
                       const passed = totalCount > 0 && (correctCount / totalCount) >= 0.6;
                       const isPerfect = correctCount === totalCount;
-                      const stars = !passed ? 0 : isPerfect ? 2 : 1;
-                      // Keep totalStars for Fablino display (backward compat)
-                      const totalStars = correctCount * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
+                      const stars = !passed ? starRewards.stars_quiz_failed : isPerfect ? starRewards.stars_quiz_perfect : starRewards.stars_quiz_passed;
+                      const totalStars = stars;
 
                       // Log activity via RPC (handles stars, streak, badges, user_results)
                       try {

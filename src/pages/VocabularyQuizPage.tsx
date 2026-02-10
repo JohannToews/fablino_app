@@ -7,7 +7,7 @@ import { Sparkles, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw, Users } fr
 import confetti from "canvas-confetti";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useGamification, STAR_REWARDS } from "@/hooks/useGamification";
+import { useGamification } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
 import BadgeCelebrationModal, { EarnedBadge } from "@/components/BadgeCelebrationModal";
 import { getTranslations, Language } from "@/lib/translations";
@@ -281,7 +281,7 @@ interface Story {
 const VocabularyQuizPage = () => {
   const { user } = useAuth();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
-  const { actions, pendingLevelUp, clearPendingLevelUp } = useGamification();
+  const { actions, pendingLevelUp, clearPendingLevelUp, starRewards } = useGamification();
   const tGlobal = getTranslations(kidAppLanguage as Language);
   const navigate = useNavigate();
   const [allWords, setAllWords] = useState<QuizWord[]>([]);
@@ -370,16 +370,15 @@ const VocabularyQuizPage = () => {
   }, [selectedStoryId, allWords]);
 
   const loadQuizPointValue = async () => {
-    // Load quiz point value for medium difficulty (default)
+    // Load quiz point value from point_settings
     const { data } = await supabase
       .from("point_settings")
-      .select("points")
-      .eq("category", "quiz")
-      .eq("difficulty", "medium")
+      .select("setting_key, value")
+      .eq("setting_key", "stars_quiz_perfect")
       .maybeSingle();
 
     if (data) {
-      setQuizPointValue(data.points);
+      setQuizPointValue(parseInt(data.value, 10) || 2);
     }
   };
 
@@ -565,11 +564,11 @@ const VocabularyQuizPage = () => {
     // Fablino feedback for newly learned word
     if (justLearned) {
       await actions.markWordLearned();
-      await actions.awardStars(STAR_REWARDS.WORD_LEARNED, 'word_learned');
+      await actions.awardStars(1, 'word_learned');
       setFablinoReaction({
         type: 'celebrate',
         message: tGlobal.fablinoWordLearned,
-        stars: STAR_REWARDS.WORD_LEARNED,
+        stars: 1,
       });
     }
   };
@@ -610,9 +609,8 @@ const VocabularyQuizPage = () => {
 
       const passed = score >= getPassThreshold();
       const isPerfect = score === totalQuestions;
-      const stars = !passed ? 0 : isPerfect ? 2 : 1;
-      // Keep totalStars for Fablino display (backward compat)
-      const totalStars = score * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
+      const stars = !passed ? starRewards.stars_quiz_failed : isPerfect ? starRewards.stars_quiz_perfect : starRewards.stars_quiz_passed;
+      const totalStars = stars;
       setPointsEarned(totalStars);
 
       // Log activity via RPC (handles stars, streak, badges, user_results)

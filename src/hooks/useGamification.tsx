@@ -3,15 +3,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 
-// ═══ Constants (hardcoded, no DB queries) ═══
+// ═══ Star Rewards interface (loaded from DB point_settings) ═══
 
-export const STAR_REWARDS = {
-  STORY_READ: 2,
-  QUIZ_CORRECT: 1,
-  QUIZ_PERFECT: 3,     // Bonus when ALL correct
-  WORD_LEARNED: 1,
-  STREAK_BONUS: 1,     // Daily bonus from day 2+
-} as const;
+export interface StarRewards {
+  stars_story_read: number;
+  stars_quiz_perfect: number;
+  stars_quiz_passed: number;
+  stars_quiz_failed: number;
+  quiz_pass_threshold: number;
+}
+
+const DEFAULT_STAR_REWARDS: StarRewards = {
+  stars_story_read: 1,
+  stars_quiz_perfect: 2,
+  stars_quiz_passed: 1,
+  stars_quiz_failed: 0,
+  quiz_pass_threshold: 80,
+};
 
 export const LEVELS = [
   { level: 1, title: 'buecherfuchs',        icon: '🦊', minStars: 0 },
@@ -108,6 +116,27 @@ export const useGamification = () => {
   const [state, setState] = useState<GamificationState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingLevelUp, setPendingLevelUp] = useState<PendingLevelUp | null>(null);
+  const [starRewards, setStarRewards] = useState<StarRewards>(DEFAULT_STAR_REWARDS);
+
+  // ── Load point_settings from DB ──
+  useEffect(() => {
+    const loadPointSettings = async () => {
+      const { data } = await supabase
+        .from('point_settings')
+        .select('setting_key, value');
+      if (data) {
+        const map: Partial<StarRewards> = {};
+        data.forEach(row => {
+          const key = row.setting_key as keyof StarRewards;
+          if (key in DEFAULT_STAR_REWARDS) {
+            (map as any)[key] = parseInt(row.value, 10) || 0;
+          }
+        });
+        setStarRewards(prev => ({ ...prev, ...map }));
+      }
+    };
+    loadPointSettings();
+  }, []);
 
   // ── Load progress from DB ──
   const loadProgress = useCallback(async () => {
@@ -131,10 +160,11 @@ export const useGamification = () => {
       }
 
       if (progressData) {
-        const levelInfo = getLevelFromStars(progressData.total_points);
+        const totalStars = progressData.total_stars ?? 0;
+        const levelInfo = getLevelFromStars(totalStars);
         const today = getTodayStr();
         setState({
-          stars: progressData.total_points,
+          stars: totalStars,
           level: levelInfo.level,
           levelTitle: levelInfo.title,
           levelIcon: levelInfo.icon,
@@ -199,7 +229,7 @@ export const useGamification = () => {
     await supabase
       .from("user_progress")
       .update({
-        total_points: newStars,
+        total_stars: newStars,
         current_level: newLevelInfo.level,
       })
       .eq("kid_profile_id", selectedProfileId);
@@ -274,14 +304,14 @@ export const useGamification = () => {
     // Award streak bonus (from day 2+)
     if (newStreak >= 2) {
       // Award streak bonus stars (don't recurse — direct DB update)
-      const bonusStars = STAR_REWARDS.STREAK_BONUS;
+      const bonusStars = 1; // Streak bonus is always 1 star
       const newTotalStars = state.stars + bonusStars;
       const newLevelInfo = getLevelFromStars(newTotalStars);
 
       await supabase
         .from("user_progress")
         .update({
-          total_points: newTotalStars,
+          total_stars: newTotalStars,
           current_level: newLevelInfo.level,
         })
         .eq("kid_profile_id", selectedProfileId);
@@ -375,6 +405,7 @@ export const useGamification = () => {
     state,
     isLoading,
     pendingLevelUp,
+    starRewards,
     actions: {
       awardStars,
       checkAndUpdateStreak,
@@ -408,14 +439,16 @@ export const useGamification = () => {
       quizzesPassed: state.quizzesPassed,
     } : null,
     awardStoryPoints: async (storyId: string): Promise<number> => {
-      await awardStars(STAR_REWARDS.STORY_READ, 'story_read');
+      await awardStars(starRewards.stars_story_read, 'story_read');
       await checkAndUpdateStreak();
       await markStoryComplete(storyId);
-      return STAR_REWARDS.STORY_READ;
+      return starRewards.stars_story_read;
     },
     awardQuizPoints: async (_storyId: string, correctAnswers: number, totalQuestions: number): Promise<number> => {
       const isPerfect = correctAnswers === totalQuestions;
-      const stars = correctAnswers * STAR_REWARDS.QUIZ_CORRECT + (isPerfect ? STAR_REWARDS.QUIZ_PERFECT : 0);
+      const scorePercent = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      const passed = scorePercent >= starRewards.quiz_pass_threshold;
+      const stars = !passed ? starRewards.stars_quiz_failed : isPerfect ? starRewards.stars_quiz_perfect : starRewards.stars_quiz_passed;
       if (stars > 0) await awardStars(stars, isPerfect ? 'quiz_perfect' : 'quiz_passed');
       return stars;
     },
