@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,89 +60,196 @@ const StorySelectPage = () => {
   const [hasMore, setHasMore] = useState(false);
   const [isGeneratingForSeries, setIsGeneratingForSeries] = useState<string | null>(null);
 
-  // Track whether initial load has happened for this user+profile combo
-  const loadedKeyRef = useRef<string>('');
-
-  // ── Fix 2: Only reload when user or profile actually changes, not on every navigation ──
+  // ── Initial load + reload on user/profile change ──
   useEffect(() => {
-    if (!user) return;
-    const key = `${user.id}|${selectedProfileId || ''}`;
-    if (loadedKeyRef.current === key) return; // Already loaded for this combo
-    loadedKeyRef.current = key;
-    loadStories(true);
+    console.log('[StorySelect] useEffect fired, user:', user?.id, 'profile:', selectedProfileId);
+    if (!user) {
+      console.log('[StorySelect] No user yet, skipping');
+      return;
+    }
+
+    const fetchStories = async () => {
+      console.log('[StorySelect] fetchStories START');
+      setIsLoading(true);
+
+      try {
+        // Build stories query — NO content field (saves large text transfer)
+        let query = supabase
+          .from("stories")
+          .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
+          .eq("user_id", user.id)
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: false })
+          .range(0, PAGE_SIZE - 1);
+
+        if (selectedProfileId) {
+          query = query.eq("kid_profile_id", selectedProfileId);
+        }
+
+        console.log('[StorySelect] Executing stories query...');
+        const storiesResult = await query;
+        console.log('[StorySelect] Stories result:', {
+          data: storiesResult.data?.length,
+          error: storiesResult.error,
+          status: storiesResult.status,
+          statusText: storiesResult.statusText,
+        });
+        const storiesData: Story[] = storiesResult.data || [];
+
+        // Build completions query filtered by loaded story IDs
+        const storyIds = storiesData.map(s => s.id);
+        const statusMap = new Map<string, boolean>();
+
+        if (storyIds.length > 0) {
+          console.log('[StorySelect] Fetching completions for', storyIds.length, 'stories...');
+          const completionsResult = await supabase
+            .from("user_results")
+            .select("reference_id, kid_profile_id")
+            .eq("user_id", user.id)
+            .in("activity_type", ["story_read", "story_completed"])
+            .in("reference_id", storyIds);
+
+          console.log('[StorySelect] Completions result:', {
+            data: completionsResult.data?.length,
+            error: completionsResult.error,
+          });
+
+          completionsResult.data?.forEach(r => {
+            if (r.reference_id && storyIds.includes(r.reference_id)) {
+              const matches = !selectedProfileId ||
+                             r.kid_profile_id === selectedProfileId ||
+                             r.kid_profile_id === null;
+              if (matches) {
+                statusMap.set(r.reference_id, true);
+              }
+            }
+          });
+        }
+
+        console.log('[StorySelect] Setting state:', storiesData.length, 'stories, hasMore:', storiesData.length === PAGE_SIZE);
+        setStories(storiesData);
+        setStoryStatuses(statusMap);
+        setHasMore(storiesData.length === PAGE_SIZE);
+      } catch (err) {
+        console.error("[StorySelect] CATCH Error loading stories:", err);
+      } finally {
+        console.log('[StorySelect] FINALLY - setIsLoading(false)');
+        setIsLoading(false);
+      }
+    };
+
+    fetchStories();
   }, [user?.id, selectedProfileId]);
 
-  // ── Fix 1: Paginated story loading ──
-  const loadStories = async (reset = true) => {
-    if (!user) return;
+  // ── Load more (append next page) ──
+  const loadMore = async () => {
+    if (!user || isLoadingMore) return;
+    setIsLoadingMore(true);
 
-    if (reset) {
-      setIsLoading(true);
-      setStories([]);
-      setStoryStatuses(new Map());
-    } else {
-      setIsLoadingMore(true);
-    }
-
-    const offset = reset ? 0 : stories.length;
-
-    // Build stories query — NO content field (saves large text transfer)
-    let query = supabase
-      .from("stories")
-      .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
-      .eq("user_id", user.id)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    // Filter strictly by selected kid profile
-    if (selectedProfileId) {
-      query = query.eq("kid_profile_id", selectedProfileId);
-    }
-
-    const storiesResult = await query;
-    const newStories: Story[] = storiesResult.data || [];
-
-    // Merge with existing stories (for "load more")
-    const allStories = reset ? newStories : [...stories, ...newStories];
-
-    // Build completions query filtered by loaded story IDs
-    const allStoryIds = allStories.map(s => s.id);
-    let statusMap = new Map<string, boolean>();
-
-    if (allStoryIds.length > 0) {
-      const completionsResult = await supabase
-        .from("user_results")
-        .select("reference_id, kid_profile_id")
+    try {
+      let query = supabase
+        .from("stories")
+        .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
         .eq("user_id", user.id)
-        .in("activity_type", ["story_read", "story_completed"])
-        .in("reference_id", allStoryIds);
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .range(stories.length, stories.length + PAGE_SIZE - 1);
 
-      const storyIdSet = new Set(allStoryIds);
-      completionsResult.data?.forEach(r => {
-        if (r.reference_id && storyIdSet.has(r.reference_id)) {
-          const matches = !selectedProfileId ||
-                         r.kid_profile_id === selectedProfileId ||
-                         r.kid_profile_id === null;
-          if (matches) {
-            statusMap.set(r.reference_id, true);
+      if (selectedProfileId) {
+        query = query.eq("kid_profile_id", selectedProfileId);
+      }
+
+      const storiesResult = await query;
+      const newStories: Story[] = storiesResult.data || [];
+      const allStories = [...stories, ...newStories];
+      const allStoryIds = allStories.map(s => s.id);
+
+      // Re-fetch completions for all loaded stories
+      const statusMap = new Map<string, boolean>();
+      if (allStoryIds.length > 0) {
+        const completionsResult = await supabase
+          .from("user_results")
+          .select("reference_id, kid_profile_id")
+          .eq("user_id", user.id)
+          .in("activity_type", ["story_read", "story_completed"])
+          .in("reference_id", allStoryIds);
+
+        completionsResult.data?.forEach(r => {
+          if (r.reference_id && allStoryIds.includes(r.reference_id)) {
+            const matches = !selectedProfileId ||
+                           r.kid_profile_id === selectedProfileId ||
+                           r.kid_profile_id === null;
+            if (matches) {
+              statusMap.set(r.reference_id, true);
+            }
           }
-        }
-      });
-    }
+        });
+      }
 
-    setStories(allStories);
-    setStoryStatuses(statusMap);
-    setHasMore(newStories.length === PAGE_SIZE);
-    setIsLoading(false);
-    setIsLoadingMore(false);
+      setStories(allStories);
+      setStoryStatuses(statusMap);
+      setHasMore(newStories.length === PAGE_SIZE);
+    } catch (err) {
+      console.error("Error loading more stories:", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   // Manual refresh (e.g. after generating an episode)
-  const refreshStories = useCallback(() => {
-    loadedKeyRef.current = ''; // Force reload
-    loadStories(true);
-  }, [user?.id, selectedProfileId]);
+  const refreshStories = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    setStories([]);
+    setStoryStatuses(new Map());
+
+    try {
+      let query = supabase
+        .from("stories")
+        .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
+        .eq("user_id", user.id)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
+
+      if (selectedProfileId) {
+        query = query.eq("kid_profile_id", selectedProfileId);
+      }
+
+      const storiesResult = await query;
+      const storiesData: Story[] = storiesResult.data || [];
+      const storyIds = storiesData.map(s => s.id);
+      const statusMap = new Map<string, boolean>();
+
+      if (storyIds.length > 0) {
+        const completionsResult = await supabase
+          .from("user_results")
+          .select("reference_id, kid_profile_id")
+          .eq("user_id", user.id)
+          .in("activity_type", ["story_read", "story_completed"])
+          .in("reference_id", storyIds);
+
+        completionsResult.data?.forEach(r => {
+          if (r.reference_id && storyIds.includes(r.reference_id)) {
+            const matches = !selectedProfileId ||
+                           r.kid_profile_id === selectedProfileId ||
+                           r.kid_profile_id === null;
+            if (matches) {
+              statusMap.set(r.reference_id, true);
+            }
+          }
+        });
+      }
+
+      setStories(storiesData);
+      setStoryStatuses(statusMap);
+      setHasMore(storiesData.length === PAGE_SIZE);
+    } catch (err) {
+      console.error("Error refreshing stories:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Generate next episode for a series
   const handleGenerateNextEpisode = async (series: { seriesId: string; episodes: Story[] }) => {
@@ -337,7 +444,7 @@ const StorySelectPage = () => {
     return (
       <div className="flex justify-center pt-8 pb-4">
         <Button
-          onClick={() => loadStories(false)}
+          onClick={loadMore}
           disabled={isLoadingMore}
           className="btn-primary-kid px-8 py-3 text-base font-baloo"
         >
