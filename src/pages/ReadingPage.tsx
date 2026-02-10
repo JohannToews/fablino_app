@@ -199,7 +199,7 @@ const isStopWord = (word: string): boolean => {
 const ReadingPage = () => {
   const { user } = useAuth();
   const { selectedProfile, kidAppLanguage, kidExplanationLanguage } = useKidProfile();
-  const { actions, pendingLevelUp, clearPendingLevelUp, starRewards } = useGamification();
+  const { actions, pendingLevelUp, clearPendingLevelUp, starRewards, state: gamificationState, refreshProgress } = useGamification();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
@@ -1070,6 +1070,13 @@ const ReadingPage = () => {
         backTo="/stories"
         rightContent={
           <div className="flex items-center gap-2">
+            {/* Star counter */}
+            {gamificationState && (
+              <div className="flex items-center gap-1 text-primary font-bold text-sm bg-primary/10 px-2.5 py-1 rounded-full">
+                <span>⭐</span>
+                <span>{gamificationState.stars}</span>
+              </div>
+            )}
             {story && (
               <ShareStoryButton 
                 storyId={story.id} 
@@ -1295,6 +1302,7 @@ const ReadingPage = () => {
                     } catch (e) {
                       // Silent fail – gamification should not block UX
                     }
+                    refreshProgress();
                     
                     // Show Fablino celebration
                     setFablinoReaction({
@@ -1372,6 +1380,7 @@ const ReadingPage = () => {
                       } catch (e) {
                         // Silent fail – gamification should not block UX
                       }
+                      refreshProgress();
 
                       // Fablino-Feedback mit korrekten Stern-Zahlen
                       if (isPerfect) {
