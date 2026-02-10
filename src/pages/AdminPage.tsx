@@ -124,7 +124,7 @@ const AdminPage = () => {
 
       {/* Tab Navigation - Native App Style */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className={`flex-none grid mx-4 mt-3 h-12 bg-muted/50 ${user?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-2'}`}>
+        <TabsList className={`flex-none grid mx-4 mt-3 h-12 bg-muted/50 ${user?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-3'}`}>
           <TabsTrigger value="profile" className="flex items-center gap-2 text-sm font-medium">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">{t.kidProfile}</span>
@@ -135,12 +135,10 @@ const AdminPage = () => {
               <span className="hidden sm:inline">{t.parentSettingsTab}</span>
             </TabsTrigger>
           )}
-          {user?.role === 'admin' && (
-            <TabsTrigger value="stories" className="flex items-center gap-2 text-sm font-medium">
-              <Library className="h-4 w-4" />
-              <span className="hidden sm:inline">{t.library}</span>
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="stories" className="flex items-center gap-2 text-sm font-medium">
+            <Library className="h-4 w-4" />
+            <span className="hidden sm:inline">{t.library}</span>
+          </TabsTrigger>
           {user?.role === 'admin' && (
             <TabsTrigger value="settings" className="flex items-center gap-2 text-sm font-medium">
               <Settings className="h-4 w-4" />
@@ -182,8 +180,7 @@ const AdminPage = () => {
             </TabsContent>
           )}
 
-          {/* Stories Tab - Admin Only */}
-          {user?.role === 'admin' && (
+          {/* Stories Tab */}
           <TabsContent value="stories" className="h-full overflow-hidden m-0">
             <div className="h-full flex flex-col max-w-4xl mx-auto">
               {/* Kid Profile Selector - Always show if profiles exist */}
@@ -332,7 +329,6 @@ const AdminPage = () => {
               </div>
             </div>
           </TabsContent>
-          )}
 
           {/* Settings Tab - Admin Only */}
           {user?.role === 'admin' && (
