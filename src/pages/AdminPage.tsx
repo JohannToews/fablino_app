@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, CreditCard, Wrench, Users, BookHeart, Crown, Mail, Lock, UserX, Receipt } from "lucide-react";
+import { ArrowLeft, Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, CreditCard, Wrench, Users, BookHeart, Crown, Mail, Lock, UserX, Receipt, Globe, Loader2 } from "lucide-react";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
 import KidProfileSection from "@/components/KidProfileSection";
@@ -26,7 +27,7 @@ interface Story {
 
 const AdminPage = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUserProfile } = useAuth();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId } = useKidProfile();
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = useTranslations(adminLang);
@@ -35,6 +36,42 @@ const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [settingsSubTab, setSettingsSubTab] = useState("points");
   const [accountSubTab, setAccountSubTab] = useState("management");
+  const [updatingLang, setUpdatingLang] = useState(false);
+
+  const languages: { value: Language; label: string; flag: string }[] = [
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'en', label: 'English', flag: '🇬🇧' },
+    { value: 'es', label: 'Español', flag: '🇪🇸' },
+    { value: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+    { value: 'it', label: 'Italiano', flag: '🇮🇹' },
+  ];
+
+  const handleAdminLanguageChange = async (newLang: Language) => {
+    if (!user) return;
+    setUpdatingLang(true);
+    try {
+      const { error } = await invokeEdgeFunction("manage-users", {
+        action: "updateLanguages",
+        userId: user.id,
+        adminLanguage: newLang,
+      });
+      if (error) throw error;
+      await refreshUserProfile();
+      toast.success(
+        newLang === 'de' ? 'Sprache aktualisiert' :
+        newLang === 'fr' ? 'Langue mise à jour' :
+        newLang === 'en' ? 'Language updated' :
+        newLang === 'es' ? 'Idioma actualizado' :
+        newLang === 'it' ? 'Lingua aggiornata' :
+        'Taal bijgewerkt'
+      );
+    } catch (error) {
+      console.error("Error updating language:", error);
+      toast.error("Error updating language");
+    }
+    setUpdatingLang(false);
+  };
 
   useEffect(() => {
     if (user) {
@@ -403,7 +440,46 @@ const AdminPage = () => {
                       <CardTitle className="text-lg">Konto-Verwaltung</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* Email */}
+                      {/* Admin Language */}
+                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Globe className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {adminLang === 'de' ? 'Sprache' : adminLang === 'fr' ? 'Langue' : adminLang === 'es' ? 'Idioma' : adminLang === 'nl' ? 'Taal' : adminLang === 'it' ? 'Lingua' : 'Language'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {adminLang === 'de' ? 'Admin-Oberfläche' : adminLang === 'fr' ? 'Interface admin' : 'Admin interface'}
+                            </p>
+                          </div>
+                        </div>
+                        <Select
+                          value={adminLang}
+                          onValueChange={(v) => handleAdminLanguageChange(v as Language)}
+                          disabled={updatingLang}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            {updatingLang ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <SelectValue />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent className="bg-card border border-border z-50">
+                            {languages.map((lang) => (
+                              <SelectItem key={lang.value} value={lang.value}>
+                                <div className="flex items-center gap-2">
+                                  <span>{lang.flag}</span>
+                                  <span>{lang.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
