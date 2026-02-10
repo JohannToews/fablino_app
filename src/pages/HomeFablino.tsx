@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
+import MigrationBanner from "@/components/MigrationBanner";
 import { Settings, BarChart3 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,7 +78,7 @@ function getDiamondStyle(streak: number): { size: number; color: string; glow: s
 // ═══ Main Component ═══
 const HomeFablino = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, needsMigration } = useAuth();
   const {
     kidProfiles,
     selectedProfile,
@@ -241,6 +242,13 @@ const HomeFablino = () => {
             </button>
           </div>
         </div>
+
+        {/* ═══ MIGRATION BANNER for legacy users ═══ */}
+        {needsMigration && (
+          <div className="w-full mb-3">
+            <MigrationBanner language={kidAppLanguage} />
+          </div>
+        )}
 
         {/* ═══ 1. FABLINO GREETING (Hero) — uses shared FablinoPageHeader ═══ */}
         <FablinoPageHeader
