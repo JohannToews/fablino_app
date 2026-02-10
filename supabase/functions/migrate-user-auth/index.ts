@@ -9,11 +9,11 @@ Deno.serve(async (req) => {
   try {
     // Authentifiziere den Legacy-User
     const { userId } = await getAuthenticatedUser(req);
-    const { email } = await req.json();
+    const { email, newPassword } = await req.json();
 
-    if (!email) {
+    if (!email || !newPassword) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Email is required' }),
+        JSON.stringify({ success: false, error: 'Email and new password are required' }),
         { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
     if (!emailRegex.test(email)) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid email format' }),
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validiere Passwort-Mindestlänge
+    if (newPassword.length < 6) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Password must be at least 6 characters' }),
         { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
@@ -71,12 +79,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Erstelle Supabase Auth User mit bestehendem Klartext-Passwort
-    const password = userProfile.password_hash;
+    // Erstelle Supabase Auth User mit dem neuen Passwort
     
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email,
-      password: password,
+      password: newPassword,
       email_confirm: true,
       user_metadata: {
         display_name: userProfile.display_name,
