@@ -4,6 +4,10 @@ import FablinoMascot from "./FablinoMascot";
 export interface EarnedBadge {
   name: string;
   emoji: string;
+  category?: "milestone" | "weekly" | "streak" | "special";
+  bonus_stars?: number;
+  fablino_message?: string;
+  frame_color?: string;
 }
 
 interface BadgeCelebrationModalProps {
@@ -11,6 +15,20 @@ interface BadgeCelebrationModalProps {
   onDismiss: () => void;
   language?: string;
 }
+
+const CATEGORY_LABELS: Record<string, Record<string, string>> = {
+  milestone: { de: "Meilenstein", fr: "Étape", en: "Milestone", es: "Hito", nl: "Mijlpaal", it: "Traguardo", bs: "Prekretnica" },
+  weekly:    { de: "Wochen-Badge", fr: "Badge semaine", en: "Weekly", es: "Semanal", nl: "Week-badge", it: "Settimanale", bs: "Sedmični" },
+  streak:    { de: "Serie", fr: "Série", en: "Streak", es: "Racha", nl: "Reeks", it: "Serie", bs: "Serija" },
+  special:   { de: "Spezial", fr: "Spécial", en: "Special", es: "Especial", nl: "Speciaal", it: "Speciale", bs: "Poseban" },
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  milestone: "#F59E0B",
+  weekly:    "#F97316",
+  streak:    "#A855F7",
+  special:   "#3B82F6",
+};
 
 const t: Record<string, { newSticker: string; wellDone: string; next: string; done: string }> = {
   de: { newSticker: "Neuer Sticker!", wellDone: "Super gemacht! 🎉", next: "Nächster Sticker →", done: "Weiter" },
@@ -22,10 +40,11 @@ const t: Record<string, { newSticker: string; wellDone: string; next: string; do
   bs: { newSticker: "Novi stiker!", wellDone: "Odlično! 🎉", next: "Sljedeći stiker →", done: "Nastavi" },
 };
 
-const BadgeCelebrationModal = ({ badges, onDismiss, language = 'de' }: BadgeCelebrationModalProps) => {
+const BadgeCelebrationModal = ({ badges, onDismiss, language = "de" }: BadgeCelebrationModalProps) => {
   const [visible, setVisible] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const tr = t[language] || t.de;
+  const lang = language || "de";
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -33,6 +52,11 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = 'de' }: BadgeCele
 
   if (badges.length === 0) return null;
   const badge = badges[currentIdx];
+  const frameColor = badge.frame_color || "#F97316";
+  const categoryLabel = badge.category
+    ? CATEGORY_LABELS[badge.category]?.[lang] || CATEGORY_LABELS[badge.category]?.de || ""
+    : "";
+  const categoryColor = badge.category ? CATEGORY_COLORS[badge.category] || "#F97316" : "#F97316";
 
   const handleContinue = () => {
     if (currentIdx < badges.length - 1) {
@@ -80,33 +104,62 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = 'de' }: BadgeCele
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Badge emoji */}
+        {/* Category pill */}
+        {categoryLabel && (
+          <div className="flex justify-center mb-2">
+            <span
+              className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full text-white"
+              style={{ background: categoryColor }}
+            >
+              {categoryLabel}
+            </span>
+          </div>
+        )}
+
+        {/* Badge emoji with frame_color ring */}
         <div
-          className="mx-auto mb-3"
-          style={{ fontSize: 80, lineHeight: 1, animation: "badgePop 0.6s ease-out 0.3s both" }}
+          className="mx-auto mb-3 flex items-center justify-center"
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: "50%",
+            border: `4px solid ${frameColor}`,
+            boxShadow: `0 0 20px ${frameColor}44`,
+            animation: "badgePop 0.6s ease-out 0.3s both",
+          }}
         >
-          {badge.emoji}
+          <span style={{ fontSize: 56, lineHeight: 1 }}>{badge.emoji}</span>
         </div>
 
+        {/* Title */}
         <h2 className="font-fredoka text-[22px] font-bold mb-1" style={{ color: "#2D1810" }}>
           {tr.newSticker}
         </h2>
 
-        <p className="font-nunito text-[18px] font-bold mb-2" style={{ color: "#F97316" }}>
+        {/* Badge name */}
+        <p className="font-nunito text-[18px] font-bold mb-1" style={{ color: frameColor }}>
           {badge.name}
         </p>
 
-        {/* Fablino mini */}
-        <div className="flex items-end justify-center gap-2 mt-3 mb-4">
+        {/* Bonus stars */}
+        {badge.bonus_stars && badge.bonus_stars > 0 && (
+          <p className="text-[15px] font-bold mb-2" style={{ color: "#F59E0B" }}>
+            +{badge.bonus_stars} ⭐
+          </p>
+        )}
+
+        {/* Fablino mini with fablino_message */}
+        <div className="flex items-end justify-center gap-2 mt-2 mb-4">
           <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" className="!max-h-[50px]" />
           <div className="bg-orange-50 rounded-xl px-3 py-2 relative" style={{ border: "1px solid #FDBA74" }}>
             <p className="text-[13px] font-semibold" style={{ color: "#92400E" }}>
-              {tr.wellDone}
+              {badge.fablino_message || tr.wellDone}
             </p>
             <div
               className="absolute -bottom-1.5 left-4"
               style={{
-                width: 0, height: 0,
+                width: 0,
+                height: 0,
                 borderLeft: "6px solid transparent",
                 borderRight: "6px solid transparent",
                 borderTop: "7px solid #FFF7ED",
@@ -115,6 +168,7 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = 'de' }: BadgeCele
           </div>
         </div>
 
+        {/* Continue button */}
         <button
           onClick={handleContinue}
           className="w-full py-3 rounded-xl font-bold text-white text-[16px] active:scale-95 transition-transform"
@@ -123,6 +177,7 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = 'de' }: BadgeCele
           {currentIdx < badges.length - 1 ? tr.next : tr.done}
         </button>
 
+        {/* Badge counter */}
         {badges.length > 1 && (
           <p className="text-[11px] font-medium mt-2" style={{ color: "#aaa" }}>
             {currentIdx + 1} / {badges.length}

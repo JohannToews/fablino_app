@@ -182,7 +182,7 @@ export const useGamification = () => {
           .insert({
             user_id: user.id,
             kid_profile_id: selectedProfileId,
-            total_points: 0,
+            total_stars: 0,
             current_level: 1,
             current_streak: 0,
             longest_streak: 0,
@@ -215,6 +215,24 @@ export const useGamification = () => {
 
   useEffect(() => {
     loadProgress();
+  }, [loadProgress]);
+
+  // ── Re-load progress when page becomes visible (e.g. navigating back from ReadingPage) ──
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadProgress();
+      }
+    };
+    const handleFocus = () => {
+      loadProgress();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [loadProgress]);
 
   // ── Award stars ──

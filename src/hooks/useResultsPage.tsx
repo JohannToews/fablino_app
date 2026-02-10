@@ -10,28 +10,26 @@ export interface LevelInfo {
   stars_required: number;
   sort_order: number;
   color: string;
+  unlock_feature?: string;
+  icon_url?: string;
 }
 
 export interface BadgeInfo {
   id: string;
   name: string;
   emoji: string;
-  description: string;
-  category: string;
-  earned_at: string;
-  is_new: boolean;
-}
-
-export interface BadgeHint {
-  id: string;
-  name: string;
-  emoji: string;
-  description: string;
   category: string;
   condition_type: string;
   condition_value: number;
+  bonus_stars: number;
+  fablino_message: string | null;
+  frame_color: string | null;
+  icon_url: string | null;
+  repeatable: boolean;
   sort_order: number;
-  current_progress: number;
+  earned: boolean;
+  earned_at: string | null;
+  times_earned: number;
 }
 
 export interface ResultsPageData {
@@ -39,9 +37,25 @@ export interface ResultsPageData {
   total_stars: number;
   current_streak: number;
   longest_streak: number;
+  weekly_stories_count: number;
+  weekly_bonus_claimed: number | null;
+  total_stories_read: number;
+  total_perfect_quizzes: number;
+  languages_read: string[];
+  current_level: LevelInfo | null;
+  next_level: LevelInfo | null;
   levels: LevelInfo[];
-  earned_badges: BadgeInfo[];
-  next_badge_hints: BadgeHint[];
+  badges: BadgeInfo[];
+}
+
+// ── Derived helpers ──
+
+export function getEarnedBadges(badges: BadgeInfo[]): BadgeInfo[] {
+  return badges.filter(b => b.earned);
+}
+
+export function getUnearnedBadges(badges: BadgeInfo[]): BadgeInfo[] {
+  return badges.filter(b => !b.earned);
 }
 
 // ── Hook ──

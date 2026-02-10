@@ -319,7 +319,7 @@ ReadingPage.tsx loads story by ID
         ├── Comprehension Quiz (after "finished reading")
         │     • Multiple choice from comprehension_questions
         │     • Awards stars via supabase.rpc('log_activity')
-        │     • ⚠️ Still sends 'story_completed'/'quiz_passed' (RPC expects 'story_read'/'quiz_complete')
+        │     • Sends 'story_read' + 'quiz_complete' (Phase 2 fix applied)
         │     • Triggers badge check → BadgeCelebrationModal
         │
         └── Series continuation (if ending_type === 'C')
@@ -335,18 +335,17 @@ VocabularyQuizPage.tsx
   4. Completion:
      • Pass threshold: 80% (now configurable via point_settings.quiz_pass_threshold)
      • Awards stars via supabase.rpc('log_activity')
-     • ⚠️ Still sends 'quiz_passed'/'quiz_failed' (RPC expects 'quiz_complete')
+     • Sends 'quiz_complete' (Phase 2 fix applied)
      • Triggers badge check → BadgeCelebrationModal
      • Words answered correctly 3x → marked as learned
 ```
 
-### 4. Gamification Flow (Star System) – Phase 1 Backend Complete
+### 4. Gamification Flow (Star System) – Phase 1 Backend + Phase 2 Frontend Fixes Complete
 
 ```
 supabase.rpc('log_activity') is called from:
-  • ReadingPage (story_read, quiz_complete)
-  • VocabularyQuizPage (quiz_complete)
-  ⚠️ NOTE: Frontend still sends 'story_completed'/'quiz_passed' – needs Phase 2 update!
+  • ReadingPage (story_read, quiz_complete) ✅
+  • VocabularyQuizPage (quiz_complete) ✅
 
 log_activity(p_child_id, p_activity_type, p_stars, p_metadata):
   1. Load star values from point_settings (DB-configurable, not hardcoded)
@@ -406,15 +405,15 @@ ResultsPage.tsx (via get_results_page RPC):
   • Level roadmap (5 levels with staggered fadeIn animations)
   • Earned badges section (with "Neu" indicator, auto-cleared after 2s)
   • Badge hints (next unearned badges with progress)
-  ⚠️ NOTE: ResultsPage still uses old interface (allBadgeCount=11) – needs Phase 2 update!
+  ⚠️ NOTE: useResultsPage interface still doesn't fully match new get_results_page RPC response → Phase 3
 
-⚠️ KNOWN BREAKING CHANGES after Phase 1 backend:
-  • useGamification.tsx reads total_points (renamed to total_stars) – WILL BREAK
-  • ReadingPage sends activity_type 'story_completed' (RPC expects 'story_read')
-  • VocabularyQuizPage sends 'quiz_passed'/'quiz_failed' (RPC expects 'quiz_complete')
-  • ResultsPage hardcodes allBadgeCount=11 (now 23 badges)
-  • useResultsPage interface doesn't match new get_results_page response
-  → All fixed in Phase 2 (Frontend Integration)
+Phase 2 fixes applied (2026-02-10):
+  ✅ useGamification.tsx: total_points → total_stars (insert for new users)
+  ✅ ReadingPage: 'story_completed' → 'story_read'
+  ✅ ReadingPage: quiz activity already fixed by Lovable → 'quiz_complete'
+  ✅ VocabularyQuizPage: 'quiz_passed'/'quiz_failed' → 'quiz_complete'
+  ✅ ResultsPage: allBadgeCount=11 → allBadgeCount=23
+  ⚠️ Remaining: useResultsPage interface needs full update for new RPC fields → Phase 3
 ```
 
 ---
@@ -599,7 +598,7 @@ useKidProfile.tsx → getKidLanguage(school_system)
 |------|---------|------------|
 | `useAuth` | Authentication context (login/logout, session) | sessionStorage |
 | `useKidProfile` | Kid profile selection, language derivation | React Context + Supabase kid_profiles |
-| `useGamification` | Star rewards constants, level computation, legacy points interface. **⚠️ BROKEN after Phase 1**: reads `total_points` (renamed to `total_stars`), hardcoded LEVELS (outdated), direct DB updates instead of RPC calls. Needs Phase 2 rewrite. | Hardcoded constants + Supabase |
+| `useGamification` | Star rewards from `point_settings` DB table, level computation, progress loading. **Phase 2 partial fix**: `total_points` → `total_stars` insert fixed. Lovable updated `loadProgress()` to read `total_stars`. Still uses local LEVELS + direct DB updates (not fully RPC-driven yet). | `point_settings` + Supabase `user_progress` |
 | `useResultsPage` | Results page data (level, badges, hints). **⚠️ NEEDS UPDATE**: interface doesn't match new `get_results_page` RPC response (new fields: total_stories_read, total_perfect_quizzes, languages_read, full badges array with times_earned). | Supabase RPC `get_results_page` |
 | `useCollection` | Collectible items | Supabase collected_items |
 | `useColorPalette` | Color theme per kid profile | Derived from kid_profiles.color_palette |
@@ -713,7 +712,7 @@ OLD PATH (Fallback – used if NEW PATH throws):
 | **No automated tests** | `src/test/` contains only example test | Zero test coverage |
 | **Mixed toast systems** | Components | Both `sonner` and `shadcn/ui` toast used |
 | **Legacy gamification tables** | `point_transactions`, `point_settings_legacy`, `level_settings` | Pre-star-system tables coexist with new schema. `point_settings` renamed to `_legacy`. |
-| **Frontend–Backend mismatch (Phase 1)** | `useGamification.tsx`, `ReadingPage.tsx`, `VocabularyQuizPage.tsx`, `ResultsPage.tsx`, `useResultsPage.tsx` | Backend RPCs rewritten but frontend still uses old column names (`total_points`), old activity types (`story_completed`/`quiz_passed`), hardcoded badge count (11). **Blocks gamification until Phase 2 frontend update.** |
+| ~~**Frontend–Backend mismatch (Phase 1)**~~ | ~~`useGamification.tsx`, `ReadingPage.tsx`, `VocabularyQuizPage.tsx`, `ResultsPage.tsx`~~ | **MOSTLY RESOLVED (Phase 2)**: `total_stars` fix, activity types corrected, badge count updated to 23. Remaining: `useResultsPage.tsx` interface needs full update for new RPC response fields (Phase 3). |
 
 ### Minor
 
@@ -730,8 +729,8 @@ OLD PATH (Fallback – used if NEW PATH throws):
 
 1. **Security**: Implement proper password hashing, server-side session validation, token expiration
 2. **Security**: Tighten RLS policies, restrict CORS origins, add rate limiting
-3. **Gamification Phase 2**: Update `useGamification.tsx` to use `total_stars` + RPC calls instead of direct DB access. Fix `ReadingPage.tsx` / `VocabularyQuizPage.tsx` activity_type values (`story_read`, `quiz_complete`). Update `useResultsPage.tsx` interface for new RPC response. Fix `ResultsPage.tsx` badge count (23, not 11).
-4. **Gamification Phase 3**: Badge-Celebrations + Badge-Vitrine UI (improved celebration modal, full badge grid on ResultsPage)
+3. ~~**Gamification Phase 2**~~ **DONE**: `total_stars` insert fixed, activity types corrected (`story_read`, `quiz_complete`), badge count updated to 23. `useResultsPage` interface update deferred to Phase 3.
+4. **Gamification Phase 3**: Badge-Celebrations + Badge-Vitrine UI (improved celebration modal, full badge grid on ResultsPage, update `useResultsPage` interface for new RPC response fields)
 5. **Architecture**: Split large components into smaller, testable units
 6. ~~**Architecture**: Complete UI harmonization~~ **DONE** – all wizard screens + Home use FablinoPageHeader with design tokens
 7. **Architecture**: Extract remaining inline translations into `lib/translations.ts`
@@ -758,4 +757,4 @@ OLD PATH (Fallback – used if NEW PATH throws):
 
 ---
 
-*Last updated: 2026-02-10. Covers: Block 1 (multilingual DB), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization complete (design-tokens.ts, FablinoMascot sm=64/md=100/lg=130, SpeechBubble, FablinoPageHeader on all screens, compact SpecialEffectsScreen, theme/character Vite imports), **Gamification Phase 1 backend complete** (7 migrations: levels with unlock_feature, 23 badges in 4 categories, point_settings table, extended user_progress, rewritten log_activity/check_and_award_badges/get_results_page RPCs, levelTranslations.ts, PointsConfigSection.tsx).*
+*Last updated: 2026-02-10. Covers: Block 1 (multilingual DB), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization complete (design-tokens.ts, FablinoMascot sm=64/md=100/lg=130, SpeechBubble, FablinoPageHeader on all screens, compact SpecialEffectsScreen, theme/character Vite imports), **Gamification Phase 1 backend complete** (7 migrations), **Gamification Phase 2 frontend fixes complete** (total_stars insert, activity types story_read/quiz_complete, allBadgeCount=23).*

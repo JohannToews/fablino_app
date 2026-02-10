@@ -617,7 +617,7 @@ const VocabularyQuizPage = () => {
       try {
         const result = await supabase.rpc('log_activity', {
           p_child_id: selectedProfileId,
-          p_activity_type: passed ? 'quiz_passed' : 'quiz_failed',
+          p_activity_type: 'quiz_complete',
           p_stars: stars,
           p_metadata: { score, max_score: totalQuestions },
         });

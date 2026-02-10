@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useKidProfile } from "@/hooks/useKidProfile";
-import { useResultsPage, LevelInfo, BadgeInfo, BadgeHint } from "@/hooks/useResultsPage";
+import { useResultsPage, LevelInfo, BadgeInfo } from "@/hooks/useResultsPage";
 import { ArrowLeft } from "lucide-react";
 import FablinoMascot from "@/components/FablinoMascot";
 import SpeechBubble from "@/components/SpeechBubble";
@@ -27,12 +27,6 @@ const resultsT: Record<string, Record<string, string>> = {
     streakMsg: "{streak} Tage in Folge, {name}! 🔥 Noch {n} Sterne bis {level}!",
     almostThere: "Fast geschafft, {name}! 🎉 Nur noch {n} Sterne!",
     keepGoing: "Toll gemacht, {name}! Noch {n} Sterne bis {level}. Lies weiter! 🧡",
-    // Badge hints
-    hintStreak: "Lies {n} Tage hintereinander und bekomme den {badge} Sticker!",
-    hintStories: "Noch {n} Geschichte(n) bis zum {badge} Sticker!",
-    hintQuizzes: "Noch {n} Quiz(ze) bis zum {badge} Sticker!",
-    hintStars: "Noch {n} Sterne bis zum {badge} Sticker!",
-    hintGeneric: "Weiter so — {badge} kommt bald!",
   },
   fr: {
     currentLevel: "Niveau actuel",
@@ -48,11 +42,6 @@ const resultsT: Record<string, Record<string, string>> = {
     streakMsg: "{streak} jours d'affilée, {name} ! 🔥 Encore {n} étoiles pour {level} !",
     almostThere: "Presque, {name} ! 🎉 Plus que {n} étoiles !",
     keepGoing: "Bravo, {name} ! Encore {n} étoiles pour {level}. Continue ! 🧡",
-    hintStreak: "Lis {n} jours d'affilée pour obtenir le sticker {badge} !",
-    hintStories: "Encore {n} histoire(s) pour le sticker {badge} !",
-    hintQuizzes: "Encore {n} quiz pour le sticker {badge} !",
-    hintStars: "Encore {n} étoiles pour le sticker {badge} !",
-    hintGeneric: "Continue — {badge} arrive bientôt !",
   },
   en: {
     currentLevel: "Current Level",
@@ -68,11 +57,6 @@ const resultsT: Record<string, Record<string, string>> = {
     streakMsg: "{streak} days in a row, {name}! 🔥 {n} more stars to {level}!",
     almostThere: "Almost there, {name}! 🎉 Only {n} more stars!",
     keepGoing: "Well done, {name}! {n} more stars to {level}. Keep reading! 🧡",
-    hintStreak: "Read {n} days in a row to earn the {badge} sticker!",
-    hintStories: "{n} more story(ies) to the {badge} sticker!",
-    hintQuizzes: "{n} more quiz(zes) to the {badge} sticker!",
-    hintStars: "{n} more stars to the {badge} sticker!",
-    hintGeneric: "Keep going — {badge} is coming soon!",
   },
   es: {
     currentLevel: "Nivel actual",
@@ -88,11 +72,6 @@ const resultsT: Record<string, Record<string, string>> = {
     streakMsg: "¡{streak} días seguidos, {name}! 🔥 ¡{n} estrellas más para {level}!",
     almostThere: "¡Casi, {name}! 🎉 ¡Solo {n} estrellas más!",
     keepGoing: "¡Bien hecho, {name}! {n} estrellas más para {level}. ¡Sigue leyendo! 🧡",
-    hintStreak: "¡Lee {n} días seguidos para el sticker {badge}!",
-    hintStories: "¡{n} historia(s) más para el sticker {badge}!",
-    hintQuizzes: "¡{n} quiz(s) más para el sticker {badge}!",
-    hintStars: "¡{n} estrellas más para el sticker {badge}!",
-    hintGeneric: "¡Sigue así — {badge} llegará pronto!",
   },
   nl: {
     currentLevel: "Huidig niveau",
@@ -108,11 +87,6 @@ const resultsT: Record<string, Record<string, string>> = {
     streakMsg: "{streak} dagen op rij, {name}! 🔥 Nog {n} sterren tot {level}!",
     almostThere: "Bijna, {name}! 🎉 Nog maar {n} sterren!",
     keepGoing: "Goed gedaan, {name}! Nog {n} sterren tot {level}. Blijf lezen! 🧡",
-    hintStreak: "Lees {n} dagen op rij voor de {badge} sticker!",
-    hintStories: "Nog {n} verhaal/verhalen tot de {badge} sticker!",
-    hintQuizzes: "Nog {n} quiz(zen) tot de {badge} sticker!",
-    hintStars: "Nog {n} sterren tot de {badge} sticker!",
-    hintGeneric: "Ga zo door — {badge} komt eraan!",
   },
   it: {
     currentLevel: "Livello attuale",
@@ -128,11 +102,6 @@ const resultsT: Record<string, Record<string, string>> = {
     streakMsg: "{streak} giorni di fila, {name}! 🔥 Ancora {n} stelle per {level}!",
     almostThere: "Quasi, {name}! 🎉 Solo {n} stelle ancora!",
     keepGoing: "Bravo, {name}! Ancora {n} stelle per {level}. Continua a leggere! 🧡",
-    hintStreak: "Leggi {n} giorni di fila per lo sticker {badge}!",
-    hintStories: "Ancora {n} storie per lo sticker {badge}!",
-    hintQuizzes: "Ancora {n} quiz per lo sticker {badge}!",
-    hintStars: "Ancora {n} stelle per lo sticker {badge}!",
-    hintGeneric: "Continua così — {badge} sta arrivando!",
   },
 };
 
@@ -180,22 +149,6 @@ function getFablinoMessage(
   return t.keepGoing.replace("{name}", name).replace("{n}", String(remaining)).replace("{level}", levelStr);
 }
 
-function getBadgeHintText(t: Record<string, string>, hint: BadgeHint): string {
-  const remaining = hint.condition_value - hint.current_progress;
-  const badge = `${hint.emoji} ${hint.name}`;
-  switch (hint.condition_type) {
-    case "streak_days":
-      return t.hintStreak.replace("{n}", String(hint.condition_value)).replace("{badge}", badge);
-    case "stories_total":
-      return t.hintStories.replace("{n}", String(remaining)).replace("{badge}", badge);
-    case "quizzes_passed":
-      return t.hintQuizzes.replace("{n}", String(remaining)).replace("{badge}", badge);
-    case "stars_total":
-      return t.hintStars.replace("{n}", String(remaining)).replace("{badge}", badge);
-    default:
-      return t.hintGeneric.replace("{badge}", badge);
-  }
-}
 
 // ── Animated Counter Hook ──
 
@@ -429,55 +382,284 @@ const LevelRoadmap = ({
   );
 };
 
-// ── Section 4: Badges ──
+// ── Hint Text Templates (multi-language) ──
 
-const BadgeHintBar = ({ hint, t }: { hint: BadgeHint; t: Record<string, string> }) => {
-  const targetPct = Math.min(100, (hint.current_progress / hint.condition_value) * 100);
-  const [barPct, setBarPct] = useState(0);
-  useEffect(() => {
-    const timer = setTimeout(() => setBarPct(targetPct), 400);
-    return () => clearTimeout(timer);
-  }, [targetPct]);
+const hintTemplates: Record<string, Record<string, string>> = {
+  de: {
+    total_stars: "Sammle {value} Sterne",
+    weekly_stories: "Lies {value} Stories in einer Woche",
+    streak_days: "Lies {value} Tage in Folge",
+    total_stories_read: "Lies {value} Stories",
+    consecutive_perfect_quiz: "Schaffe {value} perfekte Quizze hintereinander",
+    total_perfect_quiz: "Schaffe {value} perfekte Quizze",
+    series_completed: "Schließe eine Serie ab",
+    languages_read: "Lies Stories in {value} Sprachen",
+    generic: "Weiter so — bald geschafft!",
+  },
+  fr: {
+    total_stars: "Collecte {value} étoiles",
+    weekly_stories: "Lis {value} histoires en une semaine",
+    streak_days: "Lis {value} jours de suite",
+    total_stories_read: "Lis {value} histoires",
+    consecutive_perfect_quiz: "Réussis {value} quiz parfaits d'affilée",
+    total_perfect_quiz: "Réussis {value} quiz parfaits",
+    series_completed: "Termine une série",
+    languages_read: "Lis des histoires dans {value} langues",
+    generic: "Continue comme ça !",
+  },
+  en: {
+    total_stars: "Collect {value} stars",
+    weekly_stories: "Read {value} stories in one week",
+    streak_days: "Read {value} days in a row",
+    total_stories_read: "Read {value} stories",
+    consecutive_perfect_quiz: "Get {value} perfect quizzes in a row",
+    total_perfect_quiz: "Get {value} perfect quizzes",
+    series_completed: "Complete a series",
+    languages_read: "Read stories in {value} languages",
+    generic: "Keep going — almost there!",
+  },
+  es: {
+    total_stars: "Recopila {value} estrellas",
+    weekly_stories: "Lee {value} historias en una semana",
+    streak_days: "Lee {value} días seguidos",
+    total_stories_read: "Lee {value} historias",
+    consecutive_perfect_quiz: "Consigue {value} quizzes perfectos seguidos",
+    total_perfect_quiz: "Consigue {value} quizzes perfectos",
+    series_completed: "Completa una serie",
+    languages_read: "Lee historias en {value} idiomas",
+    generic: "¡Sigue así!",
+  },
+  nl: {
+    total_stars: "Verzamel {value} sterren",
+    weekly_stories: "Lees {value} verhalen in een week",
+    streak_days: "Lees {value} dagen achter elkaar",
+    total_stories_read: "Lees {value} verhalen",
+    consecutive_perfect_quiz: "Haal {value} perfecte quizzen op rij",
+    total_perfect_quiz: "Haal {value} perfecte quizzen",
+    series_completed: "Voltooi een serie",
+    languages_read: "Lees verhalen in {value} talen",
+    generic: "Ga zo door!",
+  },
+  it: {
+    total_stars: "Raccogli {value} stelle",
+    weekly_stories: "Leggi {value} storie in una settimana",
+    streak_days: "Leggi {value} giorni di fila",
+    total_stories_read: "Leggi {value} storie",
+    consecutive_perfect_quiz: "Fai {value} quiz perfetti di fila",
+    total_perfect_quiz: "Fai {value} quiz perfetti",
+    series_completed: "Completa una serie",
+    languages_read: "Leggi storie in {value} lingue",
+    generic: "Continua così!",
+  },
+};
+
+function getConditionHint(conditionType: string, conditionValue: number, lang: string): string {
+  const templates = hintTemplates[lang] || hintTemplates.de;
+  const template = templates[conditionType] || templates.generic;
+  return template.replace("{value}", String(conditionValue));
+}
+
+// ── Category config ──
+
+const BADGE_CATEGORIES = [
+  { key: "milestone", emoji: "⭐", de: "Meilensteine", fr: "Étapes", en: "Milestones", es: "Hitos", nl: "Mijlpalen", it: "Traguardi" },
+  { key: "weekly",    emoji: "🔥", de: "Wochen-Badges", fr: "Badges semaine", en: "Weekly Badges", es: "Badges semanales", nl: "Week-badges", it: "Badge settimanali" },
+  { key: "streak",    emoji: "🔗", de: "Serien-Badges", fr: "Badges série", en: "Streak Badges", es: "Badges de racha", nl: "Reeks-badges", it: "Badge serie" },
+  { key: "special",   emoji: "🎯", de: "Spezial-Badges", fr: "Badges spéciaux", en: "Special Badges", es: "Badges especiales", nl: "Speciale badges", it: "Badge speciali" },
+];
+
+const BADGE_CATEGORY_STYLES: Record<string, { bg: string; border: string; headerBg: string }> = {
+  milestone: { bg: "#FFF7ED", border: "#FDBA74", headerBg: "linear-gradient(135deg, #FFF7ED, #FEF3C7)" },
+  weekly:    { bg: "#FEF2F2", border: "#FCA5A5", headerBg: "linear-gradient(135deg, #FEF2F2, #FFE4E6)" },
+  streak:    { bg: "#F5F3FF", border: "#C4B5FD", headerBg: "linear-gradient(135deg, #F5F3FF, #EDE9FE)" },
+  special:   { bg: "#F0F9FF", border: "#93C5FD", headerBg: "linear-gradient(135deg, #F0F9FF, #DBEAFE)" },
+};
+
+// ── Badge Detail Modal ──
+
+const BadgeDetailModal = ({
+  badge,
+  lang,
+  currentProgress,
+  onClose,
+}: {
+  badge: BadgeInfo;
+  lang: string;
+  currentProgress: number;
+  onClose: () => void;
+}) => {
+  const isEarned = badge.earned;
+  const frameColor = badge.frame_color || "#F97316";
+  const style = BADGE_CATEGORY_STYLES[badge.category] || BADGE_CATEGORY_STYLES.milestone;
+  const catInfo = BADGE_CATEGORIES.find(c => c.key === badge.category);
+  const catLabel = catInfo ? (catInfo as any)[lang] || catInfo.de : "";
+
+  const progressPct = badge.condition_value > 0
+    ? Math.min(100, (currentProgress / badge.condition_value) * 100)
+    : 0;
+
+  const dateStr = badge.earned_at
+    ? new Date(badge.earned_at).toLocaleDateString(lang === "de" ? "de-DE" : lang === "fr" ? "fr-FR" : lang === "en" ? "en-US" : lang === "es" ? "es-ES" : lang === "nl" ? "nl-NL" : lang === "it" ? "it-IT" : "de-DE", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
-    <div className="rounded-xl p-3.5 mb-4" style={{ background: "linear-gradient(135deg, #FFF7ED, #FEF3C7)" }}>
-      <p className="text-[13px] font-semibold mb-2" style={{ color: "#92400E" }}>
-        {getBadgeHintText(t, hint)}
-      </p>
-      <div className="relative h-[10px] bg-white/60 rounded-full overflow-hidden">
+    <div
+      className="fixed inset-0 z-[998] flex items-center justify-center p-6"
+      style={{ background: "rgba(0,0,0,0.35)" }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-[20px] max-w-[300px] w-full p-5 text-center relative"
+        style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.15)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Category pill */}
+        <div className="flex justify-center mb-2">
+          <span
+            className="text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full text-white"
+            style={{ background: style.border }}
+          >
+            {catLabel}
+          </span>
+        </div>
+
+        {/* Emoji with ring */}
         <div
-          className="absolute inset-y-0 left-0 rounded-full"
+          className="mx-auto mb-3 flex items-center justify-center"
           style={{
-            width: `${barPct}%`,
-            background: "linear-gradient(90deg, #F97316, #FBBF24)",
-            transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+            width: 80,
+            height: 80,
+            borderRadius: "50%",
+            border: isEarned ? `4px solid ${frameColor}` : "3px dashed #D1D5DB",
+            background: isEarned ? "white" : "#F9FAFB",
+            boxShadow: isEarned ? `0 0 16px ${frameColor}33` : "none",
           }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] font-medium mt-1" style={{ color: "#92400E" }}>
-        <span>{hint.current_progress}</span>
-        <span>{hint.condition_value}</span>
+        >
+          <span style={{ fontSize: 44, lineHeight: 1, filter: isEarned ? "none" : "grayscale(1) opacity(0.3)" }}>
+            {isEarned ? badge.emoji : "?"}
+          </span>
+        </div>
+
+        {/* Name */}
+        <h3 className="font-fredoka text-[18px] font-bold mb-1" style={{ color: "#2D1810" }}>
+          {badge.name}
+        </h3>
+
+        {/* Description */}
+        {badge.fablino_message && isEarned && (
+          <p className="text-[13px] font-medium mb-2" style={{ color: "#92400E" }}>
+            {badge.fablino_message}
+          </p>
+        )}
+
+        {/* Condition hint for unearned */}
+        {!isEarned && (
+          <div className="mb-3">
+            <p className="text-[13px] font-semibold mb-2" style={{ color: "#6B7280" }}>
+              {getConditionHint(badge.condition_type, badge.condition_value, lang)}
+            </p>
+            {badge.condition_value > 0 && (
+              <div className="relative h-[8px] bg-gray-100 rounded-full overflow-hidden mx-4">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{
+                    width: `${progressPct}%`,
+                    background: `linear-gradient(90deg, ${style.border}, ${frameColor || style.border})`,
+                    transition: "width 0.5s ease",
+                  }}
+                />
+              </div>
+            )}
+            <p className="text-[11px] font-medium mt-1" style={{ color: "#aaa" }}>
+              {currentProgress} / {badge.condition_value}
+            </p>
+          </div>
+        )}
+
+        {/* Earned info */}
+        {isEarned && (
+          <div className="mb-3 space-y-1">
+            {dateStr && (
+              <p className="text-[12px] font-medium" style={{ color: "#aaa" }}>
+                {dateStr}
+              </p>
+            )}
+            {badge.times_earned > 1 && (
+              <p className="text-[13px] font-bold" style={{ color: frameColor }}>
+                {badge.times_earned}x {lang === "de" ? "geschafft" : lang === "fr" ? "obtenu" : lang === "en" ? "earned" : lang === "es" ? "ganado" : lang === "nl" ? "behaald" : lang === "it" ? "ottenuto" : "geschafft"}!
+              </p>
+            )}
+            {badge.bonus_stars > 0 && (
+              <p className="text-[13px] font-bold" style={{ color: "#F59E0B" }}>
+                +{badge.bonus_stars} ⭐
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="w-full py-2.5 rounded-xl font-bold text-white text-[14px] mt-1"
+          style={{ background: isEarned ? `linear-gradient(135deg, ${frameColor}, ${style.border})` : "#D1D5DB" }}
+        >
+          OK
+        </button>
       </div>
     </div>
   );
 };
 
+// ── Section 4: Badges ──
+
 const BadgesSection = ({
-  earnedBadges,
-  hints,
-  allBadgeCount,
+  badges,
+  totalStars,
+  totalStoriesRead,
+  currentStreak,
+  totalPerfectQuizzes,
+  newBadgeIds,
   delay,
   t,
+  lang,
 }: {
-  earnedBadges: BadgeInfo[];
-  hints: BadgeHint[];
-  allBadgeCount: number;
+  badges: BadgeInfo[];
+  totalStars: number;
+  totalStoriesRead: number;
+  currentStreak: number;
+  totalPerfectQuizzes: number;
+  newBadgeIds: Set<string>;
   delay: number;
   t: Record<string, string>;
+  lang: string;
 }) => {
-  const lockedCount = Math.max(0, allBadgeCount - earnedBadges.length);
-  const primaryHint = hints[0] || null;
-  const allEarned = earnedBadges.length >= allBadgeCount;
+  const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
+
+  const earnedCount = badges.filter(b => b.earned).length;
+  const totalCount = badges.length;
+  const allEarned = earnedCount === totalCount && totalCount > 0;
+
+  const getProgress = (badge: BadgeInfo): number => {
+    switch (badge.condition_type) {
+      case "total_stars": return totalStars;
+      case "total_stories_read": return totalStoriesRead;
+      case "streak_days": return currentStreak;
+      case "total_perfect_quiz": return totalPerfectQuizzes;
+      case "consecutive_perfect_quiz": return totalPerfectQuizzes;
+      case "weekly_stories": return 0; // no live weekly progress here
+      default: return 0;
+    }
+  };
+
+  // Group badges by category
+  const groupedBadges = BADGE_CATEGORIES.map((cat) => ({
+    ...cat,
+    badges: badges.filter((b) => b.category === cat.key).sort((a, b) => a.sort_order - b.sort_order),
+  })).filter((g) => g.badges.length > 0);
 
   return (
     <div
@@ -487,9 +669,27 @@ const BadgesSection = ({
         animation: `fadeSlideUp 0.5s ease-out ${delay}s both`,
       }}
     >
-      <h3 className="font-fredoka text-[17px] font-bold mb-4" style={{ color: "#2D1810" }}>
-        {t.badgesTitle}
-      </h3>
+      {/* Header + Counter */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-fredoka text-[17px] font-bold" style={{ color: "#2D1810" }}>
+          {t.badgesTitle}
+        </h3>
+        <span className="text-[13px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#FFF7ED", color: "#92400E" }}>
+          {earnedCount} / {totalCount}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative h-[6px] bg-gray-100 rounded-full overflow-hidden mb-4">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{
+            width: totalCount > 0 ? `${(earnedCount / totalCount) * 100}%` : "0%",
+            background: "linear-gradient(90deg, #F97316, #FBBF24)",
+            transition: "width 0.8s ease",
+          }}
+        />
+      </div>
 
       {allEarned && (
         <div className="text-center py-3 mb-4 rounded-xl" style={{ background: "linear-gradient(135deg, #FEF3C7, #FFF7ED)" }}>
@@ -497,52 +697,100 @@ const BadgesSection = ({
         </div>
       )}
 
-      {earnedBadges.length > 0 && (
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
-          {earnedBadges.map((badge) => (
+      {/* Category sections */}
+      {groupedBadges.map((group, gi) => {
+        const catStyle = BADGE_CATEGORY_STYLES[group.key] || BADGE_CATEGORY_STYLES.milestone;
+        const catLabel = (group as any)[lang] || group.de;
+
+        return (
+          <div key={group.key} className="mb-4 last:mb-0">
+            {/* Category header */}
             <div
-              key={badge.id}
-              className="relative flex flex-col items-center gap-1 p-3 rounded-xl border"
-              style={{
-                background: badge.category === "reading" ? "#FFF7ED" :
-                            badge.category === "streak" ? "#FEF3C7" :
-                            badge.category === "quiz" ? "#ECFDF5" : "#F0F9FF",
-                borderColor: badge.category === "reading" ? "#FDBA74" :
-                             badge.category === "streak" ? "#FCD34D" :
-                             badge.category === "quiz" ? "#6EE7B7" : "#93C5FD",
-              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg mb-2.5"
+              style={{ background: catStyle.headerBg }}
             >
-              {badge.is_new && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-orange-500 border-2 border-white" />
-              )}
-              <span className="text-[28px]">{badge.emoji}</span>
-              <span className="text-[10px] font-bold text-center leading-tight" style={{ color: "#2D1810" }}>
-                {badge.name}
+              <span className="text-[14px]">{group.emoji}</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider" style={{ color: catStyle.border }}>
+                {catLabel}
+              </span>
+              <span className="text-[11px] font-medium ml-auto" style={{ color: catStyle.border }}>
+                {group.badges.filter(b => b.earned).length}/{group.badges.length}
               </span>
             </div>
-          ))}
-        </div>
-      )}
 
-      {!allEarned && primaryHint && <BadgeHintBar hint={primaryHint} t={t} />}
+            {/* Badge grid: 3 mobile, 4 tablet */}
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-2.5">
+              {group.badges.map((badge) => {
+                const isNew = newBadgeIds.has(badge.id);
+                const frameColor = badge.frame_color || catStyle.border;
 
-      {!allEarned && lockedCount > 0 && (
-        <div className="grid grid-cols-3 gap-2.5">
-          {Array.from({ length: lockedCount }).map((_, i) => (
-            <div
-              key={`locked-${i}`}
-              className="flex flex-col items-center gap-1 p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50"
-              style={{ opacity: 0.5 }}
-            >
-              <span className="text-[24px]">🔒</span>
-              <span className="text-[10px] font-medium text-gray-400">???</span>
+                if (badge.earned) {
+                  return (
+                    <button
+                      key={badge.id}
+                      onClick={() => setSelectedBadge(badge)}
+                      className="relative flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all hover:shadow-md active:scale-95"
+                      style={{
+                        background: catStyle.bg,
+                        borderColor: frameColor,
+                        borderWidth: 2,
+                        animation: isNew ? "newBadgeGlow 1.5s ease-in-out infinite" : undefined,
+                      }}
+                    >
+                      {/* "Neu" badge */}
+                      {isNew && (
+                        <div className="absolute -top-2 -left-1 bg-yellow-400 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                          Neu
+                        </div>
+                      )}
+                      {/* times_earned */}
+                      {badge.times_earned > 1 && (
+                        <div className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-orange-500 border-2 border-white flex items-center justify-center z-10">
+                          <span className="text-[9px] font-bold text-white">{badge.times_earned}x</span>
+                        </div>
+                      )}
+                      <span className="text-[28px] leading-none">{badge.emoji}</span>
+                      <span className="text-[10px] font-bold text-center leading-tight" style={{ color: "#2D1810" }}>
+                        {badge.name}
+                      </span>
+                    </button>
+                  );
+                }
+
+                // Unearned badge
+                return (
+                  <button
+                    key={badge.id}
+                    onClick={() => setSelectedBadge(badge)}
+                    className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-dashed transition-all hover:shadow-sm active:scale-95"
+                    style={{ borderColor: "#D1D5DB", background: "#FAFAFA" }}
+                  >
+                    <span className="text-[24px] leading-none" style={{ filter: "grayscale(1)", opacity: 0.25 }}>
+                      {badge.emoji}
+                    </span>
+                    <span className="text-[9px] font-medium text-center leading-tight" style={{ color: "#aaa" }}>
+                      {getConditionHint(badge.condition_type, badge.condition_value, lang)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </div>
+        );
+      })}
+
+      {badges.length === 0 && (
+        <p className="text-center text-sm text-gray-400 py-4">{t.firstStory}</p>
       )}
 
-      {earnedBadges.length === 0 && !primaryHint && lockedCount === 0 && (
-        <p className="text-center text-sm text-gray-400 py-4">{t.firstStory}</p>
+      {/* Badge Detail Modal */}
+      {selectedBadge && (
+        <BadgeDetailModal
+          badge={selectedBadge}
+          lang={lang}
+          currentProgress={getProgress(selectedBadge)}
+          onClose={() => setSelectedBadge(null)}
+        />
       )}
     </div>
   );
@@ -555,9 +803,31 @@ const ResultsPage = () => {
   const { selectedProfileId, kidAppLanguage } = useKidProfile();
   const { data, loading } = useResultsPage(selectedProfileId);
   const t = getT(kidAppLanguage);
+  const [newBadgeIds, setNewBadgeIds] = useState<Set<string>>(new Set());
 
+  // Load is_new badge IDs separately (not in RPC)
   useEffect(() => {
-    if (!selectedProfileId || !data || data.earned_badges.every((b) => !b.is_new)) return;
+    if (!selectedProfileId || !data) return;
+    const loadNewBadges = async () => {
+      try {
+        const { data: newRows } = await supabase
+          .from("user_badges")
+          .select("badge_id")
+          .eq("child_id", selectedProfileId)
+          .eq("is_new", true);
+        if (newRows && newRows.length > 0) {
+          setNewBadgeIds(new Set(newRows.map((r: any) => r.badge_id)));
+        }
+      } catch {
+        // Silent fail
+      }
+    };
+    loadNewBadges();
+  }, [selectedProfileId, data]);
+
+  // Clear is_new after 2 seconds of viewing
+  useEffect(() => {
+    if (!selectedProfileId || newBadgeIds.size === 0) return;
     const timer = setTimeout(async () => {
       try {
         await supabase
@@ -565,12 +835,13 @@ const ResultsPage = () => {
           .update({ is_new: false })
           .eq("child_id", selectedProfileId)
           .eq("is_new", true);
+        setNewBadgeIds(new Set());
       } catch {
         // Silent fail
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [selectedProfileId, data]);
+  }, [selectedProfileId, newBadgeIds]);
 
   if (loading || !data) {
     return (
@@ -595,8 +866,6 @@ const ResultsPage = () => {
 
   const { current, next, sorted } = getLevelProgress(data.levels, data.total_stars);
   const fablinoMsg = getFablinoMessage(t, data.child_name, data.total_stars, data.current_streak, current, next);
-  const totalBadgeCount = data.earned_badges.length + data.next_badge_hints.length +
-    Math.max(0, 11 - data.earned_badges.length - data.next_badge_hints.length);
 
   return (
     <div
@@ -614,11 +883,15 @@ const ResultsPage = () => {
         <LevelCard current={current} next={next} totalStars={data.total_stars} delay={0.1} t={t} />
         <LevelRoadmap levels={sorted} totalStars={data.total_stars} delay={0.2} t={t} />
         <BadgesSection
-          earnedBadges={data.earned_badges}
-          hints={data.next_badge_hints}
-          allBadgeCount={11}
+          badges={data.badges || []}
+          totalStars={data.total_stars}
+          totalStoriesRead={data.total_stories_read}
+          currentStreak={data.current_streak}
+          totalPerfectQuizzes={data.total_perfect_quizzes}
+          newBadgeIds={newBadgeIds}
           delay={0.3}
           t={t}
+          lang={kidAppLanguage}
         />
       </div>
     </div>

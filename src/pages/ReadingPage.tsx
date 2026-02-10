@@ -1290,7 +1290,7 @@ const ReadingPage = () => {
                     try {
                       const result = await supabase.rpc('log_activity', {
                         p_child_id: childId,
-                        p_activity_type: 'story_completed',
+                        p_activity_type: 'story_read',
                         p_stars: starRewards.stars_story_read,
                         p_metadata: { story_id: id, difficulty: story?.difficulty || 'medium' },
                       });

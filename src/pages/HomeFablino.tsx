@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,7 +60,15 @@ const HomeFablino = () => {
     hasMultipleProfiles,
     kidAppLanguage,
   } = useKidProfile();
-  const { state: gamificationState } = useGamification();
+  const location = useLocation();
+  const { state: gamificationState, refreshProgress } = useGamification();
+
+  // Refresh gamification data every time we navigate to this page
+  useEffect(() => {
+    if (location.pathname === '/') {
+      refreshProgress();
+    }
+  }, [location.key]); // location.key changes on every navigation
 
   // Profile switcher dropdown
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -112,7 +120,7 @@ const HomeFablino = () => {
     };
 
     loadWeeklyData();
-  }, [selectedProfileId]);
+  }, [selectedProfileId, location.key]); // re-fetch when navigating back to homepage
 
   // Resolve language (fallback to 'de')
   const lang = kidAppLanguage || 'de';
@@ -123,7 +131,9 @@ const HomeFablino = () => {
   const greeting = kidName ? greet.withName(kidName) : greet.withoutName;
 
   // Capped values for visual display
-  const starsDisplay = Math.min(weeklyStars, 15);
+  // Stars: show total stars (from gamification state), consistent with ResultsPage
+  const totalStars = gamificationState?.stars ?? 0;
+  const starsDisplay = Math.min(totalStars, 15);
   const storiesDisplay = Math.min(weeklyStories, 5);
   const quizzesDisplay = Math.min(weeklyQuizzes, 5);
 

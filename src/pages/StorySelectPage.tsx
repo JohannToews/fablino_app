@@ -74,7 +74,7 @@ const StorySelectPage = () => {
       .from("user_results")
       .select("reference_id, kid_profile_id")
       .eq("user_id", user.id)
-      .eq("activity_type", "story_completed");
+      .in("activity_type", ["story_read", "story_completed"]);
 
     // Run both queries in parallel
     const [storiesResult, completionsResult] = await Promise.all([
