@@ -209,7 +209,7 @@ const StoryTypeSelectionScreen = ({
 
         {/* Main Category Grid – 2x3 with larger tiles */}
         {viewState === "main" && (
-          <div className="grid grid-cols-2 gap-4 w-full">
+          <div className="grid grid-cols-3 gap-4 w-full">
             {mainCategoryTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
