@@ -176,6 +176,8 @@ export interface Translations {
   // Shared page labels
   noStoriesForProfile: string;
   addStory: string;
+  loadMoreStories: string;
+  loadingMore: string;
   chooseStory: string;
   noCategoryStories: string;
   allStoriesRead: string;
@@ -446,6 +448,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: 'Erst lesen',
     noStoriesForProfile: 'Noch keine Geschichten',
     addStory: 'Geschichte hinzufügen',
+    loadMoreStories: 'Mehr Geschichten laden',
+    loadingMore: 'Wird geladen...',
     chooseStory: 'Wähle eine Geschichte',
     noCategoryStories: 'Keine Geschichten in dieser Kategorie',
     allStoriesRead: 'Alle Geschichten gelesen! 🎉',
@@ -699,6 +703,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: 'Read first',
     noStoriesForProfile: 'No stories yet',
     addStory: 'Add a story',
+    loadMoreStories: 'Load more stories',
+    loadingMore: 'Loading...',
     chooseStory: 'Choose a story',
     noCategoryStories: 'No stories in this category',
     allStoriesRead: 'All stories read! 🎉',
@@ -952,6 +958,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: "Lire d'abord",
     noStoriesForProfile: "Pas encore d'histoires",
     addStory: 'Ajouter une histoire',
+    loadMoreStories: 'Charger plus d\'histoires',
+    loadingMore: 'Chargement...',
     chooseStory: 'Choisis une histoire',
     noCategoryStories: 'Aucune histoire dans cette catégorie',
     allStoriesRead: 'Toutes les histoires lues! 🎉',
@@ -1205,6 +1213,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: 'Leer primero',
     noStoriesForProfile: 'Aún no hay historias',
     addStory: 'Añadir historia',
+    loadMoreStories: 'Cargar más historias',
+    loadingMore: 'Cargando...',
     chooseStory: 'Elige una historia',
     noCategoryStories: 'No hay historias en esta categoría',
     allStoriesRead: '¡Todas las historias leídas! 🎉',
@@ -1458,6 +1468,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: 'Eerst lezen',
     noStoriesForProfile: 'Nog geen verhalen',
     addStory: 'Verhaal toevoegen',
+    loadMoreStories: 'Meer verhalen laden',
+    loadingMore: 'Laden...',
     chooseStory: 'Kies een verhaal',
     noCategoryStories: 'Geen verhalen in deze categorie',
     allStoriesRead: 'Alle verhalen gelezen! 🎉',
@@ -1711,6 +1723,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: 'Leggere prima',
     noStoriesForProfile: 'Nessuna storia ancora',
     addStory: 'Aggiungi storia',
+    loadMoreStories: 'Carica altre storie',
+    loadingMore: 'Caricamento...',
     chooseStory: 'Scegli una storia',
     noCategoryStories: 'Nessuna storia in questa categoria',
     allStoriesRead: 'Tutte le storie lette! 🎉',
@@ -1964,6 +1978,8 @@ const translations: Record<Language, Translations> = {
     seriesReadFirst: 'Prvo pročitaj',
     noStoriesForProfile: 'Još nema priča',
     addStory: 'Dodaj priču',
+    loadMoreStories: 'Učitaj više priča',
+    loadingMore: 'Učitavanje...',
     chooseStory: 'Odaberi priču',
     noCategoryStories: 'Nema priča u ovoj kategoriji',
     allStoriesRead: 'Sve priče pročitane! 🎉',
