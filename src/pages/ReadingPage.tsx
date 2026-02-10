@@ -1327,23 +1327,42 @@ const ReadingPage = () => {
                     storyDifficulty={story?.difficulty || "medium"}
                     storyLanguage={story?.text_language || "fr"}
                     onComplete={async (correctCount, totalCount) => {
-                      // Save the result
+                      const percentage = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+                      const isPerfect = correctCount === totalCount && totalCount > 0;
+                      const passed = percentage >= starRewards.quiz_pass_threshold;
+
+                      let quizStars: number;
+                      let activityType: string;
+
+                      if (isPerfect) {
+                        quizStars = starRewards.stars_quiz_perfect;
+                        activityType = 'quiz_complete';
+                      } else if (passed) {
+                        quizStars = starRewards.stars_quiz_passed;
+                        activityType = 'quiz_complete';
+                      } else {
+                        quizStars = starRewards.stars_quiz_failed;
+                        activityType = 'quiz_complete';
+                      }
+
                       setQuizResult({ correctCount, totalCount });
                       setQuizCompleted(true);
-                      
+
                       const childId = story?.kid_profile_id || selectedProfile?.id || null;
-                      const passed = totalCount > 0 && (correctCount / totalCount) >= 0.6;
-                      const isPerfect = correctCount === totalCount;
-                      const stars = !passed ? starRewards.stars_quiz_failed : isPerfect ? starRewards.stars_quiz_perfect : starRewards.stars_quiz_passed;
-                      const totalStars = stars;
 
                       // Log activity via RPC (handles stars, streak, badges, user_results)
                       try {
                         const result = await supabase.rpc('log_activity', {
                           p_child_id: childId,
-                          p_activity_type: passed ? 'quiz_passed' : 'quiz_failed',
-                          p_stars: stars,
-                          p_metadata: { quiz_id: id, score: correctCount, max_score: totalCount, difficulty: story?.difficulty || 'medium' },
+                          p_activity_type: activityType,
+                          p_stars: quizStars,
+                          p_metadata: {
+                            quiz_id: id,
+                            score: correctCount,
+                            max_score: totalCount,
+                            score_percent: Math.round(percentage),
+                            difficulty: story?.difficulty || 'medium',
+                          },
                         });
 
                         const data = result.data as any;
@@ -1354,20 +1373,26 @@ const ReadingPage = () => {
                         // Silent fail – gamification should not block UX
                       }
 
-                      // Show Fablino feedback
+                      // Fablino-Feedback mit korrekten Stern-Zahlen
                       if (isPerfect) {
                         setFablinoReaction({
                           type: 'perfect',
                           message: t.fablinoQuizPerfect,
-                          stars: totalStars,
+                          stars: quizStars,
                         });
-                      } else {
+                      } else if (passed) {
                         setFablinoReaction({
                           type: 'celebrate',
                           message: t.fablinoQuizGood
                             .replace('{correct}', String(correctCount))
                             .replace('{total}', String(totalCount)),
-                          stars: totalStars,
+                          stars: quizStars,
+                        });
+                      } else {
+                        setFablinoReaction({
+                          type: 'encourage',
+                          message: t.fablinoEncourage,
+                          stars: 0,
                         });
                       }
                     }}
