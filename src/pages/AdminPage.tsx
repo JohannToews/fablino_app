@@ -45,6 +45,7 @@ const AdminPage = () => {
     { value: 'es', label: 'Español', flag: '🇪🇸' },
     { value: 'nl', label: 'Nederlands', flag: '🇳🇱' },
     { value: 'it', label: 'Italiano', flag: '🇮🇹' },
+    { value: 'bs', label: 'Bosanski', flag: '🇧🇦' },
   ];
 
   const handleAdminLanguageChange = async (newLang: Language) => {

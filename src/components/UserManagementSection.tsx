@@ -52,6 +52,7 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
     { value: 'es', label: 'Español', flag: '🇪🇸' },
     { value: 'nl', label: 'Nederlands', flag: '🇳🇱' },
     { value: 'it', label: 'Italiano', flag: '🇮🇹' },
+    { value: 'bs', label: 'Bosanski', flag: '🇧🇦' },
   ];
 
   const loadUsers = async () => {
