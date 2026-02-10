@@ -1555,15 +1555,25 @@ export type Database = {
         }
         Returns: boolean
       }
-      log_activity: {
-        Args: {
-          p_activity_type: string
-          p_child_id: string
-          p_metadata?: Json
-          p_stars?: number
-        }
-        Returns: Json
-      }
+      log_activity:
+        | {
+            Args: {
+              p_activity_type: string
+              p_child_id: string
+              p_metadata?: Json
+              p_stars?: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_activity_type: string
+              p_child_id: string
+              p_metadata?: Json
+              p_stars?: number
+            }
+            Returns: Json
+          }
     }
     Enums: {
       app_role: "admin" | "standard"
