@@ -28,6 +28,8 @@ export async function invokeEdgeFunction(functionName: string, body: Record<stri
     }
   }
 
+  console.log(`[invokeEdgeFunction] ${functionName} - legacySession exists:`, !!legacySession, 'legacyUser exists:', !!legacyUserJson, 'headers:', Object.keys(headers));
+
   return supabase.functions.invoke(functionName, {
     body,
     headers: Object.keys(headers).length > 0 ? headers : undefined,
