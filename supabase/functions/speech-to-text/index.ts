@@ -37,10 +37,39 @@ Deno.serve(async (req) => {
     }
 
     // ── Parse request ─────────────────────────────────────────────────
-    const formData = await req.formData();
-    const audioFile = formData.get('audio') as File | null;
-    const rawLanguage = (formData.get('language') as string || 'de').toLowerCase();
-    const language = ALLOWED_LANGUAGES.includes(rawLanguage) ? rawLanguage : 'de';
+    const contentType = req.headers.get('content-type') || '';
+    
+    let audioFile: File | null = null;
+    let language = 'de';
+    
+    if (contentType.includes('application/json')) {
+      // New: JSON body with base64 audio
+      const jsonBody = await req.json();
+      const base64Audio = jsonBody.audio as string;
+      const mimeType = jsonBody.mimeType as string || 'audio/webm';
+      language = (jsonBody.language as string || 'de').toLowerCase();
+      
+      if (!base64Audio) {
+        return new Response(
+          JSON.stringify({ error: 'Audio data is required (field "audio" as base64)' }),
+          { status: 400, headers: jsonHeaders },
+        );
+      }
+      
+      // Decode base64 to blob
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      audioFile = new File([bytes], 'recording.webm', { type: mimeType });
+    } else {
+      // Legacy: FormData with file
+      const formData = await req.formData();
+      audioFile = formData.get('audio') as File | null;
+      const rawLanguage = (formData.get('language') as string || 'de').toLowerCase();
+      language = ALLOWED_LANGUAGES.includes(rawLanguage) ? rawLanguage : 'de';
+    }
 
     if (!audioFile) {
       return new Response(

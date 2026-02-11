@@ -121,26 +121,34 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     }
 
     try {
-      const formData = new FormData();
-      const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
-      formData.append('audio', audioBlob, `recording.${ext}`);
-      formData.append('language', language);
-
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const extraHeaders = getHeaders();
 
-      console.log(`[voice] Fetching ${supabaseUrl}/functions/v1/speech-to-text`);
+      // Convert blob to base64 for safer transport
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64Audio = btoa(binary);
+
+      console.log(`[voice] Sending ${base64Audio.length} chars (base64) to edge function`);
 
       const response = await fetch(`${supabaseUrl}/functions/v1/speech-to-text`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           'apikey': supabaseKey,
+          'Content-Type': 'application/json',
           ...extraHeaders,
-          // DO NOT set Content-Type – browser sets multipart boundary automatically
         },
-        body: formData,
+        body: JSON.stringify({
+          audio: base64Audio,
+          language,
+          mimeType: audioBlob.type,
+        }),
       });
 
       if (!response.ok) {
