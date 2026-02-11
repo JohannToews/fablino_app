@@ -16,6 +16,7 @@ interface UseVoiceRecorderReturn {
   maxDuration: number;
   errorType: VoiceErrorType | null;
   errorDetail: string;
+  debugInfo: string;
   analyser: AnalyserNode | null;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
@@ -32,6 +33,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
   const [duration, setDuration] = useState(0);
   const [errorType, setErrorType] = useState<VoiceErrorType | null>(null);
   const [errorDetail, setErrorDetail] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -106,6 +108,18 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     setState('processing');
     setErrorDetail('');
 
+    const blobInfo = `Blob: ${audioBlob.size}b, type: ${audioBlob.type}`;
+    console.log(`[voice] transcribeAudio called – ${blobInfo}`);
+    setDebugInfo(blobInfo);
+
+    // Validate blob
+    if (!audioBlob || audioBlob.size === 0) {
+      setErrorDetail('Aufnahme ist leer (0 bytes)');
+      setErrorType('empty');
+      setState('error');
+      return;
+    }
+
     try {
       const formData = new FormData();
       const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
@@ -116,11 +130,15 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const extraHeaders = getHeaders();
 
+      console.log(`[voice] Fetching ${supabaseUrl}/functions/v1/speech-to-text`);
+
       const response = await fetch(`${supabaseUrl}/functions/v1/speech-to-text`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
           ...extraHeaders,
+          // DO NOT set Content-Type – browser sets multipart boundary automatically
         },
         body: formData,
       });
@@ -147,6 +165,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       setState('result');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      console.error('[voice] Transcription error:', message);
       setErrorDetail(`Fetch: ${message}`);
       setErrorType('failed');
       setState('error');
@@ -159,11 +178,12 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     cleanup();
 
     // Small delay for mobile browsers to fully release mic hardware
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 350));
 
     setTranscript('');
     setErrorType(null);
     setErrorDetail('');
+    setDebugInfo('');
     setDuration(0);
 
     try {
@@ -199,9 +219,12 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
       recorder.onstop = () => {
         const chunks = [...chunksRef.current];
+        chunksRef.current = [];
         const blob = new Blob(chunks, { type: mimeType });
 
-        // Release mic resources ASAP
+        console.log(`[voice] recorder.onstop – chunks: ${chunks.length}, blob: ${blob.size}b`);
+
+        // Release mic resources ASAP (before async transcription)
         try {
           streamRef.current?.getTracks().forEach((t) => t.stop());
         } catch (_) { /* ignore */ }
@@ -217,6 +240,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
         if (blob.size > 0) {
           transcribeAudio(blob);
         } else {
+          setDebugInfo(`chunks: ${chunks.length}, blob: 0b`);
           setErrorDetail(`Blob size: 0, chunks: ${chunks.length}`);
           setErrorType('empty');
           setState('error');
@@ -274,6 +298,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     setTranscript('');
     setErrorType(null);
     setErrorDetail('');
+    setDebugInfo('');
     setDuration(0);
     setState('idle');
   }, [cleanup]);
@@ -288,6 +313,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     maxDuration,
     errorType,
     errorDetail,
+    debugInfo,
     analyser,
     startRecording,
     stopRecording,

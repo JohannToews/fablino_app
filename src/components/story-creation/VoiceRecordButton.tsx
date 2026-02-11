@@ -100,6 +100,7 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
     maxDuration,
     errorType,
     errorDetail,
+    debugInfo,
     analyser,
     startRecording,
     stopRecording,
@@ -234,9 +235,10 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
         >
           {getErrorMessage(labels, errorType)}
         </p>
-        {errorDetail && (
+        {(errorDetail || debugInfo) && (
           <p className="text-[10px] text-gray-400 text-center max-w-[300px] break-all leading-tight px-2">
-            Debug: {errorDetail}
+            {debugInfo && <>{debugInfo}<br/></>}
+            {errorDetail && <>Debug: {errorDetail}</>}
           </p>
         )}
         <button
