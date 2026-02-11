@@ -63,7 +63,8 @@ const StorySelectPage = () => {
       .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
       .eq("user_id", user.id)
       .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(200);
     
     // Filter by selected kid profile – also include stories without a profile (null)
     if (selectedProfileId) {
