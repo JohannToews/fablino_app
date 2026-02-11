@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import { ArrowLeft } from "lucide-react";
 import SeriesGrid from "@/components/SeriesGrid";
+import { getThumbnailUrl } from "@/lib/imageUtils";
 
 interface Story {
   id: string;
@@ -436,7 +437,7 @@ const StoryCard = ({
       <div className="aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-muted relative">
         {story.cover_image_url ? (
           <img
-            src={story.cover_image_url}
+            src={getThumbnailUrl(story.cover_image_url, 400, 60)}
             alt={story.title}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

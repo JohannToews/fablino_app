@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, CreditCard, Wrench, Users, BookHeart, Crown, Mail, Lock, UserX, Receipt, Globe, Loader2 } from "lucide-react";
+import { getThumbnailUrl } from "@/lib/imageUtils";
 import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
@@ -78,17 +79,24 @@ const AdminPage = () => {
     if (user) {
       loadStories();
     }
-  }, [user]);
+  }, [user, selectedProfileId]);
 
   const loadStories = async () => {
     if (!user) return;
     
-    const { data } = await supabase
+    let query = supabase
       .from("stories")
       .select("id, title, cover_image_url, kid_profile_id")
       .eq("user_id", user.id)
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
+    
+    // Filter by selected kid profile
+    if (selectedProfileId) {
+      query = query.eq("kid_profile_id", selectedProfileId);
+    }
+    
+    const { data } = await query;
     
     if (data) {
       setStories(data);
@@ -308,8 +316,9 @@ const AdminPage = () => {
                             >
                               {story.cover_image_url ? (
                                 <img
-                                  src={story.cover_image_url}
+                                  src={getThumbnailUrl(story.cover_image_url, 112, 50)}
                                   alt={story.title}
+                                  loading="lazy"
                                   className="h-14 w-14 object-cover rounded-lg flex-none"
                                 />
                               ) : (

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { BookOpen, Plus, CheckCircle2, Loader2 } from "lucide-react";
+import { getThumbnailUrl } from "@/lib/imageUtils";
 import { useTranslations, type Language } from "@/lib/translations";
 
 interface Story {
@@ -99,7 +100,7 @@ const SeriesGrid = ({
               <div className="w-24 h-32 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                 {firstEpisode?.cover_image_url ? (
                   <img
-                    src={firstEpisode.cover_image_url}
+                    src={getThumbnailUrl(firstEpisode.cover_image_url, 192, 50)}
                     alt={firstEpisode.title}
                     loading="lazy"
                     className="w-full h-full object-cover"
@@ -136,7 +137,7 @@ const SeriesGrid = ({
                     <div className="aspect-square rounded-xl overflow-hidden bg-muted relative border-2 border-transparent group-hover:border-primary transition-all">
                       {episode.cover_image_url ? (
                         <img
-                          src={episode.cover_image_url}
+                          src={getThumbnailUrl(episode.cover_image_url, 256, 50)}
                           alt={episode.title}
                           loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
