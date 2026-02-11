@@ -335,8 +335,11 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               {frequencyLabels.map((label, i) => (
-                <span key={i} className={frequency === i + 1 ? 'text-primary font-semibold' : ''}>
-                  {label}
+                <span key={i} className={`text-center ${frequency === i + 1 ? 'text-primary font-semibold' : ''}`}>
+                  <span className="block">{label}</span>
+                  <span className="block text-[10px] opacity-70">
+                    {i === 0 ? t.frequencyEvery4th : i === 1 ? t.frequencyEvery3rd : t.frequencyEvery2nd}
+                  </span>
                 </span>
               ))}
             </div>

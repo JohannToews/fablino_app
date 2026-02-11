@@ -230,6 +230,9 @@ export interface Translations {
   frequencyOccasional: string;
   frequencyRegular: string;
   frequencyFrequent: string;
+  frequencyEvery4th: string;
+  frequencyEvery3rd: string;
+  frequencyEvery2nd: string;
   categorySocial: string;
   categoryEmotional: string;
   categoryCharacter: string;
@@ -495,6 +498,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Gelegentlich',
     frequencyRegular: 'Regelmäßig',
     frequencyFrequent: 'Häufig',
+    frequencyEvery4th: '(jede 4. Geschichte)',
+    frequencyEvery3rd: '(jede 3. Geschichte)',
+    frequencyEvery2nd: '(jede 2. Geschichte)',
     categorySocial: 'Soziales',
     categoryEmotional: 'Emotionales',
     categoryCharacter: 'Charakter',
@@ -750,6 +756,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Occasionally',
     frequencyRegular: 'Regularly',
     frequencyFrequent: 'Frequently',
+    frequencyEvery4th: '(every 4th story)',
+    frequencyEvery3rd: '(every 3rd story)',
+    frequencyEvery2nd: '(every 2nd story)',
     categorySocial: 'Social',
     categoryEmotional: 'Emotional',
     categoryCharacter: 'Character',
@@ -1005,6 +1014,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Occasionnellement',
     frequencyRegular: 'Régulièrement',
     frequencyFrequent: 'Fréquemment',
+    frequencyEvery4th: '(chaque 4e histoire)',
+    frequencyEvery3rd: '(chaque 3e histoire)',
+    frequencyEvery2nd: '(chaque 2e histoire)',
     categorySocial: 'Social',
     categoryEmotional: 'Émotionnel',
     categoryCharacter: 'Caractère',
@@ -1260,6 +1272,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Ocasionalmente',
     frequencyRegular: 'Regularmente',
     frequencyFrequent: 'Frecuentemente',
+    frequencyEvery4th: '(cada 4ª historia)',
+    frequencyEvery3rd: '(cada 3ª historia)',
+    frequencyEvery2nd: '(cada 2ª historia)',
     categorySocial: 'Social',
     categoryEmotional: 'Emocional',
     categoryCharacter: 'Carácter',
@@ -1515,6 +1530,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Af en toe',
     frequencyRegular: 'Regelmatig',
     frequencyFrequent: 'Vaak',
+    frequencyEvery4th: '(elk 4e verhaal)',
+    frequencyEvery3rd: '(elk 3e verhaal)',
+    frequencyEvery2nd: '(elk 2e verhaal)',
     categorySocial: 'Sociaal',
     categoryEmotional: 'Emotioneel',
     categoryCharacter: 'Karakter',
@@ -1770,6 +1788,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Occasionalmente',
     frequencyRegular: 'Regolarmente',
     frequencyFrequent: 'Frequentemente',
+    frequencyEvery4th: '(ogni 4ª storia)',
+    frequencyEvery3rd: '(ogni 3ª storia)',
+    frequencyEvery2nd: '(ogni 2ª storia)',
     categorySocial: 'Sociale',
     categoryEmotional: 'Emotivo',
     categoryCharacter: 'Carattere',
@@ -2025,6 +2046,9 @@ const translations: Record<Language, Translations> = {
     frequencyOccasional: 'Povremeno',
     frequencyRegular: 'Redovno',
     frequencyFrequent: 'Često',
+    frequencyEvery4th: '(svaka 4. priča)',
+    frequencyEvery3rd: '(svaka 3. priča)',
+    frequencyEvery2nd: '(svaka 2. priča)',
     categorySocial: 'Socijalno',
     categoryEmotional: 'Emocionalno',
     categoryCharacter: 'Karakter',
