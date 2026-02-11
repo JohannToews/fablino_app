@@ -1614,6 +1614,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_stories_list: {
+        Args: { p_limit?: number; p_offset?: number; p_profile_id?: string }
+        Returns: {
+          cover_image_url: string
+          created_at: string
+          difficulty: string
+          ending_type: string
+          episode_number: number
+          id: string
+          kid_profile_id: string
+          series_id: string
+          text_type: string
+          title: string
+        }[]
+      }
       get_my_story_count: { Args: { p_profile_id?: string }; Returns: number }
       get_results_page: { Args: { p_child_id: string }; Returns: Json }
       get_user_profile_id: { Args: never; Returns: string }
