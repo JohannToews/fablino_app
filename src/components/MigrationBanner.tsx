@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Shield, X, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { Language } from "@/lib/translations";
 
 interface MigrationBannerProps {
@@ -181,12 +181,10 @@ const MigrationBanner = ({ language = 'de' }: MigrationBannerProps) => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('migrate-user-auth', {
-        body: { 
+      const { data, error } = await invokeEdgeFunction('migrate-user-auth', { 
           userId: user?.id,
           email: trimmedEmail,
           newPassword: password,
-        }
       });
 
       if (error || !data?.success) {
