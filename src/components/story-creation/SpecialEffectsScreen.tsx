@@ -250,15 +250,15 @@ const SpecialEffectsScreen = ({
         {showSettings && (
           <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-4 space-y-3">
             {/* Length */}
-            <div className="flex items-center gap-3 justify-between">
-              <span className="text-sm font-semibold text-[#92400E] shrink-0">{st.lengthLabel}</span>
-              <div className="inline-flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.lengthLabel}</span>
+              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
                 {(["short", "medium", "long"] as StoryLength[]).map((len) => (
                   <button
                     key={len}
                     onClick={() => setStoryLength(len)}
                     className={cn(
-                      "px-4 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium",
+                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
                       storyLength === len
                         ? "bg-[#E8863A] text-white shadow-sm"
                         : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
@@ -273,15 +273,15 @@ const SpecialEffectsScreen = ({
             <div className="border-t border-orange-100/60" />
 
             {/* Difficulty */}
-            <div className="flex items-center gap-3 justify-between">
-              <span className="text-sm font-semibold text-[#92400E] shrink-0">{st.difficultyLabel}</span>
-              <div className="inline-flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.difficultyLabel}</span>
+              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
                 {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
                   <button
                     key={diff}
                     onClick={() => setStoryDifficulty(diff)}
                     className={cn(
-                      "px-4 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium",
+                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
                       storyDifficulty === diff
                         ? "bg-[#E8863A] text-white shadow-sm"
                         : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
@@ -297,15 +297,15 @@ const SpecialEffectsScreen = ({
             {availableLanguages.length > 0 && (
               <>
                 <div className="border-t border-orange-100/60" />
-                <div className="flex items-center gap-3 justify-between">
-                  <span className="text-sm font-semibold text-[#92400E] shrink-0">{st.languageLabel}</span>
-                  <div className="inline-flex gap-1.5 flex-wrap bg-orange-50/60 rounded-xl p-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.languageLabel}</span>
+                  <div className="flex-1 flex gap-1.5 flex-wrap bg-orange-50/60 rounded-xl p-1">
                     {availableLanguages.map((lang) => (
                       <button
                         key={lang}
                         onClick={() => setStoryLanguage(lang)}
                         className={cn(
-                          "px-3 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium",
+                          "flex-1 min-w-0 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
                           storyLanguage === lang
                             ? "bg-[#E8863A] text-white shadow-sm"
                             : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
