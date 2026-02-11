@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, CreditCard, Wrench, Users, BookHeart, Crown, Mail, Lock, UserX, Receipt, Globe, Loader2 } from "lucide-react";
+import { ArrowLeft, Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, CreditCard, Wrench, Users, BookHeart, Crown, Mail, Lock, UserX, Receipt, Globe, Loader2, Search, Filter } from "lucide-react";
 import { getThumbnailUrl } from "@/lib/imageUtils";
 import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import PointsConfigSection from "@/components/PointsConfigSection";
@@ -24,6 +25,8 @@ interface Story {
   title: string;
   cover_image_url: string | null;
   kid_profile_id: string | null;
+  is_favorite: boolean;
+  created_at: string;
 }
 
 const AdminPage = () => {
@@ -34,10 +37,13 @@ const AdminPage = () => {
   const t = useTranslations(adminLang);
   
   const [stories, setStories] = useState<Story[]>([]);
+  const [storyStatuses, setStoryStatuses] = useState<Map<string, boolean>>(new Map());
   const [activeTab, setActiveTab] = useState("profile");
   const [settingsSubTab, setSettingsSubTab] = useState("points");
   const [accountSubTab, setAccountSubTab] = useState("management");
   const [updatingLang, setUpdatingLang] = useState(false);
+  const [searchFilter, setSearchFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "read" | "unread">("all");
 
   const languages: { value: Language; label: string; flag: string }[] = [
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
@@ -85,24 +91,62 @@ const AdminPage = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .rpc("get_my_stories", {
-          p_profile_id: selectedProfileId || null,
-          p_limit: 500,
-          p_offset: 0,
-        })
-        .select("id, title, cover_image_url, kid_profile_id");
+      const [storiesResult, resultsResult] = await Promise.all([
+        supabase
+          .rpc("get_my_stories", {
+            p_profile_id: selectedProfileId || null,
+            p_limit: 500,
+            p_offset: 0,
+          })
+          .select("id, title, cover_image_url, kid_profile_id, is_favorite, created_at"),
+        supabase.rpc("get_my_results"),
+      ]);
       
-      if (error) {
-        console.error("[AdminPage] loadStories error:", error);
+      if (storiesResult.error) {
+        console.error("[AdminPage] loadStories error:", storiesResult.error);
         return;
       }
       
-      setStories(data || []);
+      const storiesData = storiesResult.data || [];
+      setStories(storiesData);
+      
+      // Build read-status map
+      const storyIdSet = new Set(storiesData.map((s: any) => s.id));
+      const statusMap = new Map<string, boolean>();
+      resultsResult.data?.forEach((r: any) => {
+        if (r.reference_id && storyIdSet.has(r.reference_id)) {
+          statusMap.set(r.reference_id, true);
+        }
+      });
+      setStoryStatuses(statusMap);
     } catch (err) {
       console.error("[AdminPage] loadStories crash:", err);
     }
   };
+
+  const toggleFavorite = async (storyId: string, currentValue: boolean) => {
+    const { error } = await supabase
+      .from("stories")
+      .update({ is_favorite: !currentValue })
+      .eq("id", storyId);
+    
+    if (error) {
+      toast.error(adminLang === 'de' ? 'Fehler beim Speichern' : 'Error saving');
+    } else {
+      setStories(prev => prev.map(s => s.id === storyId ? { ...s, is_favorite: !currentValue } : s));
+    }
+  };
+
+  const filteredStories = useMemo(() => {
+    return stories.filter(s => {
+      // Text filter
+      if (searchFilter && !s.title.toLowerCase().includes(searchFilter.toLowerCase())) return false;
+      // Status filter
+      if (statusFilter === "read" && !storyStatuses.get(s.id)) return false;
+      if (statusFilter === "unread" && storyStatuses.get(s.id)) return false;
+      return true;
+    });
+  }, [stories, searchFilter, statusFilter, storyStatuses]);
 
   const updateStoryKidProfile = async (storyId: string, kidProfileId: string | null) => {
     const { error } = await supabase
@@ -295,85 +339,128 @@ const AdminPage = () => {
                 </div>
               )}
               
-              {/* Library Content - directly shown without sub-tabs */}
+              {/* Filter Bar */}
+              <div className="flex-none mb-4 flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={adminLang === 'de' ? 'Geschichte suchen...' : adminLang === 'fr' ? 'Rechercher...' : 'Search stories...'}
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="pl-9 h-10 rounded-xl bg-card"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                  <SelectTrigger className="w-[180px] h-10 rounded-xl bg-card">
+                    <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{adminLang === 'de' ? 'Alle' : adminLang === 'fr' ? 'Tous' : 'All'}</SelectItem>
+                    <SelectItem value="read">{t.statusAlreadyRead}</SelectItem>
+                    <SelectItem value="unread">{t.statusToRead}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Library Content */}
               <div className="flex-1 overflow-y-auto pr-2">
-                <Card className="border-2 border-muted">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{t.existingStories}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {stories.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8 text-sm">
-                        {t.noStoriesYet}
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {stories.map((story) => {
-                          const assignedKid = kidProfiles.find(p => p.id === story.kid_profile_id);
-                          return (
-                            <div
-                              key={story.id}
-                              className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50"
-                            >
-                              {story.cover_image_url ? (
-                                <img
-                                  src={getThumbnailUrl(story.cover_image_url, 112, 50)}
-                                  alt={story.title}
-                                  loading="lazy"
-                                  className="h-14 w-14 object-cover rounded-lg flex-none"
-                                />
-                              ) : (
-                                <div className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center flex-none">
-                                  <Image className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-baloo font-bold text-sm truncate">{story.title}</h3>
-                                <Select
-                                  value={story.kid_profile_id || "none"}
-                                  onValueChange={(value) => updateStoryKidProfile(story.id, value === "none" ? null : value)}
-                                >
-                                  <SelectTrigger className="h-7 text-xs w-full mt-1">
-                                    <SelectValue>
-                                      {assignedKid ? (
-                                        <span className="flex items-center gap-1">
-                                          <Users className="h-3 w-3" />
-                                          {assignedKid.name}
-                                        </span>
-                                      ) : (
-                                        <span className="text-muted-foreground">
-                                          {adminLang === 'de' ? 'Kind zuordnen...' : 'Assign child...'}
-                                        </span>
-                                      )}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">
-                                      {adminLang === 'de' ? '— Kein Kind —' : '— No child —'}
-                                    </SelectItem>
-                                    {kidProfiles.map((profile) => (
-                                      <SelectItem key={profile.id} value={profile.id}>
-                                        {profile.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteStory(story.id)}
-                                className="text-destructive hover:bg-destructive/10 flex-none h-8 w-8"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                {filteredStories.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground text-base">
+                      {stories.length === 0 ? t.noStoriesYet : (adminLang === 'de' ? 'Keine Treffer' : 'No matches')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {filteredStories.map((story) => {
+                      const assignedKid = kidProfiles.find(p => p.id === story.kid_profile_id);
+                      const isRead = storyStatuses.get(story.id);
+                      return (
+                        <div
+                          key={story.id}
+                          className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/50 shadow-sm"
+                        >
+                          {/* Cover */}
+                          {story.cover_image_url ? (
+                            <img
+                              src={getThumbnailUrl(story.cover_image_url, 112, 50)}
+                              alt={story.title}
+                              loading="lazy"
+                              className="h-16 w-16 object-cover rounded-xl flex-none"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 bg-muted rounded-xl flex items-center justify-center flex-none">
+                              <Image className="h-6 w-6 text-muted-foreground" />
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                          )}
+                          {/* Info */}
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <h3 className="font-baloo font-bold text-base truncate">{story.title}</h3>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <Select
+                                value={story.kid_profile_id || "none"}
+                                onValueChange={(value) => updateStoryKidProfile(story.id, value === "none" ? null : value)}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-[140px]">
+                                  <SelectValue>
+                                    {assignedKid ? (
+                                      <span className="flex items-center gap-1">
+                                        <Users className="h-3 w-3" />
+                                        {assignedKid.name}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">
+                                        {adminLang === 'de' ? 'Kind zuordnen...' : 'Assign child...'}
+                                      </span>
+                                    )}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
+                                    {adminLang === 'de' ? '— Kein Kind —' : '— No child —'}
+                                  </SelectItem>
+                                  {kidProfiles.map((profile) => (
+                                    <SelectItem key={profile.id} value={profile.id}>
+                                      {profile.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {/* Read status badge */}
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                isRead
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              }`}>
+                                {isRead ? t.statusCompleted : t.statusToRead}
+                              </span>
+                            </div>
+                          </div>
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 flex-none">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleFavorite(story.id, story.is_favorite)}
+                              className="h-9 w-9"
+                            >
+                              <Star className={`h-5 w-5 ${story.is_favorite ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteStory(story.id)}
+                              className="text-destructive hover:bg-destructive/10 h-9 w-9"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>

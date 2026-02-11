@@ -1005,6 +1005,7 @@ export type Database = {
           id: string
           image_count: number | null
           is_deleted: boolean
+          is_favorite: boolean
           kid_profile_id: string | null
           learning_theme_applied: string | null
           moral_topic: string | null
@@ -1041,6 +1042,7 @@ export type Database = {
           id?: string
           image_count?: number | null
           is_deleted?: boolean
+          is_favorite?: boolean
           kid_profile_id?: string | null
           learning_theme_applied?: string | null
           moral_topic?: string | null
@@ -1077,6 +1079,7 @@ export type Database = {
           id?: string
           image_count?: number | null
           is_deleted?: boolean
+          is_favorite?: boolean
           kid_profile_id?: string | null
           learning_theme_applied?: string | null
           moral_topic?: string | null
@@ -1590,6 +1593,7 @@ export type Database = {
           id: string
           image_count: number | null
           is_deleted: boolean
+          is_favorite: boolean
           kid_profile_id: string | null
           learning_theme_applied: string | null
           moral_topic: string | null
