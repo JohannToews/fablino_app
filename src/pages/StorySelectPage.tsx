@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import FablinoPageHeader from "@/components/FablinoPageHeader";
 import { ArrowLeft } from "lucide-react";
 import SeriesGrid from "@/components/SeriesGrid";
 import { getThumbnailUrl } from "@/lib/imageUtils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Story {
   id: string;
@@ -37,50 +38,36 @@ const getDifficultyLabel = (t: ReturnType<typeof useTranslations>, difficulty: s
 
 const StorySelectPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { selectedProfileId, selectedProfile, kidProfiles, hasMultipleProfiles, setSelectedProfileId, kidAppLanguage } = useKidProfile();
   const appLang = kidAppLanguage;
   const t = useTranslations(appLang);
-  const [stories, setStories] = useState<Story[]>([]);
-  const [storyStatuses, setStoryStatuses] = useState<Map<string, boolean>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingForSeries, setIsGeneratingForSeries] = useState<string | null>(null);
 
-  // Memoized loader to prevent triple-firing
-  const loadStories = useCallback(async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    
-    // Use lightweight RPC that returns only list fields (~50 KB vs 6.5 MB)
-    const storiesQuery = supabase.rpc("get_my_stories_list", {
-      p_profile_id: selectedProfileId || null,
-      p_limit: 200,
-      p_offset: 0,
-    });
+  // React Query: fetch stories + results with 5min cache
+  const { data: queryData, isLoading } = useQuery({
+    queryKey: ['stories', selectedProfileId, user?.id],
+    queryFn: async () => {
+      const [storiesResult, completionsResult] = await Promise.all([
+        supabase.rpc("get_my_stories_list", {
+          p_profile_id: selectedProfileId || null,
+          p_limit: 200,
+          p_offset: 0,
+        }),
+        supabase.rpc("get_my_results"),
+      ]);
 
-    const resultsQuery = supabase.rpc("get_my_results");
+      const storiesData = storiesResult.data || [];
+      console.log("[StorySelect] query result:", { 
+        storiesCount: storiesData.length, 
+        error: storiesResult.error, 
+        selectedProfileId,
+      });
 
-    const [storiesResult, completionsResult] = await Promise.all([
-      storiesQuery,
-      resultsQuery,
-    ]);
-
-    const storiesData = storiesResult.data;
-    console.log("[StorySelect] query result:", { 
-      storiesCount: storiesData?.length, 
-      error: storiesResult.error, 
-      selectedProfileId,
-      userId: user.id,
-      firstFew: storiesData?.slice(0, 3) 
-    });
-    if (storiesData) {
-      setStories(storiesData);
-
-      const storyIdSet = new Set(storiesData.map(s => s.id));
+      const storyIdSet = new Set(storiesData.map((s: any) => s.id));
       const statusMap = new Map<string, boolean>();
-      completionsResult.data?.forEach(r => {
+      completionsResult.data?.forEach((r: any) => {
         if (r.reference_id && storyIdSet.has(r.reference_id)) {
           const matches = !selectedProfileId ||
                          r.kid_profile_id === selectedProfileId ||
@@ -90,15 +77,21 @@ const StorySelectPage = () => {
           }
         }
       });
-      setStoryStatuses(statusMap);
-    }
-    setIsLoading(false);
-  }, [user, selectedProfileId]);
 
-  // Single effect — location.key triggers reload on navigation
-  useEffect(() => {
-    loadStories();
-  }, [loadStories, location.key]);
+      return { stories: storiesData as Story[], storyStatuses: statusMap };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // keep in cache 10 minutes
+  });
+
+  const stories = queryData?.stories || [];
+  const storyStatuses = queryData?.storyStatuses || new Map<string, boolean>();
+
+  // Helper to invalidate cache after mutations
+  const invalidateStories = () => {
+    queryClient.invalidateQueries({ queryKey: ['stories', selectedProfileId, user?.id] });
+  };
 
   // Generate next episode for a series
   const handleGenerateNextEpisode = async (series: { seriesId: string; episodes: Story[] }) => {
@@ -130,7 +123,7 @@ const StorySelectPage = () => {
     if (existingEpisode) {
       console.log("Episode already exists, reloading stories");
       toast.info("Diese Episode existiert bereits");
-      loadStories();
+      invalidateStories();
       return;
     }
     
@@ -270,7 +263,7 @@ const StorySelectPage = () => {
       }
       
       toast.success(appLang === 'de' ? 'Neue Episode erstellt!' : 'New episode created!');
-      loadStories(); // Refresh the list
+      invalidateStories(); // Refresh the list
       
     } catch (err) {
       console.error("Error generating episode:", err);
