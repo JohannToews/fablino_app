@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useEdgeFunctionHeaders } from './useEdgeFunctionHeaders';
 import { useToast } from './use-toast';
 
@@ -87,18 +86,31 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       formData.append('audio', audioBlob, `recording.${ext}`);
       formData.append('language', language);
 
-      // Call edge function – do NOT set Content-Type manually with FormData
-      const { data, error } = await supabase.functions.invoke('speech-to-text', {
+      // Use raw fetch instead of supabase.functions.invoke to avoid
+      // Content-Type issues with FormData on repeated calls
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const extraHeaders = getHeaders();
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/speech-to-text`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          ...extraHeaders,
+          // Do NOT set Content-Type – browser sets multipart boundary automatically
+        },
         body: formData,
-        headers: getHeaders(),
       });
 
-      if (error) {
-        console.error('[VoiceRecorder] Edge function error:', error);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[VoiceRecorder] Edge function error:', response.status, errText);
         setErrorType('failed');
         setState('error');
         return;
       }
+
+      const data = await response.json();
 
       const text = (data?.text || '').trim();
       console.log(`[VoiceRecorder] Transcript: "${text}"`);
