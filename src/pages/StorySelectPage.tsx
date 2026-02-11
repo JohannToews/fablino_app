@@ -47,28 +47,21 @@ const StorySelectPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingForSeries, setIsGeneratingForSeries] = useState<string | null>(null);
 
-  // Reload data when navigating to this page (location.key changes on each navigation)
-  useEffect(() => {
-    if (user) {
-      loadStories();
-    }
-  }, [user, selectedProfileId, location.key]);
-
-  const loadStories = async () => {
+  // Memoized loader to prevent triple-firing
+  const loadStories = useCallback(async () => {
     if (!user) return;
     
-    // Use RPC functions to bypass RLS overhead (SECURITY DEFINER)
-    const storiesQuery = supabase
-      .rpc("get_my_stories", {
-        p_profile_id: selectedProfileId || null,
-        p_limit: 200,
-        p_offset: 0,
-      })
-      .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type");
+    setIsLoading(true);
+    
+    // Use lightweight RPC that returns only list fields (~50 KB vs 6.5 MB)
+    const storiesQuery = supabase.rpc("get_my_stories_list", {
+      p_profile_id: selectedProfileId || null,
+      p_limit: 200,
+      p_offset: 0,
+    });
 
     const resultsQuery = supabase.rpc("get_my_results");
 
-    // Run both queries in parallel
     const [storiesResult, completionsResult] = await Promise.all([
       storiesQuery,
       resultsQuery,
@@ -85,7 +78,6 @@ const StorySelectPage = () => {
     if (storiesData) {
       setStories(storiesData);
 
-      // Build status map from completions
       const storyIdSet = new Set(storiesData.map(s => s.id));
       const statusMap = new Map<string, boolean>();
       completionsResult.data?.forEach(r => {
@@ -101,7 +93,12 @@ const StorySelectPage = () => {
       setStoryStatuses(statusMap);
     }
     setIsLoading(false);
-  };
+  }, [user, selectedProfileId]);
+
+  // Single effect — location.key triggers reload on navigation
+  useEffect(() => {
+    loadStories();
+  }, [loadStories, location.key]);
 
   // Generate next episode for a series
   const handleGenerateNextEpisode = async (series: { seriesId: string; episodes: Story[] }) => {
