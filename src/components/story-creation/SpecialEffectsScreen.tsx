@@ -348,17 +348,6 @@ const SpecialEffectsScreen = ({
           </div>
         </div>
 
-        {/* Weg A: Prominent voice input when no text entered yet */}
-        {showSettings && !additionalDescription && (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <FablinoMascot src="/mascot/5_new_story.png" size="sm" />
-            <VoiceRecordButton
-              language={kidReadingLanguage || 'de'}
-              onTranscript={(text) => setAdditionalDescription(text)}
-              className="scale-125"
-            />
-          </div>
-        )}
 
         {/* Additional Description – compact */}
         <div className="w-full space-y-2">
