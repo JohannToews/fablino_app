@@ -34,7 +34,6 @@ const AdminPage = () => {
   const t = useTranslations(adminLang);
   
   const [stories, setStories] = useState<Story[]>([]);
-  const [storiesLoading, setStoriesLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [settingsSubTab, setSettingsSubTab] = useState("points");
   const [accountSubTab, setAccountSubTab] = useState("management");
@@ -84,7 +83,6 @@ const AdminPage = () => {
 
   const loadStories = async () => {
     if (!user) return;
-    setStoriesLoading(true);
     
     try {
       let query = supabase
@@ -92,8 +90,7 @@ const AdminPage = () => {
         .select("id, title, cover_image_url, kid_profile_id")
         .eq("user_id", user.id)
         .eq("is_deleted", false)
-        .order("created_at", { ascending: false })
-        .limit(200);
+        .order("created_at", { ascending: false });
       
       // Filter by selected kid profile
       if (selectedProfileId) {
@@ -110,8 +107,6 @@ const AdminPage = () => {
       setStories(data || []);
     } catch (err) {
       console.error("[AdminPage] loadStories crash:", err);
-    } finally {
-      setStoriesLoading(false);
     }
   };
 
@@ -313,11 +308,7 @@ const AdminPage = () => {
                     <CardTitle className="text-lg">{t.existingStories}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {storiesLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : stories.length === 0 ? (
+                    {stories.length === 0 ? (
                       <p className="text-muted-foreground text-center py-8 text-sm">
                         {t.noStoriesYet}
                       </p>
