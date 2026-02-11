@@ -41,30 +41,50 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Cleanup all resources
-  const cleanup = useCallback(() => {
+  // Cleanup all resources (important on iOS/Safari where mic can stay "busy")
+  const cleanup = useCallback(async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+
+    // Stop recorder without triggering transcription (detach handlers first)
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try { mediaRecorderRef.current.stop(); } catch (_) { /* ignore */ }
+      const recorder = mediaRecorderRef.current;
+      try {
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        recorder.stop();
+      } catch (_) {
+        /* ignore */
+      }
     }
     mediaRecorderRef.current = null;
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+
     if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch (_) { /* ignore */ }
+      try {
+        await audioContextRef.current.close();
+      } catch (_) {
+        /* ignore */
+      }
       audioContextRef.current = null;
     }
+
     setAnalyser(null);
     chunksRef.current = [];
   }, []);
 
   // Cleanup on unmount
-  useEffect(() => cleanup, [cleanup]);
+  useEffect(() => {
+    return () => {
+      void cleanup();
+    };
+  }, [cleanup]);
 
   // Detect best supported MIME type
   const getMimeType = (): string => {
@@ -132,7 +152,10 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
   // Start recording
   const startRecording = useCallback(async () => {
-    cleanup();
+    await cleanup();
+    // Small delay helps iOS/Safari to fully release the mic between sessions
+    await new Promise((r) => setTimeout(r, 200));
+
     setTranscript('');
     setErrorType(null);
     setDuration(0);
@@ -172,6 +195,24 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         console.log(`[VoiceRecorder] Recording stopped, blob size: ${blob.size}`);
+
+        // Release mic resources ASAP (important for iOS Safari)
+        try {
+          streamRef.current?.getTracks().forEach((t) => t.stop());
+        } catch (_) {
+          /* ignore */
+        }
+        streamRef.current = null;
+
+        try {
+          audioContextRef.current?.close();
+        } catch (_) {
+          /* ignore */
+        }
+        audioContextRef.current = null;
+        setAnalyser(null);
+        mediaRecorderRef.current = null;
+
         if (blob.size > 0) {
           transcribeAudio(blob);
         } else {
@@ -224,16 +265,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
-    // Stream + AudioContext cleanup happens after onstop → transcribeAudio
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch (_) { /* ignore */ }
-      audioContextRef.current = null;
-    }
-    setAnalyser(null);
+    // NOTE: stream/audioContext are released in recorder.onstop (more reliable on iOS)
   }, []);
 
   // Retry: go back to idle
