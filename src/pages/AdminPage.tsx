@@ -85,19 +85,13 @@ const AdminPage = () => {
     if (!user) return;
     
     try {
-      let query = supabase
-        .from("stories")
-        .select("id, title, cover_image_url, kid_profile_id")
-        .eq("user_id", user.id)
-        .eq("is_deleted", false)
-        .order("created_at", { ascending: false });
-      
-      // Filter by selected kid profile
-      if (selectedProfileId) {
-        query = query.eq("kid_profile_id", selectedProfileId);
-      }
-      
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .rpc("get_my_stories", {
+          p_profile_id: selectedProfileId || null,
+          p_limit: 500,
+          p_offset: 0,
+        })
+        .select("id, title, cover_image_url, kid_profile_id");
       
       if (error) {
         console.error("[AdminPage] loadStories error:", error);

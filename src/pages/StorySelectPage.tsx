@@ -57,30 +57,21 @@ const StorySelectPage = () => {
   const loadStories = async () => {
     if (!user) return;
     
-    // Build stories query — NO content field (saves large text transfer)
-    let query = supabase
-      .from("stories")
-      .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type")
-      .eq("user_id", user.id)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
-    
-    // Filter by selected kid profile – also include stories without a profile (null)
-    if (selectedProfileId) {
-      query = query.or(`kid_profile_id.eq.${selectedProfileId},kid_profile_id.is.null`);
-    }
-    
-    // Build completions query (runs in parallel)
-    const completionsQuery = supabase
-      .from("user_results")
-      .select("reference_id, kid_profile_id")
-      .eq("user_id", user.id)
-      .in("activity_type", ["story_read", "story_completed"]);
+    // Use RPC functions to bypass RLS overhead (SECURITY DEFINER)
+    const storiesQuery = supabase
+      .rpc("get_my_stories", {
+        p_profile_id: selectedProfileId || null,
+        p_limit: 200,
+        p_offset: 0,
+      })
+      .select("id, title, cover_image_url, difficulty, text_type, kid_profile_id, series_id, episode_number, ending_type");
+
+    const resultsQuery = supabase.rpc("get_my_results");
 
     // Run both queries in parallel
     const [storiesResult, completionsResult] = await Promise.all([
-      query,
-      completionsQuery,
+      storiesQuery,
+      resultsQuery,
     ]);
 
     const storiesData = storiesResult.data;

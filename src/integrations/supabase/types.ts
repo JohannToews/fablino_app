@@ -1546,6 +1546,75 @@ export type Database = {
     }
     Functions: {
       check_and_award_badges: { Args: { p_child_id: string }; Returns: Json }
+      get_my_results: {
+        Args: { p_story_ids?: string[] }
+        Returns: {
+          activity_type: string
+          correct_answers: number | null
+          created_at: string
+          difficulty: string | null
+          id: string
+          kid_profile_id: string | null
+          metadata: Json | null
+          points_earned: number
+          reference_id: string | null
+          stars_earned: number | null
+          total_questions: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "user_results"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_my_stories: {
+        Args: { p_limit?: number; p_offset?: number; p_profile_id?: string }
+        Returns: {
+          completed: boolean | null
+          concrete_theme: string | null
+          content: string
+          cover_image_status: string | null
+          cover_image_url: string | null
+          created_at: string
+          difficulty: string | null
+          emotional_coloring: string | null
+          emotional_depth: number | null
+          emotional_secondary: string | null
+          ending_type: Database["public"]["Enums"]["ending_type"] | null
+          episode_number: number | null
+          generation_status: string | null
+          generation_time_ms: number | null
+          humor_level: number | null
+          id: string
+          image_count: number | null
+          is_deleted: boolean
+          kid_profile_id: string | null
+          learning_theme_applied: string | null
+          moral_topic: string | null
+          parent_prompt_text: string | null
+          prompt: string | null
+          series_id: string | null
+          story_images: string[] | null
+          story_images_status: string | null
+          structure_beginning: number | null
+          structure_ending: number | null
+          structure_middle: number | null
+          text_language: string
+          text_type: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "stories"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_my_story_count: { Args: { p_profile_id?: string }; Returns: number }
       get_results_page: { Args: { p_child_id: string }; Returns: Json }
       get_user_profile_id: { Args: never; Returns: string }
       has_role: {

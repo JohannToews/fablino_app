@@ -53,18 +53,14 @@ const VocabularyManagePage = () => {
   const loadData = async () => {
     if (!user) return;
     
-    // Build stories query - filter by kid_profile_id if selected
-    let storiesQuery = supabase
-      .from("stories")
-      .select("id, title")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    
-    if (selectedProfileId) {
-      storiesQuery = storiesQuery.or(`kid_profile_id.eq.${selectedProfileId},kid_profile_id.is.null`);
-    }
-    
-    const { data: storiesData } = await storiesQuery;
+    // Use RPC to bypass RLS overhead
+    const { data: storiesData } = await supabase
+      .rpc("get_my_stories", {
+        p_profile_id: selectedProfileId || null,
+        p_limit: 500,
+        p_offset: 0,
+      })
+      .select("id, title");
     
     if (storiesData && storiesData.length > 0) {
       setStories(storiesData);
