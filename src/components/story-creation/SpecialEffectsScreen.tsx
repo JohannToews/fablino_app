@@ -236,7 +236,7 @@ const SpecialEffectsScreen = ({
       </div>
 
       {/* Vertically centered content – consistent with all other screens */}
-      <div className="flex-1 flex flex-col items-stretch px-5 max-w-[480px] mx-auto w-full gap-4 pb-6">
+      <div className="flex-1 flex flex-col items-stretch px-5 max-w-[600px] mx-auto w-full gap-4 pb-6">
         {/* Fablino Header – identical to Home, Entry, Theme screens */}
         {fablinoMessage && (
           <FablinoPageHeader
@@ -250,8 +250,8 @@ const SpecialEffectsScreen = ({
         {showSettings && (
           <div className="w-full space-y-2">
             {/* Length */}
-            <div className="flex items-center gap-3">
-              <span className="w-24 text-sm font-medium text-[#2D1810] shrink-0">{st.lengthLabel}</span>
+            <div className="flex items-center gap-3 justify-between">
+              <span className="text-sm font-medium text-[#2D1810] shrink-0">{st.lengthLabel}</span>
               <div className="inline-flex gap-1">
                 {(["short", "medium", "long"] as StoryLength[]).map((len) => (
                   <button
@@ -271,8 +271,8 @@ const SpecialEffectsScreen = ({
             </div>
 
             {/* Difficulty */}
-            <div className="flex items-center gap-3">
-              <span className="w-24 text-sm font-medium text-[#2D1810] shrink-0">{st.difficultyLabel}</span>
+            <div className="flex items-center gap-3 justify-between">
+              <span className="text-sm font-medium text-[#2D1810] shrink-0">{st.difficultyLabel}</span>
               <div className="inline-flex gap-1">
                 {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
                   <button
@@ -293,8 +293,8 @@ const SpecialEffectsScreen = ({
 
             {/* Language */}
             {availableLanguages.length > 0 && (
-              <div className="flex items-center gap-3">
-                <span className="w-24 text-sm font-medium text-[#2D1810] shrink-0">{st.languageLabel}</span>
+              <div className="flex items-center gap-3 justify-between">
+                <span className="text-sm font-medium text-[#2D1810] shrink-0">{st.languageLabel}</span>
                 <div className="inline-flex gap-1 flex-wrap">
                   {availableLanguages.map((lang) => (
                     <button
@@ -321,7 +321,7 @@ const SpecialEffectsScreen = ({
           <h2 className="text-sm font-semibold text-center text-[#2D1810]">
             {t.effectsHeader}
           </h2>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {attributeOptions.map((option) => {
               const isSelected = selectedAttributes.includes(option.id);
               return (
@@ -329,7 +329,7 @@ const SpecialEffectsScreen = ({
                   key={option.id}
                   onClick={() => toggleAttribute(option.id)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 w-full aspect-square rounded-xl",
+                    "flex flex-col items-center justify-center gap-1.5 w-full py-4 rounded-2xl",
                     "transition-all duration-150 cursor-pointer",
                     "hover:scale-105 active:scale-95",
                     "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1",
@@ -338,8 +338,8 @@ const SpecialEffectsScreen = ({
                       : "border border-gray-200 bg-white hover:border-[#E8863A]/30"
                   )}
                 >
-                  <span className="text-2xl leading-none">{option.emoji}</span>
-                  <span className="text-[10px] font-medium text-center leading-tight text-[#2D1810]">
+                  <span className="text-3xl leading-none">{option.emoji}</span>
+                  <span className="text-xs font-medium text-center leading-tight text-[#2D1810]">
                     {t[option.labelKey]}
                   </span>
                 </button>
