@@ -660,7 +660,12 @@ async function callGeminiImageAPI(
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Gemini Image API error:", response.status, errorText);
-        return null;
+        // Don't retry on permanent errors (400 = region block, 403 = forbidden)
+        if (response.status === 400 || response.status === 403) {
+          return null;
+        }
+        lastError = new Error(`Gemini error ${response.status}`);
+        continue;
       }
 
       const data = await response.json();
@@ -1644,20 +1649,22 @@ Respond ONLY with valid JSON:
           }
           console.log(`[generate-story] Cache MISS for ${imgPrompt.label}`);
 
-          // 2. Generate image (Gemini → Lovable Gateway fallback chain)
+          // 2. Generate image (Lovable Gateway first → Gemini fallback)
           let imageUrl: string | null = null;
 
+          // Try Lovable Gateway first (no regional restrictions)
           try {
-            imageUrl = await callGeminiImageAPI(GEMINI_API_KEY!, imgPrompt.prompt);
-          } catch (geminiError) {
-            console.log(`[generate-story] Gemini failed for ${imgPrompt.label}, trying Lovable Gateway`);
+            imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY!, imgPrompt.prompt);
+          } catch (lovableError) {
+            console.log(`[generate-story] Lovable Gateway failed for ${imgPrompt.label}:`, lovableError);
           }
 
+          // Fallback to direct Gemini API
           if (!imageUrl) {
             try {
-              imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY!, imgPrompt.prompt);
-            } catch (lovableError) {
-              console.error(`[generate-story] Lovable Gateway failed for ${imgPrompt.label}:`, lovableError);
+              imageUrl = await callGeminiImageAPI(GEMINI_API_KEY!, imgPrompt.prompt);
+            } catch (geminiError) {
+              console.error(`[generate-story] Gemini also failed for ${imgPrompt.label}:`, geminiError);
             }
           }
 
