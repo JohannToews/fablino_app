@@ -1615,17 +1615,14 @@ export type Database = {
         }
       }
       get_my_stories_list: {
-        Args: { p_limit?: number; p_offset?: number; p_profile_id?: string }
+        Args: { p_limit?: number; p_offset?: number; p_profile_id: string }
         Returns: {
           cover_image_url: string
           created_at: string
-          difficulty: string
-          ending_type: string
-          episode_number: number
+          difficulty_level: string
           id: string
-          kid_profile_id: string
-          series_id: string
-          text_type: string
+          language: string
+          status: string
           title: string
         }[]
       }
