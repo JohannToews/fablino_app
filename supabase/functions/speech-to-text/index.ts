@@ -1,10 +1,14 @@
 /**
  * Speech-to-Text Edge Function
  * Uses Gladia V2 API (EU-based, GDPR-compliant)
- *
- * Flow: Upload audio → Create transcription → Poll for result
  */
-import { getCorsHeaders, handleCorsOptions } from '../_shared/cors.ts';
+
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-legacy-token, x-legacy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Max-Age': '86400',
+};
 
 const ALLOWED_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -22,12 +26,12 @@ const CUSTOM_VOCABULARY = [
 Deno.serve(async (req) => {
   console.log(`[STT] Request: method=${req.method}, content-type=${req.headers.get('content-type')?.substring(0, 60)}`);
 
-  // Handle CORS preflight
-  const corsResponse = handleCorsOptions(req);
-  if (corsResponse) return corsResponse;
+  // CORS Preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
 
-  const cors = getCorsHeaders(req);
-  const jsonHeaders = { ...cors, 'Content-Type': 'application/json' };
+  const jsonHeaders = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
 
   try {
     // ── Validate API key ──────────────────────────────────────────────
