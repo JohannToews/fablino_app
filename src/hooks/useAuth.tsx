@@ -293,7 +293,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           authMigrated: false,
         };
 
-        // Save to sessionStorage for persistence
+        // If we got an authToken, establish a real Supabase Auth session
+        // This is needed so auth.uid() works in RLS policies
+        if (data.authToken) {
+          try {
+            const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+              token_hash: data.authToken,
+              type: 'magiclink',
+            });
+            if (!otpError && otpData?.session) {
+              setSession(otpData.session);
+              setUser(userData);
+              setAuthMode('legacy');
+              saveLegacySession(otpData.session.access_token, userData);
+              return { success: true };
+            }
+            console.error('OTP verification failed:', otpError);
+          } catch (otpErr) {
+            console.error('Error verifying auth token:', otpErr);
+          }
+        }
+
+        // Fallback: Save to sessionStorage for persistence (no real auth session)
         saveLegacySession(data.token || 'legacy-auth-token', userData);
 
         // Create a mock session for legacy login

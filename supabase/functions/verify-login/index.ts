@@ -68,10 +68,34 @@ Deno.serve(async (req) => {
     const userRole = roleData?.role || 'standard';
     const sessionToken = crypto.randomUUID();
     
+    // If user has an auth_id, generate a magic link token so the client
+    // can establish a real Supabase Auth session (needed for RLS)
+    let authToken: string | null = null;
+    if (user.auth_id) {
+      try {
+        // Get the auth user's email
+        const { data: authUser } = await supabase.auth.admin.getUserById(user.auth_id);
+        if (authUser?.user?.email) {
+          const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+            type: 'magiclink',
+            email: authUser.user.email,
+          });
+          if (!linkError && linkData?.properties?.hashed_token) {
+            authToken = linkData.properties.hashed_token;
+          } else {
+            console.error('Error generating auth link:', linkError);
+          }
+        }
+      } catch (authErr) {
+        console.error('Error creating auth session for legacy user:', authErr);
+      }
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
         token: sessionToken,
+        authToken,
         user: {
           id: user.id,
           username: user.username,
