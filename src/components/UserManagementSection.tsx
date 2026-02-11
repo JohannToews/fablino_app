@@ -58,22 +58,32 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await invokeEdgeFunction("manage-users", {
+      const result = await invokeEdgeFunction("manage-users", {
         action: "list",
       });
 
-      if (error) throw error;
-      setUsers(data.users || []);
+      if (result?.error) {
+        console.error("Error loading users:", result.error);
+        toast.error(t.error);
+        setUsers([]);
+        setIsLoading(false);
+        return;
+      }
+      setUsers(result?.data?.users || []);
     } catch (error) {
       console.error("Error loading users:", error);
       toast.error(t.error);
+      setUsers([]);
     }
     setIsLoading(false);
   };
 
+  // Only load users when the collapsible is opened
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (isOpen) {
+      loadUsers();
+    }
+  }, [isOpen]);
 
   const createUser = async () => {
     if (!newUsername.trim() || !newDisplayName.trim() || !newPassword.trim()) {
