@@ -15,6 +15,8 @@ import {
   CharacterSelectionTranslations,
 } from "./types";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
+import { useTranslations } from "@/lib/translations";
+import { useKidProfile } from "@/hooks/useKidProfile";
 
 // Character images
 import heroKidImg from "@/assets/people/me.png";
@@ -61,6 +63,8 @@ const CharacterSelectionScreen = ({
   onBack,
   fablinoMessage,
 }: CharacterSelectionScreenProps) => {
+  const { kidAppLanguage } = useKidProfile();
+  const t = useTranslations(kidAppLanguage);
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
   const [surpriseCharacters, setSurpriseCharacters] = useState(false);
@@ -83,10 +87,12 @@ const CharacterSelectionScreen = ({
 
   // Saved kid_characters from DB
   const [savedCharacters, setSavedCharacters] = useState<KidCharacterDB[]>([]);
+  const [charLoadKey, setCharLoadKey] = useState(0);
+
+  const effectiveKidProfileId = kidProfileId ?? sessionStorage.getItem('selected_kid_profile_id') ?? undefined;
 
   // Load saved characters from DB
   useEffect(() => {
-    const effectiveKidProfileId = kidProfileId ?? sessionStorage.getItem('selected_kid_profile_id') ?? undefined;
     if (!effectiveKidProfileId) return;
 
     const loadSavedCharacters = async () => {
@@ -105,7 +111,21 @@ const CharacterSelectionScreen = ({
     };
 
     loadSavedCharacters();
-  }, [kidProfileId]);
+  }, [effectiveKidProfileId, charLoadKey]);
+
+  // Relation options for inline add form
+  const familyRelationOptions = [
+    { value: 'Mama', label: t.relationMama },
+    { value: 'Papa', label: t.relationPapa },
+    { value: 'Bruder', label: t.relationBrother },
+    { value: 'Schwester', label: t.relationSister },
+    { value: 'Oma', label: t.relationGrandma },
+    { value: 'Opa', label: t.relationGrandpa },
+    { value: 'Cousin', label: t.relationCousin },
+    { value: 'Cousine', label: t.relationCousine },
+    { value: 'Tante', label: t.relationAunt },
+    { value: 'Onkel', label: t.relationUncle },
+  ];
 
   // Filter saved characters by role
   const familyChars = savedCharacters.filter(c => c.role === 'family');
@@ -418,6 +438,16 @@ const CharacterSelectionScreen = ({
         title={savedModalCategory ? getModalTitle(savedModalCategory) : ""}
         emptyMessage={translations.noCharactersSaved}
         doneLabel={translations.save}
+        kidProfileId={effectiveKidProfileId}
+        category={savedModalCategory || undefined}
+        relationOptions={savedModalCategory === "family" ? familyRelationOptions : undefined}
+        addNewLabel={translations.addMore}
+        nameLabel={translations.characterName}
+        relationLabel={translations.characterRelation}
+        ageLabel={translations.characterAge}
+        saveLabel={translations.save}
+        cancelLabel={translations.cancel}
+        onCharacterAdded={() => setCharLoadKey(k => k + 1)}
       />
 
       {/* Name Input Modal (for me, friends, famous) */}
