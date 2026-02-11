@@ -2,6 +2,8 @@
 const ALLOWED_ORIGINS = [
   'https://kinder-wort-trainer.lovable.app',
   'https://fablino.lovable.app',
+  'https://www.fablino.eu',
+  'https://fablino.eu',
   'http://localhost:5173',
   'http://localhost:8080',
   'http://localhost:3000',
