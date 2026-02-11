@@ -98,7 +98,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
   // Send audio to Gladia via edge function
   const transcribeAudio = useCallback(async (audioBlob: Blob) => {
     setState('processing');
-    console.log(`[VoiceRecorder] Transcribing ${audioBlob.size} bytes, language: ${language}`);
+    console.log(`[VoiceRecorder] Transcribing ${audioBlob.size} bytes, type: ${audioBlob.type}, language: ${language}`);
 
     try {
       const formData = new FormData();
@@ -106,21 +106,22 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       formData.append('audio', audioBlob, `recording.${ext}`);
       formData.append('language', language);
 
-      // Use raw fetch instead of supabase.functions.invoke to avoid
-      // Content-Type issues with FormData on repeated calls
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const extraHeaders = getHeaders();
+
+      console.log(`[VoiceRecorder] Sending to ${supabaseUrl}/functions/v1/speech-to-text`);
 
       const response = await fetch(`${supabaseUrl}/functions/v1/speech-to-text`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           ...extraHeaders,
-          // Do NOT set Content-Type – browser sets multipart boundary automatically
         },
         body: formData,
       });
+
+      console.log(`[VoiceRecorder] Response status: ${response.status}`);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -131,7 +132,6 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       }
 
       const data = await response.json();
-
       const text = (data?.text || '').trim();
       console.log(`[VoiceRecorder] Transcript: "${text}"`);
 
@@ -144,7 +144,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       setTranscript(text);
       setState('result');
     } catch (err) {
-      console.error('[VoiceRecorder] Transcription error:', err);
+      console.error('[VoiceRecorder] Transcription fetch error:', err);
       setErrorType('failed');
       setState('error');
     }
@@ -152,15 +152,17 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
   // Start recording
   const startRecording = useCallback(async () => {
+    console.log('[VoiceRecorder] startRecording called, cleaning up previous session...');
     await cleanup();
-    // Small delay helps iOS/Safari to fully release the mic between sessions
-    await new Promise((r) => setTimeout(r, 200));
+    // Longer delay for Android/iOS to fully release mic hardware
+    await new Promise((r) => setTimeout(r, 350));
 
     setTranscript('');
     setErrorType(null);
     setDuration(0);
 
     try {
+      console.log('[VoiceRecorder] Requesting getUserMedia...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -168,6 +170,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
           autoGainControl: true,
         },
       });
+      console.log(`[VoiceRecorder] Got stream, tracks: ${stream.getAudioTracks().length}, active: ${stream.active}`);
       streamRef.current = stream;
 
       // Set up Web Audio API for waveform visualization
