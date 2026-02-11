@@ -84,22 +84,29 @@ const AdminPage = () => {
   const loadStories = async () => {
     if (!user) return;
     
-    let query = supabase
-      .from("stories")
-      .select("id, title, cover_image_url, kid_profile_id")
-      .eq("user_id", user.id)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
-    
-    // Filter by selected kid profile
-    if (selectedProfileId) {
-      query = query.eq("kid_profile_id", selectedProfileId);
-    }
-    
-    const { data } = await query;
-    
-    if (data) {
-      setStories(data);
+    try {
+      let query = supabase
+        .from("stories")
+        .select("id, title, cover_image_url, kid_profile_id")
+        .eq("user_id", user.id)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false });
+      
+      // Filter by selected kid profile
+      if (selectedProfileId) {
+        query = query.eq("kid_profile_id", selectedProfileId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("[AdminPage] loadStories error:", error);
+        return;
+      }
+      
+      setStories(data || []);
+    } catch (err) {
+      console.error("[AdminPage] loadStories crash:", err);
     }
   };
 
