@@ -1,8 +1,26 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Supabase URL und Key aus dem bestehenden Client oder aus Env extrahieren
+function getSupabaseConfig() {
+  // Versuche zuerst aus dem Client zu extrahieren
+  const restUrl = (supabase as any).restUrl || (supabase as any).supabaseUrl || '';
+  const baseUrl = restUrl.replace('/rest/v1', '');
+  
+  const anonKey = (supabase as any).supabaseKey 
+    || (supabase as any).headers?.['apikey'] 
+    || '';
+  
+  // Fallback: aus Environment Variablen
+  if (!baseUrl || baseUrl === 'undefined' || !baseUrl.startsWith('http')) {
+    return {
+      baseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+      anonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '',
+    };
+  }
+  
+  return { baseUrl, anonKey };
+}
 
 export type VoiceRecorderState = 'idle' | 'recording' | 'processing' | 'result' | 'error';
 export type VoiceErrorType = 'mic_denied' | 'empty' | 'failed';
@@ -126,30 +144,32 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       });
 
       const mimeType = audioBlob.type || 'audio/webm';
-      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
       setDebugInfo(`b64: ${Math.round(base64.length / 1024)}KB`);
 
-      // Step 2: Get fresh auth session
+      // Config aus dem bestehenden Supabase Client oder Env holen
+      const { baseUrl, anonKey } = getSupabaseConfig();
+      
+      if (!baseUrl || baseUrl === 'undefined' || !baseUrl.startsWith('http')) {
+        throw new Error(`Supabase URL ungültig: "${baseUrl}"`);
+      }
+
+      const url = `${baseUrl}/functions/v1/speech-to-text`;
+      setDebugInfo(`b64: ${Math.round(baseUrl.length ? baseUrl.substring(8, 30) : 'MISSING')}`);
+
+      // Get fresh auth session
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
-
-      // Step 3: Direct fetch (bypasses supabase.functions.invoke Safari issues)
-      const url = `${SUPABASE_URL}/functions/v1/speech-to-text`;
-
-      const fetchHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_PUBLISHABLE_KEY,
-        'Authorization': `Bearer ${accessToken || SUPABASE_PUBLISHABLE_KEY}`,
-      };
-
-      setDebugInfo(`b64: ${Math.round(base64.length / 1024)}KB | fetching...`);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 20000);
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: fetchHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${accessToken || anonKey}`,
+        },
         body: JSON.stringify({
           audio: base64,
           language: languageRef.current,
