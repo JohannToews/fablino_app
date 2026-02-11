@@ -6,6 +6,8 @@ import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAG
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
+import FablinoMascot from "@/components/FablinoMascot";
+import VoiceRecordButton from "./VoiceRecordButton";
 
 interface SpecialEffectsTranslations {
   header: string;
@@ -182,7 +184,7 @@ const SpecialEffectsScreen = ({
   defaultLanguage = 'fr',
   fablinoMessage,
 }: SpecialEffectsScreenProps) => {
-  const { kidAppLanguage } = useKidProfile();
+  const { kidAppLanguage, kidReadingLanguage } = useKidProfile();
   const t = translations[kidAppLanguage] || translations.de;
   const st = settingsTranslations[kidAppLanguage] || settingsTranslations.de;
   
@@ -346,17 +348,39 @@ const SpecialEffectsScreen = ({
           </div>
         </div>
 
+        {/* Weg A: Prominent voice input when no text entered yet */}
+        {showSettings && !additionalDescription && (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <FablinoMascot src="/mascot/5_new_story.png" size="sm" />
+            <VoiceRecordButton
+              language={kidReadingLanguage || 'de'}
+              onTranscript={(text) => setAdditionalDescription(text)}
+              className="scale-125"
+            />
+          </div>
+        )}
+
         {/* Additional Description – compact */}
         <div className="w-full space-y-2">
           <h2 className="text-sm font-semibold text-center text-[#2D1810]">
             {t.descriptionHeader}
           </h2>
-          <Textarea
-            value={additionalDescription}
-            onChange={(e) => setAdditionalDescription(e.target.value)}
-            placeholder={t.descriptionPlaceholder}
-            className="min-h-[56px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A]"
-          />
+          <div className="relative">
+            <Textarea
+              value={additionalDescription}
+              onChange={(e) => setAdditionalDescription(e.target.value)}
+              placeholder={t.descriptionPlaceholder}
+              className="min-h-[56px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A] pr-16"
+            />
+            <div className="absolute right-2 bottom-2">
+              <VoiceRecordButton
+                language={kidReadingLanguage || 'de'}
+                onTranscript={(text) => {
+                  setAdditionalDescription((prev) => prev ? `${prev} ${text}` : text);
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Create Story Button – orange, inline (not fixed) */}
