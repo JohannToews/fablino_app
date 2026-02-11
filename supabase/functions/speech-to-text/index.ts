@@ -20,6 +20,8 @@ const CUSTOM_VOCABULARY = [
 ];
 
 Deno.serve(async (req) => {
+  console.log(`[STT] Request: method=${req.method}, content-type=${req.headers.get('content-type')?.substring(0, 60)}`);
+
   // Handle CORS preflight
   const corsResponse = handleCorsOptions(req);
   if (corsResponse) return corsResponse;

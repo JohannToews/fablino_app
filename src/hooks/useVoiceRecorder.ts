@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useEdgeFunctionHeaders } from './useEdgeFunctionHeaders';
-import { useToast } from './use-toast';
 
 export type VoiceRecorderState = 'idle' | 'recording' | 'processing' | 'result' | 'error';
 export type VoiceErrorType = 'mic_denied' | 'empty' | 'failed';
@@ -16,6 +15,7 @@ interface UseVoiceRecorderReturn {
   duration: number;
   maxDuration: number;
   errorType: VoiceErrorType | null;
+  errorDetail: string;
   analyser: AnalyserNode | null;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
@@ -26,12 +26,12 @@ interface UseVoiceRecorderReturn {
 export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoiceRecorderReturn {
   const { language = 'de', maxDuration = 30 } = options;
   const { getHeaders } = useEdgeFunctionHeaders();
-  const { toast } = useToast();
 
   const [state, setState] = useState<VoiceRecorderState>('idle');
   const [transcript, setTranscript] = useState('');
   const [duration, setDuration] = useState(0);
   const [errorType, setErrorType] = useState<VoiceErrorType | null>(null);
+  const [errorDetail, setErrorDetail] = useState('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -41,34 +41,40 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Cleanup all resources (important on iOS/Safari where mic can stay "busy")
-  const cleanup = useCallback(async () => {
+  // Cleanup all resources (important on mobile where mic can stay "busy")
+  const cleanup = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
     // Stop recorder without triggering transcription (detach handlers first)
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (mediaRecorderRef.current) {
       const recorder = mediaRecorderRef.current;
       try {
         recorder.ondataavailable = null;
         recorder.onstop = null;
-        recorder.stop();
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
+        }
       } catch (_) {
         /* ignore */
       }
+      mediaRecorderRef.current = null;
     }
-    mediaRecorderRef.current = null;
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      try {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      } catch (_) {
+        /* ignore */
+      }
       streamRef.current = null;
     }
 
     if (audioContextRef.current) {
       try {
-        await audioContextRef.current.close();
+        audioContextRef.current.close();
       } catch (_) {
         /* ignore */
       }
@@ -82,7 +88,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      void cleanup();
+      cleanup();
     };
   }, [cleanup]);
 
@@ -95,10 +101,10 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     return 'audio/webm';
   };
 
-  // Send audio to Gladia via edge function
+  // Send audio to edge function for transcription
   const transcribeAudio = useCallback(async (audioBlob: Blob) => {
     setState('processing');
-    console.log(`[VoiceRecorder] Transcribing ${audioBlob.size} bytes, type: ${audioBlob.type}, language: ${language}`);
+    setErrorDetail('');
 
     try {
       const formData = new FormData();
@@ -110,8 +116,6 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const extraHeaders = getHeaders();
 
-      console.log(`[VoiceRecorder] Sending to ${supabaseUrl}/functions/v1/speech-to-text`);
-
       const response = await fetch(`${supabaseUrl}/functions/v1/speech-to-text`, {
         method: 'POST',
         headers: {
@@ -121,11 +125,9 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
         body: formData,
       });
 
-      console.log(`[VoiceRecorder] Response status: ${response.status}`);
-
       if (!response.ok) {
         const errText = await response.text();
-        console.error('[VoiceRecorder] Edge function error:', response.status, errText);
+        setErrorDetail(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
         setErrorType('failed');
         setState('error');
         return;
@@ -133,9 +135,9 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
       const data = await response.json();
       const text = (data?.text || '').trim();
-      console.log(`[VoiceRecorder] Transcript: "${text}"`);
 
       if (!text) {
+        setErrorDetail(`Response: ${JSON.stringify(data).substring(0, 200)}`);
         setErrorType('empty');
         setState('error');
         return;
@@ -144,7 +146,8 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       setTranscript(text);
       setState('result');
     } catch (err) {
-      console.error('[VoiceRecorder] Transcription fetch error:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorDetail(`Fetch: ${message}`);
       setErrorType('failed');
       setState('error');
     }
@@ -152,17 +155,18 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
   // Start recording
   const startRecording = useCallback(async () => {
-    console.log('[VoiceRecorder] startRecording called, cleaning up previous session...');
-    await cleanup();
-    // Longer delay for Android/iOS to fully release mic hardware
-    await new Promise((r) => setTimeout(r, 350));
+    // ALWAYS cleanup previous session first
+    cleanup();
+
+    // Small delay for mobile browsers to fully release mic hardware
+    await new Promise((r) => setTimeout(r, 300));
 
     setTranscript('');
     setErrorType(null);
+    setErrorDetail('');
     setDuration(0);
 
     try {
-      console.log('[VoiceRecorder] Requesting getUserMedia...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -170,10 +174,9 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
           autoGainControl: true,
         },
       });
-      console.log(`[VoiceRecorder] Got stream, tracks: ${stream.getAudioTracks().length}, active: ${stream.active}`);
       streamRef.current = stream;
 
-      // Set up Web Audio API for waveform visualization
+      // ALWAYS create a fresh AudioContext
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
       const source = audioContext.createMediaStreamSource(stream);
@@ -184,7 +187,6 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
       // Set up MediaRecorder
       const mimeType = getMimeType();
-      console.log(`[VoiceRecorder] Starting with mimeType: ${mimeType}`);
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
@@ -196,22 +198,18 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        console.log(`[VoiceRecorder] Recording stopped, blob size: ${blob.size}`);
+        const chunks = [...chunksRef.current];
+        const blob = new Blob(chunks, { type: mimeType });
 
-        // Release mic resources ASAP (important for iOS Safari)
+        // Release mic resources ASAP
         try {
           streamRef.current?.getTracks().forEach((t) => t.stop());
-        } catch (_) {
-          /* ignore */
-        }
+        } catch (_) { /* ignore */ }
         streamRef.current = null;
 
         try {
           audioContextRef.current?.close();
-        } catch (_) {
-          /* ignore */
-        }
+        } catch (_) { /* ignore */ }
         audioContextRef.current = null;
         setAnalyser(null);
         mediaRecorderRef.current = null;
@@ -219,12 +217,12 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
         if (blob.size > 0) {
           transcribeAudio(blob);
         } else {
+          setErrorDetail(`Blob size: 0, chunks: ${chunks.length}`);
           setErrorType('empty');
           setState('error');
         }
       };
 
-      // Start recording with timeslice for smooth stop
       recorder.start(100);
       startTimeRef.current = Date.now();
       setState('recording');
@@ -234,9 +232,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
         const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         setDuration(elapsed);
 
-        // Auto-stop at maxDuration
         if (elapsed >= maxDuration) {
-          console.log(`[VoiceRecorder] Auto-stop at ${maxDuration}s`);
           if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop();
           }
@@ -248,8 +244,9 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       }, 200);
 
     } catch (err: any) {
-      console.error('[VoiceRecorder] getUserMedia error:', err);
       cleanup();
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorDetail(`getUserMedia: ${message} (name: ${err?.name})`);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setErrorType('mic_denied');
       } else {
@@ -268,22 +265,21 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
-    // NOTE: stream/audioContext are released in recorder.onstop (more reliable on iOS)
+    // stream/audioContext are released in recorder.onstop
   }, []);
 
-  // Retry: go back to idle
+  // Retry: reset everything back to idle
   const retry = useCallback(() => {
     cleanup();
     setTranscript('');
     setErrorType(null);
+    setErrorDetail('');
     setDuration(0);
     setState('idle');
   }, [cleanup]);
 
-  // Confirm: stay in result state (parent reads transcript)
-  const confirm = useCallback(() => {
-    // No-op internally; parent handles via onTranscript
-  }, []);
+  // Confirm: no-op internally; parent reads transcript
+  const confirm = useCallback(() => {}, []);
 
   return {
     state,
@@ -291,6 +287,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     duration,
     maxDuration,
     errorType,
+    errorDetail,
     analyser,
     startRecording,
     stopRecording,

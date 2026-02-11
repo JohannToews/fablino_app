@@ -99,6 +99,7 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
     duration,
     maxDuration,
     errorType,
+    errorDetail,
     analyser,
     startRecording,
     stopRecording,
@@ -188,7 +189,7 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
     return (
       <div className={`flex flex-col items-center gap-3 ${className}`}>
         <p
-          className="text-sm text-center px-2 max-w-[280px] leading-relaxed rounded-xl py-2 px-3"
+          className="text-sm text-center max-w-[280px] leading-relaxed rounded-xl py-2 px-3"
           style={{
             color: FABLINO_COLORS.text,
             backgroundColor: FABLINO_COLORS.secondary,
@@ -233,6 +234,11 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
         >
           {getErrorMessage(labels, errorType)}
         </p>
+        {errorDetail && (
+          <p className="text-[10px] text-gray-400 text-center max-w-[300px] break-all leading-tight px-2">
+            Debug: {errorDetail}
+          </p>
+        )}
         <button
           type="button"
           onClick={retry}
