@@ -7,10 +7,36 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // Nur Admin kann diese Function nutzen
+    const body = await req.json();
+    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage, appLanguage } = body;
+
+    // For language updates on own profile, allow any authenticated user
+    if (action === "updateLanguages" || action === "updateLanguage") {
+      const { getAuthenticatedUser } = await import('../_shared/auth.ts');
+      const auth = await getAuthenticatedUser(req);
+      
+      // Allow if updating own profile OR if admin
+      if (userId === auth.userId || auth.isAdmin) {
+        const updateData: Record<string, string> = { updated_at: new Date().toISOString() };
+        if (adminLanguage) updateData.admin_language = adminLanguage;
+        if (appLanguage) updateData.app_language = appLanguage;
+        
+        const { error } = await auth.supabase
+          .from("user_profiles")
+          .update(updateData)
+          .eq("id", userId);
+
+        if (error) throw error;
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+      throw new Error('Unauthorized: cannot update other user languages');
+    }
+
+    // All other actions require admin
     const { supabase } = await requireAdmin(req);
-    
-    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage, appLanguage } = await req.json();
 
     if (action === "list") {
       // Get all users with their roles
@@ -94,37 +120,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (action === "updateLanguage" && userId && adminLanguage) {
-      // Update user's admin language
-      const { error } = await supabase
-        .from("user_profiles")
-        .update({ admin_language: adminLanguage, updated_at: new Date().toISOString() })
-        .eq("id", userId);
-
-      if (error) throw error;
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
-
-    if (action === "updateLanguages" && userId) {
-      // Update user's language settings (admin + app)
-      const updateData: Record<string, string> = { updated_at: new Date().toISOString() };
-      if (adminLanguage) updateData.admin_language = adminLanguage;
-      if (appLanguage) updateData.app_language = appLanguage;
-      
-      const { error } = await supabase
-        .from("user_profiles")
-        .update(updateData)
-        .eq("id", userId);
-
-      if (error) throw error;
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
+    // updateLanguage and updateLanguages are handled above (before requireAdmin)
 
     if (action === "delete" && userId) {
       // Delete user and all related data
