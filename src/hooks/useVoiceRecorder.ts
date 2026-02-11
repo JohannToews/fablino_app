@@ -119,10 +119,18 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     }
 
     try {
-      // Build FormData fresh each time
+      // WebKit/Safari Fix: Blob-Daten explizit kopieren
+      // Safari invalidiert Blob-Referenzen nach dem ersten fetch.
+      // ArrayBuffer-Kopie erzwingt eine echte Datenkopie.
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const freshBlob = new Blob([arrayBuffer], { type: audioBlob.type });
+      const audioFile = new File([freshBlob], `recording.${audioBlob.type.includes('mp4') ? 'mp4' : 'webm'}`, { 
+        type: freshBlob.type,
+        lastModified: Date.now() 
+      });
+
       const formData = new FormData();
-      const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
-      formData.append('audio', new Blob([audioBlob], { type: audioBlob.type }), `recording.${ext}`);
+      formData.append('audio', audioFile);
       formData.append('language', languageRef.current);
 
       // Only auth headers – NO Content-Type (browser sets multipart boundary)
@@ -214,9 +222,9 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       };
 
       recorder.onstop = () => {
+        // Sofort Blob erstellen und chunks leeren
         const chunks = [...chunksRef.current];
         chunksRef.current = [];
-        const blob = new Blob(chunks, { type: mimeType });
 
         // Release mic resources ASAP
         try { streamRef.current?.getTracks().forEach((t) => t.stop()); } catch (_) { /* */ }
@@ -226,6 +234,15 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
         setAnalyser(null);
         mediaRecorderRef.current = null;
 
+        if (chunks.length === 0) {
+          setDebugInfo(`chunks: 0, blob: 0b`);
+          setErrorDetail('Keine Audio-Daten aufgenommen');
+          setErrorType('empty');
+          setState('error');
+          return;
+        }
+
+        const blob = new Blob(chunks, { type: mimeType });
         if (blob.size > 0) {
           // Use ref to always call latest transcribe function (no stale closure)
           transcribeRef.current(blob);
