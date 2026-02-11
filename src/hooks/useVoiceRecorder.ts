@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useEdgeFunctionHeaders } from './useEdgeFunctionHeaders';
+import { supabase } from '@/integrations/supabase/client';
 
 export type VoiceRecorderState = 'idle' | 'recording' | 'processing' | 'result' | 'error';
 export type VoiceErrorType = 'mic_denied' | 'empty' | 'failed';
@@ -24,13 +24,8 @@ interface UseVoiceRecorderReturn {
   confirm: () => void;
 }
 
-// Hardcoded fallbacks to avoid undefined env vars on some devices
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://bafzwrvgffyxbiqfbitm.supabase.co';
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-
 export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoiceRecorderReturn {
   const { language = 'de', maxDuration = 30 } = options;
-  const { getHeaders } = useEdgeFunctionHeaders();
 
   const [state, setState] = useState<VoiceRecorderState>('idle');
   const [transcript, setTranscript] = useState('');
@@ -47,11 +42,9 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Use refs for values needed in recorder.onstop to avoid stale closures
+  // Use ref for language to avoid stale closures in onstop
   const languageRef = useRef(language);
-  const getHeadersRef = useRef(getHeaders);
   useEffect(() => { languageRef.current = language; }, [language]);
-  useEffect(() => { getHeadersRef.current = getHeaders; }, [getHeaders]);
 
   // Cleanup all resources
   const cleanup = useCallback(() => {
@@ -102,14 +95,10 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     return 'audio/webm';
   };
 
-  // Transcribe function – NOT a useCallback, called from onstop via ref
+  // Transcribe: Blob → Base64 → JSON (no FormData = no Safari issues)
   const doTranscribe = async (audioBlob: Blob) => {
     setState('processing');
     setErrorDetail('');
-
-    const url = `${SUPABASE_URL}/functions/v1/speech-to-text`;
-    const blobInfo = `Blob:${audioBlob.size}b type:${audioBlob.type} url:${SUPABASE_URL ? 'ok' : 'MISSING'}`;
-    setDebugInfo(blobInfo);
 
     if (!audioBlob || audioBlob.size === 0) {
       setErrorDetail('Aufnahme ist leer (0 bytes)');
@@ -119,49 +108,40 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
     }
 
     try {
-      // WebKit/Safari Fix: Blob-Daten explizit kopieren
-      // Safari invalidiert Blob-Referenzen nach dem ersten fetch.
-      // ArrayBuffer-Kopie erzwingt eine echte Datenkopie.
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const freshBlob = new Blob([arrayBuffer], { type: audioBlob.type });
-      const audioFile = new File([freshBlob], `recording.${audioBlob.type.includes('mp4') ? 'mp4' : 'webm'}`, { 
-        type: freshBlob.type,
-        lastModified: Date.now() 
+      // Convert Blob → Base64 via FileReader (Safari-safe)
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          if (base64Data) {
+            resolve(base64Data);
+          } else {
+            reject(new Error('Base64 conversion failed'));
+          }
+        };
+        reader.onerror = () => reject(new Error('FileReader error'));
+        reader.readAsDataURL(audioBlob);
       });
 
-      const formData = new FormData();
-      formData.append('audio', audioFile);
-      formData.append('language', languageRef.current);
+      const mimeType = audioBlob.type || 'audio/webm';
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
 
-      // Only auth headers – NO Content-Type (browser sets multipart boundary)
-      const extraHeaders = getHeadersRef.current();
-      const fetchHeaders: Record<string, string> = {
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'apikey': SUPABASE_KEY,
-      };
-      // Add only legacy headers if present
-      if (extraHeaders['x-legacy-token']) {
-        fetchHeaders['x-legacy-token'] = extraHeaders['x-legacy-token'];
-      }
-      if (extraHeaders['x-legacy-user-id']) {
-        fetchHeaders['x-legacy-user-id'] = extraHeaders['x-legacy-user-id'];
-      }
+      setDebugInfo(`Base64: ${Math.round(base64.length / 1024)}KB | ${ext}`);
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: fetchHeaders,
-        body: formData,
+      // Send as plain JSON via supabase.functions.invoke – no FormData
+      const { data, error } = await supabase.functions.invoke('speech-to-text', {
+        body: {
+          audio: base64,
+          language: languageRef.current,
+          mimeType,
+        },
       });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        setErrorDetail(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
-        setErrorType('failed');
-        setState('error');
-        return;
+      if (error) {
+        throw new Error(`Edge Function: ${error.message || JSON.stringify(error)}`);
       }
 
-      const data = await response.json();
       const text = (data?.text || '').trim();
 
       if (!text) {
@@ -222,7 +202,6 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
       };
 
       recorder.onstop = () => {
-        // Sofort Blob erstellen und chunks leeren
         const chunks = [...chunksRef.current];
         chunksRef.current = [];
 
@@ -235,7 +214,7 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
         mediaRecorderRef.current = null;
 
         if (chunks.length === 0) {
-          setDebugInfo(`chunks: 0, blob: 0b`);
+          setDebugInfo('chunks: 0, blob: 0b');
           setErrorDetail('Keine Audio-Daten aufgenommen');
           setErrorType('empty');
           setState('error');
@@ -244,7 +223,6 @@ export function useVoiceRecorder(options: UseVoiceRecorderOptions = {}): UseVoic
 
         const blob = new Blob(chunks, { type: mimeType });
         if (blob.size > 0) {
-          // Use ref to always call latest transcribe function (no stale closure)
           transcribeRef.current(blob);
         } else {
           setDebugInfo(`chunks: ${chunks.length}, blob: 0b`);
