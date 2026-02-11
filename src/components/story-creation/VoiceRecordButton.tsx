@@ -116,18 +116,10 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
     retry(); // Reset to idle after confirm
   };
 
-  // Debug banner – visible in ALL states during testing
-  const debugBanner = (debugInfo || state !== 'idle') ? (
-    <div className="w-full bg-yellow-200 text-yellow-900 text-xs font-mono rounded-lg px-3 py-1.5 text-center mb-1">
-      🐛 lang={language} | state={state} | {debugInfo}
-    </div>
-  ) : null;
-
   // ── IDLE ─────────────────────────────────────────────────────────
   if (state === 'idle') {
     return (
       <div className={`flex flex-col items-center gap-2 ${className}`}>
-        {debugBanner}
         <button
           type="button"
           onClick={startRecording}
@@ -151,7 +143,6 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
   if (state === 'recording') {
     return (
       <div className={`flex flex-col items-center gap-2 ${className}`}>
-        {debugBanner}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -180,7 +171,6 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
   if (state === 'processing') {
     return (
       <div className={`flex flex-col items-center gap-2 ${className}`}>
-        {debugBanner}
         <Loader2
           className="h-8 w-8 animate-spin"
           style={{ color: FABLINO_COLORS.primary }}
@@ -199,7 +189,6 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
   if (state === 'result') {
     return (
       <div className={`flex flex-col items-center gap-3 ${className}`}>
-        {debugBanner}
         <p
           className="text-sm text-center max-w-[280px] leading-relaxed rounded-xl py-2 px-3"
           style={{
@@ -240,7 +229,6 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
   if (state === 'error') {
     return (
       <div className={`flex flex-col items-center gap-3 ${className}`}>
-        {debugBanner}
         <p
           className="text-sm text-center px-4 max-w-[280px] leading-relaxed"
           style={{ color: FABLINO_COLORS.text }}
