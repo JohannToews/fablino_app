@@ -820,18 +820,22 @@ async function generateImageWithCache(
     return cached;
   }
 
-  // Generate new image
+  // Generate new image — Lovable Gateway FIRST (bypasses regional blocks), Gemini direct as fallback
   let imageUrl: string | null = null;
   
   if (useEdit && referenceImage) {
-    imageUrl = await callGeminiImageEditAPI(geminiKey, prompt, referenceImage);
+    // Try Lovable Gateway first for edits
+    imageUrl = await callLovableImageEdit(lovableKey, prompt, referenceImage);
     if (!imageUrl) {
-      imageUrl = await callLovableImageEdit(lovableKey, prompt, referenceImage);
+      console.log('[IMAGE-PIPELINE] Lovable edit failed, trying direct Gemini API...');
+      imageUrl = await callGeminiImageEditAPI(geminiKey, prompt, referenceImage);
     }
   } else {
-    imageUrl = await callGeminiImageAPI(geminiKey, prompt);
+    // Try Lovable Gateway first for generation
+    imageUrl = await callLovableImageGenerate(lovableKey, prompt);
     if (!imageUrl) {
-      imageUrl = await callLovableImageGenerate(lovableKey, prompt);
+      console.log('[IMAGE-PIPELINE] Lovable generate failed, trying direct Gemini API...');
+      imageUrl = await callGeminiImageAPI(geminiKey, prompt);
     }
   }
 
@@ -1283,14 +1287,14 @@ Deno.serve(async (req) => {
     const baseSystemPrompt = fullSystemPromptFinal;
 
     // Get API keys
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
     if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured (needed for image generation)");
+      console.warn("[generate-story] No GEMINI_API_KEY or GOOGLE_VERTEX_AI_KEY configured - image generation may fail");
     }
 
     // Language mappings (used by both new and old paths)
@@ -1957,20 +1961,20 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           }
           console.log(`[generate-story] Cache MISS for ${imgPrompt.label}`);
 
-          // 2. Generate image (Gemini → Lovable Gateway fallback chain)
+          // 2. Generate image (Lovable Gateway FIRST → Gemini direct fallback)
           let imageUrl: string | null = null;
 
           try {
-            imageUrl = await callGeminiImageAPI(GEMINI_API_KEY!, imgPrompt.prompt);
-          } catch (geminiError) {
-            console.log(`[generate-story] Gemini failed for ${imgPrompt.label}, trying Lovable Gateway`);
+            imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY!, imgPrompt.prompt);
+          } catch (lovableError) {
+            console.log(`[IMAGE-PIPELINE] Lovable Gateway failed for ${imgPrompt.label}, trying direct Gemini`);
           }
 
-          if (!imageUrl) {
+          if (!imageUrl && GEMINI_API_KEY) {
             try {
-              imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY!, imgPrompt.prompt);
-            } catch (lovableError) {
-              console.error(`[generate-story] Lovable Gateway failed for ${imgPrompt.label}:`, lovableError);
+              imageUrl = await callGeminiImageAPI(GEMINI_API_KEY, imgPrompt.prompt);
+            } catch (geminiError) {
+              console.error(`[IMAGE-PIPELINE] Gemini direct also failed for ${imgPrompt.label}:`, geminiError);
             }
           }
 
