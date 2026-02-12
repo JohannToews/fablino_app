@@ -170,9 +170,6 @@ const HomeFablino = () => {
   return (
     <div 
       className="min-h-screen flex flex-col items-center font-nunito overflow-hidden"
-      style={{
-        background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)",
-      }}
     >
       <div className="w-full max-w-[480px] px-5 py-6 flex flex-col relative" style={{ minHeight: "100dvh" }}>
 

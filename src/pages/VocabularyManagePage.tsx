@@ -175,14 +175,14 @@ const VocabularyManagePage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-12 w-12 text-primary animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4">
         <div className="max-w-4xl mx-auto flex items-center gap-4">

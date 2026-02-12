@@ -676,7 +676,7 @@ const VocabularyQuizPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-bounce-soft">
           <Sparkles className="h-16 w-16 text-primary" />
         </div>
@@ -686,7 +686,7 @@ const VocabularyQuizPage = () => {
 
   if (words.length === 0) {
     return (
-      <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="min-h-screen">
         <PageHeader title={t.title} backTo="/stories" />
 
         <div className="container max-w-2xl p-8 text-center">
@@ -709,7 +709,7 @@ const VocabularyQuizPage = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen">
       <PageHeader 
         title={t.title} 
         backTo="/stories"

@@ -83,7 +83,7 @@ const StickerBookPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Star className="h-10 w-10 text-amber-500 animate-pulse" />
           <p className="text-amber-700 font-medium">{t.loading || "Laden..."}</p>
@@ -95,7 +95,7 @@ const StickerBookPage = () => {
   const showEmptyState = stories.length === 0;
 
   return (
-    <div className="min-h-screen pb-safe" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen pb-safe">
       {/* Subtle grid texture overlay */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-30"

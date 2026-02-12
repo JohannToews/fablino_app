@@ -588,14 +588,14 @@ const CreateStoryPage = () => {
   // Loading screen while generating
   if (currentScreen === "generating" || isGenerating) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br ${paletteColors.bg} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center">
         <StoryGenerationProgress language={kidAppLanguage} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #FFF4EA 0%, #FFDFC5 50%, #FFD4B0 100%)" }}>
+    <div className="min-h-screen">
        {currentScreen === "entry" && (
         <div className="min-h-screen flex flex-col">
           {/* Header */}

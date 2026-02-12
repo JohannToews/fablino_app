@@ -1,12 +1,26 @@
 export const FABLINO_COLORS = {
   primary: '#E8863A',
   primaryHover: '#D4752E',
+  orangeLight: '#F5A623',
   secondary: '#FFF8F0',
   text: '#2D1810',
+  textSecondary: '#6B5B4E',
   textMuted: '#6B7280',
   white: '#FFFFFF',
   speechBubbleBg: '#FFFFFF',
   speechBubbleTip: '#FFF7ED',
+  background: {
+    top: '#FFF8F0',
+    mid: '#FEF1E1',
+    bottom: '#FDE8D0',
+    gradient: 'linear-gradient(180deg, #FFF8F0 0%, #FEF1E1 50%, #FDE8D0 100%)',
+  },
+  card: {
+    bg: '#FFFFFF',
+    shadow: '0 2px 8px rgba(45, 24, 16, 0.08)',
+    border: 'rgba(232, 134, 58, 0.12)',
+  },
+  progressTrack: '#F0E6DC',
 } as const;
 
 export const FABLINO_SIZES = {

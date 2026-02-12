@@ -153,7 +153,7 @@ const CollectionPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-bounce-soft">
           <Sparkles className="h-16 w-16 text-primary" />
         </div>
@@ -162,7 +162,7 @@ const CollectionPage = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen">
       <PageHeader title={t.title} backTo="/" />
 
       <div className="container max-w-4xl p-4 md:p-8">

@@ -909,14 +909,14 @@ const FeedbackStatsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen">
       <div className="container max-w-7xl mx-auto px-4 py-8">
         <PageHeader title={t.title} backTo="/" />
         <p className="text-muted-foreground mb-6">{t.subtitle}</p>

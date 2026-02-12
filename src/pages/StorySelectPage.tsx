@@ -308,7 +308,7 @@ const StorySelectPage = () => {
   const seriesStories = stories.filter(s => isPartOfSeries(s));
 
   return (
-    <div className="min-h-screen flex flex-col items-center font-nunito" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen flex flex-col items-center font-nunito">
       <div className="w-full max-w-[480px] px-5 pt-6">
         {/* Back button */}
         <Button

@@ -331,7 +331,7 @@ const CharacterSelectionScreen = ({
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen flex flex-col">
       {/* Back button */}
       <div className="px-4 pt-3 pb-0">
         <Button
