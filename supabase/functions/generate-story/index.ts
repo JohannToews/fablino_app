@@ -2001,7 +2001,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     };
 
     // ── Execute consistency check + ALL images PARALLEL with timeout ──
-    const PARALLEL_TIMEOUT_MS = 90000; // 90 seconds for consistency + ALL images together
+    const PARALLEL_TIMEOUT_MS = 180000; // 180 seconds for consistency + ALL images together
     const parallelStart = Date.now();
 
     let allImageResults: Array<{ label: string; url: string | null; cached: boolean }> = [];
