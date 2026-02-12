@@ -384,18 +384,18 @@ const SpecialEffectsScreen = ({
               const isSelected = selectedAttributes.includes(option.id);
               return (
                 <button
-                  key={option.id}
-                  onClick={() => toggleAttribute(option.id)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 w-full py-2.5 rounded-2xl",
-                    "transition-all duration-150 cursor-pointer",
-                    "hover:scale-105 active:scale-95",
-                    "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1",
-                    isSelected
-                      ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
-                      : "border border-gray-200 bg-white hover:border-[#E8863A]/30"
-                  )}
-                >
+                   key={option.id}
+                   onClick={() => toggleAttribute(option.id)}
+                   className={cn(
+                     "flex flex-col items-center justify-center gap-1 w-full py-2.5 rounded-2xl",
+                     "transition-all duration-150 cursor-pointer",
+                     "hover:scale-105 active:scale-95",
+                     "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1",
+                     isSelected
+                       ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
+                       : "border border-gray-200 bg-white hover:border-gray-300"
+                   )}
+                 >
                   <span className="text-2xl leading-none">{option.emoji}</span>
                   <span className="text-[11px] font-medium text-center leading-tight text-[#2D1810]">
                     {t[option.labelKey]}
