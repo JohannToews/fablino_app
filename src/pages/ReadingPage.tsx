@@ -452,7 +452,7 @@ const ReadingPage = () => {
           .eq("story_id", data.id)
           .maybeSingle();
         if (branchData && branchData.options && !branchData.chosen_option_id) {
-          setBranchOptions(branchData.options as BranchOption[]);
+          setBranchOptions(branchData.options as unknown as BranchOption[]);
           setBranchId(branchData.id);
           console.log('[ReadingPage] Loaded branch options for story', data.id, ':', (branchData.options as any[]).length, 'options');
         } else {
@@ -801,7 +801,7 @@ const ReadingPage = () => {
           .eq("id", branchId)
           .maybeSingle();
         if (branchRow?.chosen_option_id && branchRow?.options) {
-          const opts = branchRow.options as BranchOption[];
+          const opts = branchRow.options as unknown as BranchOption[];
           const chosen = opts.find(o => o.option_id === branchRow.chosen_option_id);
           branchTitle = chosen?.title;
         }
