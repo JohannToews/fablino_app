@@ -2322,12 +2322,27 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     const parallelStart = Date.now();
 
     let allImageResults: Array<{ label: string; url: string | null; cached: boolean }> = [];
+    let consistencyCheckMs = 0;
+    let imageGenerationMs = 0;
+
+    // Wrap tasks to capture individual timings
+    const timedConsistencyCheck = async () => {
+      const t0 = Date.now();
+      await consistencyCheckTask();
+      consistencyCheckMs = Date.now() - t0;
+    };
+    const timedImageGeneration = async () => {
+      const t0 = Date.now();
+      const res = await generateAllImagesTask();
+      imageGenerationMs = Date.now() - t0;
+      return res;
+    };
 
     try {
       const results = await Promise.race([
         Promise.allSettled([
-          consistencyCheckTask(),
-          generateAllImagesTask(),
+          timedConsistencyCheck(),
+          timedImageGeneration(),
         ]),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Parallel block timeout')), PARALLEL_TIMEOUT_MS)
@@ -2423,6 +2438,12 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       image_count: 1 + storyImages.length,
       imageWarning,
       generationTimeMs: totalTime,
+      performance: {
+        story_generation_ms: storyGenerationTime,
+        image_generation_ms: imageGenerationMs,
+        consistency_check_ms: consistencyCheckMs,
+        total_ms: totalTime,
+      },
       usedNewPromptPath,
       // Phase 2: Series fields for DB storage
       // Use parsed values if available; fall back to raw LLM values from ...story spread;

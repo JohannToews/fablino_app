@@ -5,8 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import FablinoMascot from "@/components/FablinoMascot";
 import SpeechBubble from "@/components/SpeechBubble";
 
+export interface PerformanceData {
+  story_generation_ms: number;
+  image_generation_ms: number;
+  consistency_check_ms: number;
+  total_ms: number;
+}
+
 interface StoryGenerationProgressProps {
   language: string;
+  isAdmin?: boolean;
+  performanceData?: PerformanceData | null;
 }
 
 interface ProgressStep {
@@ -103,7 +112,7 @@ const shuffle = (arr: string[]) => {
   return copy;
 };
 
-const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => {
+const StoryGenerationProgress = ({ language, isAdmin, performanceData }: StoryGenerationProgressProps) => {
   // Progress steps state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -245,6 +254,18 @@ const StoryGenerationProgress = ({ language }: StoryGenerationProgressProps) => 
           );
         })}
       </div>
+      {/* Admin Performance Breakdown */}
+      {isAdmin && performanceData && (
+        <div className="mt-4 p-3 rounded-xl bg-muted/60 border border-border/50 text-xs font-mono text-muted-foreground">
+          <span>⏱️ Story: {(performanceData.story_generation_ms / 1000).toFixed(1)}s</span>
+          <span className="mx-1.5">|</span>
+          <span>🖼️ Bilder: {(performanceData.image_generation_ms / 1000).toFixed(1)}s</span>
+          <span className="mx-1.5">|</span>
+          <span>✅ Check: {(performanceData.consistency_check_ms / 1000).toFixed(1)}s</span>
+          <span className="mx-1.5">|</span>
+          <span className="font-semibold text-foreground">Gesamt: {(performanceData.total_ms / 1000).toFixed(1)}s</span>
+        </div>
+      )}
     </div>
   );
 };
