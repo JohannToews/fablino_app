@@ -12,7 +12,7 @@ const corsHeaders = {
 // API endpoints
 const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-const VERTEX_AI_URL = "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/endpoints/openapi/models/gemini-2.5-flash:generateContent";
+const VERTEX_AI_URL = "https://europe-west1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/europe-west1/endpoints/openapi/models/gemini-2.5-flash:generateContent";
 
 // Helper function to count words in a text
 function countWords(text: string): number {
@@ -764,7 +764,7 @@ async function callVertexImageAPI(
       const projectId = sa.project_id || "fablino-prod";
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
-      const vertexUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
+      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
       
       const response = await fetch(vertexUrl, {
         method: "POST",
@@ -931,7 +931,7 @@ async function callVertexImageEditAPI(
       const projectId = sa.project_id || "fablino-prod";
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
-      const vertexUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
+      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
       
       const response = await fetch(vertexUrl, {
         method: "POST",
