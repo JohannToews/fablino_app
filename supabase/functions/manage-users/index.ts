@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       // Get all users with their roles
       const { data: users, error } = await supabase
         .from("user_profiles")
-        .select("id, username, display_name, admin_language, app_language, created_at")
+        .select("id, username, display_name, admin_language, app_language, email, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
