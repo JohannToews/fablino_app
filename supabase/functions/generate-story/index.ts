@@ -1575,15 +1575,19 @@ Deno.serve(async (req) => {
 
     const baseSystemPrompt = fullSystemPromptFinal;
 
-    // Get API keys
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
+    // Get API keys - prefer VERTEX_API_KEY_NEW (Service Account JSON) for Vertex AI
+    const GEMINI_API_KEY = Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
     if (!GEMINI_API_KEY) {
-      console.warn("[generate-story] No GEMINI_API_KEY or GOOGLE_VERTEX_AI_KEY configured - image generation may fail");
+      console.warn("[generate-story] No VERTEX_API_KEY_NEW, GEMINI_API_KEY or GOOGLE_VERTEX_AI_KEY configured - image generation may fail");
+    } else {
+      // Log which key source is being used (first 20 chars for debugging)
+      const keyPreview = GEMINI_API_KEY.substring(0, 20);
+      console.log(`[generate-story] Image API key loaded, starts with: ${keyPreview}...`);
     }
 
     // Language mappings (used by both new and old paths)
