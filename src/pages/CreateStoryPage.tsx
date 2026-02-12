@@ -665,6 +665,7 @@ const CreateStoryPage = () => {
           uiLanguage={kidAppLanguage}
           onComplete={handleStoryTypeComplete}
           onBack={handleBack}
+          isAdmin={user?.role === 'admin'}
         />
       )}
 

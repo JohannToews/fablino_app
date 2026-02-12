@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CharacterTile from "./CharacterTile";
@@ -55,6 +56,8 @@ interface StoryTypeSelectionScreenProps {
   ) => void;
   onBack: () => void;
   fablinoMessage?: string;
+  /** When true, show series toggle (admin only) */
+  isAdmin?: boolean;
 }
 
 type ViewState = "main" | "educational";
@@ -67,6 +70,7 @@ const StoryTypeSelectionScreen = ({
   onComplete,
   onBack,
   fablinoMessage,
+  isAdmin = false,
 }: StoryTypeSelectionScreenProps) => {
   const { colors } = useColorPalette();
   const [viewState, setViewState] = useState<ViewState>("main");
@@ -224,7 +228,31 @@ const StoryTypeSelectionScreen = ({
           </div>
         )}
 
-        {/* Educational Topics Grid – 3 columns on tablet, 2 on mobile */}
+        {/* Series Toggle (admin only, Weg B) */}
+        {viewState === "main" && isAdmin && (
+          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{translations.seriesLabel}</span>
+              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
+                {[false, true].map((val) => (
+                  <button
+                    key={String(val)}
+                    onClick={() => setIsSeries(val)}
+                    className={cn(
+                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
+                      isSeries === val
+                        ? "bg-[#E8863A] text-white shadow-sm"
+                        : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
+                    )}
+                  >
+                    {val ? translations.seriesYes : translations.seriesNo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {viewState === "educational" && (
           <div className="w-full space-y-3">
             <div className="grid grid-cols-2 gap-4">
