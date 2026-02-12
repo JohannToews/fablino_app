@@ -944,6 +944,9 @@ Deno.serve(async (req) => {
       seriesContext,                       // summary of previous episodes
       // Block 2.3e: surprise_characters flag
       surprise_characters: surpriseCharactersParam,
+      // Modus B: Interactive series
+      seriesMode: seriesModeParam,     // 'normal' | 'interactive' | undefined
+      branchChosen: branchChosenParam, // option title chosen by child (from frontend)
     } = await req.json();
 
     // Block 2.3d/e: Debug logging for character data from frontend
@@ -1001,6 +1004,76 @@ Deno.serve(async (req) => {
       console.log(`[generate-story] Loading series context for series=${seriesId}, episode=${episodeNumber}`);
       seriesContextData = await loadSeriesContext(supabase, seriesId, episodeNumber);
       console.log(`[generate-story] Series context loaded: ${seriesContextData.previousEpisodes.length} previous episodes, continuity=${!!seriesContextData.lastContinuityState}, styleSheet=${!!seriesContextData.visualStyleSheet}`);
+    }
+
+    // ── Modus B: Resolve series mode ──
+    const seriesMode: string | undefined = seriesModeParam || undefined;
+
+    // ── Modus B (C.2): Load chosen option from previous episode ──
+    let branchChosenTitle: string | undefined;
+    let branchChosenPreview: string | undefined;
+    let branchChosenDirection: string | undefined;
+
+    if (seriesMode === 'interactive' && seriesId && episodeNumber && episodeNumber > 1) {
+      try {
+        const { data: prevBranch } = await supabase
+          .from('story_branches')
+          .select('options, chosen_option_id')
+          .eq('series_id', seriesId)
+          .eq('episode_number', episodeNumber - 1)
+          .single();
+
+        if (prevBranch?.chosen_option_id && prevBranch?.options) {
+          const opts = Array.isArray(prevBranch.options) ? prevBranch.options : [];
+          const chosenOption = opts.find((opt: any) => opt.option_id === prevBranch.chosen_option_id);
+          if (chosenOption) {
+            branchChosenTitle = chosenOption.title;
+            branchChosenPreview = chosenOption.preview;
+            branchChosenDirection = chosenOption.direction;
+            console.log(`[BRANCH] Loaded child choice for Ep${episodeNumber - 1}: "${branchChosenTitle}" (${branchChosenDirection})`);
+          } else {
+            console.warn(`[BRANCH] chosen_option_id=${prevBranch.chosen_option_id} not found in options`);
+          }
+        } else {
+          // Fallback: use branchChosen from frontend if available
+          if (branchChosenParam) {
+            branchChosenTitle = branchChosenParam;
+            console.log(`[BRANCH] Using branchChosen from frontend: "${branchChosenTitle}"`);
+          } else {
+            console.warn(`[BRANCH] No branch choice found for Ep${episodeNumber - 1} of series ${seriesId}`);
+          }
+        }
+      } catch (branchErr: any) {
+        console.error(`[BRANCH] Error loading previous branch:`, branchErr.message);
+      }
+    }
+
+    // ── Modus B (C.3): Load all branch choices for Ep5 finale recap ──
+    let seriesAllBranches: Array<{ episode_number: number; chosen_title: string }> | undefined;
+
+    if (seriesMode === 'interactive' && seriesId && episodeNumber === 5) {
+      try {
+        const { data: allBranches } = await supabase
+          .from('story_branches')
+          .select('episode_number, options, chosen_option_id')
+          .eq('series_id', seriesId)
+          .order('episode_number');
+
+        if (allBranches && allBranches.length > 0) {
+          seriesAllBranches = allBranches.map((b: any) => {
+            const opts = Array.isArray(b.options) ? b.options : [];
+            const chosen = opts.find((opt: any) => opt.option_id === b.chosen_option_id);
+            return {
+              episode_number: b.episode_number,
+              chosen_title: chosen?.title ?? 'unbekannt',
+            };
+          });
+          console.log(`[BRANCH] Loaded ${seriesAllBranches.length} branch choices for Ep5 finale recap:`,
+            JSON.stringify(seriesAllBranches));
+        }
+      } catch (branchErr: any) {
+        console.error(`[BRANCH] Error loading all branches for finale:`, branchErr.message);
+      }
     }
 
     // Determine the resolved ending type from EPISODE_CONFIG (Phase 2 override)
@@ -1100,6 +1173,12 @@ Deno.serve(async (req) => {
           ? seriesContextData.previousEpisodes : undefined,
         series_continuity_state: seriesContextData.lastContinuityState || undefined,
         series_visual_style_sheet: seriesContextData.visualStyleSheet || undefined,
+        // ── Modus B: Interactive series fields ──
+        series_mode: seriesMode as StoryRequest['series_mode'],
+        branch_chosen: branchChosenTitle,
+        branch_chosen_preview: branchChosenPreview,
+        branch_chosen_direction: branchChosenDirection,
+        series_all_branches: seriesAllBranches,
       };
 
       // 3. Build dynamic user message
@@ -1549,6 +1628,28 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       console.log(`[generate-story] [SERIES-DEBUG] Skipping series field parsing: isSeries=${isSeries}, seriesId=${seriesId}`);
     }
 
+    // ── Modus B (C.1): Parse and store branch_options from LLM response ──
+    let branchOptionsParsed: any[] | null = null;
+    if (seriesMode === 'interactive' && episodeNumber && episodeNumber < 5) {
+      const rawBranchOptions = story.branch_options;
+      if (rawBranchOptions && Array.isArray(rawBranchOptions) && rawBranchOptions.length === 3) {
+        const validOptions = rawBranchOptions.every((opt: any) =>
+          opt.option_id && opt.title && opt.preview && opt.direction && opt.image_hint
+        );
+        if (validOptions) {
+          branchOptionsParsed = rawBranchOptions;
+          console.log(`[BRANCH] Parsed 3 valid branch_options for Episode ${episodeNumber}:`,
+            JSON.stringify(rawBranchOptions.map((o: any) => ({ id: o.option_id, title: o.title, dir: o.direction }))));
+        } else {
+          console.error(`[BRANCH] Invalid branch_options structure (missing required fields):`,
+            JSON.stringify(rawBranchOptions));
+        }
+      } else {
+        console.error(`[BRANCH] Missing or invalid branch_options for interactive Ep${episodeNumber}. Got:`,
+          rawBranchOptions ? `length=${Array.isArray(rawBranchOptions) ? rawBranchOptions.length : 'not array'}` : 'null');
+      }
+    }
+
     const storyGenerationTime = Date.now() - startTime;
     console.log(`[PERF] Story text generated in ${storyGenerationTime}ms`);
 
@@ -1980,6 +2081,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       episode_summary: episodeSummary ?? story.episode_summary ?? null,
       continuity_state: continuityState ?? safeParseJson(story.continuity_state) ?? null,
       visual_style_sheet: visualStyleSheet ?? safeParseJson(story.visual_style_sheet) ?? null,
+      // Modus B: Branch options for interactive series (Ep1-4)
+      branch_options: branchOptionsParsed ?? null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
