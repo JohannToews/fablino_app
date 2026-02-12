@@ -23,7 +23,7 @@ import {
 import { StorySettings } from "@/components/story-creation/StoryTypeSelectionScreen";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/translations";
-import StoryGenerationProgress from "@/components/story-creation/StoryGenerationProgress";
+import StoryGenerationProgress, { PerformanceData } from "@/components/story-creation/StoryGenerationProgress";
 
 // Screen states for the wizard
 type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "generating";
@@ -103,6 +103,7 @@ const CreateStoryPage = () => {
   const [additionalDescription, setAdditionalDescription] = useState<string>("");
   const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
 
   // Translations
   const t = useTranslations(kidAppLanguage);
@@ -181,6 +182,8 @@ const CreateStoryPage = () => {
       }
 
       if (data?.title && data?.content) {
+        // Capture performance data for admin display
+        if (data.performance) setPerformanceData(data.performance);
         // Use story settings from wizard if available
         const storyLength = storySettings?.length || "medium";
         const storyDifficulty = storySettings?.difficulty || difficulty;
@@ -473,6 +476,8 @@ const CreateStoryPage = () => {
       }
 
       if (data?.title && data?.content) {
+        // Capture performance data for admin display
+        if (data.performance) setPerformanceData(data.performance);
         // Save the story to database
         // For series: first episode has series_id = null, episode_number = 1
         // Subsequent episodes will reference this story's id as series_id
@@ -615,7 +620,7 @@ const CreateStoryPage = () => {
   if (currentScreen === "generating" || isGenerating) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <StoryGenerationProgress language={kidAppLanguage} />
+        <StoryGenerationProgress language={kidAppLanguage} isAdmin={user?.role === 'admin'} performanceData={performanceData} />
       </div>
     );
   }
