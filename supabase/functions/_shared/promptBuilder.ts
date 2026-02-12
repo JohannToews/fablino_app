@@ -56,6 +56,15 @@ export interface StoryRequest {
     world_style?: string;
     recurring_visual?: string;
   };
+  // ── Modus B: Interactive Series ("Mitgestalten") ──
+  series_mode?: 'normal' | 'interactive';   // NULL or 'normal' = Modus A, 'interactive' = Modus B
+  branch_chosen?: string;                   // Option title chosen by child (for Ep2-5 context)
+  branch_chosen_preview?: string;           // Option preview text
+  branch_chosen_direction?: string;         // 'brave' | 'clever' | 'surprising'
+  series_all_branches?: Array<{             // All branch choices made so far (for Ep5 finale recap)
+    episode_number: number;
+    chosen_title: string;
+  }>;
 }
 
 // ─── Section Headers (translated) ───────────────────────────────
@@ -535,6 +544,107 @@ export const EPISODE_CONFIG: Record<number, EpisodeConfig> = {
   },
 };
 
+// ─── Modus B: Interactive Series Prompt Blocks ───────────────────
+
+/**
+ * B.1: Build BRANCH OPTIONS block for interactive series (Ep1-4).
+ * Instructs the LLM to generate 3 continuation options at the end of the episode.
+ */
+function buildInteractiveBranchOptionsBlock(request: StoryRequest): string {
+  const epNum = request.series_episode_number || 1;
+  if (request.series_mode !== 'interactive' || epNum >= 5) return '';
+
+  const nextEpConfig = EPISODE_CONFIG[epNum + 1];
+  const nextEpFunction = nextEpConfig ? nextEpConfig.function_name : '';
+  const age = request.kid_profile.age;
+
+  return [
+    '',
+    'MITGESTALTEN-MODUS:',
+    'Am Ende dieser Episode generiere genau 3 Fortsetzungs-Optionen.',
+    '',
+    'Für jede Option liefere:',
+    '- option_id: "A", "B" oder "C"',
+    `- title: Kurzer, spannender Titel (3-6 Wörter, in der Story-Sprache "${request.story_language}")`,
+    `- preview: 1-2 Sätze die neugierig machen OHNE zu spoilern (in der Story-Sprache "${request.story_language}")`,
+    '- direction: "brave" (mutig/aktiv), "clever" (schlau/vorsichtig) oder "surprising" (überraschend/unerwartet)',
+    '- image_hint: 1 Satz auf Englisch der die Szene beschreibt (für Bildgenerierung)',
+    '',
+    'REGELN FÜR DIE OPTIONEN:',
+    '- Alle 3 Optionen müssen zu UNTERSCHIEDLICHEN Handlungssträngen führen',
+    nextEpFunction
+      ? `- Jede Option muss die Episoden-Funktion der NÄCHSTEN Episode ermöglichen (nächste Episode = "${nextEpFunction}")`
+      : '- Jede Option muss eine sinnvolle Fortsetzung ermöglichen',
+    '- Keine Option darf die Serie vorzeitig beenden oder das Mysterium vollständig lösen',
+    `- Die Optionen sollen für Kinder im Alter ${age} spannend und verständlich sein`,
+    '- Eine mutige Option, eine kluge Option, eine überraschende Option',
+    '- Der Cliffhanger der Episode soll die Optionen motivieren (nicht danach kommen)',
+    '',
+    'Liefere die Optionen als JSON-Array im Feld "branch_options".',
+  ].join('\n');
+}
+
+/**
+ * B.2: Build CHILD CHOICE CONTEXT block for Ep2-5 when child chose a branch.
+ * Tells the LLM to continue from the child's chosen option.
+ */
+function buildBranchChosenBlock(request: StoryRequest): string {
+  if (request.series_mode !== 'interactive') return '';
+  if (!request.branch_chosen) return '';
+
+  const chosenTitle = request.branch_chosen;
+  const chosenPreview = request.branch_chosen_preview || '';
+  const chosenDirection = request.branch_chosen_direction || '';
+
+  const lines = [
+    '',
+    'KINDER-WAHL:',
+    'Das Kind hat am Ende der letzten Episode folgende Option gewählt:',
+    `Titel: "${chosenTitle}"`,
+  ];
+  if (chosenPreview) {
+    lines.push(`Beschreibung: "${chosenPreview}"`);
+  }
+  if (chosenDirection) {
+    lines.push(`Richtung: ${chosenDirection}`);
+  }
+  lines.push('');
+  lines.push('WICHTIG: Baue diese Episode auf dieser Wahl auf. Die ersten 2-3 Sätze');
+  lines.push('müssen direkt an die gewählte Option anknüpfen. Das Kind soll spüren,');
+  lines.push('dass SEINE Entscheidung die Geschichte beeinflusst hat.');
+
+  return lines.join('\n');
+}
+
+/**
+ * B.3: Build FINALE RECAP block for Episode 5 of interactive series.
+ * Summarizes all previous branch choices so the LLM can include callbacks.
+ */
+function buildInteractiveFinaleBlock(request: StoryRequest): string {
+  if (request.series_mode !== 'interactive') return '';
+  const epNum = request.series_episode_number || 1;
+  if (epNum !== 5) return '';
+
+  const allBranches = request.series_all_branches || [];
+  if (allBranches.length === 0) return '';
+
+  const lines = [
+    '',
+    'FINALE MIT RÜCKBLICK:',
+    'Dies ist das Finale einer interaktiven Serie. Das Kind hat in den',
+    'vorherigen Episoden folgende Entscheidungen getroffen:',
+  ];
+  for (const branch of allBranches) {
+    lines.push(`- Episode ${branch.episode_number} → ${branch.chosen_title}`);
+  }
+  lines.push('');
+  lines.push('Baue mindestens einen Callback zu einer früheren Entscheidung ein.');
+  lines.push('Das Kind soll sehen, dass seine Entscheidungen Konsequenzen hatten.');
+  lines.push('Generiere KEINE branch_options (Serie endet hier).');
+
+  return lines.join('\n');
+}
+
 /**
  * Build the full SERIES CONTEXT block for the prompt.
  * Called only when the story is part of a series (is_series=true + series_episode_number).
@@ -645,6 +755,26 @@ function buildSeriesContextBlock(request: StoryRequest): string {
     lines.push('  "world_style": "englische Stil-Beschreibung der visuellen Welt",');
     lines.push('  "recurring_visual": "visuelles Signature Element"');
     lines.push('}');
+  }
+
+  // ═══ Modus B: Interactive Series Blocks ═══
+
+  // B.2: Child's chosen option context (Ep2-5 of interactive series)
+  const branchChosenBlock = buildBranchChosenBlock(request);
+  if (branchChosenBlock) {
+    lines.push(branchChosenBlock);
+  }
+
+  // B.3: Finale recap for Episode 5 of interactive series
+  const finaleBlock = buildInteractiveFinaleBlock(request);
+  if (finaleBlock) {
+    lines.push(finaleBlock);
+  }
+
+  // B.1: Branch options generation for Ep1-4 of interactive series
+  const branchOptionsBlock = buildInteractiveBranchOptionsBlock(request);
+  if (branchOptionsBlock) {
+    lines.push(branchOptionsBlock);
   }
 
   lines.push('═══════════════════════════════════════════════');
