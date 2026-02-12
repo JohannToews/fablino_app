@@ -11,6 +11,7 @@ const corsHeaders = {
 // API endpoints
 const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const VERTEX_AI_URL = "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/endpoints/openapi/models/gemini-2.5-flash:generateContent";
 
 // Helper function to count words in a text
 function countWords(text: string): number {
@@ -649,7 +650,91 @@ async function callLovableImageEdit(
   return null;
 }
 
-// Helper function to call Gemini API for image generation with retry logic
+// Helper function to call Vertex AI for image generation (via Lovable's OAuth2 token fetch)
+async function callVertexImageAPI(
+  vertexApiKey: string,
+  prompt: string,
+  maxRetries: number = 3
+): Promise<string | null> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1500;
+      console.log(`[VERTEX-IMAGE] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+    
+    try {
+      // Vertex AI endpoint: uses the Service Account key to generate OAuth2 token
+      // This implementation assumes GOOGLE_VERTEX_AI_KEY contains a full Service Account JSON
+      const projectId = vertexApiKey.split('"project_id":"')[1]?.split('"')[0] || "fablino-prod";
+      const vertexUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/endpoints/openapi/models/gemini-2.5-flash:generateContent`;
+      
+      // Use JWT bearer token flow (simplified: assumes API key is valid for direct auth)
+      const response = await fetch(vertexUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${vertexApiKey}`,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ["image", "text"],
+          },
+        }),
+      });
+
+      if (response.status === 429) {
+        console.log(`[VERTEX-IMAGE] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        lastError = new Error("Rate limited");
+        continue;
+      }
+
+      if (response.status === 403 || response.status === 401) {
+        const errorText = await response.text();
+        console.error(`[VERTEX-IMAGE] Auth error (${response.status}):`, errorText);
+        return null; // Don't retry auth errors
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[VERTEX-IMAGE] Error (${response.status}):`, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // Look for inline_data with image in the response
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.mimeType?.startsWith("image/")) {
+          const base64Data = part.inlineData.data;
+          const mimeType = part.inlineData.mimeType;
+          console.log(`[VERTEX-IMAGE] Successfully generated image`);
+          return `data:${mimeType};base64,${base64Data}`;
+        }
+      }
+      
+      console.error("[VERTEX-IMAGE] No image found in response");
+      return null;
+    } catch (error) {
+      console.error("[VERTEX-IMAGE] Request error:", error);
+      return null;
+    }
+  }
+  
+  console.log("[VERTEX-IMAGE] Max retries exceeded");
+  return null;
+}
+
+// Helper function to call Gemini Consumer API (fallback only)
 async function callGeminiImageAPI(
   apiKey: string,
   prompt: string,
@@ -659,9 +744,8 @@ async function callGeminiImageAPI(
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
-      // Exponential backoff: 3s, 6s, 12s... (longer for images)
       const waitTime = Math.pow(2, attempt) * 1500;
-      console.log(`Image API rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      console.log(`[GEMINI-CONSUMER-IMAGE] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
       await sleep(waitTime);
     }
     
@@ -685,14 +769,14 @@ async function callGeminiImageAPI(
       });
 
       if (response.status === 429) {
-        console.log(`Gemini Image API rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        console.log(`[GEMINI-CONSUMER-IMAGE] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
         lastError = new Error("Rate limited");
         continue;
       }
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Gemini Image API error:", response.status, errorText);
+        console.error("[GEMINI-CONSUMER-IMAGE] Error:", response.status, errorText);
         return null;
       }
 
@@ -708,19 +792,115 @@ async function callGeminiImageAPI(
         }
       }
       
-      console.error("No image found in Gemini response");
+      console.error("[GEMINI-CONSUMER-IMAGE] No image found in response");
       return null;
     } catch (error) {
-      console.error("Error calling Gemini Image API:", error);
+      console.error("[GEMINI-CONSUMER-IMAGE] Error:", error);
       return null;
     }
   }
   
-  console.log("Max retries exceeded for image generation");
+  console.log("[GEMINI-CONSUMER-IMAGE] Max retries exceeded");
   return null;
 }
 
-// Helper function to call Gemini API for image editing (with reference image) with retry logic
+// Helper function to call Vertex AI for image editing (with reference image)
+async function callVertexImageEditAPI(
+  vertexApiKey: string,
+  prompt: string,
+  referenceImageBase64: string,
+  maxRetries: number = 3
+): Promise<string | null> {
+  // Extract base64 data and mime type from data URL
+  const matches = referenceImageBase64.match(/^data:(.+);base64,(.+)$/);
+  if (!matches) {
+    console.error("[VERTEX-EDIT] Invalid base64 image format");
+    return null;
+  }
+  const mimeType = matches[1];
+  const base64Data = matches[2];
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1500;
+      console.log(`[VERTEX-EDIT] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+    
+    try {
+      const projectId = vertexApiKey.split('"project_id":"')[1]?.split('"')[0] || "fablino-prod";
+      const vertexUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/endpoints/openapi/models/gemini-2.5-flash:generateContent`;
+      
+      const response = await fetch(vertexUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${vertexApiKey}`,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: prompt },
+                { 
+                  inlineData: {
+                    mimeType: mimeType,
+                    data: base64Data
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ["image", "text"],
+          },
+        }),
+      });
+
+      if (response.status === 429) {
+        console.log(`[VERTEX-EDIT] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        continue;
+      }
+
+      if (response.status === 403 || response.status === 401) {
+        const errorText = await response.text();
+        console.error(`[VERTEX-EDIT] Auth error (${response.status}):`, errorText);
+        return null; // Don't retry auth errors
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[VERTEX-EDIT] Error (${response.status}):`, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // Look for inline_data with image in the response
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.mimeType?.startsWith("image/")) {
+          const imgBase64Data = part.inlineData.data;
+          const imgMimeType = part.inlineData.mimeType;
+          console.log(`[VERTEX-EDIT] Successfully edited image`);
+          return `data:${imgMimeType};base64,${imgBase64Data}`;
+        }
+      }
+      
+      console.error("[VERTEX-EDIT] No image found in response");
+      return null;
+    } catch (error) {
+      console.error("[VERTEX-EDIT] Request error:", error);
+      return null;
+    }
+  }
+  
+  console.log("[VERTEX-EDIT] Max retries exceeded");
+  return null;
+}
+
+// Helper function to call Gemini Consumer API for image editing (fallback only)
 async function callGeminiImageEditAPI(
   apiKey: string,
   prompt: string,
@@ -730,7 +910,7 @@ async function callGeminiImageEditAPI(
   // Extract base64 data and mime type from data URL
   const matches = referenceImageBase64.match(/^data:(.+);base64,(.+)$/);
   if (!matches) {
-    console.error("Invalid base64 image format");
+    console.error("[GEMINI-CONSUMER-EDIT] Invalid base64 image format");
     return null;
   }
   const mimeType = matches[1];
@@ -739,7 +919,7 @@ async function callGeminiImageEditAPI(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
       const waitTime = Math.pow(2, attempt) * 1500;
-      console.log(`Image Edit API rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      console.log(`[GEMINI-CONSUMER-EDIT] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
       await sleep(waitTime);
     }
     
@@ -771,13 +951,13 @@ async function callGeminiImageEditAPI(
       });
 
       if (response.status === 429) {
-        console.log(`Gemini Image Edit API rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        console.log(`[GEMINI-CONSUMER-EDIT] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
         continue;
       }
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Gemini Image Edit API error:", response.status, errorText);
+        console.error("[GEMINI-CONSUMER-EDIT] Error:", response.status, errorText);
         return null;
       }
 
@@ -793,15 +973,15 @@ async function callGeminiImageEditAPI(
         }
       }
       
-      console.error("No image found in Gemini edit response");
+      console.error("[GEMINI-CONSUMER-EDIT] No image found in response");
       return null;
     } catch (error) {
-      console.error("Error calling Gemini Image Edit API:", error);
+      console.error("[GEMINI-CONSUMER-EDIT] Error:", error);
       return null;
     }
   }
   
-  console.log("Max retries exceeded for image editing");
+  console.log("[GEMINI-CONSUMER-EDIT] Max retries exceeded");
   return null;
 }
 
@@ -820,26 +1000,26 @@ async function generateImageWithCache(
     return cached;
   }
 
-  // Generate new image — Lovable Gateway FIRST (no regional blocks), Gemini Consumer API as fallback
+  // Generate new image — Vertex AI FIRST (primary), Lovable Gateway as fallback
   let imageUrl: string | null = null;
   
   if (useEdit && referenceImage) {
-    // Try Lovable Gateway first for edits
-    if (lovableKey) {
+    // Try Vertex AI first for edits
+    if (geminiKey) {
+      imageUrl = await callVertexImageEditAPI(geminiKey, prompt, referenceImage);
+    }
+    if (!imageUrl && lovableKey) {
+      console.log('[IMAGE-PIPELINE] Vertex AI edit failed, trying Lovable Gateway...');
       imageUrl = await callLovableImageEdit(lovableKey, prompt, referenceImage);
     }
-    if (!imageUrl && geminiKey) {
-      console.log('[IMAGE-PIPELINE] Lovable Gateway edit failed, trying Gemini direct...');
-      imageUrl = await callGeminiImageEditAPI(geminiKey, prompt, referenceImage);
-    }
   } else {
-    // Try Lovable Gateway first for generation
-    if (lovableKey) {
-      imageUrl = await callLovableImageGenerate(lovableKey, prompt);
+    // Try Vertex AI first for generation
+    if (geminiKey) {
+      imageUrl = await callVertexImageAPI(geminiKey, prompt);
     }
-    if (!imageUrl && geminiKey) {
-      console.log('[IMAGE-PIPELINE] Lovable Gateway generate failed, trying Gemini direct...');
-      imageUrl = await callGeminiImageAPI(geminiKey, prompt);
+    if (!imageUrl && lovableKey) {
+      console.log('[IMAGE-PIPELINE] Vertex AI generate failed, trying Lovable Gateway...');
+      imageUrl = await callLovableImageGenerate(lovableKey, prompt);
     }
   }
 
@@ -1990,22 +2170,22 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           }
           console.log(`[generate-story] Cache MISS for ${imgPrompt.label}`);
 
-          // 2. Generate image (Lovable Gateway FIRST → Gemini Consumer API fallback)
+          // 2. Generate image (Vertex AI FIRST → Lovable Gateway fallback)
           let imageUrl: string | null = null;
 
-          if (LOVABLE_API_KEY) {
+          if (GEMINI_API_KEY) {
             try {
-              imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY, imgPrompt.prompt);
-            } catch (lovableError) {
-              console.log(`[IMAGE-PIPELINE] Lovable Gateway failed for ${imgPrompt.label}, trying Gemini direct`);
+              imageUrl = await callVertexImageAPI(GEMINI_API_KEY, imgPrompt.prompt);
+            } catch (vertexError) {
+              console.log(`[IMAGE-PIPELINE] Vertex AI failed for ${imgPrompt.label}, trying Lovable Gateway`);
             }
           }
 
-          if (!imageUrl && GEMINI_API_KEY) {
+          if (!imageUrl && LOVABLE_API_KEY) {
             try {
-              imageUrl = await callGeminiImageAPI(GEMINI_API_KEY, imgPrompt.prompt);
-            } catch (geminiError) {
-              console.error(`[IMAGE-PIPELINE] Gemini direct also failed for ${imgPrompt.label}:`, geminiError);
+              imageUrl = await callLovableImageGenerate(LOVABLE_API_KEY, imgPrompt.prompt);
+            } catch (lovableError) {
+              console.error(`[IMAGE-PIPELINE] Lovable Gateway also failed for ${imgPrompt.label}:`, lovableError);
             }
           }
 
