@@ -202,8 +202,10 @@ const SpecialEffectsScreen = ({
 
   const toggleAttribute = (attr: SpecialAttribute) => {
     if (attr === "normal") {
-      // "Normal" clears other selections
-      setSelectedAttributes(["normal"]);
+      // Toggle "normal": if already selected, deselect; otherwise clear others
+      setSelectedAttributes((prev) =>
+        prev.includes("normal") ? [] : ["normal"]
+      );
     } else {
       setSelectedAttributes((prev) => {
         // Remove "normal" if selecting something else
@@ -242,13 +244,11 @@ const SpecialEffectsScreen = ({
       {/* Vertically centered content – consistent with all other screens */}
       <div className="flex-1 flex flex-col items-stretch px-5 max-w-[600px] mx-auto w-full gap-2.5 pb-4">
         {/* Fablino Header – identical to Home, Entry, Theme screens */}
-        {fablinoMessage && (
-          <FablinoPageHeader
-            mascotImage="/mascot/5_new_story.png"
-            message={fablinoMessage}
-            mascotSize="md"
-          />
-        )}
+        <FablinoPageHeader
+          mascotImage="/mascot/5_new_story.png"
+          message={fablinoMessage || t.effectsHeader}
+          mascotSize="md"
+        />
 
         {/* Story Settings (only for Weg A / free path) – compact toggle rows */}
         {showSettings && (
