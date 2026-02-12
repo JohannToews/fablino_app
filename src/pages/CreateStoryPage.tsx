@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
 import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
+import FablinoPageHeader from "@/components/FablinoPageHeader";
 import {
   StoryType,
   StorySubElement,
@@ -586,34 +587,39 @@ const CreateStoryPage = () => {
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
-      {currentScreen === "entry" && (
+       {currentScreen === "entry" && (
         <div className="min-h-screen flex flex-col">
           {/* Header */}
-          <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b border-border">
-            <div className="container max-w-4xl mx-auto px-4 py-2 md:py-3 flex items-center gap-4">
-              <button onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <h1 className="text-base md:text-lg font-baloo font-bold flex-1">
-                {t.wizardEntryTitle}
-              </h1>
-            </div>
+          <div className="py-3 px-4 max-w-lg mx-auto w-full">
+            <button onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-white/50 transition-colors">
+              <svg className="h-5 w-5 text-[#2D1810]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+          </div>
+
+          {/* Fablino + Speech Bubble */}
+          <div className="px-4 max-w-lg mx-auto w-full">
+            <FablinoPageHeader
+              mascotImage="/mascot/6_Onboarding.png"
+              message={`${t.wizardEntryTitle} 🦊`}
+              mascotSize="md"
+            />
           </div>
 
           {/* Two path cards */}
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 gap-4 md:gap-6 max-w-lg mx-auto w-full">
+          <div className="flex-1 flex flex-col items-center px-4 py-6 gap-4 max-w-lg mx-auto w-full">
             {/* Weg A: Free */}
             <button
               onClick={() => handlePathSelect("free")}
-              className="w-full bg-card border-2 border-border hover:border-primary/50 rounded-2xl p-6 md:p-8 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              className="w-full bg-white rounded-2xl p-5 text-left transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"
+              style={{ boxShadow: "0 2px 12px -4px rgba(45,24,16,0.1)" }}
             >
-              <div className="flex items-start gap-4">
-                <span className="text-4xl md:text-5xl">🎤</span>
+              <div className="flex items-center gap-4">
+                <span className="text-3xl">✏️</span>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg md:text-xl font-baloo font-bold text-foreground">
+                  <h2 className="text-base font-baloo font-bold" style={{ color: "#2D1810" }}>
                     {t.wizardPathFree}
                   </h2>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">
+                  <p className="text-sm mt-0.5" style={{ color: "#6B7280" }}>
                     {t.wizardPathFreeHint}
                   </p>
                 </div>
@@ -623,15 +629,16 @@ const CreateStoryPage = () => {
             {/* Weg B: Guided */}
             <button
               onClick={() => handlePathSelect("guided")}
-              className="w-full bg-card border-2 border-border hover:border-primary/50 rounded-2xl p-6 md:p-8 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              className="w-full bg-white rounded-2xl p-5 text-left transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"
+              style={{ boxShadow: "0 2px 12px -4px rgba(45,24,16,0.1)" }}
             >
-              <div className="flex items-start gap-4">
-                <span className="text-4xl md:text-5xl">🧙</span>
+              <div className="flex items-center gap-4">
+                <span className="text-3xl">🧩</span>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg md:text-xl font-baloo font-bold text-foreground">
+                  <h2 className="text-base font-baloo font-bold" style={{ color: "#2D1810" }}>
                     {t.wizardPathGuided}
                   </h2>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">
+                  <p className="text-sm mt-0.5" style={{ color: "#6B7280" }}>
                     {t.wizardPathGuidedHint}
                   </p>
                 </div>
