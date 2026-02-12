@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { Language } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,21 @@ interface StoryClassification {
   structure_middle: number | null;
   structure_ending: number | null;
   emotional_coloring: string | null;
+}
+
+interface PerformanceEntry {
+  id: string;
+  title: string;
+  created_at: string;
+  username?: string;
+  text_language: string;
+  text_type: string | null;
+  series_id: string | null;
+  episode_number: number | null;
+  generation_time_ms: number | null;
+  story_generation_ms: number | null;
+  image_generation_ms: number | null;
+  consistency_check_ms: number | null;
 }
 
 interface StoryStats {
@@ -120,6 +135,7 @@ const translations: Record<Language, {
   structureMiddle: string;
   structureEnding: string;
   emotionalColoring: string;
+  performanceTab: string;
 }> = {
   de: {
     title: "Story-Statistiken",
@@ -177,6 +193,7 @@ const translations: Record<Language, {
     structureMiddle: "Mitte",
     structureEnding: "Ende",
     emotionalColoring: "Emotional Coloring",
+    performanceTab: "Performance",
   },
   fr: {
     title: "Statistiques des histoires",
@@ -234,6 +251,7 @@ const translations: Record<Language, {
     structureMiddle: "Milieu",
     structureEnding: "Fin",
     emotionalColoring: "Coloration émotionnelle",
+    performanceTab: "Performance",
   },
   en: {
     title: "Story Statistics",
@@ -291,6 +309,7 @@ const translations: Record<Language, {
     structureMiddle: "Middle",
     structureEnding: "Ending",
     emotionalColoring: "Emotional Coloring",
+    performanceTab: "Performance",
   },
   es: {
     title: "Estadísticas de historias",
@@ -348,6 +367,7 @@ const translations: Record<Language, {
     structureMiddle: "Medio",
     structureEnding: "Final",
     emotionalColoring: "Coloración emocional",
+    performanceTab: "Rendimiento",
   },
   nl: {
     title: "Verhaal Statistieken",
@@ -405,6 +425,7 @@ const translations: Record<Language, {
     structureMiddle: "Midden",
     structureEnding: "Einde",
     emotionalColoring: "Emotionele kleuring",
+    performanceTab: "Prestaties",
   },
   it: {
     title: "Statistiche delle storie",
@@ -462,6 +483,7 @@ const translations: Record<Language, {
     structureMiddle: "Mezzo",
     structureEnding: "Fine",
     emotionalColoring: "Colorazione emotiva",
+    performanceTab: "Prestazioni",
   },
   bs: {
     title: "Statistika priča",
@@ -519,6 +541,7 @@ const translations: Record<Language, {
     structureMiddle: "Sredina",
     structureEnding: "Kraj",
     emotionalColoring: "Emocionalno bojenje",
+    performanceTab: "Performans",
   },
 };
 
@@ -555,6 +578,11 @@ const FeedbackStatsPage = () => {
   const [classificationSortKey, setClassificationSortKey] = useState<keyof StoryClassification>("created_at");
   const [classificationSortDir, setClassificationSortDir] = useState<"asc" | "desc">("desc");
   
+  // Performance state
+  const [performanceData, setPerformanceData] = useState<PerformanceEntry[]>([]);
+  const [perfSortKey, setPerfSortKey] = useState<keyof PerformanceEntry>("created_at");
+  const [perfSortDir, setPerfSortDir] = useState<"asc" | "desc">("desc");
+  
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
 
@@ -585,6 +613,7 @@ const FeedbackStatsPage = () => {
         prompt,
         difficulty,
         text_type,
+        text_language,
         is_deleted,
         created_at,
         user_id,
@@ -593,6 +622,12 @@ const FeedbackStatsPage = () => {
         structure_middle,
         structure_ending,
         emotional_coloring,
+        series_id,
+        episode_number,
+        generation_time_ms,
+        story_generation_ms,
+        image_generation_ms,
+        consistency_check_ms,
         kid_profiles (
           name,
           school_class,
@@ -709,6 +744,23 @@ const FeedbackStatsPage = () => {
         };
       });
       setClassifications(classificationData);
+      
+      // Build performance data
+      const perfData: PerformanceEntry[] = storiesData.map((story: any) => ({
+        id: story.id,
+        title: story.title,
+        created_at: story.created_at,
+        username: story.user_id ? usersMap.get(story.user_id) : undefined,
+        text_language: story.text_language || '-',
+        text_type: story.text_type,
+        series_id: story.series_id,
+        episode_number: story.episode_number,
+        generation_time_ms: story.generation_time_ms,
+        story_generation_ms: story.story_generation_ms,
+        image_generation_ms: story.image_generation_ms,
+        consistency_check_ms: story.consistency_check_ms,
+      }));
+      setPerformanceData(perfData);
     }
 
     setIsLoading(false);
@@ -772,12 +824,38 @@ const FeedbackStatsPage = () => {
     });
   }, [classifications, classificationSortKey, classificationSortDir]);
 
+  // Sorted performance data
+  const sortedPerformance = useMemo(() => {
+    return [...performanceData].sort((a, b) => {
+      const aVal = a[perfSortKey];
+      const bVal = b[perfSortKey];
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return perfSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return perfSortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+  }, [performanceData, perfSortKey, perfSortDir]);
+
   const handleClassificationSort = (key: keyof StoryClassification) => {
     if (classificationSortKey === key) {
       setClassificationSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setClassificationSortKey(key);
       setClassificationSortDir('desc');
+    }
+  };
+
+  const handlePerfSort = (key: keyof PerformanceEntry) => {
+    if (perfSortKey === key) {
+      setPerfSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPerfSortKey(key);
+      setPerfSortDir('desc');
     }
   };
 
@@ -789,6 +867,17 @@ const FeedbackStatsPage = () => {
       ? <ArrowUp className="h-4 w-4 ml-1" />
       : <ArrowDown className="h-4 w-4 ml-1" />;
   };
+
+  const PerfSortIcon = ({ column }: { column: keyof PerformanceEntry }) => {
+    if (perfSortKey !== column) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+    }
+    return perfSortDir === 'asc' 
+      ? <ArrowUp className="h-4 w-4 ml-1" />
+      : <ArrowDown className="h-4 w-4 ml-1" />;
+  };
+
+  const fmtMs = (ms: number | null) => ms != null ? (ms / 1000).toFixed(1) + 's' : '-';
 
   const avgRating = ratings.length > 0
     ? (ratings.reduce((sum, r) => sum + r.quality_rating, 0) / ratings.length).toFixed(1)
@@ -1028,6 +1117,10 @@ const FeedbackStatsPage = () => {
             <TabsTrigger value="classification" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               {t.classificationTab}
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="flex items-center gap-2">
+              <Timer className="h-4 w-4" />
+              {t.performanceTab}
             </TabsTrigger>
           </TabsList>
 
@@ -1536,6 +1629,67 @@ const FeedbackStatsPage = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Performance Tab */}
+          <TabsContent value="performance">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{t.performanceTab}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="cursor-pointer" onClick={() => handlePerfSort("created_at")}>
+                          <div className="flex items-center">{t.date}<PerfSortIcon column="created_at" /></div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer" onClick={() => handlePerfSort("username")}>
+                          <div className="flex items-center">{t.user}<PerfSortIcon column="username" /></div>
+                        </TableHead>
+                        <TableHead>{t.language}</TableHead>
+                        <TableHead>{t.textType}</TableHead>
+                        <TableHead>Episode</TableHead>
+                        <TableHead className="cursor-pointer text-right" onClick={() => handlePerfSort("story_generation_ms")}>
+                          <div className="flex items-center justify-end">⏱️ Story<PerfSortIcon column="story_generation_ms" /></div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer text-right" onClick={() => handlePerfSort("image_generation_ms")}>
+                          <div className="flex items-center justify-end">🖼️ Bilder<PerfSortIcon column="image_generation_ms" /></div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer text-right" onClick={() => handlePerfSort("consistency_check_ms")}>
+                          <div className="flex items-center justify-end">✅ Check<PerfSortIcon column="consistency_check_ms" /></div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer text-right" onClick={() => handlePerfSort("generation_time_ms")}>
+                          <div className="flex items-center justify-end font-semibold">Total<PerfSortIcon column="generation_time_ms" /></div>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedPerformance.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {format(new Date(item.created_at), "dd.MM.yy HH:mm")}
+                          </TableCell>
+                          <TableCell className="text-xs">{item.username || '-'}</TableCell>
+                          <TableCell className="text-xs uppercase">{item.text_language}</TableCell>
+                          <TableCell className="text-xs">
+                            {item.series_id ? 'Serie' : 'Story'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {item.episode_number ?? '-'}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-mono">{fmtMs(item.story_generation_ms)}</TableCell>
+                          <TableCell className="text-xs text-right font-mono">{fmtMs(item.image_generation_ms)}</TableCell>
+                          <TableCell className="text-xs text-right font-mono">{fmtMs(item.consistency_check_ms)}</TableCell>
+                          <TableCell className="text-xs text-right font-mono font-semibold">{fmtMs(item.generation_time_ms)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

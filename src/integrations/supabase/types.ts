@@ -990,6 +990,7 @@ export type Database = {
           branch_chosen: string | null
           completed: boolean | null
           concrete_theme: string | null
+          consistency_check_ms: number | null
           content: string
           continuity_state: Json | null
           cover_image_status: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
           humor_level: number | null
           id: string
           image_count: number | null
+          image_generation_ms: number | null
           is_deleted: boolean
           is_favorite: boolean
           kid_profile_id: string | null
@@ -1016,6 +1018,7 @@ export type Database = {
           prompt: string | null
           series_id: string | null
           series_mode: string | null
+          story_generation_ms: number | null
           story_images: string[] | null
           story_images_status: string | null
           structure_beginning: number | null
@@ -1032,6 +1035,7 @@ export type Database = {
           branch_chosen?: string | null
           completed?: boolean | null
           concrete_theme?: string | null
+          consistency_check_ms?: number | null
           content: string
           continuity_state?: Json | null
           cover_image_status?: string | null
@@ -1049,6 +1053,7 @@ export type Database = {
           humor_level?: number | null
           id?: string
           image_count?: number | null
+          image_generation_ms?: number | null
           is_deleted?: boolean
           is_favorite?: boolean
           kid_profile_id?: string | null
@@ -1058,6 +1063,7 @@ export type Database = {
           prompt?: string | null
           series_id?: string | null
           series_mode?: string | null
+          story_generation_ms?: number | null
           story_images?: string[] | null
           story_images_status?: string | null
           structure_beginning?: number | null
@@ -1074,6 +1080,7 @@ export type Database = {
           branch_chosen?: string | null
           completed?: boolean | null
           concrete_theme?: string | null
+          consistency_check_ms?: number | null
           content?: string
           continuity_state?: Json | null
           cover_image_status?: string | null
@@ -1091,6 +1098,7 @@ export type Database = {
           humor_level?: number | null
           id?: string
           image_count?: number | null
+          image_generation_ms?: number | null
           is_deleted?: boolean
           is_favorite?: boolean
           kid_profile_id?: string | null
@@ -1100,6 +1108,7 @@ export type Database = {
           prompt?: string | null
           series_id?: string | null
           series_mode?: string | null
+          story_generation_ms?: number | null
           story_images?: string[] | null
           story_images_status?: string | null
           structure_beginning?: number | null
@@ -1667,6 +1676,7 @@ export type Database = {
           branch_chosen: string | null
           completed: boolean | null
           concrete_theme: string | null
+          consistency_check_ms: number | null
           content: string
           continuity_state: Json | null
           cover_image_status: string | null
@@ -1684,6 +1694,7 @@ export type Database = {
           humor_level: number | null
           id: string
           image_count: number | null
+          image_generation_ms: number | null
           is_deleted: boolean
           is_favorite: boolean
           kid_profile_id: string | null
@@ -1693,6 +1704,7 @@ export type Database = {
           prompt: string | null
           series_id: string | null
           series_mode: string | null
+          story_generation_ms: number | null
           story_images: string[] | null
           story_images_status: string | null
           structure_beginning: number | null

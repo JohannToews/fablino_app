@@ -226,6 +226,11 @@ const CreateStoryPage = () => {
             episode_summary: data.episode_summary ?? null,
             continuity_state: data.continuity_state ?? null,
             visual_style_sheet: data.visual_style_sheet ?? null,
+            // Performance tracking
+            generation_time_ms: data.performance?.total_ms ?? null,
+            story_generation_ms: data.performance?.story_generation_ms ?? null,
+            image_generation_ms: data.performance?.image_generation_ms ?? null,
+            consistency_check_ms: data.performance?.consistency_check_ms ?? null,
           })
           .select()
           .single();
@@ -519,6 +524,11 @@ const CreateStoryPage = () => {
             episode_summary: data.episode_summary ?? null,
             continuity_state: data.continuity_state ?? null,
             visual_style_sheet: data.visual_style_sheet ?? null,
+            // Performance tracking
+            generation_time_ms: data.performance?.total_ms ?? null,
+            story_generation_ms: data.performance?.story_generation_ms ?? null,
+            image_generation_ms: data.performance?.image_generation_ms ?? null,
+            consistency_check_ms: data.performance?.consistency_check_ms ?? null,
           })
           .select()
           .single();
