@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useResultsPage, LevelInfo, BadgeInfo } from "@/hooks/useResultsPage";
+import { translateLevelName, translateBadgeName, translateBadgeMessage } from "@/lib/levelTranslations";
 import { ArrowLeft } from "lucide-react";
 import FablinoMascot from "@/components/FablinoMascot";
 import SpeechBubble from "@/components/SpeechBubble";
@@ -863,7 +864,21 @@ const ResultsPage = () => {
     );
   }
 
-  const { current, next, sorted } = getLevelProgress(data.levels, data.total_stars);
+  // Translate levels and badges to app language
+  const translatedLevels = useMemo(() => 
+    data.levels.map(l => ({ ...l, name: translateLevelName(l.name, kidAppLanguage) })),
+    [data.levels, kidAppLanguage]
+  );
+  const translatedBadges = useMemo(() =>
+    (data.badges || []).map(b => ({
+      ...b,
+      name: translateBadgeName(b.name, kidAppLanguage),
+      fablino_message: translateBadgeMessage(b.name, kidAppLanguage) || b.fablino_message,
+    })),
+    [data.badges, kidAppLanguage]
+  );
+
+  const { current, next, sorted } = getLevelProgress(translatedLevels, data.total_stars);
   const fablinoMsg = getFablinoMessage(t, data.child_name, data.total_stars, data.current_streak, current, next);
 
   return (
@@ -881,7 +896,7 @@ const ResultsPage = () => {
         <LevelCard current={current} next={next} totalStars={data.total_stars} delay={0.1} t={t} />
         <LevelRoadmap levels={sorted} totalStars={data.total_stars} delay={0.2} t={t} />
         <BadgesSection
-          badges={data.badges || []}
+          badges={translatedBadges}
           totalStars={data.total_stars}
           totalStoriesRead={data.total_stories_read}
           currentStreak={data.current_streak}

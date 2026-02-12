@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { translateBadgeName, translateBadgeMessage } from "@/lib/levelTranslations";
 import FablinoMascot from "./FablinoMascot";
 
 export interface EarnedBadge {
@@ -46,12 +47,22 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = "de" }: BadgeCele
   const tr = t[language] || t.de;
   const lang = language || "de";
 
+  // Translate badge names and messages
+  const translatedBadges = useMemo(() =>
+    badges.map(b => ({
+      ...b,
+      name: translateBadgeName(b.name, lang),
+      fablino_message: translateBadgeMessage(b.name, lang) || b.fablino_message,
+    })),
+    [badges, lang]
+  );
+
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
   }, []);
 
-  if (badges.length === 0) return null;
-  const badge = badges[currentIdx];
+  if (translatedBadges.length === 0) return null;
+  const badge = translatedBadges[currentIdx];
   const frameColor = badge.frame_color || "#F97316";
   const categoryLabel = badge.category
     ? CATEGORY_LABELS[badge.category]?.[lang] || CATEGORY_LABELS[badge.category]?.de || ""
@@ -59,7 +70,7 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = "de" }: BadgeCele
   const categoryColor = badge.category ? CATEGORY_COLORS[badge.category] || "#F97316" : "#F97316";
 
   const handleContinue = () => {
-    if (currentIdx < badges.length - 1) {
+    if (currentIdx < translatedBadges.length - 1) {
       setCurrentIdx((i) => i + 1);
     } else {
       setVisible(false);
@@ -174,13 +185,13 @@ const BadgeCelebrationModal = ({ badges, onDismiss, language = "de" }: BadgeCele
           className="w-full py-3 rounded-xl font-bold text-white text-[16px] active:scale-95 transition-transform"
           style={{ background: "linear-gradient(135deg, #FF8C42, #FF6B00)" }}
         >
-          {currentIdx < badges.length - 1 ? tr.next : tr.done}
+          {currentIdx < translatedBadges.length - 1 ? tr.next : tr.done}
         </button>
 
         {/* Badge counter */}
-        {badges.length > 1 && (
+        {translatedBadges.length > 1 && (
           <p className="text-[11px] font-medium mt-2" style={{ color: "#aaa" }}>
-            {currentIdx + 1} / {badges.length}
+            {currentIdx + 1} / {translatedBadges.length}
           </p>
         )}
       </div>
