@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -210,6 +211,7 @@ const ReadingPage = () => {
   const { selectedProfile, kidAppLanguage, kidExplanationLanguage } = useKidProfile();
   const { actions, pendingLevelUp, clearPendingLevelUp, starRewards, state: gamificationState, refreshProgress } = useGamification();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const [story, setStory] = useState<Story | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1321,6 +1323,8 @@ const ReadingPage = () => {
                     // Mark story as completed in stories table
                     await actions.markStoryComplete(id!);
                     setIsMarkedAsRead(true);
+                    // Invalidate stories cache so SeriesGrid sees updated completion status
+                    queryClient.invalidateQueries({ queryKey: ['stories'] });
 
                     // Log activity via RPC (handles stars, streak, badges, user_results)
                     try {
