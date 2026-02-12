@@ -216,6 +216,10 @@ const CreateStoryPage = () => {
             concrete_theme: data.concrete_theme ?? null,
             learning_theme_applied: data.learning_theme_applied ?? null,
             parent_prompt_text: data.parent_prompt_text ?? null,
+            // Phase 2: Series context fields
+            episode_summary: data.episode_summary ?? null,
+            continuity_state: data.continuity_state ?? null,
+            visual_style_sheet: data.visual_style_sheet ?? null,
           })
           .select()
           .single();
@@ -482,6 +486,10 @@ const CreateStoryPage = () => {
             concrete_theme: data.concrete_theme ?? null,
             learning_theme_applied: data.learning_theme_applied ?? null,
             parent_prompt_text: data.parent_prompt_text ?? null,
+            // Phase 2: Series context fields
+            episode_summary: data.episode_summary ?? null,
+            continuity_state: data.continuity_state ?? null,
+            visual_style_sheet: data.visual_style_sheet ?? null,
           })
           .select()
           .single();

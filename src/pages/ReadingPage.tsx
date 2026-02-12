@@ -433,6 +433,10 @@ const ReadingPage = () => {
           previousStoryId: story.id,
           seriesId: story.series_id || story.id, // First episode uses own id as series_id
           userId: user?.id,
+          // Phase 2: Pass series flag + kid profile for new prompt path
+          isSeries: true,
+          storyLanguage: story.text_language || "de",
+          kidProfileId: story.kid_profile_id,
         },
       });
 
@@ -497,6 +501,10 @@ const ReadingPage = () => {
           ending_type: nextEpisodeNumber >= 5 ? "A" : "C",
           episode_number: nextEpisodeNumber,
           series_id: story.series_id || story.id, // Backward compat: old Episode 1 has null series_id
+          // Phase 2: Series context fields from generate-story response
+          episode_summary: data.episode_summary ?? null,
+          continuity_state: data.continuity_state ?? null,
+          visual_style_sheet: data.visual_style_sheet ?? null,
         })
         .select()
         .single();

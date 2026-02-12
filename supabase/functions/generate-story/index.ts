@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { buildStoryPrompt, injectLearningTheme, StoryRequest } from '../_shared/promptBuilder.ts';
+import { buildStoryPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG } from '../_shared/promptBuilder.ts';
 import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
-import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, ImagePromptResult } from '../_shared/imagePromptBuilder.ts';
+import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, ImagePromptResult, SeriesImageContext } from '../_shared/imagePromptBuilder.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -654,6 +654,62 @@ async function generateImageWithCache(
   return imageUrl;
 }
 
+// ── Phase 2: Load series context from previous episodes ──
+interface SeriesEpisodeRow {
+  episode_number: number;
+  title: string;
+  episode_summary: string | null;
+  continuity_state: any | null;
+  visual_style_sheet: any | null;
+}
+
+async function loadSeriesContext(
+  supabase: any,
+  seriesId: string,
+  currentEpisodeNumber: number
+): Promise<{
+  previousEpisodes: Array<{ episode_number: number; title: string; episode_summary?: string }>;
+  lastContinuityState: any | null;
+  visualStyleSheet: any | null;
+}> {
+  const { data: episodes, error } = await supabase
+    .from('stories')
+    .select('episode_number, title, episode_summary, continuity_state, visual_style_sheet')
+    .eq('series_id', seriesId)
+    .lt('episode_number', currentEpisodeNumber)
+    .order('episode_number', { ascending: true });
+
+  if (error) {
+    console.error('[loadSeriesContext] Error loading previous episodes:', error.message);
+    return { previousEpisodes: [], lastContinuityState: null, visualStyleSheet: null };
+  }
+
+  if (!episodes || episodes.length === 0) {
+    console.log('[loadSeriesContext] No previous episodes found for series:', seriesId);
+    return { previousEpisodes: [], lastContinuityState: null, visualStyleSheet: null };
+  }
+
+  const rows = episodes as SeriesEpisodeRow[];
+  console.log(`[loadSeriesContext] Loaded ${rows.length} previous episode(s) for series ${seriesId}`);
+
+  // Build summary list
+  const previousEpisodes = rows.map(r => ({
+    episode_number: r.episode_number,
+    title: r.title || `Episode ${r.episode_number}`,
+    episode_summary: r.episode_summary || undefined,
+  }));
+
+  // Get continuity_state from the most recent previous episode
+  const lastEpisode = rows[rows.length - 1];
+  const lastContinuityState = lastEpisode?.continuity_state || null;
+
+  // visual_style_sheet is always from Episode 1
+  const ep1 = rows.find(r => r.episode_number === 1);
+  const visualStyleSheet = ep1?.visual_style_sheet || null;
+
+  return { previousEpisodes, lastContinuityState, visualStyleSheet };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -778,6 +834,23 @@ Deno.serve(async (req) => {
       };
       const resolvedLength = storyLength || lengthMapping[length] || 'medium';
 
+      // ── Phase 2: Load series context for episodes 2+ ──
+      let seriesContextData: {
+        previousEpisodes: Array<{ episode_number: number; title: string; episode_summary?: string }>;
+        lastContinuityState: any | null;
+        visualStyleSheet: any | null;
+      } = { previousEpisodes: [], lastContinuityState: null, visualStyleSheet: null };
+
+      if (seriesId && episodeNumber && episodeNumber > 1) {
+        console.log(`[generate-story] Loading series context for series=${seriesId}, episode=${episodeNumber}`);
+        seriesContextData = await loadSeriesContext(supabase, seriesId, episodeNumber);
+        console.log(`[generate-story] Series context loaded: ${seriesContextData.previousEpisodes.length} previous episodes, continuity=${!!seriesContextData.lastContinuityState}, styleSheet=${!!seriesContextData.visualStyleSheet}`);
+      }
+
+      // Determine the resolved ending type from EPISODE_CONFIG (Phase 2 override)
+      const episodeConfig = episodeNumber ? EPISODE_CONFIG[episodeNumber] || EPISODE_CONFIG[5] : null;
+      const seriesEndingType = episodeConfig?.ending_type_db || resolvedEndingType || 'A';
+
       const storyRequest: StoryRequest = {
         kid_profile: {
           id: kidProfileId || userId || 'unknown',
@@ -806,6 +879,13 @@ Deno.serve(async (req) => {
         source: source === 'kid' ? 'kid' : 'parent',
         question_count: 5,
         surprise_characters: surpriseCharactersParam || false,
+        // ── Phase 2: Series context fields ──
+        series_episode_number: (isSeries || seriesId) ? (episodeNumber || 1) : undefined,
+        series_ending_type: (isSeries || seriesId) ? seriesEndingType : undefined,
+        series_previous_episodes: seriesContextData.previousEpisodes.length > 0
+          ? seriesContextData.previousEpisodes : undefined,
+        series_continuity_state: seriesContextData.lastContinuityState || undefined,
+        series_visual_style_sheet: seriesContextData.visualStyleSheet || undefined,
       };
 
       // 3. Build dynamic user message
@@ -1025,6 +1105,10 @@ Wähle genau 10 Vokabelwörter aus.`;
       concrete_theme?: string;
       summary?: string;
       learning_theme_response?: any;
+      // Phase 2: Series fields from LLM
+      episode_summary?: string;
+      continuity_state?: any;
+      visual_style_sheet?: any;
     } = {
       title: "",
       content: "",
@@ -1134,6 +1218,40 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     console.log(`[generate-story] Classifications: structure=${structureBeginning}-${structureMiddle}-${structureEnding}, emotion=${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}, theme=${concreteTheme}`);
 
+    // ── Phase 2: Parse series-specific fields from LLM response ──
+    let episodeSummary: string | null = null;
+    let continuityState: any | null = null;
+    let visualStyleSheet: any | null = null;
+
+    if (isSeries || seriesId) {
+      // episode_summary: string (max 80 words)
+      if (story.episode_summary && typeof story.episode_summary === 'string') {
+        episodeSummary = story.episode_summary.trim().substring(0, 500); // safety cap
+        console.log(`[generate-story] Parsed episode_summary (${countWords(episodeSummary)} words): ${episodeSummary.substring(0, 80)}...`);
+      } else {
+        // Fallback: use the existing summary field or auto-generate from content
+        episodeSummary = story.summary || story.content.substring(0, 300);
+        console.log('[generate-story] No episode_summary from LLM, using fallback');
+      }
+
+      // continuity_state: JSONB
+      if (story.continuity_state && typeof story.continuity_state === 'object') {
+        continuityState = story.continuity_state;
+        console.log(`[generate-story] Parsed continuity_state: facts=${continuityState?.established_facts?.length || 0}, threads=${continuityState?.open_threads?.length || 0}, chars=${Object.keys(continuityState?.character_states || {}).length}`);
+      } else {
+        console.log('[generate-story] No continuity_state from LLM');
+      }
+
+      // visual_style_sheet: JSONB (only expected from Episode 1)
+      const currentEp = episodeNumber || 1;
+      if (currentEp === 1 && story.visual_style_sheet && typeof story.visual_style_sheet === 'object') {
+        visualStyleSheet = story.visual_style_sheet;
+        console.log(`[generate-story] Parsed visual_style_sheet: characters=${Object.keys(visualStyleSheet?.characters || {}).length}, world_style=${!!visualStyleSheet?.world_style}`);
+      } else if (currentEp === 1) {
+        console.log('[generate-story] No visual_style_sheet from LLM for Episode 1');
+      }
+    }
+
     const storyGenerationTime = Date.now() - startTime;
     console.log(`[PERF] Story text generated in ${storyGenerationTime}ms`);
 
@@ -1183,7 +1301,31 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     if (imagePlan && imagePlan.character_anchor && imagePlan.scenes?.length > 0) {
       // ═══ NEW PATH: Structured image_plan from LLM ═══
       console.log('[generate-story] Using NEW image path: structured image_plan');
-      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge);
+
+      // ── Phase 3: Build series image context for visual consistency ──
+      let seriesImageCtx: SeriesImageContext | undefined;
+      const currentEpForImages = episodeNumber || (isSeries ? 1 : undefined);
+
+      if (currentEpForImages && (isSeries || seriesId)) {
+        // For Ep2+: use visual_style_sheet loaded from Episode 1
+        // For Ep1: use visual_style_sheet just parsed from this LLM response
+        const vss = seriesContextData.visualStyleSheet || visualStyleSheet;
+        if (vss && typeof vss === 'object' && (vss.characters || vss.world_style)) {
+          seriesImageCtx = {
+            visualStyleSheet: {
+              characters: vss.characters || {},
+              world_style: vss.world_style || '',
+              recurring_visual: vss.recurring_visual || '',
+            },
+            episodeNumber: currentEpForImages,
+          };
+          console.log(`[generate-story] Phase 3: Series image context built for Episode ${currentEpForImages}, chars=${Object.keys(vss.characters || {}).length}`);
+        } else {
+          console.log('[generate-story] Phase 3: No visual_style_sheet available, skipping series image context');
+        }
+      }
+
+      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx);
     } else {
       // ═══ FALLBACK: Simple cover prompt (previous behavior) ═══
       console.log('[generate-story] Using FALLBACK image path: simple cover prompt');
@@ -1441,6 +1583,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       imageWarning,
       generationTimeMs: totalTime,
       usedNewPromptPath,
+      // Phase 2: Series fields for DB storage
+      episode_summary: episodeSummary,
+      continuity_state: continuityState,
+      visual_style_sheet: visualStyleSheet,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

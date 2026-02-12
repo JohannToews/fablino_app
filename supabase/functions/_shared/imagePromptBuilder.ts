@@ -1,7 +1,8 @@
 /**
- * imagePromptBuilder.ts – Block 2.4
+ * imagePromptBuilder.ts – Block 2.4 + Phase 3 (Series Visual Consistency)
  * Builds final image prompts from LLM image_plan + DB style rules.
  * Handles cover + scene images with age-appropriate styling.
+ * Phase 3: Adds Visual Style Sheet prefix + Episode Mood for series consistency.
  */
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -40,6 +41,66 @@ export interface ImagePromptResult {
   label: string;  // 'cover' | 'scene_1' | 'scene_2' | 'scene_3'
 }
 
+// ─── Phase 3: Visual Style Sheet for series consistency ──────────
+
+export interface VisualStyleSheet {
+  characters: Record<string, string>;  // Name → english visual description
+  world_style: string;                 // World visual style
+  recurring_visual: string;            // Recurring visual signature element
+}
+
+export interface SeriesImageContext {
+  visualStyleSheet: VisualStyleSheet;
+  episodeNumber: number;  // 1-5
+}
+
+// ─── Phase 3: Episode Mood Modifier ─────────────────────────────
+
+const EPISODE_MOOD: Record<number, string> = {
+  1: 'Bright, inviting, sense of wonder and discovery. Warm color palette.',
+  2: 'Growing tension, first shadows appear. Still warm but with contrast.',
+  3: 'Dramatic shift. Strong contrast between light and dark. Revelation mood.',
+  4: 'Darker palette, isolation, emotional weight. Single light source, muted colors.',
+  5: 'Triumphant warmth returns. Brighter than Episode 1. Transformation visible.',
+};
+
+/**
+ * Build the Series Visual Consistency prefix block.
+ * Prepended to every image prompt when seriesContext is provided.
+ */
+function buildSeriesStylePrefix(ctx: SeriesImageContext): string {
+  const vss = ctx.visualStyleSheet;
+  const lines: string[] = [];
+
+  lines.push(`SERIES VISUAL CONSISTENCY (Episode ${ctx.episodeNumber} of 5):`);
+
+  // Character descriptions
+  if (vss.characters && Object.keys(vss.characters).length > 0) {
+    const charDescs = Object.entries(vss.characters)
+      .map(([name, desc]) => `${name} is ${desc}`)
+      .join('. ');
+    lines.push(`Characters: ${charDescs}`);
+  }
+
+  // World style
+  if (vss.world_style) {
+    lines.push(`World style: ${vss.world_style}`);
+  }
+
+  // Recurring visual element
+  if (vss.recurring_visual) {
+    lines.push(`Recurring element: ${vss.recurring_visual}`);
+  }
+
+  lines.push('Maintain exact character appearances and world style across all images.');
+
+  // Episode mood
+  const mood = EPISODE_MOOD[ctx.episodeNumber] || EPISODE_MOOD[5];
+  lines.push(`Episode mood: ${mood}`);
+
+  return lines.join('\n');
+}
+
 // ─── Constants ───────────────────────────────────────────────────
 
 const NO_TEXT_INSTRUCTION = 'NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO NUMBERS, NO SIGNS, NO LABELS, NO CAPTIONS, NO SPEECH BUBBLES anywhere in the image.';
@@ -67,17 +128,22 @@ function getAgeModifier(age: number): string {
 /**
  * Builds final image prompts from image_plan + DB rules.
  * Returns cover + scene prompts.
+ * Phase 3: Optional seriesContext adds Visual Style Sheet prefix + Episode Mood.
  */
 export function buildImagePrompts(
   imagePlan: ImagePlan,
   ageStyleRules: ImageStyleRules,
   themeImageRules: ThemeImageRules,
   childAge: number,
+  seriesContext?: SeriesImageContext,
 ): ImagePromptResult[] {
   const results: ImagePromptResult[] = [];
 
   // ═══ Age modifier (fine-grained, per year) ═══
   const ageModifier = getAgeModifier(childAge);
+
+  // ═══ Phase 3: Series visual consistency prefix ═══
+  const seriesPrefix = seriesContext ? buildSeriesStylePrefix(seriesContext) : '';
 
   // ═══ Shared style parts (same for ALL images) ═══
   const styleBlock = [
@@ -94,24 +160,32 @@ export function buildImagePrompts(
   ].filter(Boolean).join(', ');
 
   // ═══ Cover image (atmospheric, no specific scene) ═══
-  const coverPrompt = [
+  const coverLines = [
+    // Phase 3: Series prefix first (if available)
+    seriesPrefix,
     'Children book cover illustration.',
     `Characters: ${imagePlan.character_anchor}`,
     `Setting: ${imagePlan.world_anchor}`,
     'The character(s) in a calm, inviting pose in their environment. Atmospheric and welcoming.',
+    // Phase 3: Series cover hint
+    seriesContext
+      ? `This is episode ${seriesContext.episodeNumber} cover of a 5-episode series. Same style as previous covers.`
+      : '',
     `Style: ${styleBlock}`,
     NO_TEXT_INSTRUCTION,
-  ].join('\n');
+  ].filter(Boolean);
 
   results.push({
-    prompt: coverPrompt,
+    prompt: coverLines.join('\n'),
     negative_prompt: negativeBlock,
     label: 'cover',
   });
 
   // ═══ Scene images (1-3, showing story arc) ═══
   for (const scene of imagePlan.scenes) {
-    const scenePrompt = [
+    const sceneLines = [
+      // Phase 3: Series prefix first (if available)
+      seriesPrefix,
       'Children book illustration, interior page.',
       `Characters: ${imagePlan.character_anchor}`,
       `Setting: ${imagePlan.world_anchor}`,
@@ -119,10 +193,10 @@ export function buildImagePrompts(
       `Emotional expression: ${scene.emotion}`,
       `Style: ${styleBlock}`,
       NO_TEXT_INSTRUCTION,
-    ].join('\n');
+    ].filter(Boolean);
 
     results.push({
-      prompt: scenePrompt,
+      prompt: sceneLines.join('\n'),
       negative_prompt: negativeBlock,
       label: `scene_${scene.scene_id}`,
     });

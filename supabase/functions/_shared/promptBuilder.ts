@@ -33,6 +33,29 @@ export interface StoryRequest {
   source: 'parent' | 'kid';
   question_count?: number;
   surprise_characters?: boolean;  // Block 2.3e: fictional-only characters
+  // ── Phase 2: Series context ──
+  series_episode_number?: number;
+  series_ending_type?: string;        // resolved ending type ('A', 'B', 'C')
+  series_previous_episodes?: Array<{
+    episode_number: number;
+    title: string;
+    episode_summary?: string;
+  }>;
+  series_continuity_state?: {
+    established_facts?: string[];
+    open_threads?: string[];
+    character_states?: Record<string, string>;
+    world_rules?: string[];
+    signature_element?: {
+      description: string;
+      usage_history?: string[];
+    };
+  };
+  series_visual_style_sheet?: {
+    characters?: Record<string, string>;
+    world_style?: string;
+    recurring_visual?: string;
+  };
 }
 
 // ─── Section Headers (translated) ───────────────────────────────
@@ -418,6 +441,215 @@ function buildVarietyBlock(recentStories: any[], headers: Record<string, string>
   }
 
   return lines.length > 0 ? `## ${headers.variety}\n${lines.join('\n')}` : '';
+}
+
+// ─── Phase 2: Episode Configuration (5-episode linear series) ───
+
+export interface EpisodeConfig {
+  function_name: string;
+  function_description: string;
+  requirements: string[];
+  preferred_anfang: string[];
+  preferred_mitte: string[];
+  required_ende: string;
+  ending_type_db: string;
+}
+
+export const EPISODE_CONFIG: Record<number, EpisodeConfig> = {
+  1: {
+    function_name: "Die Welt öffnet sich",
+    function_description: "Etabliere die Welt, führe alle Hauptfiguren mit Iceberg-Tiefe ein, setze das zentrale Mysterium, platziere ein Signature Element, ende mit starkem Hook.",
+    requirements: [
+      "Die ersten zwei Sätze müssen sofort neugierig machen",
+      "Jede Hauptfigur bekommt einen charakteristischen Moment",
+      "Ein Geheimnis oder Rätsel wird angedeutet (nicht erklärt)",
+      "Signature Element einführen (wiederkehrender Gegenstand, Ritual, Running Gag)",
+      "Ende mit unwiderstehlichem Hook – der Leser MUSS Episode 2 wollen",
+    ],
+    preferred_anfang: ["A1", "A2", "A4"],
+    preferred_mitte: ["M1", "M2"],
+    required_ende: "Cliffhanger oder starkes offenes Ende",
+    ending_type_db: "C",
+  },
+  2: {
+    function_name: "Die Komplikation",
+    function_description: "Zeige, dass das Problem größer ist als gedacht. Der erste Plan der Figuren scheitert. Neue Hürden oder Gegner tauchen auf.",
+    requirements: [
+      "Ein gescheiterter Versuch der Figuren (naheliegende Lösung funktioniert nicht)",
+      "Neue Dimension des Problems (neuer Charakter, Hindernis oder Welt-Regel)",
+      "Konsequenzen aus Episode 1 zeigen (Entscheidungen haben Folgen)",
+      "Beziehungen werden komplexer (Freundschaften getestet, Allianzen verschieben sich)",
+      "Signature Element kommt vor (leicht variiert)",
+    ],
+    preferred_anfang: ["A3", "A5"],
+    preferred_mitte: ["M1", "M3", "M6"],
+    required_ende: "Cliffhanger – 'Es wird schlimmer, bevor es besser wird'",
+    ending_type_db: "C",
+  },
+  3: {
+    function_name: "Der Drehpunkt",
+    function_description: "Die Karten werden neu gemischt. Ein Geheimnis wird gelüftet, aber wirft neue Fragen auf. Loyalitäten werden getestet.",
+    requirements: [
+      "Eine Enthüllung die alles verändert (wirft aber neue Fragen auf)",
+      "Loyalitäten werden infrage gestellt (wer steht auf wessen Seite?)",
+      "Perspektivwechsel: Figur oder Leser versteht etwas neu",
+      "Tiefpunkt vor dem Aufstieg (schlecht, aber Hoffnung bleibt)",
+      "Signature Element kommt vor (variiert)",
+    ],
+    preferred_anfang: ["A2", "A5"],
+    preferred_mitte: ["M2", "M4", "M6"],
+    required_ende: "Twist-Ende mit Hook ODER Cliffhanger",
+    ending_type_db: "C",
+  },
+  4: {
+    function_name: "Die dunkelste Stunde",
+    function_description: "Alles scheint verloren. Es geht nicht mehr nur um das äußere Problem, sondern um Werte und Identität. Die emotionalste Episode der Serie.",
+    requirements: [
+      "Innerer Konflikt (Werte, Identität, Zugehörigkeit)",
+      "Opfer oder schwere Entscheidung (Geheimnis, Traum oder Überzeugung aufgeben)",
+      "Moment der Einsamkeit (Hauptfigur steht gefühlt allein da)",
+      "Der Funke: kleines Detail zeigt den Weg (aber Leser weiß noch nicht wie)",
+      "Signature Element kommt vor – bekommt tiefere Bedeutung",
+    ],
+    preferred_anfang: ["A3", "A6"],
+    preferred_mitte: ["M3", "M5"],
+    required_ende: "Der absolut stärkste Cliffhanger der gesamten Serie",
+    ending_type_db: "C",
+  },
+  5: {
+    function_name: "Das Finale",
+    function_description: "Alles kommt zusammen. Das zentrale Mysterium wird gelöst – aber nicht unbedingt wie erwartet. Die Figuren haben sich verändert.",
+    requirements: [
+      "Alle wesentlichen Fäden auflösen (kein wichtiges Mysterium bleibt offen)",
+      "Callback zu Episode 1 (mindestens ein Element aus Ep1 wird wichtig)",
+      "Jede Hauptfigur bekommt ihren Moment (auch Nebenfiguren)",
+      "Charakterentwicklung sichtbar: Figuren handeln anders als in Ep1",
+      "Signature Element hat finalen, bedeutungsvollen Moment",
+      "KEIN Deus ex machina – Lösung ergibt sich aus der Geschichte",
+      "KEIN Cliffhanger – Serie muss abschließen",
+    ],
+    preferred_anfang: ["A1", "A3"],
+    preferred_mitte: ["M1", "M4"],
+    required_ende: "Abschluss: Klassisch (6-8J), Offenes Fenster (9-11J), oder Philosophisch (10-12J)",
+    ending_type_db: "A",
+  },
+};
+
+/**
+ * Build the full SERIES CONTEXT block for the prompt.
+ * Called only when the story is part of a series (is_series=true + series_episode_number).
+ */
+function buildSeriesContextBlock(request: StoryRequest): string {
+  const epNum = request.series_episode_number;
+  if (!epNum) return '';
+
+  const config = EPISODE_CONFIG[epNum] || EPISODE_CONFIG[5]; // Default to finale for ep6+
+  const lines: string[] = [];
+
+  // ═══ Header ═══
+  lines.push('═══════════════════════════════════════════════');
+  lines.push(`SERIEN-MODUS: Episode ${epNum} von 5`);
+  lines.push('═══════════════════════════════════════════════');
+  lines.push('');
+
+  // ═══ Episode function ═══
+  lines.push(`EPISODEN-FUNKTION: ${config.function_name}`);
+  lines.push(config.function_description);
+  lines.push('');
+
+  // ═══ Requirements ═══
+  lines.push('PFLICHT-ELEMENTE DIESER EPISODE:');
+  for (const req of config.requirements) {
+    lines.push(`- ${req}`);
+  }
+  lines.push('');
+
+  // ═══ Structure constraints ═══
+  lines.push('STRUKTUR-CONSTRAINTS:');
+  lines.push(`- ANFANG bevorzugt: ${config.preferred_anfang.join(', ')}`);
+  lines.push(`- MITTE bevorzugt: ${config.preferred_mitte.join(', ')}`);
+  lines.push(`- ENDE Pflicht: ${config.required_ende}`);
+  lines.push('');
+
+  // ═══ Previous episodes context (Ep2+) ═══
+  if (epNum > 1 && request.series_previous_episodes && request.series_previous_episodes.length > 0) {
+    lines.push('BISHERIGER VERLAUF:');
+    for (const ep of request.series_previous_episodes) {
+      const summary = ep.episode_summary || '(keine Zusammenfassung)';
+      lines.push(`- Episode ${ep.episode_number}: "${ep.title}" – ${summary}`);
+    }
+    lines.push('');
+  }
+
+  // ═══ Continuity state (Ep2+) ═══
+  const cs = request.series_continuity_state;
+  if (epNum > 1 && cs) {
+    lines.push('KONTINUITÄTS-STATE:');
+    if (cs.established_facts?.length) {
+      lines.push(`- Etablierte Fakten: ${cs.established_facts.join('; ')}`);
+    }
+    if (cs.open_threads?.length) {
+      lines.push(`- Offene Fäden: ${cs.open_threads.join('; ')}`);
+    }
+    if (cs.character_states && Object.keys(cs.character_states).length > 0) {
+      lines.push('- Charakter-Entwicklung:');
+      for (const [name, state] of Object.entries(cs.character_states)) {
+        lines.push(`  - ${name}: ${state}`);
+      }
+    }
+    if (cs.world_rules?.length) {
+      lines.push(`- Welt-Regeln: ${cs.world_rules.join('; ')}`);
+    }
+    if (cs.signature_element) {
+      lines.push(`- Signature Element: ${cs.signature_element.description}`);
+      if (cs.signature_element.usage_history?.length) {
+        lines.push(`  Bisherige Verwendung: ${cs.signature_element.usage_history.join('; ')}`);
+      }
+    }
+    lines.push('');
+  }
+
+  // ═══ Character states enrichment for Ep2+ ═══
+  if (epNum > 1 && cs?.character_states && Object.keys(cs.character_states).length > 0) {
+    lines.push('BEZIEHUNGS-REGELN:');
+    lines.push('- Verwende die definierten Beziehungen konsistent über alle Episoden');
+    lines.push('- Familienrollen sind fest (Papa ist IMMER Papa, nicht ein Freund)');
+    lines.push('- Beziehungen dürfen sich ENTWICKELN (Streit, Versöhnung) aber nie WIDERSPRECHEN');
+    lines.push('- Anti-Klischee: Jüngere Geschwister sind NICHT automatisch nervig oder unfähig');
+    lines.push('');
+  }
+
+  // ═══ Output extension for series ═══
+  lines.push('OUTPUT-ERWEITERUNG FÜR SERIEN:');
+  lines.push('Liefere zusätzlich zum normalen Output folgende JSON-Felder:');
+  lines.push('');
+  lines.push('episode_summary: Zusammenfassung dieser Episode in max 80 Wörtern.');
+  lines.push('Nur Plot-Punkte und Charakter-Entwicklung, keine Stilbeschreibung.');
+  lines.push('');
+  lines.push('continuity_state: {');
+  lines.push('  "established_facts": [...alle Fakten die jetzt feststehen...],');
+  lines.push('  "open_threads": [...alle offenen Fragen...],');
+  lines.push('  "character_states": {"Name": "aktueller Zustand"},');
+  lines.push('  "world_rules": [...alle etablierten Regeln...],');
+  lines.push('  "signature_element": {');
+  lines.push('    "description": "...",');
+  lines.push('    "usage_history": ["Ep1: ...", "Ep2: ...", ...]');
+  lines.push('  }');
+  lines.push('}');
+
+  // Visual style sheet only for Episode 1
+  if (epNum === 1) {
+    lines.push('');
+    lines.push('visual_style_sheet: {');
+    lines.push('  "characters": {"Name": "englische Beschreibung für Bildgenerierung, max 1 Satz pro Figur"},');
+    lines.push('  "world_style": "englische Stil-Beschreibung der visuellen Welt",');
+    lines.push('  "recurring_visual": "visuelles Signature Element"');
+    lines.push('}');
+  }
+
+  lines.push('═══════════════════════════════════════════════');
+
+  return lines.join('\n');
 }
 
 // ─── Main: buildStoryPrompt ─────────────────────────────────────
@@ -862,8 +1094,14 @@ export async function buildStoryPrompt(
     sections.push(`## ${headers.specialRequest}\n${request.user_prompt.trim()}`);
   }
 
-  // SERIES CONTEXT (only if is_series and has context)
-  if (request.is_series && request.series_context) {
+  // SERIES CONTEXT – Phase 2: structured episode context block
+  if (request.is_series && request.series_episode_number) {
+    const seriesBlock = buildSeriesContextBlock(request);
+    if (seriesBlock) {
+      sections.push(`## ${headers.series}\n${seriesBlock}`);
+    }
+  } else if (request.is_series && request.series_context) {
+    // Legacy fallback for old-style plain-text series context
     sections.push(`## ${headers.series}\n${request.series_context}`);
   }
 
