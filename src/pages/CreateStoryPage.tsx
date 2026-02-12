@@ -185,6 +185,46 @@ const CreateStoryPage = () => {
         const storyLength = storySettings?.length || "medium";
         const storyDifficulty = storySettings?.difficulty || difficulty;
         const isSeries = storySettings?.isSeries || false;
+
+        // Helper to upload base64 image to Supabase Storage
+        const uploadBase64Image = async (base64: string | undefined | null, prefix: string): Promise<string | null> => {
+          if (!base64 || typeof base64 !== 'string') return null;
+          try {
+            let b64Data = base64;
+            if (b64Data.includes(',')) b64Data = b64Data.split(',')[1];
+            b64Data = b64Data.replace(/\s/g, '');
+            if (!b64Data || b64Data.length === 0) return null;
+            const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+            const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.png`;
+            const { error: uploadError } = await supabase.storage
+              .from("covers")
+              .upload(fileName, imageData, { contentType: "image/png" });
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
+              console.log(`[CreateStory] ${prefix} uploaded:`, urlData.publicUrl);
+              return urlData.publicUrl;
+            }
+            console.error(`[CreateStory] Upload error for ${prefix}:`, uploadError);
+          } catch (imgErr) {
+            console.error(`[CreateStory] Error uploading ${prefix}:`, imgErr);
+          }
+          return null;
+        };
+
+        // Upload images to Storage before saving
+        let coverImageUrl: string | null = null;
+        if (data.coverImageBase64) {
+          coverImageUrl = await uploadBase64Image(data.coverImageBase64, "cover");
+        }
+        let storyImageUrls: string[] | null = null;
+        if (data.storyImages && Array.isArray(data.storyImages)) {
+          const urls: string[] = [];
+          for (let i = 0; i < data.storyImages.length; i++) {
+            const url = await uploadBase64Image(data.storyImages[i], `story-${i}`);
+            if (url) urls.push(url);
+          }
+          if (urls.length > 0) storyImageUrls = urls;
+        }
         
         // Save the story to database
         // For series: first episode has series_id = null, episode_number = 1
@@ -193,8 +233,10 @@ const CreateStoryPage = () => {
           .insert({
             title: data.title,
             content: data.content,
-            cover_image_url: data.coverImageBase64 || null,
-            story_images: data.storyImages || null,
+            cover_image_url: coverImageUrl,
+            cover_image_status: coverImageUrl ? 'complete' : 'pending',
+            story_images: storyImageUrls,
+            story_images_status: storyImageUrls ? 'complete' : 'pending',
             image_count: data.image_count || 1,
             difficulty: storyDifficulty,
             text_type: "non-fiction",
@@ -473,6 +515,46 @@ const CreateStoryPage = () => {
       }
 
       if (data?.title && data?.content) {
+        // Helper to upload base64 image to Supabase Storage
+        const uploadBase64ImageFiction = async (base64: string | undefined | null, prefix: string): Promise<string | null> => {
+          if (!base64 || typeof base64 !== 'string') return null;
+          try {
+            let b64Data = base64;
+            if (b64Data.includes(',')) b64Data = b64Data.split(',')[1];
+            b64Data = b64Data.replace(/\s/g, '');
+            if (!b64Data || b64Data.length === 0) return null;
+            const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+            const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.png`;
+            const { error: uploadError } = await supabase.storage
+              .from("covers")
+              .upload(fileName, imageData, { contentType: "image/png" });
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
+              console.log(`[CreateStory-Fiction] ${prefix} uploaded:`, urlData.publicUrl);
+              return urlData.publicUrl;
+            }
+            console.error(`[CreateStory-Fiction] Upload error for ${prefix}:`, uploadError);
+          } catch (imgErr) {
+            console.error(`[CreateStory-Fiction] Error uploading ${prefix}:`, imgErr);
+          }
+          return null;
+        };
+
+        // Upload images to Storage before saving
+        let coverImageUrlFiction: string | null = null;
+        if (data.coverImageBase64) {
+          coverImageUrlFiction = await uploadBase64ImageFiction(data.coverImageBase64, "cover");
+        }
+        let storyImageUrlsFiction: string[] | null = null;
+        if (data.storyImages && Array.isArray(data.storyImages)) {
+          const urls: string[] = [];
+          for (let i = 0; i < data.storyImages.length; i++) {
+            const url = await uploadBase64ImageFiction(data.storyImages[i], `story-${i}`);
+            if (url) urls.push(url);
+          }
+          if (urls.length > 0) storyImageUrlsFiction = urls;
+        }
+
         // Save the story to database
         // For series: first episode has series_id = null, episode_number = 1
         // Subsequent episodes will reference this story's id as series_id
@@ -481,8 +563,10 @@ const CreateStoryPage = () => {
           .insert({
             title: data.title,
             content: data.content,
-            cover_image_url: data.coverImageBase64 || null,
-            story_images: data.storyImages || null,
+            cover_image_url: coverImageUrlFiction,
+            cover_image_status: coverImageUrlFiction ? 'complete' : 'pending',
+            story_images: storyImageUrlsFiction,
+            story_images_status: storyImageUrlsFiction ? 'complete' : 'pending',
             image_count: data.image_count || 1,
             difficulty: storyDifficulty,
             text_type: "fiction",

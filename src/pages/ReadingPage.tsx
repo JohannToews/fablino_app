@@ -835,6 +835,46 @@ const ReadingPage = () => {
       }
 
       if (genData?.title && genData?.content) {
+        // Helper to upload base64 image to Supabase Storage
+        const uploadBase64ImageInteractive = async (base64: string | undefined | null, prefix: string): Promise<string | null> => {
+          if (!base64 || typeof base64 !== 'string') return null;
+          try {
+            let b64Data = base64;
+            if (b64Data.includes(',')) b64Data = b64Data.split(',')[1];
+            b64Data = b64Data.replace(/\s/g, '');
+            if (!b64Data || b64Data.length === 0) return null;
+            const imageData = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+            const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.png`;
+            const { error: uploadError } = await supabase.storage
+              .from("covers")
+              .upload(fileName, imageData, { contentType: "image/png" });
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage.from("covers").getPublicUrl(fileName);
+              console.log(`[Interactive-Episode] ${prefix} uploaded:`, urlData.publicUrl);
+              return urlData.publicUrl;
+            }
+            console.error(`[Interactive-Episode] Upload error for ${prefix}:`, uploadError);
+          } catch (imgErr) {
+            console.error(`[Interactive-Episode] Error uploading ${prefix}:`, imgErr);
+          }
+          return null;
+        };
+
+        // Upload images to Storage
+        let coverUrl: string | null = null;
+        if (genData.coverImageBase64) {
+          coverUrl = await uploadBase64ImageInteractive(genData.coverImageBase64, "cover");
+        }
+        let storyImageUrls: string[] | null = null;
+        if (genData.storyImages && Array.isArray(genData.storyImages)) {
+          const urls: string[] = [];
+          for (let i = 0; i < genData.storyImages.length; i++) {
+            const url = await uploadBase64ImageInteractive(genData.storyImages[i], `story-${i}`);
+            if (url) urls.push(url);
+          }
+          if (urls.length > 0) storyImageUrls = urls;
+        }
+
         const { data: newStory, error: storyError } = await supabase
           .from("stories")
           .insert({
@@ -844,8 +884,10 @@ const ReadingPage = () => {
             text_type: story.text_type || "fiction",
             text_language: story.text_language,
             prompt: story.prompt,
-            cover_image_url: genData.coverImageBase64 || null,
-            story_images: genData.storyImages || null,
+            cover_image_url: coverUrl,
+            cover_image_status: coverUrl ? 'complete' : 'pending',
+            story_images: storyImageUrls,
+            story_images_status: storyImageUrls ? 'complete' : 'pending',
             user_id: user.id,
             kid_profile_id: story.kid_profile_id,
             ending_type: nextEpisodeNumber >= 5 ? "A" : "C",
