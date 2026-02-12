@@ -801,6 +801,13 @@ Deno.serve(async (req) => {
     const effectiveStoryLanguage = storyLanguageParam
       || (textLanguage ? textLanguage.toLowerCase() : 'fr');
 
+    // ── Phase 2: Series context (declared outside inner try so it's accessible later for images) ──
+    let seriesContextData: {
+      previousEpisodes: Array<{ episode_number: number; title: string; episode_summary?: string }>;
+      lastContinuityState: any | null;
+      visualStyleSheet: any | null;
+    } = { previousEpisodes: [], lastContinuityState: null, visualStyleSheet: null };
+
     try {
       // 1. Load CORE Slim v2
       const coreSlimData = await loadPrompt('system_prompt_core_v2');
@@ -835,11 +842,6 @@ Deno.serve(async (req) => {
       const resolvedLength = storyLength || lengthMapping[length] || 'medium';
 
       // ── Phase 2: Load series context for episodes 2+ ──
-      let seriesContextData: {
-        previousEpisodes: Array<{ episode_number: number; title: string; episode_summary?: string }>;
-        lastContinuityState: any | null;
-        visualStyleSheet: any | null;
-      } = { previousEpisodes: [], lastContinuityState: null, visualStyleSheet: null };
 
       if (seriesId && episodeNumber && episodeNumber > 1) {
         console.log(`[generate-story] Loading series context for series=${seriesId}, episode=${episodeNumber}`);

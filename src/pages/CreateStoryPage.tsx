@@ -668,6 +668,7 @@ const CreateStoryPage = () => {
           onComplete={handleEffectsComplete}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
+          isAdmin={user?.role === 'admin'}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
         />

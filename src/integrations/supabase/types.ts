@@ -990,6 +990,7 @@ export type Database = {
           completed: boolean | null
           concrete_theme: string | null
           content: string
+          continuity_state: Json | null
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
@@ -999,6 +1000,7 @@ export type Database = {
           emotional_secondary: string | null
           ending_type: Database["public"]["Enums"]["ending_type"] | null
           episode_number: number | null
+          episode_summary: string | null
           generation_status: string | null
           generation_time_ms: number | null
           humor_level: number | null
@@ -1022,11 +1024,13 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string | null
+          visual_style_sheet: Json | null
         }
         Insert: {
           completed?: boolean | null
           concrete_theme?: string | null
           content: string
+          continuity_state?: Json | null
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -1036,6 +1040,7 @@ export type Database = {
           emotional_secondary?: string | null
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
+          episode_summary?: string | null
           generation_status?: string | null
           generation_time_ms?: number | null
           humor_level?: number | null
@@ -1059,11 +1064,13 @@ export type Database = {
           title: string
           updated_at?: string
           user_id?: string | null
+          visual_style_sheet?: Json | null
         }
         Update: {
           completed?: boolean | null
           concrete_theme?: string | null
           content?: string
+          continuity_state?: Json | null
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -1073,6 +1080,7 @@ export type Database = {
           emotional_secondary?: string | null
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
+          episode_summary?: string | null
           generation_status?: string | null
           generation_time_ms?: number | null
           humor_level?: number | null
@@ -1096,6 +1104,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string | null
+          visual_style_sheet?: Json | null
         }
         Relationships: [
           {
@@ -1578,6 +1587,7 @@ export type Database = {
           completed: boolean | null
           concrete_theme: string | null
           content: string
+          continuity_state: Json | null
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
@@ -1587,6 +1597,7 @@ export type Database = {
           emotional_secondary: string | null
           ending_type: Database["public"]["Enums"]["ending_type"] | null
           episode_number: number | null
+          episode_summary: string | null
           generation_status: string | null
           generation_time_ms: number | null
           humor_level: number | null
@@ -1610,6 +1621,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string | null
+          visual_style_sheet: Json | null
         }[]
         SetofOptions: {
           from: "*"

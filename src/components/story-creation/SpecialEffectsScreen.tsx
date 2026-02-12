@@ -171,6 +171,8 @@ interface SpecialEffectsScreenProps {
   onBack: () => void;
   /** When true, show length/difficulty/series/language settings (used by Weg A "free path") */
   showSettings?: boolean;
+  /** When true, show series toggle (admin only) */
+  isAdmin?: boolean;
   availableLanguages?: string[];
   defaultLanguage?: string;
   fablinoMessage?: string;
@@ -180,6 +182,7 @@ const SpecialEffectsScreen = ({
   onComplete,
   onBack,
   showSettings = false,
+  isAdmin = false,
   availableLanguages = [],
   defaultLanguage = 'fr',
   fablinoMessage,
@@ -214,7 +217,8 @@ const SpecialEffectsScreen = ({
   };
 
   const handleContinue = () => {
-    if (showSettings) {
+    if (showSettings || (isAdmin && isSeries)) {
+      // Pass settings when Weg A, or when admin toggled series on in Weg B
       onComplete(selectedAttributes, additionalDescription.trim(), {
         length: storyLength,
         difficulty: storyDifficulty,
@@ -318,10 +322,59 @@ const SpecialEffectsScreen = ({
                 </div>
               </>
             )}
+
+            {/* Series Toggle (admin only) */}
+            {isAdmin && (
+              <>
+                <div className="border-t border-orange-100/60" />
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.seriesLabel}</span>
+                  <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
+                    {[false, true].map((val) => (
+                      <button
+                        key={String(val)}
+                        onClick={() => setIsSeries(val)}
+                        className={cn(
+                          "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
+                          isSeries === val
+                            ? "bg-[#E8863A] text-white shadow-sm"
+                            : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
+                        )}
+                      >
+                        {val ? st.seriesYes : st.seriesNo}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {/* Special Attributes – compact square grid */}
+        {/* Series Toggle for Admin (standalone, for Weg B where showSettings is false) */}
+        {!showSettings && isAdmin && (
+          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.seriesLabel}</span>
+              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
+                {[false, true].map((val) => (
+                  <button
+                    key={String(val)}
+                    onClick={() => setIsSeries(val)}
+                    className={cn(
+                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
+                      isSeries === val
+                        ? "bg-[#E8863A] text-white shadow-sm"
+                        : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
+                    )}
+                  >
+                    {val ? st.seriesYes : st.seriesNo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="w-full space-y-1.5">
           <h2 className="text-sm font-semibold text-center text-[#2D1810]">
             {t.effectsHeader}
