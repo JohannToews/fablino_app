@@ -281,8 +281,11 @@ const CreateStoryPage = () => {
 
         toast.success(t.toastStoryCreated);
 
-        // Navigate to reading page
-        navigate(`/read/${savedStory.id}`);
+        // For admin: delay navigation to show performance breakdown
+        const delayMs = user?.role === 'admin' && performanceData ? 4000 : 0;
+        setTimeout(() => {
+          navigate(`/read/${savedStory.id}`);
+        }, delayMs);
       } else {
         toast.error(t.toastGenerationError);
         setIsGenerating(false);
