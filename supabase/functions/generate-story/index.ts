@@ -173,11 +173,27 @@ async function callLovableAI(
   throw lastError || new Error("Max retries exceeded");
 }
 
-// Interface for consistency check result
+// Interface for consistency check result (standard single-story)
 interface ConsistencyCheckResult {
   hasIssues: boolean;
   issues: string[];
   suggestedFixes: string;
+}
+
+// Interface for series consistency check result (Phase 4)
+interface SeriesConsistencyError {
+  category: 'LOGIC' | 'GRAMMAR' | 'LANGUAGE' | 'CHARACTER' | 'CONTINUITY' | 'EPISODE_FUNCTION' | 'SIGNATURE';
+  severity: 'CRITICAL' | 'MEDIUM' | 'LOW';
+  original: string;
+  problem: string;
+  fix: string;
+}
+
+interface SeriesConsistencyCheckResult {
+  errors_found: boolean;
+  summary: string;
+  errors: SeriesConsistencyError[];
+  stats: { critical: number; medium: number; low: number };
 }
 
 // Helper function to fetch consistency check prompt from database
@@ -250,7 +266,180 @@ Falls keine Probleme gefunden: {"hasIssues": false, "issues": [], "suggestedFixe
   }
 }
 
-// Helper function to correct story based on consistency check results
+// ── Phase 4: Series Consistency Check ──
+
+/**
+ * Build the series-specific consistency check prompt.
+ * Uses EPISODE_CONFIG for episode function context and continuity_state for cross-episode checks.
+ */
+function buildSeriesConsistencyPrompt(
+  episodeNumber: number,
+  storyLanguage: string,
+  childAge: number,
+  continuityState: any | null,
+): string {
+  const config = EPISODE_CONFIG[episodeNumber] || EPISODE_CONFIG[5];
+
+  const ageMin = Math.max(4, childAge - 1);
+  const ageMax = childAge + 1;
+
+  const continuityBlock = continuityState
+    ? `\nPREVIOUS EPISODES CONTEXT (continuity_state from last episode):\n${JSON.stringify(continuityState, null, 2)}`
+    : '\nPREVIOUS EPISODES CONTEXT: This is Episode 1 – no previous context.';
+
+  return `You are a children's story editor checking EPISODE ${episodeNumber} of a 5-episode series.
+
+Target audience: children age ${ageMin}-${ageMax}.
+Story language: ${storyLanguage}.
+Episode function: ${config.function_name} – ${config.function_description}
+Required ending type: ${config.required_ende}
+${continuityBlock}
+
+CHECK FOR:
+1. LOGIC: spatial impossibilities, time contradictions, characters knowing things they shouldn't, objects appearing/disappearing
+2. GRAMMAR: errors in ${storyLanguage} grammar, spelling, punctuation. Missing spaces after punctuation marks.
+3. AGE-APPROPRIATENESS: overly complex vocabulary or sentence structures for age ${ageMin}-${ageMax}
+4. CHARACTER CONSISTENCY: names, appearance, relationships, abilities must match BOTH this episode AND the continuity state from previous episodes
+5. CONTINUITY: facts from previous episodes must not be contradicted. World rules must be respected. Timeline between episodes must be plausible.
+6. EPISODE FUNCTION: Does this episode fulfill its dramatic role as "${config.function_name}"? Does the ending match the required type?
+7. SIGNATURE ELEMENT: Is the recurring element present and varied from previous usage?
+
+RULES:
+- Be strict on CONTINUITY and CHARACTER errors (these break the series)
+- Be strict on logic errors and grammar
+- Be lenient on creative/stylistic choices — this is children's fiction
+- Report each error only ONCE
+- Quote the EXACT original text so it can be found
+- All your analysis and corrections must be in ${storyLanguage}
+- CONTINUITY errors with severity CRITICAL must trigger a correction attempt
+
+Respond ONLY with this JSON:
+{"errors_found": boolean,
+ "summary": "Brief summary in ${storyLanguage}",
+ "errors": [{"category": "LOGIC|GRAMMAR|LANGUAGE|CHARACTER|CONTINUITY|EPISODE_FUNCTION|SIGNATURE", "severity": "CRITICAL|MEDIUM|LOW", "original": "exact quote from text", "problem": "what is wrong", "fix": "suggested correction"}],
+ "stats": {"critical": 0, "medium": 0, "low": 0}}`;
+}
+
+/**
+ * Perform the series-specific consistency check.
+ * Returns structured errors with categories and severities.
+ */
+async function performSeriesConsistencyCheck(
+  apiKey: string,
+  story: { title: string; content: string },
+  systemPrompt: string,
+): Promise<SeriesConsistencyCheckResult> {
+  const userPrompt = `CHECK THIS EPISODE:
+
+TITLE: ${story.title}
+
+CONTENT:
+${story.content}
+
+Respond ONLY with the JSON object as specified.`;
+
+  try {
+    const response = await callLovableAI(apiKey, systemPrompt, userPrompt, 0.3);
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.log("[Phase4] Could not parse series consistency check response");
+      return { errors_found: false, summary: '', errors: [], stats: { critical: 0, medium: 0, low: 0 } };
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    const errors: SeriesConsistencyError[] = Array.isArray(result.errors)
+      ? result.errors.map((e: any) => ({
+          category: e.category || 'LOGIC',
+          severity: e.severity || 'LOW',
+          original: e.original || '',
+          problem: e.problem || '',
+          fix: e.fix || '',
+        }))
+      : [];
+
+    const stats = {
+      critical: errors.filter(e => e.severity === 'CRITICAL').length,
+      medium: errors.filter(e => e.severity === 'MEDIUM').length,
+      low: errors.filter(e => e.severity === 'LOW').length,
+    };
+
+    return {
+      errors_found: result.errors_found === true || errors.length > 0,
+      summary: result.summary || '',
+      errors,
+      stats,
+    };
+  } catch (error) {
+    console.error("[Phase4] Error in series consistency check:", error);
+    return { errors_found: false, summary: '', errors: [], stats: { critical: 0, medium: 0, low: 0 } };
+  }
+}
+
+/**
+ * Correct story based on series consistency check errors.
+ * Includes the continuity_state so the LLM knows what's canon.
+ */
+async function correctStoryFromSeriesErrors(
+  apiKey: string,
+  story: { title: string; content: string; questions: any[]; vocabulary: any[] },
+  errors: SeriesConsistencyError[],
+  continuityState: any | null,
+  targetLanguage: string,
+): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
+  const errorList = errors
+    .map((e, i) => `${i + 1}. [${e.category}/${e.severity}] "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`)
+    .join('\n');
+
+  const continuityRef = continuityState
+    ? `\n\nCANON REFERENCE (continuity_state – this is the truth):\n${JSON.stringify(continuityState, null, 2)}`
+    : '';
+
+  const correctionPrompt = `You are a children's story editor. Correct the following story based on the errors found.
+
+IMPORTANT:
+- Keep the language (${targetLanguage})
+- Keep the style and structure
+- ONLY fix the listed errors – do NOT rewrite the entire story
+- The story must remain age-appropriate
+- For CONTINUITY and CHARACTER errors: the continuity_state is the source of truth${continuityRef}`;
+
+  const userPrompt = `Correct this story:
+
+TITLE: ${story.title}
+
+CONTENT:
+${story.content}
+
+ERRORS TO FIX:
+${errorList}
+
+Respond ONLY with a JSON object:
+{"title": "Corrected title (or original if no title error)", "content": "The fully corrected text"}`;
+
+  try {
+    const response = await callLovableAI(apiKey, correctionPrompt, userPrompt, 0.5);
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("[Phase4] Could not parse series correction response");
+      return story;
+    }
+
+    const corrected = JSON.parse(jsonMatch[0]);
+    return {
+      title: corrected.title || story.title,
+      content: corrected.content || story.content,
+      questions: story.questions,
+      vocabulary: story.vocabulary,
+    };
+  } catch (error) {
+    console.error("[Phase4] Error correcting story from series errors:", error);
+    return story;
+  }
+}
+
+// Helper function to correct story based on consistency check results (standard, non-series)
 async function correctStory(
   apiKey: string,
   story: { title: string; content: string; questions: any[]; vocabulary: any[] },
@@ -1485,61 +1674,129 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     let totalIssuesCorrected = 0;
     let allIssueDetails: string[] = [];
 
-    // ── Task 1: Consistency Check ──
+    // ── Task 1: Consistency Check (Phase 4: series-aware routing) ──
     const consistencyCheckTask = async () => {
-      const consistencyCheckPrompt = await getConsistencyCheckPrompt(adminLanguage);
-      
-      if (!consistencyCheckPrompt) {
-        console.log("No consistency check prompt configured, skipping check");
-        return;
-      }
-      
-      console.log("Starting consistency check...");
-      const seriesContextForCheck = episodeNumber && episodeNumber > 1 && description
-        ? { previousEpisode: description, episodeNumber }
-        : undefined;
-      
-      let correctionAttempts = 0;
-      const maxCorrectionAttempts = 2;
-      
-      while (correctionAttempts < maxCorrectionAttempts) {
-        const checkResult = await performConsistencyCheck(
-          LOVABLE_API_KEY,
-          story,
-          consistencyCheckPrompt,
-          seriesContextForCheck
+      const isSeriesEpisode = !!(seriesId || isSeries) && !!episodeNumber;
+
+      if (isSeriesEpisode) {
+        // ═══ SERIES PATH: Phase 4 structured consistency check ═══
+        const effectiveAge = kidAge || 8;
+        const lastContinuity = seriesContextData?.lastContinuityState || null;
+
+        console.log(`[Phase4] Starting SERIES consistency check for Episode ${episodeNumber}, age=${effectiveAge}, hasContinuity=${!!lastContinuity}`);
+
+        const seriesCheckPrompt = buildSeriesConsistencyPrompt(
+          episodeNumber,
+          targetLanguage,
+          effectiveAge,
+          lastContinuity,
         );
-        
-        if (!checkResult.hasIssues) {
-          console.log(`Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
-          break;
+
+        let correctionAttempts = 0;
+        const maxCorrectionAttempts = 2;
+
+        while (correctionAttempts < maxCorrectionAttempts) {
+          const checkResult = await performSeriesConsistencyCheck(
+            LOVABLE_API_KEY,
+            story,
+            seriesCheckPrompt,
+          );
+
+          console.log(`[Phase4] Check result: errors_found=${checkResult.errors_found}, critical=${checkResult.stats.critical}, medium=${checkResult.stats.medium}, low=${checkResult.stats.low}`);
+
+          if (!checkResult.errors_found || checkResult.errors.length === 0) {
+            console.log(`[Phase4] Series consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
+            break;
+          }
+
+          totalIssuesFound += checkResult.errors.length;
+          allIssueDetails.push(
+            ...checkResult.errors.map(e => `[${e.category}/${e.severity}] ${e.problem}: "${e.original}" → ${e.fix}`)
+          );
+
+          // For series: CRITICAL CONTINUITY/CHARACTER errors REQUIRE a correction attempt
+          const hasCritical = checkResult.stats.critical > 0;
+          const criticalErrors = checkResult.errors.filter(e => e.severity === 'CRITICAL');
+
+          if (!hasCritical && correctionAttempts > 0) {
+            // No critical errors and already attempted once → stop (be lenient on MEDIUM/LOW)
+            console.log(`[Phase4] No CRITICAL errors remaining, stopping after ${correctionAttempts} correction(s)`);
+            break;
+          }
+
+          correctionAttempts++;
+          const errorsToFix = hasCritical ? criticalErrors : checkResult.errors;
+          console.log(`[Phase4] Attempting correction ${correctionAttempts}/${maxCorrectionAttempts} for ${errorsToFix.length} error(s) (${hasCritical ? 'CRITICAL only' : 'all'})...`);
+
+          const correctedStory = await correctStoryFromSeriesErrors(
+            LOVABLE_API_KEY,
+            story,
+            errorsToFix,
+            lastContinuity,
+            targetLanguage,
+          );
+
+          if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
+            story = correctedStory;
+            totalIssuesCorrected += errorsToFix.length;
+            console.log("[Phase4] Story corrected, re-checking...");
+          } else {
+            console.log("[Phase4] No changes made in correction, stopping");
+            break;
+          }
         }
-        
-        totalIssuesFound += checkResult.issues.length;
-        allIssueDetails.push(...checkResult.issues);
-        
-        correctionAttempts++;
-        console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
-        
-        const correctedStory = await correctStory(
-          LOVABLE_API_KEY,
-          story,
-          checkResult.issues,
-          checkResult.suggestedFixes,
-          targetLanguage
-        );
-        
-        if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
-          story = correctedStory;
-          totalIssuesCorrected += checkResult.issues.length;
-          console.log("Story corrected, re-checking...");
-        } else {
-          console.log("No changes made in correction, stopping");
-          break;
+      } else {
+        // ═══ STANDARD PATH: existing single-story consistency check ═══
+        const consistencyCheckPrompt = await getConsistencyCheckPrompt(adminLanguage);
+
+        if (!consistencyCheckPrompt) {
+          console.log("No consistency check prompt configured, skipping check");
+          return;
+        }
+
+        console.log("Starting standard consistency check...");
+
+        let correctionAttempts = 0;
+        const maxCorrectionAttempts = 2;
+
+        while (correctionAttempts < maxCorrectionAttempts) {
+          const checkResult = await performConsistencyCheck(
+            LOVABLE_API_KEY,
+            story,
+            consistencyCheckPrompt,
+          );
+
+          if (!checkResult.hasIssues) {
+            console.log(`Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
+            break;
+          }
+
+          totalIssuesFound += checkResult.issues.length;
+          allIssueDetails.push(...checkResult.issues);
+
+          correctionAttempts++;
+          console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
+
+          const correctedStory = await correctStory(
+            LOVABLE_API_KEY,
+            story,
+            checkResult.issues,
+            checkResult.suggestedFixes,
+            targetLanguage
+          );
+
+          if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
+            story = correctedStory;
+            totalIssuesCorrected += checkResult.issues.length;
+            console.log("Story corrected, re-checking...");
+          } else {
+            console.log("No changes made in correction, stopping");
+            break;
+          }
         }
       }
-      
-      // Save consistency check results
+
+      // Save consistency check results (both paths)
       try {
         await supabase.from("consistency_check_results").insert({
           story_title: story.title,
