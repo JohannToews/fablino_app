@@ -960,12 +960,15 @@ Deno.serve(async (req) => {
     console.log('[generate-story] surprise_characters:', surpriseCharactersParam);
     console.log('[generate-story] storyType:', storyType);
 
+    // ── Resolve episode number: CreateStoryPage sends no episodeNumber for Ep1, so default to 1 if isSeries ──
+    const resolvedEpisodeNumber: number | undefined = episodeNumber || (isSeries ? 1 : undefined);
+
     // ── Phase 0.2: Auto-finalize series at Episode 5 ──
     // Override ending_type to 'A' (complete) for Episode 5+, regardless of what frontend sends.
     // This ensures no cliffhanger is generated for the final episode.
     let resolvedEndingType = endingType;
-    if (seriesId && episodeNumber && episodeNumber >= 5) {
-      console.log(`[generate-story] Series finale override: Episode ${episodeNumber} → ending_type 'A' (was '${endingType}')`);
+    if (seriesId && resolvedEpisodeNumber && resolvedEpisodeNumber >= 5) {
+      console.log(`[generate-story] Series finale override: Episode ${resolvedEpisodeNumber} → ending_type 'A' (was '${endingType}')`);
       resolvedEndingType = 'A';
     }
 
@@ -1108,7 +1111,7 @@ Deno.serve(async (req) => {
     }
 
     // Determine the resolved ending type from EPISODE_CONFIG (Phase 2 override)
-    const episodeConfig = episodeNumber ? EPISODE_CONFIG[episodeNumber] || EPISODE_CONFIG[5] : null;
+    const episodeConfig = resolvedEpisodeNumber ? EPISODE_CONFIG[resolvedEpisodeNumber] || EPISODE_CONFIG[5] : null;
     const seriesEndingType = episodeConfig?.ending_type_db || resolvedEndingType || 'A';
 
     try {
@@ -1198,7 +1201,7 @@ Deno.serve(async (req) => {
         question_count: 5,
         surprise_characters: surpriseCharactersParam || false,
         // ── Phase 2: Series context fields ──
-        series_episode_number: (isSeries || seriesId) ? (episodeNumber || 1) : undefined,
+        series_episode_number: (isSeries || seriesId) ? resolvedEpisodeNumber : undefined,
         series_ending_type: (isSeries || seriesId) ? seriesEndingType : undefined,
         series_previous_episodes: seriesContextData.previousEpisodes.length > 0
           ? seriesContextData.previousEpisodes : undefined,
@@ -1277,7 +1280,7 @@ Deno.serve(async (req) => {
         if (kidHobbies) kidPrompt = kidPrompt.replace(/\{kidHobbies\}/g, kidHobbies);
         compositePrompt += `# KINDER-MODUL (Kind erstellt eigene Geschichte)\n${kidPrompt}\n\n`;
       }
-      if ((isSeries || (episodeNumber && episodeNumber > 1)) && serienModulPrompt) {
+      if ((isSeries || (resolvedEpisodeNumber && resolvedEpisodeNumber > 1)) && serienModulPrompt) {
         compositePrompt += `# SERIEN-MODUL\n${serienModulPrompt}\n\n`;
       }
       fullSystemPromptFinal = compositePrompt.trim() || customSystemPrompt || "";
@@ -1376,11 +1379,11 @@ Bevor du antwortest:
 
       // Build series context for fallback path (enhanced with Phase 2 data)
       let oldSeriesContext = '';
-      if (episodeNumber && episodeNumber > 1) {
+      if (resolvedEpisodeNumber && resolvedEpisodeNumber > 1) {
         const endingHint = resolvedEndingType === 'C'
           ? 'ein Cliffhanger sein, der Spannung für die nächste Episode aufbaut'
           : resolvedEndingType === 'B' ? 'offen sein' : 'abgeschlossen sein';
-        const finaleHint = resolvedEndingType === 'A' && episodeNumber >= 5
+        const finaleHint = resolvedEndingType === 'A' && resolvedEpisodeNumber >= 5
           ? '\n- WICHTIG: Dies ist das FINALE der Serie. Kein Cliffhanger. Alle offenen Fäden auflösen. Ein befriedigendes Ende schreiben.'
           : '';
 
@@ -1408,7 +1411,7 @@ Bevor du antwortest:
         }
 
         oldSeriesContext = `\n\n**SERIEN-KONTEXT:**
-- Dies ist Episode ${episodeNumber} einer fortlaufenden Serie (5 Episoden)
+- Dies ist Episode ${resolvedEpisodeNumber} einer fortlaufenden Serie (5 Episoden)
 - Führe die Geschichte nahtlos fort, behalte dieselben Charaktere und den Stil bei
 - Der Text in "description" enthält den Kontext der vorherigen Episode
 - Das Ende sollte ${endingHint}${finaleHint}${previousEpBlock}${continuityBlock}`;
@@ -1418,7 +1421,7 @@ Bevor du antwortest:
       const seriesOutputInstructions = (isSeries || seriesId)
         ? `\n\nSERIEN-OUTPUT (PFLICHT - als zusätzliche JSON-Felder):
 - "episode_summary": Zusammenfassung dieser Episode in max 80 Wörtern (nur Plot-Punkte, keine Stilbeschreibung)
-- "continuity_state": {"established_facts": [...], "open_threads": [...], "character_states": {"Name": "Zustand"}, "world_rules": [...], "signature_element": {"description": "...", "usage_history": [...]}}${(!episodeNumber || episodeNumber === 1) ? '\n- "visual_style_sheet": {"characters": {"Name": "englische Beschreibung für Bildgenerierung"}, "world_style": "englische Stil-Beschreibung", "recurring_visual": "visuelles Signature Element"}' : ''}`
+- "continuity_state": {"established_facts": [...], "open_threads": [...], "character_states": {"Name": "Zustand"}, "world_rules": [...], "signature_element": {"description": "...", "usage_history": [...]}}${(!resolvedEpisodeNumber || resolvedEpisodeNumber === 1) ? '\n- "visual_style_sheet": {"characters": {"Name": "englische Beschreibung für Bildgenerierung"}, "world_style": "englische Stil-Beschreibung", "recurring_visual": "visuelles Signature Element"}' : ''}`
         : '';
 
       userPrompt = `Erstelle ${textType === "non-fiction" ? "einen Sachtext" : "eine Geschichte"} basierend auf dieser Beschreibung: "${description}"
@@ -1607,7 +1610,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     }
 
     if (isSeries || seriesId) {
-      console.log(`[generate-story] [SERIES-DEBUG] Parsing series fields. isSeries=${isSeries}, seriesId=${seriesId}, episodeNumber=${episodeNumber}`);
+      console.log(`[generate-story] [SERIES-DEBUG] Parsing series fields. isSeries=${isSeries}, seriesId=${seriesId}, episodeNumber=${episodeNumber}, resolvedEpisodeNumber=${resolvedEpisodeNumber}`);
       console.log(`[generate-story] [SERIES-DEBUG] story keys: ${Object.keys(story).join(', ')}`);
 
       // episode_summary: string (max 80 words)
@@ -1639,7 +1642,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
 
       // visual_style_sheet: JSONB (only expected from Episode 1)
-      const currentEp = episodeNumber || 1;
+      const currentEp = resolvedEpisodeNumber || 1;
       if (currentEp === 1) {
         const rawVss = story.visual_style_sheet;
         if (rawVss) {
@@ -1661,23 +1664,45 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     // ── Modus B (C.1): Parse and store branch_options from LLM response ──
     let branchOptionsParsed: any[] | null = null;
-    if (seriesMode === 'interactive' && episodeNumber && episodeNumber < 5) {
+    const epNumForBranch = resolvedEpisodeNumber || (isSeries ? 1 : undefined);
+    console.log(`[BRANCH] series_mode: ${seriesMode}, episodeNumber: ${epNumForBranch} (raw: ${episodeNumber})`);
+    if (seriesMode === 'interactive' && epNumForBranch && epNumForBranch < 5) {
       const rawBranchOptions = (story as any).branch_options;
+      console.log(`[BRANCH] LLM response has branch_options: ${!!rawBranchOptions}, type: ${typeof rawBranchOptions}, isArray: ${Array.isArray(rawBranchOptions)}`);
       if (rawBranchOptions && Array.isArray(rawBranchOptions) && rawBranchOptions.length === 3) {
         const validOptions = rawBranchOptions.every((opt: any) =>
           opt.option_id && opt.title && opt.preview && opt.direction && opt.image_hint
         );
         if (validOptions) {
           branchOptionsParsed = rawBranchOptions;
-          console.log(`[BRANCH] Parsed 3 valid branch_options for Episode ${episodeNumber}:`,
+          console.log(`[BRANCH] Parsed 3 valid branch_options for Episode ${epNumForBranch}:`,
             JSON.stringify(rawBranchOptions.map((o: any) => ({ id: o.option_id, title: o.title, dir: o.direction }))));
         } else {
-          console.error(`[BRANCH] Invalid branch_options structure (missing required fields):`,
-            JSON.stringify(rawBranchOptions));
+          // Retry with relaxed validation (image_hint is optional)
+          const relaxedValid = rawBranchOptions.every((opt: any) =>
+            opt.option_id && opt.title && opt.preview && opt.direction
+          );
+          if (relaxedValid) {
+            branchOptionsParsed = rawBranchOptions;
+            console.log(`[BRANCH] Parsed 3 branch_options (relaxed, no image_hint required) for Episode ${epNumForBranch}:`,
+              JSON.stringify(rawBranchOptions.map((o: any) => ({ id: o.option_id, title: o.title, dir: o.direction }))));
+          } else {
+            console.error(`[BRANCH] Invalid branch_options structure (missing required fields):`,
+              JSON.stringify(rawBranchOptions));
+          }
+        }
+      } else if (rawBranchOptions && Array.isArray(rawBranchOptions) && rawBranchOptions.length > 0) {
+        // LLM returned some options but not exactly 3 – still usable if >= 2
+        console.warn(`[BRANCH] Got ${rawBranchOptions.length} branch_options instead of 3 for Ep${epNumForBranch}`);
+        if (rawBranchOptions.length >= 2) {
+          branchOptionsParsed = rawBranchOptions.slice(0, 3);
+          console.log(`[BRANCH] Using ${branchOptionsParsed.length} options (trimmed)`);
         }
       } else {
-        console.error(`[BRANCH] Missing or invalid branch_options for interactive Ep${episodeNumber}. Got:`,
-          rawBranchOptions ? `length=${Array.isArray(rawBranchOptions) ? rawBranchOptions.length : 'not array'}` : 'null');
+        console.error(`[BRANCH] Missing or invalid branch_options for interactive Ep${epNumForBranch}. Got:`,
+          rawBranchOptions ? `type=${typeof rawBranchOptions}, isArray=${Array.isArray(rawBranchOptions)}, length=${Array.isArray(rawBranchOptions) ? rawBranchOptions.length : 'N/A'}` : 'null/undefined');
+        // Log all story keys to understand what the LLM returned
+        console.error(`[BRANCH] LLM response keys: ${Object.keys(story).join(', ')}`);
       }
     }
 
@@ -1730,7 +1755,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     // ── Phase 3: Build series image context for visual consistency ──
     // Hoisted above the if/else so both paths (structured + fallback) can use it
     let seriesImageCtx: SeriesImageContext | undefined;
-    const currentEpForImages = episodeNumber || (isSeries ? 1 : undefined);
+    const currentEpForImages = resolvedEpisodeNumber;
 
     if (currentEpForImages && (isSeries || seriesId)) {
       // For Ep2+: use visual_style_sheet loaded from Episode 1
@@ -1808,17 +1833,17 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     // ── Task 1: Consistency Check (Phase 4: series-aware routing) ──
     const consistencyCheckTask = async () => {
-      const isSeriesEpisode = !!(seriesId || isSeries) && !!episodeNumber;
+      const isSeriesEpisode = !!(seriesId || isSeries) && !!resolvedEpisodeNumber;
 
       if (isSeriesEpisode) {
         // ═══ SERIES PATH: Phase 4 structured consistency check ═══
         const effectiveAge = kidAge || 8;
         const lastContinuity = seriesContextData?.lastContinuityState || null;
 
-        console.log(`[Phase4] Starting SERIES consistency check for Episode ${episodeNumber}, age=${effectiveAge}, hasContinuity=${!!lastContinuity}`);
+        console.log(`[Phase4] Starting SERIES consistency check for Episode ${resolvedEpisodeNumber}, age=${effectiveAge}, hasContinuity=${!!lastContinuity}`);
 
         const seriesCheckPrompt = buildSeriesConsistencyPrompt(
-          episodeNumber,
+          resolvedEpisodeNumber!,
           targetLanguage,
           effectiveAge,
           lastContinuity,
@@ -2079,8 +2104,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       console.log(`[generate-story] [SERIES-DEBUG]   episodeSummary: ${episodeSummary ? episodeSummary.substring(0, 100) + '...' : 'NULL'}`);
       console.log(`[generate-story] [SERIES-DEBUG]   continuityState: ${continuityState ? JSON.stringify(continuityState).substring(0, 300) : 'NULL'}`);
       console.log(`[generate-story] [SERIES-DEBUG]   visualStyleSheet: ${visualStyleSheet ? JSON.stringify(visualStyleSheet).substring(0, 300) : 'NULL'}`);
-      console.log(`[generate-story] [SERIES-DEBUG]   isSeries=${isSeries}, seriesId=${seriesId}, episodeNumber=${episodeNumber}`);
-      console.log(`[generate-story] [SERIES-DEBUG]   usedNewPromptPath=${usedNewPromptPath}`);
+      console.log(`[generate-story] [SERIES-DEBUG]   isSeries=${isSeries}, seriesId=${seriesId}, episodeNumber=${episodeNumber}, resolvedEpisodeNumber=${resolvedEpisodeNumber}`);
+      console.log(`[generate-story] [SERIES-DEBUG]   seriesMode=${seriesMode}, usedNewPromptPath=${usedNewPromptPath}`);
+      console.log(`[generate-story] [SERIES-DEBUG]   branchOptionsParsed=${branchOptionsParsed ? branchOptionsParsed.length + ' options' : 'NULL'}`);
     }
 
     return new Response(JSON.stringify({
