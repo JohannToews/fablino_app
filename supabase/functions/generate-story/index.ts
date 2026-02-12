@@ -1297,33 +1297,67 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     let continuityState: any | null = null;
     let visualStyleSheet: any | null = null;
 
+    // Helper: safely parse a value that might be a JSON string or already an object
+    function safeParseJson(val: any): any | null {
+      if (!val) return null;
+      if (typeof val === 'object') return val;
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return null; }
+      }
+      return null;
+    }
+
     if (isSeries || seriesId) {
+      console.log(`[generate-story] [SERIES-DEBUG] Parsing series fields. isSeries=${isSeries}, seriesId=${seriesId}, episodeNumber=${episodeNumber}`);
+      console.log(`[generate-story] [SERIES-DEBUG] story keys: ${Object.keys(story).join(', ')}`);
+
       // episode_summary: string (max 80 words)
-      if (story.episode_summary && typeof story.episode_summary === 'string') {
-        episodeSummary = story.episode_summary.trim().substring(0, 500); // safety cap
-        console.log(`[generate-story] Parsed episode_summary (${countWords(episodeSummary)} words): ${episodeSummary.substring(0, 80)}...`);
+      if (story.episode_summary) {
+        if (typeof story.episode_summary === 'string') {
+          episodeSummary = story.episode_summary.trim().substring(0, 500); // safety cap
+        } else {
+          // LLM returned it as something else - stringify it
+          episodeSummary = String(story.episode_summary).substring(0, 500);
+        }
+        console.log(`[generate-story] [SERIES-DEBUG] Parsed episode_summary (${countWords(episodeSummary)} words): "${episodeSummary.substring(0, 100)}..."`);
       } else {
         // Fallback: use the existing summary field or auto-generate from content
         episodeSummary = story.summary || story.content.substring(0, 300);
-        console.log('[generate-story] No episode_summary from LLM, using fallback');
+        console.log(`[generate-story] [SERIES-DEBUG] No episode_summary from LLM, using fallback (length=${episodeSummary.length})`);
       }
 
-      // continuity_state: JSONB
-      if (story.continuity_state && typeof story.continuity_state === 'object') {
-        continuityState = story.continuity_state;
-        console.log(`[generate-story] Parsed continuity_state: facts=${continuityState?.established_facts?.length || 0}, threads=${continuityState?.open_threads?.length || 0}, chars=${Object.keys(continuityState?.character_states || {}).length}`);
+      // continuity_state: JSONB - handle both object and string forms
+      const rawContinuity = story.continuity_state;
+      if (rawContinuity) {
+        continuityState = safeParseJson(rawContinuity);
+        if (continuityState) {
+          console.log(`[generate-story] [SERIES-DEBUG] Parsed continuity_state (from ${typeof rawContinuity}): facts=${continuityState?.established_facts?.length || 0}, threads=${continuityState?.open_threads?.length || 0}, chars=${Object.keys(continuityState?.character_states || {}).length}`);
+        } else {
+          console.log(`[generate-story] [SERIES-DEBUG] continuity_state present but unparseable: type=${typeof rawContinuity}, value=${String(rawContinuity).substring(0, 200)}`);
+        }
       } else {
-        console.log('[generate-story] No continuity_state from LLM');
+        console.log('[generate-story] [SERIES-DEBUG] No continuity_state in LLM response');
       }
 
       // visual_style_sheet: JSONB (only expected from Episode 1)
       const currentEp = episodeNumber || 1;
-      if (currentEp === 1 && story.visual_style_sheet && typeof story.visual_style_sheet === 'object') {
-        visualStyleSheet = story.visual_style_sheet;
-        console.log(`[generate-story] Parsed visual_style_sheet: characters=${Object.keys(visualStyleSheet?.characters || {}).length}, world_style=${!!visualStyleSheet?.world_style}`);
-      } else if (currentEp === 1) {
-        console.log('[generate-story] No visual_style_sheet from LLM for Episode 1');
+      if (currentEp === 1) {
+        const rawVss = story.visual_style_sheet;
+        if (rawVss) {
+          visualStyleSheet = safeParseJson(rawVss);
+          if (visualStyleSheet) {
+            console.log(`[generate-story] [SERIES-DEBUG] Parsed visual_style_sheet (from ${typeof rawVss}): characters=${Object.keys(visualStyleSheet?.characters || {}).length}, world_style=${!!visualStyleSheet?.world_style}`);
+          } else {
+            console.log(`[generate-story] [SERIES-DEBUG] visual_style_sheet present but unparseable: type=${typeof rawVss}, value=${String(rawVss).substring(0, 200)}`);
+          }
+        } else {
+          console.log('[generate-story] [SERIES-DEBUG] No visual_style_sheet from LLM for Episode 1');
+        }
       }
+
+      console.log(`[generate-story] [SERIES-DEBUG] Final parsed: episodeSummary=${!!episodeSummary} (${episodeSummary?.length || 0} chars), continuityState=${!!continuityState}, visualStyleSheet=${!!visualStyleSheet}`);
+    } else {
+      console.log(`[generate-story] [SERIES-DEBUG] Skipping series field parsing: isSeries=${isSeries}, seriesId=${seriesId}`);
     }
 
     const storyGenerationTime = Date.now() - startTime;
@@ -1668,9 +1702,11 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       generationTimeMs: totalTime,
       usedNewPromptPath,
       // Phase 2: Series fields for DB storage
-      episode_summary: episodeSummary,
-      continuity_state: continuityState,
-      visual_style_sheet: visualStyleSheet,
+      // Use parsed values if available; fall back to raw LLM values from ...story spread;
+      // explicitly null out only if we're NOT in a series context
+      episode_summary: episodeSummary ?? story.episode_summary ?? null,
+      continuity_state: continuityState ?? safeParseJson(story.continuity_state) ?? null,
+      visual_style_sheet: visualStyleSheet ?? safeParseJson(story.visual_style_sheet) ?? null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

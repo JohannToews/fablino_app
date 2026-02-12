@@ -181,6 +181,9 @@ const StorySelectPage = () => {
           isSeries: true,
           kidName: selectedProfile.name,
           kidHobbies: selectedProfile.hobbies,
+          // Phase 2: Pass kid profile ID + language for new prompt path & series context
+          kidProfileId: selectedProfile.id,
+          storyLanguage: appLang,
         },
       });
       
@@ -226,6 +229,16 @@ const StorySelectPage = () => {
         }
       }
       
+      // ── SERIES-DEBUG: Log series fields from Edge Function response ──
+      console.log("[StorySelectPage] [SERIES-DEBUG] Edge Function response series fields:", {
+        episode_summary: data.episode_summary ?? "MISSING",
+        episode_summary_type: typeof data.episode_summary,
+        continuity_state: data.continuity_state ? JSON.stringify(data.continuity_state).substring(0, 200) : "MISSING",
+        continuity_state_type: typeof data.continuity_state,
+        visual_style_sheet: data.visual_style_sheet ? "present" : "MISSING",
+        usedNewPromptPath: data.usedNewPromptPath,
+      });
+
       // Save the new episode
       const { data: newStory, error: insertError } = await supabase
         .from("stories")
@@ -244,6 +257,10 @@ const StorySelectPage = () => {
           ending_type: endingType,
           episode_number: nextEpisodeNumber,
           series_id: series.seriesId,
+          // Phase 2: Series context fields from generate-story response
+          episode_summary: data.episode_summary ?? null,
+          continuity_state: data.continuity_state ?? null,
+          visual_style_sheet: data.visual_style_sheet ?? null,
         })
         .select()
         .single();

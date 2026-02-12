@@ -458,6 +458,15 @@ const ReadingPage = () => {
       console.log("Edge function response - data keys:", data ? Object.keys(data) : "null");
       console.log("Edge function response - title:", data?.title);
       console.log("Edge function response - has content:", !!data?.content);
+      // ── SERIES-DEBUG: Log series fields from Edge Function response ──
+      console.log("[SERIES-DEBUG] Edge Function response series fields:", {
+        episode_summary: data?.episode_summary ?? "MISSING",
+        episode_summary_type: typeof data?.episode_summary,
+        continuity_state: data?.continuity_state ? JSON.stringify(data.continuity_state).substring(0, 200) : "MISSING",
+        continuity_state_type: typeof data?.continuity_state,
+        visual_style_sheet: data?.visual_style_sheet ? "present" : "MISSING",
+        usedNewPromptPath: data?.usedNewPromptPath,
+      });
 
       if (error) {
         console.error("Generation error:", error);
@@ -495,6 +504,13 @@ const ReadingPage = () => {
         episode_number: nextEpisodeNumber,
         series_id: story.series_id || story.id,
         ending_type: nextEpisodeNumber >= 5 ? "A" : "C",
+      });
+      // ── SERIES-DEBUG: Log exact values being inserted ──
+      console.log("[SERIES-DEBUG] Values being INSERT'd into stories:", {
+        episode_summary: data.episode_summary ?? "NULL (will insert null)",
+        episode_summary_length: data.episode_summary?.length ?? 0,
+        continuity_state: data.continuity_state ? JSON.stringify(data.continuity_state).substring(0, 300) : "NULL (will insert null)",
+        visual_style_sheet: data.visual_style_sheet ? "present" : "NULL (will insert null)",
       });
       
       const { data: newStory, error: storyError } = await supabase
