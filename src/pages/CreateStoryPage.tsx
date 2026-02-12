@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
+import { isSeriesEnabled } from "@/config/features";
 import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
@@ -665,7 +666,7 @@ const CreateStoryPage = () => {
           uiLanguage={kidAppLanguage}
           onComplete={handleStoryTypeComplete}
           onBack={handleBack}
-          isAdmin={user?.role === 'admin'}
+          isAdmin={isSeriesEnabled(user?.role)}
         />
       )}
 
@@ -685,7 +686,7 @@ const CreateStoryPage = () => {
           onComplete={handleEffectsComplete}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
-          isAdmin={user?.role === 'admin'}
+          isAdmin={isSeriesEnabled(user?.role)}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
         />

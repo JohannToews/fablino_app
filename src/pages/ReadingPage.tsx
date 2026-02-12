@@ -36,6 +36,9 @@ const readingLabels: Record<string, {
   storyCompleted: string;
   continueStory: string;
   generatingContinuation: string;
+  generatingSeriesContinuation: string;
+  seriesCompleted: string;
+  backToLibrary: string;
   episode: string;
 }> = {
   de: {
@@ -53,6 +56,9 @@ const readingLabels: Record<string, {
     storyCompleted: "Super! Du hast fertig gelesen!",
     continueStory: "Wie geht es weiter?",
     generatingContinuation: "Fortsetzung wird erstellt...",
+    generatingSeriesContinuation: "Fablino schreibt das nächste Kapitel...",
+    seriesCompleted: "Serie abgeschlossen! 🦊🎉",
+    backToLibrary: "Zurück zur Bibliothek",
     episode: "Episode",
   },
   fr: {
@@ -70,6 +76,9 @@ const readingLabels: Record<string, {
     storyCompleted: "Super! Tu as fini de lire!",
     continueStory: "Que se passe-t-il ensuite?",
     generatingContinuation: "Création de la suite...",
+    generatingSeriesContinuation: "Fablino écrit le prochain chapitre...",
+    seriesCompleted: "Série terminée ! 🦊🎉",
+    backToLibrary: "Retour à la bibliothèque",
     episode: "Épisode",
   },
   en: {
@@ -87,6 +96,9 @@ const readingLabels: Record<string, {
     storyCompleted: "Great! You finished reading!",
     continueStory: "What happens next?",
     generatingContinuation: "Creating continuation...",
+    generatingSeriesContinuation: "Fablino is writing the next chapter...",
+    seriesCompleted: "Series completed! 🦊🎉",
+    backToLibrary: "Back to library",
     episode: "Episode",
   },
   es: {
@@ -104,6 +116,9 @@ const readingLabels: Record<string, {
     storyCompleted: "¡Genial! ¡Terminaste de leer!",
     continueStory: "¿Qué pasa después?",
     generatingContinuation: "Creando continuación...",
+    generatingSeriesContinuation: "Fablino está escribiendo el siguiente capítulo...",
+    seriesCompleted: "¡Serie completada! 🦊🎉",
+    backToLibrary: "Volver a la biblioteca",
     episode: "Episodio",
   },
   nl: {
@@ -121,6 +136,9 @@ const readingLabels: Record<string, {
     storyCompleted: "Super! Je bent klaar met lezen!",
     continueStory: "Wat gebeurt er nu?",
     generatingContinuation: "Vervolg wordt gemaakt...",
+    generatingSeriesContinuation: "Fablino schrijft het volgende hoofdstuk...",
+    seriesCompleted: "Serie voltooid! 🦊🎉",
+    backToLibrary: "Terug naar de bibliotheek",
     episode: "Aflevering",
   },
   it: {
@@ -138,6 +156,9 @@ const readingLabels: Record<string, {
     storyCompleted: "Fantastico! Hai finito di leggere!",
     continueStory: "Cosa succede dopo?",
     generatingContinuation: "Creazione del seguito...",
+    generatingSeriesContinuation: "Fablino sta scrivendo il prossimo capitolo...",
+    seriesCompleted: "Serie completata! 🦊🎉",
+    backToLibrary: "Torna alla biblioteca",
     episode: "Episodio",
   },
   bs: {
@@ -155,6 +176,9 @@ const readingLabels: Record<string, {
     storyCompleted: "Super! Završio/la si čitanje!",
     continueStory: "Šta se dalje dešava?",
     generatingContinuation: "Kreiranje nastavka...",
+    generatingSeriesContinuation: "Fablino piše sljedeće poglavlje...",
+    seriesCompleted: "Serija završena! 🦊🎉",
+    backToLibrary: "Nazad u biblioteku",
     episode: "Epizoda",
   },
 };
@@ -419,7 +443,7 @@ const ReadingPage = () => {
     if (!story.series_id && !story.episode_number) return;
 
     setIsGeneratingContinuation(true);
-    toast.info(readingLabels[textLang]?.generatingContinuation || "Creating continuation...");
+    toast.info(readingLabels[textLang]?.generatingSeriesContinuation || readingLabels[textLang]?.generatingContinuation || "Creating continuation...");
 
     try {
       console.log("Starting continuation generation...");
@@ -1498,7 +1522,7 @@ const ReadingPage = () => {
                         {isGeneratingContinuation ? (
                           <>
                             <Loader2 className="h-5 w-5 animate-spin" />
-                            {readingLabels[textLang]?.generatingContinuation || "Creating..."}
+                            {readingLabels[textLang]?.generatingSeriesContinuation || readingLabels[textLang]?.generatingContinuation || "Creating..."}
                           </>
                         ) : (
                           <>
@@ -1517,19 +1541,13 @@ const ReadingPage = () => {
                   {(story?.series_id || story?.episode_number) && (story?.episode_number || 0) >= 5 && (
                     <div className="mt-6 pt-6 border-t border-border text-center">
                       <p className="text-lg font-semibold text-primary">
-                        {textLang === 'de' ? 'Serie abgeschlossen! 🎉' :
-                         textLang === 'fr' ? 'Série terminée ! 🎉' :
-                         textLang === 'es' ? '¡Serie completada! 🎉' :
-                         'Series completed! 🎉'}
+                        {readingLabels[textLang]?.seriesCompleted || "Series completed! 🦊🎉"}
                       </p>
                       <Button
                         onClick={() => navigate("/stories")}
                         className="mt-3 btn-primary-kid"
                       >
-                        {textLang === 'de' ? 'Zurück zur Bibliothek' :
-                         textLang === 'fr' ? 'Retour à la bibliothèque' :
-                         textLang === 'es' ? 'Volver a la biblioteca' :
-                         'Back to library'}
+                        {readingLabels[textLang]?.backToLibrary || "Back to library"}
                       </Button>
                     </div>
                   )}
@@ -1542,6 +1560,10 @@ const ReadingPage = () => {
                   <p className="text-muted-foreground text-center">
                     {textLang === 'de' ? 'Diese Geschichte ist Teil einer Serie!' : 
                      textLang === 'fr' ? 'Cette histoire fait partie d\'une série!' :
+                     textLang === 'es' ? '¡Esta historia es parte de una serie!' :
+                     textLang === 'nl' ? 'Dit verhaal is onderdeel van een serie!' :
+                     textLang === 'it' ? 'Questa storia fa parte di una serie!' :
+                     textLang === 'bs' ? 'Ova priča je dio serije!' :
                      'This story is part of a series!'}
                   </p>
                   <Button
@@ -1552,7 +1574,7 @@ const ReadingPage = () => {
                     {isGeneratingContinuation ? (
                       <>
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        {readingLabels[textLang]?.generatingContinuation || "Creating..."}
+                        {readingLabels[textLang]?.generatingSeriesContinuation || readingLabels[textLang]?.generatingContinuation || "Creating..."}
                       </>
                     ) : (
                       <>

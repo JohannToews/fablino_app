@@ -22,6 +22,8 @@ interface SpecialEffectsTranslations {
   descriptionHeader: string;
   descriptionPlaceholder: string;
   continue: string;
+  continueEpisode1: string;
+  seriesHint: string;
   back: string;
 }
 
@@ -39,6 +41,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Optional: Möchtest du noch etwas zur Geschichte sagen?",
     descriptionPlaceholder: "z.B. \"Eine Geschichte über Piraten auf dem Mond\"",
     continue: "Geschichte erstellen",
+    continueEpisode1: "Episode 1 erstellen",
+    seriesHint: "Du startest eine Serie mit 5 Episoden. Die Charaktere und die Welt bleiben gleich.",
     back: "Zurück",
   },
   fr: {
@@ -54,6 +58,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Optionnel : Tu veux ajouter quelque chose ?",
     descriptionPlaceholder: "p.ex. \"Une histoire de pirates sur la lune\"",
     continue: "Créer l'histoire",
+    continueEpisode1: "Créer l'épisode 1",
+    seriesHint: "Tu commences une série de 5 épisodes. Les personnages et le monde restent les mêmes.",
     back: "Retour",
   },
   en: {
@@ -69,6 +75,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Optional: Would you like to add anything?",
     descriptionPlaceholder: "e.g. \"A story about pirates on the moon\"",
     continue: "Create story",
+    continueEpisode1: "Create Episode 1",
+    seriesHint: "You're starting a series with 5 episodes. Characters and the world stay the same.",
     back: "Back",
   },
   es: {
@@ -84,6 +92,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Opcional: ¿Quieres añadir algo?",
     descriptionPlaceholder: "p.ej. \"Una historia de piratas en la luna\"",
     continue: "Crear historia",
+    continueEpisode1: "Crear episodio 1",
+    seriesHint: "Comienzas una serie de 5 episodios. Los personajes y el mundo permanecen iguales.",
     back: "Atrás",
   },
   nl: {
@@ -99,6 +109,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Optioneel: Wil je nog iets toevoegen?",
     descriptionPlaceholder: "bijv. \"Een verhaal over piraten op de maan\"",
     continue: "Verhaal maken",
+    continueEpisode1: "Maak aflevering 1",
+    seriesHint: "Je start een serie van 5 afleveringen. De personages en de wereld blijven hetzelfde.",
     back: "Terug",
   },
   it: {
@@ -114,6 +126,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Opzionale: Vuoi aggiungere qualcosa?",
     descriptionPlaceholder: "es. \"Una storia di pirati sulla luna\"",
     continue: "Crea storia",
+    continueEpisode1: "Crea episodio 1",
+    seriesHint: "Inizi una serie di 5 episodi. I personaggi e il mondo rimangono gli stessi.",
     back: "Indietro",
   },
   bs: {
@@ -129,6 +143,8 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionHeader: "Opcionalno: Želiš li dodati nešto?",
     descriptionPlaceholder: "npr. \"Priča o piratima na mjesecu\"",
     continue: "Kreiraj priču",
+    continueEpisode1: "Kreiraj epizodu 1",
+    seriesHint: "Pokrećeš seriju od 5 epizoda. Likovi i svijet ostaju isti.",
     back: "Nazad",
   },
 };
@@ -430,12 +446,19 @@ const SpecialEffectsScreen = ({
           </div>
         </div>
 
+        {/* Series hint – shown when series toggle is active */}
+        {isSeries && (
+          <p className="text-xs text-center text-[#92400E]/70 bg-orange-50/80 rounded-xl px-3 py-2 border border-orange-100/60">
+            {t.seriesHint}
+          </p>
+        )}
+
         {/* Create Story Button – orange, inline (not fixed) */}
         <button
           onClick={handleContinue}
           className="w-full h-14 rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors"
         >
-          {t.continue} ✨
+          {isSeries ? t.continueEpisode1 : t.continue} ✨
         </button>
       </div>
     </div>
