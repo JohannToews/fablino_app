@@ -204,7 +204,7 @@ const CreateStoryPage = () => {
             generation_status: "verified",
             ending_type: isSeries ? 'C' : 'A',
             episode_number: isSeries ? 1 : null,
-            series_id: isSeries ? crypto.randomUUID() : null, // Generate UUID for series from Episode 1
+            series_id: null, // Will self-reference after insert for series
             // Block 2.3c: Story classification metadata
             structure_beginning: data.structure_beginning ?? null,
             structure_middle: data.structure_middle ?? null,
@@ -231,6 +231,11 @@ const CreateStoryPage = () => {
           setIsGenerating(false);
           setCurrentScreen("entry");
           return;
+        }
+
+        // For series: set series_id to the story's own ID (self-reference)
+        if (isSeries && savedStory) {
+          await supabase.from("stories").update({ series_id: savedStory.id }).eq("id", savedStory.id);
         }
 
         // Save comprehension questions if available
@@ -472,9 +477,8 @@ const CreateStoryPage = () => {
             kid_profile_id: selectedProfile?.id,
             generation_status: "verified",
             ending_type: isSeries ? 'C' : 'A',
-            // Series setup: generate UUID for series_id from Episode 1 (no more self-reference)
             episode_number: isSeries ? 1 : null,
-            series_id: isSeries ? crypto.randomUUID() : null,
+            series_id: null, // Will self-reference after insert for series
             // Block 2.3c: Story classification metadata
             structure_beginning: data.structure_beginning ?? null,
             structure_middle: data.structure_middle ?? null,
@@ -501,6 +505,11 @@ const CreateStoryPage = () => {
           setIsGenerating(false);
           setCurrentScreen("entry");
           return;
+        }
+
+        // For series: set series_id to the story's own ID (self-reference)
+        if (isSeries && savedStory) {
+          await supabase.from("stories").update({ series_id: savedStory.id }).eq("id", savedStory.id);
         }
 
         // Save comprehension questions if available
