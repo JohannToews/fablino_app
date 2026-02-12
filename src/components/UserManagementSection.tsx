@@ -19,6 +19,7 @@ interface UserProfile {
   display_name: string;
   admin_language: string;
   app_language: string;
+  email: string | null;
   created_at: string;
   role?: string;
 }
@@ -449,7 +450,7 @@ const UserManagementSection = ({ language, currentUserId }: UserManagementSectio
                         <span className="ml-2 text-xs text-primary">(Du)</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{user.username}</TableCell>
+                    <TableCell className="text-muted-foreground">{user.email || user.username}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         {user.role === 'admin' ? (
