@@ -586,7 +586,7 @@ const CreateStoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)" }}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #FFF4EA 0%, #FFDFC5 50%, #FFD4B0 100%)" }}>
        {currentScreen === "entry" && (
         <div className="min-h-screen flex flex-col">
           {/* Header */}
