@@ -123,6 +123,28 @@ const SeriesGrid = ({
               </div>
             </div>
 
+            {/* Episode Progress Indicator */}
+            <div className="flex items-center gap-1.5 mb-3">
+              {Array.from({ length: 5 }, (_, i) => {
+                const epNum = i + 1;
+                const episode = series.episodes.find(e => (e.episode_number || 1) === epNum);
+                const isCompleted = episode ? (storyStatuses.get(episode.id) || false) : false;
+                const exists = !!episode;
+                return (
+                  <div
+                    key={epNum}
+                    className={`h-2 flex-1 rounded-full transition-colors ${
+                      isCompleted ? 'bg-green-500' : exists ? 'bg-primary/40' : 'bg-muted'
+                    }`}
+                    title={`${t.seriesEpisode} ${epNum}`}
+                  />
+                );
+              })}
+              <span className="text-xs text-muted-foreground ml-1.5 whitespace-nowrap">
+                {series.episodes.length}/5
+              </span>
+            </div>
+
             {/* Episodes Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {series.episodes.map((episode) => {
@@ -149,6 +171,10 @@ const SeriesGrid = ({
                           </span>
                         </div>
                       )}
+                      {/* Episode number badge */}
+                      <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] font-bold rounded-md px-1.5 py-0.5">
+                        Ep. {episode.episode_number || 1}
+                      </div>
                       {/* Status indicator */}
                       {isCompleted && (
                         <div className="absolute top-1 right-1 bg-green-500 rounded-full p-1">
