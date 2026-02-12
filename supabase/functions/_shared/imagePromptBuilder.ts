@@ -74,12 +74,17 @@ function buildSeriesStylePrefix(ctx: SeriesImageContext): string {
 
   lines.push(`SERIES VISUAL CONSISTENCY (Episode ${ctx.episodeNumber} of 5):`);
 
-  // Character descriptions (the core purpose of this prefix)
+  // Character descriptions
   if (vss.characters && Object.keys(vss.characters).length > 0) {
     const charDescs = Object.entries(vss.characters)
-      .map(([name, desc]) => `${name} is ${desc}`)
+      .map(([name, desc]) => `${name}: ${desc}`)
       .join('. ');
     lines.push(`Characters: ${charDescs}`);
+  }
+
+  // World style (also in styleBlock, but included here for emphasis)
+  if (vss.world_style) {
+    lines.push(`World style: ${vss.world_style}`);
   }
 
   // Recurring visual element
@@ -87,9 +92,7 @@ function buildSeriesStylePrefix(ctx: SeriesImageContext): string {
     lines.push(`Recurring element: ${vss.recurring_visual}`);
   }
 
-  lines.push('Maintain exact character appearances and world style across all images.');
-
-  // NOTE: world_style and EPISODE_MOOD are now in the styleBlock (not duplicated here)
+  lines.push('CRITICAL: Maintain EXACT character appearances and world style across all images.');
 
   return lines.join('\n');
 }
@@ -134,7 +137,10 @@ export function buildImagePrompts(
 
   console.log('[IMAGE-PROMPTS] buildImagePrompts called:', JSON.stringify({
     hasSeriesContext: !!seriesContext,
-    scenesCount: imagePlan?.scenes?.length ?? 0
+    hasStyleSheet: !!seriesContext?.visualStyleSheet,
+    worldStyle: seriesContext?.visualStyleSheet?.world_style?.substring(0, 80) ?? 'none',
+    scenesCount: imagePlan?.scenes?.length ?? 0,
+    childAge
   }));
 
   // ═══ Age modifier (fine-grained, per year) ═══
@@ -177,7 +183,7 @@ export function buildImagePrompts(
     'The character(s) in a calm, inviting pose in their environment. Atmospheric and welcoming.',
     // Phase 3: Series cover hint
     seriesContext
-      ? `This is episode ${seriesContext.episodeNumber} cover of a 5-episode series. Same style as previous covers.`
+      ? `This is the Episode ${seriesContext.episodeNumber} cover of a 5-episode series. Maintain exact same visual style as all other episode covers.`
       : '',
     `Style: ${styleBlock}`,
     NO_TEXT_INSTRUCTION,
@@ -210,11 +216,11 @@ export function buildImagePrompts(
     });
   }
 
-  console.log('[IMAGE-PROMPTS] Final prompts:', JSON.stringify(
+  console.log('[IMAGE-PROMPTS] Generated prompts:', JSON.stringify(
     results.map((r, i) => ({
       index: i,
-      type: i === 0 ? 'COVER' : 'SCENE',
-      first300chars: r.prompt?.substring(0, 300) ?? 'NO PROMPT'
+      type: i === 0 ? 'COVER' : `SCENE_${i}`,
+      first400chars: r.prompt?.substring(0, 400) ?? 'NO PROMPT'
     }))
   ));
 
@@ -232,25 +238,45 @@ export function buildFallbackImagePrompt(
   characterDescription: string,
   ageStyleRules: ImageStyleRules,
   themeImageRules: ThemeImageRules,
+  childAge?: number,
+  seriesContext?: SeriesImageContext,
 ): ImagePromptResult {
-  const styleBlock = [
-    themeImageRules.image_style_prompt,
-    ageStyleRules.style_prompt,
-  ].filter(Boolean).join('. ');
+  const ageModifier = childAge ? getAgeModifier(childAge) : '';
+
+  // Same series vs. single-story logic as buildImagePrompts
+  const styleBlock = seriesContext
+    ? [
+        ageModifier,
+        seriesContext.visualStyleSheet.world_style,
+        ageStyleRules.color_palette,
+        EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5],
+      ].filter(Boolean).join('. ')
+    : [
+        ageModifier,
+        themeImageRules.image_style_prompt,
+        ageStyleRules.style_prompt,
+        ageStyleRules.color_palette,
+      ].filter(Boolean).join('. ');
 
   const negativeBlock = [
     themeImageRules.image_negative_prompt,
     ageStyleRules.negative_prompt,
-    'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature',
+    'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
   ].filter(Boolean).join(', ');
 
+  const seriesPrefix = seriesContext ? buildSeriesStylePrefix(seriesContext) : '';
+
   const prompt = [
+    seriesPrefix,
     'Children book cover illustration.',
     characterDescription,
     `Title theme: ${storyTitle}`,
+    seriesContext
+      ? `This is the Episode ${seriesContext.episodeNumber} cover of a 5-episode series. Maintain exact same visual style as all other episode covers.`
+      : '',
     `Style: ${styleBlock}`,
     NO_TEXT_INSTRUCTION,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 
   return {
     prompt,

@@ -1406,37 +1406,41 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     // Generate character description for fallback path
     let characterDescription = "";
 
+    // ── Phase 3: Build series image context for visual consistency ──
+    // Hoisted above the if/else so both paths (structured + fallback) can use it
+    let seriesImageCtx: SeriesImageContext | undefined;
+    const currentEpForImages = episodeNumber || (isSeries ? 1 : undefined);
+
+    if (currentEpForImages && (isSeries || seriesId)) {
+      // For Ep2+: use visual_style_sheet loaded from Episode 1
+      // For Ep1: use visual_style_sheet just parsed from this LLM response
+      const vss = seriesContextData.visualStyleSheet || visualStyleSheet;
+      if (vss && typeof vss === 'object' && (vss.characters || vss.world_style)) {
+        seriesImageCtx = {
+          visualStyleSheet: {
+            characters: vss.characters || {},
+            world_style: vss.world_style || '',
+            recurring_visual: vss.recurring_visual || '',
+          },
+          episodeNumber: currentEpForImages,
+        };
+        console.log(`[generate-story] Phase 3: Series image context built for Episode ${currentEpForImages}, chars=${Object.keys(vss.characters || {}).length}`);
+      } else {
+        console.log('[generate-story] Phase 3: No visual_style_sheet available, skipping series image context');
+      }
+    }
+
     if (imagePlan && imagePlan.character_anchor && imagePlan.scenes?.length > 0) {
       // ═══ NEW PATH: Structured image_plan from LLM ═══
       console.log('[generate-story] Using NEW image path: structured image_plan');
 
-      // ── Phase 3: Build series image context for visual consistency ──
-      let seriesImageCtx: SeriesImageContext | undefined;
-      const currentEpForImages = episodeNumber || (isSeries ? 1 : undefined);
-
-      if (currentEpForImages && (isSeries || seriesId)) {
-        // For Ep2+: use visual_style_sheet loaded from Episode 1
-        // For Ep1: use visual_style_sheet just parsed from this LLM response
-        const vss = seriesContextData.visualStyleSheet || visualStyleSheet;
-        if (vss && typeof vss === 'object' && (vss.characters || vss.world_style)) {
-          seriesImageCtx = {
-            visualStyleSheet: {
-              characters: vss.characters || {},
-              world_style: vss.world_style || '',
-              recurring_visual: vss.recurring_visual || '',
-            },
-            episodeNumber: currentEpForImages,
-          };
-          console.log(`[generate-story] Phase 3: Series image context built for Episode ${currentEpForImages}, chars=${Object.keys(vss.characters || {}).length}`);
-        } else {
-          console.log('[generate-story] Phase 3: No visual_style_sheet available, skipping series image context');
-        }
-      }
-
       console.log('[IMAGE-PIPELINE] Calling buildImagePrompts:', JSON.stringify({
         hasSeriesContext: !!seriesImageCtx,
         episodeNumber: seriesImageCtx?.episodeNumber ?? null,
-        hasStyleSheet: !!seriesImageCtx?.visualStyleSheet
+        hasStyleSheet: !!seriesImageCtx?.visualStyleSheet,
+        styleSheetKeys: seriesImageCtx?.visualStyleSheet
+          ? Object.keys(seriesImageCtx.visualStyleSheet)
+          : null
       }));
       imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx);
     } else {
@@ -1451,11 +1455,18 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         console.error("Error generating character description:", err);
       }
 
+      console.log('[IMAGE-PIPELINE] Calling buildFallbackImagePrompt:', JSON.stringify({
+        hasSeriesContext: !!seriesImageCtx,
+        episodeNumber: seriesImageCtx?.episodeNumber ?? null,
+        hasStyleSheet: !!seriesImageCtx?.visualStyleSheet
+      }));
       const fallbackPrompt = buildFallbackImagePrompt(
         story.title,
         characterDescription,
         imageAgeRules,
         imageThemeRules,
+        childAge,
+        seriesImageCtx,
       );
       imagePrompts = [fallbackPrompt];
     }
