@@ -237,18 +237,14 @@ const SpecialEffectsScreen = ({
   };
 
   const handleContinue = () => {
-    if (showSettings || (isAdmin && isSeries)) {
-      // Pass settings when Weg A, or when admin toggled series on in Weg B
-      onComplete(selectedAttributes, additionalDescription.trim(), {
-        length: storyLength,
-        difficulty: storyDifficulty,
-        isSeries,
-        seriesMode: isSeries ? seriesMode : undefined,
-        storyLanguage,
-      });
-    } else {
-      onComplete(selectedAttributes, additionalDescription.trim());
-    }
+    // Always pass settings (Length, Difficulty, Language, Series)
+    onComplete(selectedAttributes, additionalDescription.trim(), {
+      length: storyLength,
+      difficulty: storyDifficulty,
+      isSeries,
+      seriesMode: isSeries ? seriesMode : undefined,
+      storyLanguage,
+    });
   };
 
   return (
@@ -270,7 +266,7 @@ const SpecialEffectsScreen = ({
         />
 
         {/* Story Settings (only for Weg A / free path) – compact toggle rows */}
-        {showSettings && (
+        {true && (
           <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-3 space-y-2">
             {/* Length */}
             <div className="flex items-center gap-3">
@@ -343,7 +339,7 @@ const SpecialEffectsScreen = ({
             )}
 
             {/* Series Toggle (admin only) */}
-            {isAdmin && (
+            {true && (
               <>
                 <div className="border-t border-orange-100/60" />
                 <div className="flex items-center gap-3">
