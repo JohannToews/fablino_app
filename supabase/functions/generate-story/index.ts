@@ -1791,7 +1791,22 @@ Wähle genau 10 Vokabelwörter aus.${seriesOutputInstructions}`;
         throw new Error("Could not parse story JSON");
       }
 
-      story = JSON.parse(jsonMatch[0]);
+      let parsed = JSON.parse(jsonMatch[0]);
+
+      // Handle nested LLM response: {story: {title, content}, questions, vocabulary, classification}
+      if (!parsed.title && !parsed.content && parsed.story && typeof parsed.story === 'object') {
+        console.log('[generate-story] Detected nested LLM response, flattening...');
+        const nested = parsed.story;
+        story = {
+          ...nested,
+          questions: parsed.questions || nested.questions || [],
+          vocabulary: parsed.vocabulary || nested.vocabulary || [],
+          // Flatten classification if present
+          ...(parsed.classification && typeof parsed.classification === 'object' ? parsed.classification : {}),
+        };
+      } else {
+        story = parsed;
+      }
 
       // Validate essential fields exist
       if (!story.title || !story.content) {
