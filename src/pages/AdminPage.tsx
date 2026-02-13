@@ -16,6 +16,7 @@ import KidProfileSection from "@/components/KidProfileSection";
 import ParentSettingsPanel from "@/components/ParentSettingsPanel";
 import UserManagementSection from "@/components/UserManagementSection";
 import SystemPromptSection from "@/components/SystemPromptSection";
+import AgeRulesSection from "@/components/AgeRulesSection";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, Language } from "@/lib/translations";
@@ -735,7 +736,8 @@ const AdminPage = () => {
                 {/* System Prompt Editor */}
                 <SystemPromptSection language={adminLang} />
                 
-                {/* Consistency Check Statistics */}
+                {/* Age Rules Editor */}
+                <AgeRulesSection language={adminLang} />
                 
                 {/* User Management */}
                 <UserManagementSection 
