@@ -233,75 +233,7 @@ const StoryTypeSelectionScreen = ({
           </div>
         )}
 
-        {/* Series Toggle (admin only, Weg B) */}
-        {viewState === "main" && (
-          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{translations.seriesLabel}</span>
-              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
-                {[false, true].map((val) => (
-                  <button
-                    key={String(val)}
-                    onClick={() => setIsSeries(val)}
-                    className={cn(
-                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
-                      isSeries === val
-                        ? "bg-[#E8863A] text-white shadow-sm"
-                        : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
-                    )}
-                  >
-                    {val ? translations.seriesYes : translations.seriesNo}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Series Mode Toggle (normal vs interactive, visible when series is enabled) */}
-        {viewState === "main" && isSeries && (
-          <div className="w-full space-y-2 animate-fade-in">
-            {/* Normal Series */}
-            <button
-              onClick={() => setSeriesMode('normal')}
-              className={cn(
-                "w-full text-left p-3 rounded-2xl border-2 transition-all duration-200",
-                seriesMode === 'normal'
-                  ? "border-[#E8863A] bg-white shadow-md"
-                  : "border-orange-100 bg-white/70 hover:border-orange-200"
-              )}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg mt-0.5">📖</span>
-                <div>
-                  <p className="text-sm font-semibold text-[#2D1810]">{translations.seriesModeNormal}</p>
-                  <p className="text-xs text-[#2D1810]/60 mt-0.5">{translations.seriesModeNormalDesc}</p>
-                </div>
-              </div>
-            </button>
-            {/* Interactive Series (Premium) */}
-            <button
-              onClick={() => setSeriesMode('interactive')}
-              className={cn(
-                "w-full text-left p-3 rounded-2xl border-2 transition-all duration-200",
-                seriesMode === 'interactive'
-                  ? "border-[#E8863A] bg-white shadow-md"
-                  : "border-orange-100 bg-white/70 hover:border-orange-200"
-              )}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg mt-0.5">✨</span>
-                <div>
-                  <p className="text-sm font-semibold text-[#2D1810]">
-                    {translations.seriesModeInteractive}
-                    <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white">Premium</span>
-                  </p>
-                  <p className="text-xs text-[#2D1810]/60 mt-0.5">{translations.seriesModeInteractiveDesc}</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
 
         {viewState === "educational" && (
           <div className="w-full space-y-3">
