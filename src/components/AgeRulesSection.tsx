@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Save, Trash2, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface AgeRule {
   id: string;
@@ -268,116 +269,121 @@ const AgeRulesSection = ({ language }: Props) => {
   };
 
   return (
-    <Card className="border-2 border-primary/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">📏 Age Rules</CardTitle>
-          <div className="flex items-center gap-2">
-            <Select value={filterLang} onValueChange={setFilterLang}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                <SelectItem value="all">Alle Sprachen</SelectItem>
-                {LANGUAGES.map(l => (
-                  <SelectItem key={l.value} value={l.value}>{l.flag} {l.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={() => setEditingRule(emptyRule())}>
-              <Plus className="h-4 w-4 mr-1" /> Neue Rule
-            </Button>
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value="age-rules" className="border-2 border-primary/30 rounded-xl overflow-hidden">
+        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+          <div className="flex items-center justify-between w-full mr-2">
+            <span className="text-lg font-semibold">📏 Age Rules</span>
+            <span className="text-xs text-muted-foreground">{rules.length} Regeln</span>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Editor for new/edit */}
-        {editingRule && renderRuleEditor(editingRule)}
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="px-4 pb-4 space-y-3">
+            {/* Filter + Add */}
+            <div className="flex items-center justify-end gap-2">
+              <Select value={filterLang} onValueChange={setFilterLang}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border border-border z-50">
+                  <SelectItem value="all">Alle Sprachen</SelectItem>
+                  {LANGUAGES.map(l => (
+                    <SelectItem key={l.value} value={l.value}>{l.flag} {l.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" onClick={() => setEditingRule(emptyRule())}>
+                <Plus className="h-4 w-4 mr-1" /> Neue Rule
+              </Button>
+            </div>
 
-        {loading ? (
-          <p className="text-center text-muted-foreground py-8">Laden...</p>
-        ) : filteredRules.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">Keine Rules gefunden</p>
-        ) : (
-          filteredRules.map((rule) => {
-            const isExpanded = expandedId === rule.id;
-            return (
-              <div key={rule.id} className="border border-border rounded-xl overflow-hidden">
-                {/* Summary Row */}
-                <button
-                  className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left"
-                  onClick={() => setExpandedId(isExpanded ? null : rule.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{langFlag(rule.language)}</span>
-                    <span className="font-medium text-sm">
-                      {langLabel(rule.language)} — Alter {rule.min_age}–{rule.max_age}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {rule.min_word_count}–{rule.max_word_count} Wörter | Max {rule.max_sentence_length} Wörter/Satz
-                    </span>
-                  </div>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </button>
+            {/* Editor for new/edit */}
+            {editingRule && renderRuleEditor(editingRule)}
 
-                {/* Expanded Detail */}
-                {isExpanded && (
-                  <div className="border-t border-border p-4 bg-muted/10 space-y-3">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                      <div><span className="text-muted-foreground">Perspektive:</span> {rule.narrative_perspective || '–'}</div>
-                      <div><span className="text-muted-foreground">Absatzlänge:</span> {rule.paragraph_length || '–'}</div>
-                      <div><span className="text-muted-foreground">Dialoganteil:</span> {rule.dialogue_ratio || '–'}</div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Erlaubte Zeiten:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {(rule.allowed_tenses || []).map((t, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">{t}</span>
-                        ))}
+            {loading ? (
+              <p className="text-center text-muted-foreground py-8">Laden...</p>
+            ) : filteredRules.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Keine Rules gefunden</p>
+            ) : (
+              filteredRules.map((rule) => {
+                const isExpanded = expandedId === rule.id;
+                return (
+                  <div key={rule.id} className="border border-border rounded-xl overflow-hidden">
+                    <button
+                      className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left"
+                      onClick={() => setExpandedId(isExpanded ? null : rule.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{langFlag(rule.language)}</span>
+                        <span className="font-medium text-sm">
+                          {langLabel(rule.language)} — Alter {rule.min_age}–{rule.max_age}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {rule.min_word_count}–{rule.max_word_count} Wörter | Max {rule.max_sentence_length} Wörter/Satz
+                        </span>
                       </div>
-                    </div>
+                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
 
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Satzstrukturen:</p>
-                      <p className="text-sm bg-card p-2 rounded-lg">{rule.sentence_structures}</p>
-                    </div>
+                    {isExpanded && (
+                      <div className="border-t border-border p-4 bg-muted/10 space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                          <div><span className="text-muted-foreground">Perspektive:</span> {rule.narrative_perspective || '–'}</div>
+                          <div><span className="text-muted-foreground">Absatzlänge:</span> {rule.paragraph_length || '–'}</div>
+                          <div><span className="text-muted-foreground">Dialoganteil:</span> {rule.dialogue_ratio || '–'}</div>
+                        </div>
+                        
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Erlaubte Zeiten:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(rule.allowed_tenses || []).map((t, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">{t}</span>
+                            ))}
+                          </div>
+                        </div>
 
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Narrative Guidelines:</p>
-                      <p className="text-sm bg-card p-2 rounded-lg whitespace-pre-wrap max-h-40 overflow-y-auto">{rule.narrative_guidelines}</p>
-                    </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Satzstrukturen:</p>
+                          <p className="text-sm bg-card p-2 rounded-lg">{rule.sentence_structures}</p>
+                        </div>
 
-                    {rule.example_sentences && rule.example_sentences.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Beispielsätze:</p>
-                        <ul className="text-sm bg-card p-2 rounded-lg space-y-1">
-                          {rule.example_sentences.map((s, i) => (
-                            <li key={i} className="text-sm italic">„{s}"</li>
-                          ))}
-                        </ul>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Narrative Guidelines:</p>
+                          <p className="text-sm bg-card p-2 rounded-lg whitespace-pre-wrap max-h-40 overflow-y-auto">{rule.narrative_guidelines}</p>
+                        </div>
+
+                        {rule.example_sentences && rule.example_sentences.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Beispielsätze:</p>
+                            <ul className="text-sm bg-card p-2 rounded-lg space-y-1">
+                              {rule.example_sentences.map((s, i) => (
+                                <li key={i} className="text-sm italic">„{s}"</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" variant="outline" onClick={() => { setEditingRule({ ...rule }); setExpandedId(null); }}>
+                            ✏️ Bearbeiten
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDuplicate(rule)}>
+                            <Copy className="h-3 w-3 mr-1" /> Duplizieren
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(rule.id)}>
+                            <Trash2 className="h-3 w-3 mr-1" /> Löschen
+                          </Button>
+                        </div>
                       </div>
                     )}
-
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" variant="outline" onClick={() => { setEditingRule({ ...rule }); setExpandedId(null); }}>
-                        ✏️ Bearbeiten
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDuplicate(rule)}>
-                        <Copy className="h-3 w-3 mr-1" /> Duplizieren
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(rule.id)}>
-                        <Trash2 className="h-3 w-3 mr-1" /> Löschen
-                      </Button>
-                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })
-        )}
-      </CardContent>
-    </Card>
+                );
+              })
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 };
 

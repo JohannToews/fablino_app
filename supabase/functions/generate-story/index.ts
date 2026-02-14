@@ -1428,18 +1428,7 @@ Deno.serve(async (req) => {
       return data?.value || null;
     }
 
-    // ── DEBUG: Log incoming request parameters ──
-    console.log('[GENERATE] Request:', JSON.stringify({
-      source,
-      language: storyLanguageParam || textLanguage || 'unknown',
-      themeKey: themeKey || 'none',
-      seriesMode: seriesMode || 'none',
-      isSeries,
-      episodeNumber: resolvedEpisodeNumber || 'standalone',
-      textType,
-      kidAge: age,
-      difficulty: difficultyLabel,
-    }));
+    // ── DEBUG: Log incoming request parameters (deferred to after variable declarations) ──
 
     // ── Block 2.3c: NEW dynamic prompt path with FALLBACK ──
     let fullSystemPromptFinal: string = "";
@@ -1783,6 +1772,18 @@ Deno.serve(async (req) => {
     const lengthConfig = lengthMap[length] || lengthMap.medium;
     const minWordCount = lengthConfig.min;
 
+    // ── DEBUG: Log incoming request parameters ──
+    console.log('[GENERATE] Request:', JSON.stringify({
+      source,
+      language: storyLanguageParam || textLanguage || 'unknown',
+      themeKey: themeKey || 'none',
+      seriesMode: seriesMode || 'none',
+      isSeries,
+      episodeNumber: resolvedEpisodeNumber || 'standalone',
+      textType,
+      difficulty: difficultyLabel,
+    }));
+
     // ── Build fullSystemPrompt + userPrompt depending on path ──
     let fullSystemPrompt: string;
     let userPrompt: string;
@@ -2010,8 +2011,8 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         contentLength: story.content?.length ?? 0,
         hasQuestions: story.questions?.length ?? 0,
         hasVocabulary: story.vocabulary?.length ?? 0,
-        hasImagePlan: !!story.image_plan,
-        hasBranchOptions: !!story.branch_options,
+      hasImagePlan: !!(story as any).image_plan,
+      hasBranchOptions: !!(story as any).branch_options,
         hasEpisodeSummary: !!story.episode_summary,
         keys: Object.keys(story).join(', '),
       }));
