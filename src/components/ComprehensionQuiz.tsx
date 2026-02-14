@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, CircleDot, ChevronRight, Loader2 } from "lucide-react";
@@ -153,6 +153,17 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
     }
   };
 
+  const currentQuestion = questions[currentIndex] || null;
+  const shuffledOptions = useMemo(() => {
+    if (!currentQuestion?.options) return [];
+    const opts = [...currentQuestion.options];
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    return opts;
+  }, [currentIndex, currentQuestion?.id]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -170,8 +181,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
     );
   }
 
-  const currentQuestion = questions[currentIndex];
-  const options = currentQuestion.options || [];
+  const options = shuffledOptions;
   const isCorrect = selectedAnswer === currentQuestion.expected_answer;
 
   return (
