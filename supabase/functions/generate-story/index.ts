@@ -1377,6 +1377,44 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ── Load image generation config from DB (with fallback) ──
+    let imageGenConfig: {
+      coverModel: string;
+      sceneModel: string;
+      maxImagesPerStory: number;
+      maxStoriesPerDayFree: number;
+      maxStoriesPerDayPremium: number;
+    } = {
+      coverModel: 'imagen-4.0-generate-001',
+      sceneModel: 'imagen-4.0-fast-generate-001',
+      maxImagesPerStory: 4,
+      maxStoriesPerDayFree: 2,
+      maxStoriesPerDayPremium: 10,
+    };
+    try {
+      const { data: configRows } = await supabase
+        .from('image_generation_config')
+        .select('config_key, config_value');
+      if (configRows && Array.isArray(configRows)) {
+        for (const row of configRows) {
+          if (row.config_key === 'imagen_models' && row.config_value) {
+            const m = row.config_value as any;
+            imageGenConfig.coverModel = m.cover?.model || imageGenConfig.coverModel;
+            imageGenConfig.sceneModel = m.scene?.model || imageGenConfig.sceneModel;
+          }
+          if (row.config_key === 'generation_limits' && row.config_value) {
+            const l = row.config_value as any;
+            imageGenConfig.maxImagesPerStory = l.max_images_per_story ?? imageGenConfig.maxImagesPerStory;
+            imageGenConfig.maxStoriesPerDayFree = l.max_stories_per_day_free ?? imageGenConfig.maxStoriesPerDayFree;
+            imageGenConfig.maxStoriesPerDayPremium = l.max_stories_per_day_premium ?? imageGenConfig.maxStoriesPerDayPremium;
+          }
+        }
+        console.log('[GENERATE] Image config loaded:', JSON.stringify(imageGenConfig));
+      }
+    } catch (configErr: any) {
+      console.warn('[GENERATE] Failed to load image_generation_config, using defaults:', configErr.message);
+    }
+
     // ================== MODULAR PROMPT LOADING ==================
     const adminLangCode = (textLanguage || 'DE').toLowerCase();
 
@@ -2294,6 +2332,13 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     console.log('[generate-story] Image prompts built:', imagePrompts.length,
       'prompts:', imagePrompts.map(p => p.label).join(', '));
+
+    // ── Apply max_images_per_story limit from config ──
+    if (imagePrompts.length > imageGenConfig.maxImagesPerStory) {
+      console.log(`[generate-story] Limiting image prompts from ${imagePrompts.length} to ${imageGenConfig.maxImagesPerStory} (config limit)`);
+      // Keep cover (first) + trim scenes to fit limit
+      imagePrompts = imagePrompts.slice(0, imageGenConfig.maxImagesPerStory);
+    }
 
     // ================== PARALLEL: CONSISTENCY CHECK + ALL IMAGES ==================
     console.log("Starting PARALLEL execution: consistency check + image generation...");

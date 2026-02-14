@@ -729,6 +729,17 @@ const AdminPage = () => {
           {user?.role === 'admin' && (
             <TabsContent value="system" className="h-full overflow-y-auto m-0 pr-2">
               <div className="max-w-4xl mx-auto space-y-6">
+                {/* Image Generation Config Link */}
+                <Card className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate('/admin/config')}>
+                  <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                    <Image className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle className="text-base">Bildgenerierung – Konfiguration</CardTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">Imagen Modelle, Kosten & Limits verwalten</p>
+                    </div>
+                  </CardHeader>
+                </Card>
+
                 {/* System Prompt Editor */}
                 <SystemPromptSection language={adminLang} />
                 

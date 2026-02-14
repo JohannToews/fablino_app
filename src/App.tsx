@@ -10,6 +10,7 @@ import HomeClassic from "./pages/HomeClassic";
 import HomeFablino from "./pages/HomeFablino";
 import { FEATURES } from "./config/features";
 import AdminPage from "./pages/AdminPage";
+import AdminConfigPage from "./pages/AdminConfigPage";
 import StorySelectPage from "./pages/StorySelectPage";
 import ReadingPage from "./pages/ReadingPage";
 import VocabularyQuizPage from "./pages/VocabularyQuizPage";
@@ -52,6 +53,11 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/config" element={
+              <ProtectedRoute>
+                <AdminConfigPage />
               </ProtectedRoute>
             } />
             <Route path="/stories" element={
