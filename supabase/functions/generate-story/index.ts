@@ -1579,13 +1579,14 @@ Deno.serve(async (req) => {
         || (textType === 'non-fiction' ? 'educational' : 'fantasy');
 
       // Map length: old code uses 'very_short'|'short'|'medium'|'long'|'very_long'
-      // New code uses 'short'|'medium'|'long'
-      const lengthMapping: Record<string, 'short' | 'medium' | 'long'> = {
+      // New code uses 'short'|'medium'|'long'|'extra_long'
+      const lengthMapping: Record<string, 'short' | 'medium' | 'long' | 'extra_long'> = {
         very_short: 'short',
         short: 'short',
         medium: 'medium',
         long: 'long',
-        very_long: 'long',
+        very_long: 'extra_long',
+        extra_long: 'extra_long',
       };
       const resolvedLength = storyLength || lengthMapping[length] || 'medium';
 

@@ -15,7 +15,7 @@ export interface StoryRequest {
   };
   story_language: string;        // 'fr', 'de', 'en', 'es', 'it', 'bs'
   theme_key: string;             // 'fantasy', 'action', 'animals', 'everyday', 'humor', 'educational'
-  length: 'short' | 'medium' | 'long';
+  length: 'short' | 'medium' | 'long' | 'extra_long';
   is_series: boolean;
   series_context?: string;
   protagonists: {
@@ -952,7 +952,7 @@ export async function buildStoryPrompt(
     .limit(5);
 
   // ── Compute word counts ──
-  const factor = { short: 0.7, medium: 1.0, long: 1.4 }[request.length] || 1.0;
+  const factor = { short: 0.7, medium: 1.0, long: 1.4, extra_long: 2.0 }[request.length] || 1.0;
   const minWords = Math.round(ageRules.min_word_count * factor);
   const maxWords = Math.round(ageRules.max_word_count * factor);
 

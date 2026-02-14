@@ -293,7 +293,7 @@ export type EducationalTopic =
   | "music"
   | "other";
 
-export type StoryLength = "short" | "medium" | "long";
+export type StoryLength = "short" | "medium" | "long" | "extra_long";
 export type StoryDifficulty = "easy" | "medium" | "hard";
 
 // Language picker helpers

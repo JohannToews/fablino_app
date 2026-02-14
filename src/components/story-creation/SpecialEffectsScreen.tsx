@@ -166,13 +166,13 @@ const attributeOptions: AttributeOption[] = [
 
 // Settings translations (reused from StoryTypeSelectionScreen, inline for independence)
 const settingsTranslations: Record<string, Record<string, string>> = {
-  de: { lengthLabel: 'Länge', short: 'Kurz', medium: 'Mittel', long: 'Lang', difficultyLabel: 'Schwierigkeit', easy: 'Leicht', hard: 'Schwer', seriesLabel: 'Serie', seriesNo: 'Nein', seriesYes: 'Ja', languageLabel: 'Sprache', seriesModeNormal: 'Normale Serie', seriesModeNormalDesc: 'Die Geschichte fließt von Episode zu Episode', seriesModeInteractive: 'Mitgestalten', seriesModeInteractiveDesc: 'Dein Kind entscheidet am Ende jeder Episode wie es weitergeht' },
-  fr: { lengthLabel: 'Longueur', short: 'Court', medium: 'Moyen', long: 'Long', difficultyLabel: 'Difficulté', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Série', seriesNo: 'Non', seriesYes: 'Oui', languageLabel: 'Langue', seriesModeNormal: 'Série normale', seriesModeNormalDesc: "L'histoire suit son cours d'épisode en épisode", seriesModeInteractive: 'Participer', seriesModeInteractiveDesc: "Ton enfant décide comment l'histoire continue" },
-  en: { lengthLabel: 'Length', short: 'Short', medium: 'Medium', long: 'Long', difficultyLabel: 'Difficulty', easy: 'Easy', hard: 'Hard', seriesLabel: 'Series', seriesNo: 'No', seriesYes: 'Yes', languageLabel: 'Language', seriesModeNormal: 'Normal Series', seriesModeNormalDesc: 'The story flows from episode to episode', seriesModeInteractive: 'Co-create', seriesModeInteractiveDesc: 'Your child decides how the story continues' },
-  es: { lengthLabel: 'Longitud', short: 'Corto', medium: 'Medio', long: 'Largo', difficultyLabel: 'Dificultad', easy: 'Fácil', hard: 'Difícil', seriesLabel: 'Serie', seriesNo: 'No', seriesYes: 'Sí', languageLabel: 'Idioma', seriesModeNormal: 'Serie normal', seriesModeNormalDesc: 'La historia fluye de episodio en episodio', seriesModeInteractive: 'Co-crear', seriesModeInteractiveDesc: 'Tu hijo decide cómo continúa la historia' },
-  nl: { lengthLabel: 'Lengte', short: 'Kort', medium: 'Gemiddeld', long: 'Lang', difficultyLabel: 'Moeilijkheid', easy: 'Makkelijk', hard: 'Moeilijk', seriesLabel: 'Serie', seriesNo: 'Nee', seriesYes: 'Ja', languageLabel: 'Taal', seriesModeNormal: 'Normale serie', seriesModeNormalDesc: 'Het verhaal vloeit van aflevering naar aflevering', seriesModeInteractive: 'Meebeslissen', seriesModeInteractiveDesc: 'Je kind beslist hoe het verder gaat' },
-  it: { lengthLabel: 'Lunghezza', short: 'Breve', medium: 'Medio', long: 'Lungo', difficultyLabel: 'Difficoltà', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Serie', seriesNo: 'No', seriesYes: 'Sì', languageLabel: 'Lingua', seriesModeNormal: 'Serie normale', seriesModeNormalDesc: 'La storia scorre da episodio a episodio', seriesModeInteractive: 'Co-creare', seriesModeInteractiveDesc: 'Il tuo bambino decide come continua la storia' },
-  bs: { lengthLabel: 'Dužina', short: 'Kratko', medium: 'Srednje', long: 'Dugo', difficultyLabel: 'Težina', easy: 'Lagano', hard: 'Teško', seriesLabel: 'Serija', seriesNo: 'Ne', seriesYes: 'Da', languageLabel: 'Jezik', seriesModeNormal: 'Normalna serija', seriesModeNormalDesc: 'Priča teče od epizode do epizode', seriesModeInteractive: 'Sustvaranje', seriesModeInteractiveDesc: 'Tvoje dijete odlučuje kako priča nastavlja' },
+  de: { lengthLabel: 'Länge', short: 'Kurz', medium: 'Mittel', long: 'Lang', extra_long: 'Extra-Lang', difficultyLabel: 'Schwierigkeit', easy: 'Leicht', hard: 'Schwer', seriesLabel: 'Serie', seriesNo: 'Nein', seriesYes: 'Ja', languageLabel: 'Sprache', seriesModeNormal: 'Normale Serie', seriesModeNormalDesc: 'Die Geschichte fließt von Episode zu Episode', seriesModeInteractive: 'Mitgestalten', seriesModeInteractiveDesc: 'Dein Kind entscheidet am Ende jeder Episode wie es weitergeht' },
+  fr: { lengthLabel: 'Longueur', short: 'Court', medium: 'Moyen', long: 'Long', extra_long: 'Très long', difficultyLabel: 'Difficulté', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Série', seriesNo: 'Non', seriesYes: 'Oui', languageLabel: 'Langue', seriesModeNormal: 'Série normale', seriesModeNormalDesc: "L'histoire suit son cours d'épisode en épisode", seriesModeInteractive: 'Participer', seriesModeInteractiveDesc: "Ton enfant décide comment l'histoire continue" },
+  en: { lengthLabel: 'Length', short: 'Short', medium: 'Medium', long: 'Long', extra_long: 'Extra Long', difficultyLabel: 'Difficulty', easy: 'Easy', hard: 'Hard', seriesLabel: 'Series', seriesNo: 'No', seriesYes: 'Yes', languageLabel: 'Language', seriesModeNormal: 'Normal Series', seriesModeNormalDesc: 'The story flows from episode to episode', seriesModeInteractive: 'Co-create', seriesModeInteractiveDesc: 'Your child decides how the story continues' },
+  es: { lengthLabel: 'Longitud', short: 'Corto', medium: 'Medio', long: 'Largo', extra_long: 'Extra largo', difficultyLabel: 'Dificultad', easy: 'Fácil', hard: 'Difícil', seriesLabel: 'Serie', seriesNo: 'No', seriesYes: 'Sí', languageLabel: 'Idioma', seriesModeNormal: 'Serie normal', seriesModeNormalDesc: 'La historia fluye de episodio en episodio', seriesModeInteractive: 'Co-crear', seriesModeInteractiveDesc: 'Tu hijo decide cómo continúa la historia' },
+  nl: { lengthLabel: 'Lengte', short: 'Kort', medium: 'Gemiddeld', long: 'Lang', extra_long: 'Extra lang', difficultyLabel: 'Moeilijkheid', easy: 'Makkelijk', hard: 'Moeilijk', seriesLabel: 'Serie', seriesNo: 'Nee', seriesYes: 'Ja', languageLabel: 'Taal', seriesModeNormal: 'Normale serie', seriesModeNormalDesc: 'Het verhaal vloeit van aflevering naar aflevering', seriesModeInteractive: 'Meebeslissen', seriesModeInteractiveDesc: 'Je kind beslist hoe het verder gaat' },
+  it: { lengthLabel: 'Lunghezza', short: 'Breve', medium: 'Medio', long: 'Lungo', extra_long: 'Extra lungo', difficultyLabel: 'Difficoltà', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Serie', seriesNo: 'No', seriesYes: 'Sì', languageLabel: 'Lingua', seriesModeNormal: 'Serie normale', seriesModeNormalDesc: 'La storia scorre da episodio a episodio', seriesModeInteractive: 'Co-creare', seriesModeInteractiveDesc: 'Il tuo bambino decide come continua la storia' },
+  bs: { lengthLabel: 'Dužina', short: 'Kratko', medium: 'Srednje', long: 'Dugo', extra_long: 'Ekstra dugo', difficultyLabel: 'Težina', easy: 'Lagano', hard: 'Teško', seriesLabel: 'Serija', seriesNo: 'Ne', seriesYes: 'Da', languageLabel: 'Jezik', seriesModeNormal: 'Normalna serija', seriesModeNormalDesc: 'Priča teče od epizode do epizode', seriesModeInteractive: 'Sustvaranje', seriesModeInteractiveDesc: 'Tvoje dijete odlučuje kako priča nastavlja' },
 };
 
 export interface StorySettingsFromEffects {
@@ -272,18 +272,18 @@ const SpecialEffectsScreen = ({
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.lengthLabel}</span>
               <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
-                {(["short", "medium", "long"] as StoryLength[]).map((len) => (
+                {(["short", "medium", "long", "extra_long"] as StoryLength[]).map((len) => (
                   <button
                     key={len}
                     onClick={() => setStoryLength(len)}
                     className={cn(
-                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
+                      "flex-1 py-1.5 text-xs sm:text-sm rounded-lg transition-all duration-200 font-medium text-center",
                       storyLength === len
                         ? "bg-[#E8863A] text-white shadow-sm"
                         : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
                     )}
                   >
-                    {len === "short" ? st.short : len === "medium" ? st.medium : st.long}
+                    {len === "short" ? st.short : len === "medium" ? st.medium : len === "long" ? st.long : st.extra_long}
                   </button>
                 ))}
               </div>
