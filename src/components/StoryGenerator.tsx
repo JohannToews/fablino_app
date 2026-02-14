@@ -1,3 +1,5 @@
+// @deprecated – This component is no longer used anywhere. Remove during next refactoring.
+// It was the old admin story generator before the kid wizard flow took over.
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
