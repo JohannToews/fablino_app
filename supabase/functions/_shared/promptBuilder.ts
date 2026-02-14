@@ -997,16 +997,17 @@ export async function buildStoryPrompt(
   sections.push(lengthSection);
 
   // CATEGORY (or surprise theme hint)
+  const surpriseThemeHint: Record<string, string> = {
+    fr: `## ${headers.category}\nChoisis toi-même un thème créatif et surprenant pour cette histoire. Sois original !`,
+    de: `## ${headers.category}\nWähle selbst ein kreatives und überraschendes Thema für diese Geschichte. Sei originell!`,
+    en: `## ${headers.category}\nChoose a creative and surprising theme for this story yourself. Be original!`,
+    es: `## ${headers.category}\nElige tú mismo un tema creativo y sorprendente para esta historia. ¡Sé original!`,
+    it: `## ${headers.category}\nScegli tu un tema creativo e sorprendente per questa storia. Sii originale!`,
+    bs: `## ${headers.category}\nSam/a odaberi kreativnu i iznenađujuću temu za ovu priču. Budi originalan/na!`,
+    nl: `## ${headers.category}\nKies zelf een creatief en verrassend thema voor dit verhaal. Wees origineel!`,
+  };
+
   if (isSurpriseTheme) {
-    const surpriseThemeHint: Record<string, string> = {
-      fr: `## ${headers.category}\nChoisis toi-même un thème créatif et surprenant pour cette histoire. Sois original !`,
-      de: `## ${headers.category}\nWähle selbst ein kreatives und überraschendes Thema für diese Geschichte. Sei originell!`,
-      en: `## ${headers.category}\nChoose a creative and surprising theme for this story yourself. Be original!`,
-      es: `## ${headers.category}\nElige tú mismo un tema creativo y sorprendente para esta historia. ¡Sé original!`,
-      it: `## ${headers.category}\nScegli tu un tema creativo e sorprendente per questa storia. Sii originale!`,
-      bs: `## ${headers.category}\nSam/a odaberi kreativnu i iznenađujuću temu za ovu priču. Budi originalan/na!`,
-      nl: `## ${headers.category}\nKies zelf een creatief en verrassend thema voor dit verhaal. Wees origineel!`,
-    };
     sections.push(surpriseThemeHint[lang] || surpriseThemeHint.en);
   } else if (themeRules) {
     // Theme rules loaded (or fallback succeeded)
