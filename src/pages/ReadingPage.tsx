@@ -618,6 +618,23 @@ const ReadingPage = () => {
           episode_summary: data.episode_summary ?? null,
           continuity_state: data.continuity_state ?? null,
           visual_style_sheet: data.visual_style_sheet ?? null,
+          // Classification & performance (same as Episode 1)
+          generation_status: "verified",
+          structure_beginning: data.structure_beginning ?? null,
+          structure_middle: data.structure_middle ?? null,
+          structure_ending: data.structure_ending ?? null,
+          emotional_coloring: data.emotional_coloring ?? null,
+          emotional_secondary: data.emotional_secondary ?? null,
+          humor_level: data.humor_level ?? null,
+          emotional_depth: data.emotional_depth ?? null,
+          moral_topic: data.moral_topic ?? null,
+          concrete_theme: data.concrete_theme ?? null,
+          learning_theme_applied: data.learning_theme_applied ?? null,
+          parent_prompt_text: data.parent_prompt_text ?? null,
+          generation_time_ms: data.performance?.total_ms ?? null,
+          story_generation_ms: data.performance?.story_generation_ms ?? null,
+          image_generation_ms: data.performance?.image_generation_ms ?? null,
+          consistency_check_ms: data.performance?.consistency_check_ms ?? null,
         })
         .select()
         .single();
@@ -902,6 +919,23 @@ const ReadingPage = () => {
             episode_summary: genData.episode_summary ?? null,
             continuity_state: genData.continuity_state ?? null,
             visual_style_sheet: genData.visual_style_sheet ?? null,
+            // Classification & performance
+            generation_status: "verified",
+            structure_beginning: genData.structure_beginning ?? null,
+            structure_middle: genData.structure_middle ?? null,
+            structure_ending: genData.structure_ending ?? null,
+            emotional_coloring: genData.emotional_coloring ?? null,
+            emotional_secondary: genData.emotional_secondary ?? null,
+            humor_level: genData.humor_level ?? null,
+            emotional_depth: genData.emotional_depth ?? null,
+            moral_topic: genData.moral_topic ?? null,
+            concrete_theme: genData.concrete_theme ?? null,
+            learning_theme_applied: genData.learning_theme_applied ?? null,
+            parent_prompt_text: genData.parent_prompt_text ?? null,
+            generation_time_ms: genData.performance?.total_ms ?? null,
+            story_generation_ms: genData.performance?.story_generation_ms ?? null,
+            image_generation_ms: genData.performance?.image_generation_ms ?? null,
+            consistency_check_ms: genData.performance?.consistency_check_ms ?? null,
           })
           .select()
           .single();
