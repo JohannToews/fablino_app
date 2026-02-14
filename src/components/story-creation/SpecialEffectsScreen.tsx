@@ -338,8 +338,8 @@ const SpecialEffectsScreen = ({
               </>
             )}
 
-            {/* Series Toggle (admin only) */}
-            {true && (
+            {/* Series Toggle – only inside settings panel */}
+            {showSettings && (
               <>
                 <div className="border-t border-orange-100/60" />
                 <div className="flex items-center gap-3">
