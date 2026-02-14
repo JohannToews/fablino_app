@@ -70,14 +70,14 @@ const settingsLabels: Record<string, {
   },
 };
 
-export type FontSizeLevel = 1 | 2 | 3;
+export type FontSizeLevel = 1 | 2 | 3 | 4;
 export type LineSpacingLevel = 1 | 2 | 3;
 
 interface ReadingSettingsProps {
   fontSize: FontSizeLevel;
-  lineSpacing: LineSpacingLevel;
+  lineSpacing?: LineSpacingLevel;
   onFontSizeChange: (level: FontSizeLevel) => void;
-  onLineSpacingChange: (level: LineSpacingLevel) => void;
+  onLineSpacingChange?: (level: LineSpacingLevel) => void;
   language: string;
   syllableMode?: boolean;
   onSyllableModeChange?: (enabled: boolean) => void;
@@ -86,17 +86,15 @@ interface ReadingSettingsProps {
 
 const ReadingSettings = ({
   fontSize,
-  lineSpacing,
   onFontSizeChange,
-  onLineSpacingChange,
   language,
   syllableMode = false,
   onSyllableModeChange,
   showSyllableOption = false,
 }: ReadingSettingsProps) => {
   const t = settingsLabels[language] || settingsLabels.fr;
-  const levels: FontSizeLevel[] = [1, 2, 3];
-  const sizeLabels = [t.small, t.medium, t.large];
+  const levels: FontSizeLevel[] = [1, 2, 3, 4];
+  const sizeLabels = [t.small, t.medium, t.large, "XL"];
 
   return (
     <div className="flex flex-wrap items-center gap-4 p-3 bg-card/60 backdrop-blur-sm rounded-xl border border-border/50">
@@ -112,26 +110,6 @@ const ReadingSettings = ({
               onClick={() => onFontSizeChange(level)}
               className={`text-xs px-2 py-1 h-7 min-w-[50px] ${
                 fontSize === level ? "bg-primary text-primary-foreground" : ""
-              }`}
-            >
-              {sizeLabels[idx]}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Line Spacing */}
-      <div className="flex items-center gap-2">
-        <AlignJustify className="h-4 w-4 text-muted-foreground" />
-        <div className="flex gap-1">
-          {levels.map((level, idx) => (
-            <Button
-              key={`spacing-${level}`}
-              variant={lineSpacing === level ? "default" : "outline"}
-              size="sm"
-              onClick={() => onLineSpacingChange(level)}
-              className={`text-xs px-2 py-1 h-7 min-w-[50px] ${
-                lineSpacing === level ? "bg-primary text-primary-foreground" : ""
               }`}
             >
               {sizeLabels[idx]}
@@ -168,18 +146,13 @@ const ReadingSettings = ({
 export default ReadingSettings;
 
 // CSS classes for reading text based on settings
-export const getReadingTextClasses = (fontSize: FontSizeLevel, lineSpacing: LineSpacingLevel): string => {
+export const getReadingTextClasses = (fontSize: FontSizeLevel): string => {
   const fontClasses: Record<FontSizeLevel, string> = {
-    1: "text-base md:text-lg",
-    2: "text-lg md:text-xl",
-    3: "text-xl md:text-2xl",
+    1: "text-base md:text-lg leading-relaxed",
+    2: "text-lg md:text-xl leading-relaxed",
+    3: "text-xl md:text-2xl leading-loose",
+    4: "text-2xl md:text-3xl leading-loose",
   };
 
-  const spacingClasses: Record<LineSpacingLevel, string> = {
-    1: "leading-relaxed",
-    2: "leading-loose",
-    3: "[line-height:2.2]",
-  };
-
-  return `${fontClasses[fontSize]} ${spacingClasses[lineSpacing]}`;
+  return fontClasses[fontSize];
 };

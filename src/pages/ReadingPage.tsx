@@ -1606,7 +1606,7 @@ const ReadingPage = () => {
               
               <div 
                 ref={textContainerRef}
-                className={`reading-text select-text ${getReadingTextClasses(fontSize, lineSpacing)}`}
+                className={`reading-text select-text ${getReadingTextClasses(fontSize)}`}
               >
                 {renderFormattedText()}
               </div>
