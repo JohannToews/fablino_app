@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildStoryPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG } from '../_shared/promptBuilder.ts';
 import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
 import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, ImagePromptResult, SeriesImageContext } from '../_shared/imagePromptBuilder.ts';
+import { mergeSeriesContinuityState } from '../_shared/seriesContinuityMerge.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2172,6 +2173,17 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
 
       console.log(`[generate-story] [SERIES-DEBUG] Final parsed: episodeSummary=${!!episodeSummary} (${episodeSummary?.length || 0} chars), continuityState=${!!continuityState}, visualStyleSheet=${!!visualStyleSheet}`);
+
+      // ── Phase 2.5: Merge continuity_state with previous (safety net) ──
+      // Ensures no information from previous episodes is lost, even if the LLM forgets facts/characters.
+      // Works identically for normal and interactive (Mitgestalten) series.
+      const previousContinuityState = seriesContextData.lastContinuityState;
+      continuityState = mergeSeriesContinuityState(
+        previousContinuityState,
+        continuityState,
+        resolvedEpisodeNumber || 1,
+        (seriesMode as 'normal' | 'interactive') || 'normal',
+      );
     } else {
       console.log(`[generate-story] [SERIES-DEBUG] Skipping series field parsing: isSeries=${isSeries}, seriesId=${seriesId}`);
     }
