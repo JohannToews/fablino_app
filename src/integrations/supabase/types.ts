@@ -482,6 +482,60 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_config: {
+        Row: {
+          age_group: string
+          created_at: string | null
+          estimated_reading_minutes: number
+          id: string
+          include_cover: boolean | null
+          is_active: boolean | null
+          is_default: boolean | null
+          length_description: Json
+          length_labels: Json
+          max_words: number
+          min_words: number
+          scene_image_count: number
+          sort_order: number | null
+          story_length: string
+          updated_at: string | null
+        }
+        Insert: {
+          age_group: string
+          created_at?: string | null
+          estimated_reading_minutes: number
+          id?: string
+          include_cover?: boolean | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          length_description: Json
+          length_labels: Json
+          max_words: number
+          min_words: number
+          scene_image_count: number
+          sort_order?: number | null
+          story_length: string
+          updated_at?: string | null
+        }
+        Update: {
+          age_group?: string
+          created_at?: string | null
+          estimated_reading_minutes?: number
+          id?: string
+          include_cover?: boolean | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          length_description?: Json
+          length_labels?: Json
+          max_words?: number
+          min_words?: number
+          scene_image_count?: number
+          sort_order?: number | null
+          story_length?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       image_cache: {
         Row: {
           created_at: string | null
@@ -568,6 +622,54 @@ export type Database = {
           negative_prompt?: string | null
           style_prompt?: string
           theme_key?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      image_styles: {
+        Row: {
+          age_groups: string[]
+          age_modifiers: Json | null
+          created_at: string | null
+          default_for_ages: string[] | null
+          description: Json
+          id: string
+          imagen_prompt_snippet: string
+          is_active: boolean | null
+          labels: Json
+          preview_image_url: string | null
+          sort_order: number | null
+          style_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          age_groups: string[]
+          age_modifiers?: Json | null
+          created_at?: string | null
+          default_for_ages?: string[] | null
+          description: Json
+          id?: string
+          imagen_prompt_snippet: string
+          is_active?: boolean | null
+          labels: Json
+          preview_image_url?: string | null
+          sort_order?: number | null
+          style_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          age_groups?: string[]
+          age_modifiers?: Json | null
+          created_at?: string | null
+          default_for_ages?: string[] | null
+          description?: Json
+          id?: string
+          imagen_prompt_snippet?: string
+          is_active?: boolean | null
+          labels?: Json
+          preview_image_url?: string | null
+          sort_order?: number | null
+          style_key?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -839,6 +941,27 @@ export type Database = {
           },
         ]
       }
+      onboarding_rate_limits: {
+        Row: {
+          first_request_at: string | null
+          ip_address: string
+          last_request_at: string | null
+          request_count: number | null
+        }
+        Insert: {
+          first_request_at?: string | null
+          ip_address: string
+          last_request_at?: string | null
+          request_count?: number | null
+        }
+        Update: {
+          first_request_at?: string | null
+          ip_address?: string
+          last_request_at?: string | null
+          request_count?: number | null
+        }
+        Relationships: []
+      }
       parent_learning_config: {
         Row: {
           active_themes: string[]
@@ -974,6 +1097,30 @@ export type Database = {
           },
         ]
       }
+      rate_limits_config: {
+        Row: {
+          id: string
+          max_stories_per_day: number
+          max_stories_per_kid_per_day: number | null
+          plan_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          max_stories_per_day: number
+          max_stories_per_kid_per_day?: number | null
+          plan_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          max_stories_per_day?: number
+          max_stories_per_kid_per_day?: number | null
+          plan_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       shared_stories: {
         Row: {
           created_at: string
@@ -1012,6 +1159,7 @@ export type Database = {
       stories: {
         Row: {
           branch_chosen: string | null
+          claimed_at: string | null
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
@@ -1033,6 +1181,7 @@ export type Database = {
           id: string
           image_count: number | null
           image_generation_ms: number | null
+          image_style_key: string | null
           is_deleted: boolean
           is_favorite: boolean
           kid_profile_id: string | null
@@ -1040,14 +1189,17 @@ export type Database = {
           moral_topic: string | null
           parent_prompt_text: string | null
           prompt: string | null
+          series_episode_count: number | null
           series_id: string | null
           series_mode: string | null
           story_generation_ms: number | null
           story_images: string[] | null
           story_images_status: string | null
+          story_length: string | null
           structure_beginning: number | null
           structure_ending: number | null
           structure_middle: number | null
+          temp_token: string | null
           text_language: string
           text_type: string | null
           title: string
@@ -1057,6 +1209,7 @@ export type Database = {
         }
         Insert: {
           branch_chosen?: string | null
+          claimed_at?: string | null
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
@@ -1078,6 +1231,7 @@ export type Database = {
           id?: string
           image_count?: number | null
           image_generation_ms?: number | null
+          image_style_key?: string | null
           is_deleted?: boolean
           is_favorite?: boolean
           kid_profile_id?: string | null
@@ -1085,14 +1239,17 @@ export type Database = {
           moral_topic?: string | null
           parent_prompt_text?: string | null
           prompt?: string | null
+          series_episode_count?: number | null
           series_id?: string | null
           series_mode?: string | null
           story_generation_ms?: number | null
           story_images?: string[] | null
           story_images_status?: string | null
+          story_length?: string | null
           structure_beginning?: number | null
           structure_ending?: number | null
           structure_middle?: number | null
+          temp_token?: string | null
           text_language?: string
           text_type?: string | null
           title: string
@@ -1102,6 +1259,7 @@ export type Database = {
         }
         Update: {
           branch_chosen?: string | null
+          claimed_at?: string | null
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
@@ -1123,6 +1281,7 @@ export type Database = {
           id?: string
           image_count?: number | null
           image_generation_ms?: number | null
+          image_style_key?: string | null
           is_deleted?: boolean
           is_favorite?: boolean
           kid_profile_id?: string | null
@@ -1130,14 +1289,17 @@ export type Database = {
           moral_topic?: string | null
           parent_prompt_text?: string | null
           prompt?: string | null
+          series_episode_count?: number | null
           series_id?: string | null
           series_mode?: string | null
           story_generation_ms?: number | null
           story_images?: string[] | null
           story_images_status?: string | null
+          story_length?: string | null
           structure_beginning?: number | null
           structure_ending?: number | null
           structure_middle?: number | null
+          temp_token?: string | null
           text_language?: string
           text_type?: string | null
           title?: string
@@ -1671,6 +1833,7 @@ export type Database = {
     }
     Functions: {
       check_and_award_badges: { Args: { p_child_id: string }; Returns: Json }
+      cleanup_unclaimed_onboarding_stories: { Args: never; Returns: number }
       get_my_results: {
         Args: { p_story_ids?: string[] }
         Returns: {
@@ -1698,6 +1861,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_profile_id?: string }
         Returns: {
           branch_chosen: string | null
+          claimed_at: string | null
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
@@ -1719,6 +1883,7 @@ export type Database = {
           id: string
           image_count: number | null
           image_generation_ms: number | null
+          image_style_key: string | null
           is_deleted: boolean
           is_favorite: boolean
           kid_profile_id: string | null
@@ -1726,14 +1891,17 @@ export type Database = {
           moral_topic: string | null
           parent_prompt_text: string | null
           prompt: string | null
+          series_episode_count: number | null
           series_id: string | null
           series_mode: string | null
           story_generation_ms: number | null
           story_images: string[] | null
           story_images_status: string | null
+          story_length: string | null
           structure_beginning: number | null
           structure_ending: number | null
           structure_middle: number | null
+          temp_token: string | null
           text_language: string
           text_type: string | null
           title: string
