@@ -1392,25 +1392,6 @@ Deno.serve(async (req) => {
     console.log('[generate-story] surprise_characters:', surpriseCharactersParam);
     console.log('[generate-story] storyType:', storyType);
 
-    // ── Resolve episode number: CreateStoryPage sends no episodeNumber for Ep1, so default to 1 if isSeries ──
-    const resolvedEpisodeNumber: number | undefined = episodeNumber || (isSeries ? 1 : undefined);
-
-    // ── Resolve series episode count (variable 3-7, default 5 for legacy) ──
-    let seriesEpisodeCount: number | null = seriesEpisodeCountParam || seriesContextData.seriesEpisodeCount || null;
-    if (isSeries && resolvedEpisodeNumber === 1 && !seriesEpisodeCount) {
-      seriesEpisodeCount = getDefaultEpisodeCount(kidAge || 8);
-      console.log(`[generate-story] Auto-set series_episode_count=${seriesEpisodeCount} for Ep1 (age=${kidAge || 8})`);
-    }
-    const totalEps = seriesEpisodeCount || 5;
-
-    // ── Auto-finalize series at final episode ──
-    // Override ending_type to 'A' (complete) for the final episode, regardless of what frontend sends.
-    let resolvedEndingType = endingType;
-    if (seriesId && resolvedEpisodeNumber && resolvedEpisodeNumber >= totalEps) {
-      console.log(`[generate-story] Series finale override: Episode ${resolvedEpisodeNumber} of ${totalEps} → ending_type 'A' (was '${endingType}')`);
-      resolvedEndingType = 'A';
-    }
-
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1656,9 +1637,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Resolve episode number: CreateStoryPage sends no episodeNumber for Ep1, so default to 1 if isSeries ──
+    const resolvedEpisodeNumber: number | undefined = episodeNumber || (isSeries ? 1 : undefined);
+
+    // ── Resolve series episode count (variable 3-7, default 5 for legacy) ──
+    let seriesEpisodeCount: number | null = seriesEpisodeCountParam || seriesContextData.seriesEpisodeCount || null;
+    if (isSeries && resolvedEpisodeNumber === 1 && !seriesEpisodeCount) {
+      seriesEpisodeCount = getDefaultEpisodeCount(kidAge || 8);
+      console.log(`[generate-story] Auto-set series_episode_count=${seriesEpisodeCount} for Ep1 (age=${kidAge || 8})`);
+    }
+    const totalEps = seriesEpisodeCount || 5;
+
+    // ── Auto-finalize series at final episode ──
+    let resolvedEndingType = endingType;
+    if (seriesId && resolvedEpisodeNumber && resolvedEpisodeNumber >= totalEps) {
+      console.log(`[generate-story] Series finale override: Episode ${resolvedEpisodeNumber} of ${totalEps} → ending_type 'A' (was '${endingType}')`);
+      resolvedEndingType = 'A';
+    }
+
     // Determine the resolved ending type from episode config (Phase 2 override)
     const episodeConfig = resolvedEpisodeNumber
-      ? getEpisodeConfig(resolvedEpisodeNumber, totalEps, resolvedKidAge || 8)
+      ? getEpisodeConfig(resolvedEpisodeNumber, totalEps, kidAge || 8)
       : null;
     const seriesEndingType = episodeConfig?.ending_type_db || resolvedEndingType || 'A';
 

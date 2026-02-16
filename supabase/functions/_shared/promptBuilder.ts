@@ -66,8 +66,6 @@ export interface StoryRequest {
     episode_number: number;
     chosen_title: string;
   }>;
-  // ── Chapter story: variable episode count ──
-  series_total_episodes?: number;  // 3-7, set at Ep1
   // ── Story Subtype (Themenvariation) ──
   story_subtype?: {
     subtypeKey: string;
@@ -482,12 +480,6 @@ export interface EpisodeConfig {
   preferred_mitte: string[];
   required_ende: string;
   ending_type_db: string;
-}
-
-export function getDefaultEpisodeCount(age: number): number {
-  if (age <= 7) return 3;
-  if (age <= 9) return 5;
-  return 6;
 }
 
 export function getDefaultEpisodeCount(age: number): number {
