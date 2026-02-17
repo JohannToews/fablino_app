@@ -2,38 +2,6 @@ import React, { useMemo } from 'react';
 import { ImmersivePage, LayoutMode, Spread } from './constants';
 import { SyllableText, countSyllables } from '@/components/SyllableText';
 
-// Multilingual stop words — short functional words that shouldn't be clickable
-const STOP_WORDS = new Set([
-  // DE
-  'der', 'die', 'das', 'ein', 'eine', 'und', 'oder', 'aber', 'ist', 'sind',
-  'hat', 'war', 'ich', 'du', 'er', 'sie', 'es', 'wir', 'ihr', 'den', 'dem',
-  'des', 'im', 'in', 'an', 'auf', 'mit', 'von', 'zu', 'als', 'so', 'da',
-  'um', 'am', 'aus', 'bei', 'vor', 'bis', 'nur', 'wie', 'was',
-  // FR
-  'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'je', 'tu',
-  'il', 'on', 'nous', 'vous', 'ils', 'elles', 'est', 'sont', 'ai', 'as',
-  'en', 'dans', 'sur', 'sous', 'avec', 'sans', 'pour', 'par', 'que', 'qui',
-  'ne', 'pas', 'se', 'ce', 'mais',
-  // EN
-  'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be',
-  'am', 'he', 'she', 'it', 'we', 'you', 'they', 'my', 'his', 'her', 'its',
-  'our', 'in', 'on', 'at', 'to', 'of', 'by', 'if', 'so', 'do', 'no', 'up',
-  // ES
-  'el', 'los', 'las', 'es', 'son', 'yo', 'él', 'ella', 'eso',
-  // NL
-  'het', 'een', 'hij', 'zij', 'ik', 'jij',
-  // IT
-  'il', 'lo', 'gli', 'io', 'lui', 'lei', 'noi', 'voi',
-  // BS
-  'ja', 'ti', 'mi', 'vi', 'on', 'ona', 'ono', 'oni', 'one',
-]);
-
-const MIN_WORD_LENGTH_CLICKABLE = 3;
-
-function isStopWord(word: string): boolean {
-  const clean = word.toLowerCase().replace(/[.,!?;:'"«»\-–—()[\]{}]/g, '');
-  return STOP_WORDS.has(clean) || clean.length < MIN_WORD_LENGTH_CLICKABLE;
-}
 
 interface ImmersivePageRendererProps {
   page: ImmersivePage;
@@ -104,7 +72,6 @@ function TextContent({
 
             const cleanWord = word.toLowerCase().replace(/[.,!?;:'"«»\-–—()[\]{}]/g, '');
             const isHighlighted = !!(highlightedWord && cleanWord === highlightedWord.toLowerCase());
-            const canBeClicked = !isStopWord(word);
 
             if (syllableMode) {
               const currentOffset = colorOffset;
@@ -116,20 +83,16 @@ function TextContent({
                   text={word}
                   language={storyLanguage}
                   colorOffset={currentOffset}
-                  onClick={canBeClicked ? (e) => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     onWordTap(word);
-                  } : undefined}
-                  className={`${canBeClicked ? 'cursor-pointer hover:bg-primary/10 rounded transition-colors' : ''} ${isHighlighted ? 'bg-yellow-200/70 rounded px-0.5' : ''}`}
+                  }}
+                  className={`cursor-pointer hover:bg-primary/10 rounded transition-colors ${isHighlighted ? 'bg-yellow-200/70 rounded px-0.5' : ''}`}
                 />
               );
             }
 
-            // syllableMode OFF — normal rendering
-            if (!canBeClicked) {
-              return <span key={wIdx}>{word}</span>;
-            }
-
+            // syllableMode OFF — every word is clickable for explanations
             return (
               <span
                 key={wIdx}

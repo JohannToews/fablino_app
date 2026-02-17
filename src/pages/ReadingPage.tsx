@@ -212,35 +212,6 @@ interface BranchOption {
   image_hint?: string;
 }
 
-// French stop words that should not be marked/highlighted
-const FRENCH_STOP_WORDS = new Set([
-  // Articles
-  "le", "la", "les", "l", "un", "une", "des", "du", "de", "d",
-  // Pronouns
-  "je", "tu", "il", "elle", "on", "nous", "vous", "ils", "elles",
-  "me", "te", "se", "lui", "leur", "moi", "toi", "soi",
-  // Possessives
-  "mon", "ma", "mes", "ton", "ta", "tes", "son", "sa", "ses",
-  "notre", "nos", "votre", "vos", "leur", "leurs",
-  // Demonstratives
-  "ce", "cet", "cette", "ces", "ça", "c",
-  // Prepositions & conjunctions
-  "à", "au", "aux", "en", "dans", "sur", "sous", "avec", "sans", "pour",
-  "par", "vers", "chez", "entre", "et", "ou", "mais", "donc", "car", "ni",
-  "que", "qui", "quoi", "dont", "où", "si", "ne", "pas", "plus", "moins",
-  // Common verbs (conjugated)
-  "est", "sont", "a", "ai", "as", "ont", "été", "être", "avoir",
-  "fait", "faire", "dit", "dire", "va", "vais", "vont", "aller",
-  // Other common short words
-  "y", "n", "s", "t", "qu", "j", "m"
-]);
-
-const MIN_WORD_LENGTH = 3;
-
-const isStopWord = (word: string): boolean => {
-  const clean = word.toLowerCase().replace(/[.,!?;:'"«»]/g, "");
-  return FRENCH_STOP_WORDS.has(clean) || clean.length < MIN_WORD_LENGTH;
-};
 
 const ReadingPage = () => {
   const { user } = useAuth();
@@ -1364,9 +1335,6 @@ const ReadingPage = () => {
     // Running color offset for continuous syllable color alternation across ALL text
     let globalColorOffset = 0;
 
-    if (syllableMode) {
-      console.log('[ReadingPage] renderFormattedText: syllableMode=TRUE, lang=', textLang);
-    }
 
     paragraphs.forEach((paragraph, pIndex) => {
       const sentences = paragraph.split(/(?<=[.!?])\s+/);
@@ -1389,12 +1357,6 @@ const ReadingPage = () => {
                   const isSingleWordMarked = singleWordPositions.has(positionKey);
                   const isPhraseMarked = phrasePositions.has(positionKey);
                   const isSpace = /^\s+$/.test(word);
-                  const canBeMarked = !isStopWord(word);
-
-                  // Debug: log path taken for first few non-space words
-                  if (!isSpace && pIndex === 0 && sIndex === 0 && wIndex < 10) {
-                    console.log(`[ReadingPage word] "${word}" syllableMode=${syllableMode} canBeMarked=${canBeMarked}`);
-                  }
 
                   if (isSpace) {
                     const prevKey = `${pIndex}-${sIndex}-${wIndex - 1}`;
@@ -1422,26 +1384,14 @@ const ReadingPage = () => {
                         text={word}
                         colorOffset={currentOffset}
                         dataPosition={positionKey}
-                        onClick={canBeMarked ? (e) => handleWordClick(word, e) : undefined}
-                        className={`${canBeMarked ? 'word-highlight' : ''} ${markingClass}`.trim()}
+                        onClick={(e) => handleWordClick(word, e)}
+                        className={`word-highlight ${markingClass}`.trim()}
                         language={textLang}
                       />
                     );
                   }
 
-                  // syllableMode OFF — normal rendering
-                  if (!canBeMarked) {
-                    return (
-                      <span
-                        key={wIndex}
-                        data-position={positionKey}
-                        className={markingClass}
-                      >
-                        {word}
-                      </span>
-                    );
-                  }
-
+                  // syllableMode OFF — every word is clickable for explanations
                   return (
                     <span
                       key={wIndex}
