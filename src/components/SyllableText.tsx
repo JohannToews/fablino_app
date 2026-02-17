@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 // Import language-specific hyphenation modules
 import hyphenDe from "hyphen/de";
 import hyphenFr from "hyphen/fr";
@@ -23,38 +23,19 @@ const hyphenators: Record<string, { hyphenateSync: (text: string, options?: Reco
   en: hyphenEn,
 };
 
-/**
- * Split word into syllables using language-specific hyphenation patterns
- */
-// Debug counter to limit console spam (log first N words only)
-let _syllableLogCount = 0;
-const SYLLABLE_LOG_LIMIT = 15;
-
-// Per-call options: lower minWordLength from default 5 to 3
-// so that short children's words (3-4 chars) still get syllable-split.
-const HYPHEN_OPTIONS = { minWordLength: 3 };
+// Allow hyphenation for ALL words, even very short ones
+const HYPHEN_OPTIONS = { minWordLength: 1 };
 
 function splitSyllables(word: string, language: string): string[] {
-  // Only skip truly tiny words (1-2 chars)
-  if (!word || word.length <= 2) return [word];
-  
+  if (!word) return [word];
+
   const hyphenModule = hyphenators[language] || hyphenators.de;
-  
+
   try {
     const hyphenated = hyphenModule.hyphenateSync(word, HYPHEN_OPTIONS);
-    
-    // Split by soft hyphen
     const syllables = hyphenated.split(SOFT_HYPHEN);
-
-    if (_syllableLogCount < SYLLABLE_LOG_LIMIT) {
-      console.log('[Syllable]', language, word, '→', syllables);
-      _syllableLogCount++;
-    }
-    
     return syllables.length > 0 ? syllables : [word];
-  } catch (e) {
-    // If hyphenation fails, return original word
-    console.warn("Hyphenation failed for:", word, language, e);
+  } catch {
     return [word];
   }
 }
@@ -65,62 +46,57 @@ interface SyllableTextProps {
   onClick?: (e: React.MouseEvent) => void;
   dataPosition?: string;
   language?: string;
+  /** Global color index offset — lets the caller maintain a running color counter */
+  colorOffset?: number;
 }
 
 /**
- * Splits a word into syllables and renders them with alternating colors
+ * Splits a word into syllables and renders them with alternating colors.
+ *
+ * EVERY word gets colored — single-syllable words get the next color in sequence.
+ * No word is left black when syllable mode is active.
  */
-export const SyllableText = ({ text, className = "", onClick, dataPosition, language = "de" }: SyllableTextProps) => {
+export const SyllableText = ({ text, className = "", onClick, dataPosition, language = "de", colorOffset = 0 }: SyllableTextProps) => {
   const syllabifiedContent = useMemo(() => {
-    // Don't syllabify if it's just whitespace or punctuation
-    if (/^\s+$/.test(text) || /^[.,!?;:'"«»\-–—]+$/.test(text)) {
+    // Don't syllabify pure whitespace
+    if (/^\s+$/.test(text)) {
       return <span>{text}</span>;
     }
 
     // Extract leading/trailing punctuation
-    const leadingPunct = text.match(/^[.,!?;:'"«»\-–—\s]+/)?.[0] || "";
-    const trailingPunct = text.match(/[.,!?;:'"«»\-–—\s]+$/)?.[0] || "";
+    const leadingPunct = text.match(/^[.,!?;:'"«»\-–—\s()\[\]{}]+/)?.[0] || "";
+    const trailingPunct = text.match(/[.,!?;:'"«»\-–—\s()\[\]{}]+$/)?.[0] || "";
     const cleanWord = text.slice(leadingPunct.length, text.length - (trailingPunct.length || undefined));
 
     if (!cleanWord) {
-      return <span>{text}</span>;
+      // Pure punctuation — color it with the current offset color
+      return <span style={{ color: SYLLABLE_COLORS[colorOffset % 2] }}>{text}</span>;
     }
 
     // Split into syllables using language-specific patterns
     const syllables = splitSyllables(cleanWord, language);
 
-    // Always color ALL words - single syllable gets first color, multi-syllable alternates
-    if (syllables.length <= 1) {
-      return (
-        <span>
-          {leadingPunct}
-          <span style={{ color: SYLLABLE_COLORS[0], fontWeight: 500 }}>{cleanWord}</span>
-          {trailingPunct}
-        </span>
-      );
-    }
-
-    // Multiple syllables - alternate colors
+    // Color ALL syllables — even single-syllable words
     return (
       <span>
-        {leadingPunct}
+        {leadingPunct && <span>{leadingPunct}</span>}
         {syllables.map((syllable, index) => (
-          <span 
-            key={index} 
-            style={{ color: SYLLABLE_COLORS[index % SYLLABLE_COLORS.length] }}
+          <span
+            key={index}
+            style={{ color: SYLLABLE_COLORS[(colorOffset + index) % 2] }}
           >
             {syllable}
           </span>
         ))}
-        {trailingPunct}
+        {trailingPunct && <span>{trailingPunct}</span>}
       </span>
     );
-  }, [text, language]);
+  }, [text, language, colorOffset]);
 
   if (onClick) {
     return (
-      <span 
-        className={className} 
+      <span
+        className={className}
         onClick={onClick}
         data-position={dataPosition}
         data-word-clickable="true"
@@ -146,5 +122,17 @@ const SUPPORTED_SYLLABLE_LANGUAGES = ["de", "fr", "es", "nl", "it", "en"];
 export const isSyllableModeSupported = (language: string): boolean => {
   return SUPPORTED_SYLLABLE_LANGUAGES.includes(language.toLowerCase());
 };
+
+/**
+ * Count how many syllables a word produces (for running color counter).
+ */
+export function countSyllables(word: string, language: string): number {
+  if (!word || /^\s+$/.test(word)) return 0;
+  const leadingPunct = word.match(/^[.,!?;:'"«»\-–—\s()\[\]{}]+/)?.[0] || "";
+  const trailingPunct = word.match(/[.,!?;:'"«»\-–—\s()\[\]{}]+$/)?.[0] || "";
+  const cleanWord = word.slice(leadingPunct.length, word.length - (trailingPunct.length || undefined));
+  if (!cleanWord) return 1; // punctuation counts as 1 color slot
+  return splitSyllables(cleanWord, language).length;
+}
 
 export default SyllableText;

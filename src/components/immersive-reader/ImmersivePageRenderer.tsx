@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ImmersivePage, LayoutMode, Spread } from './constants';
-import { SyllableText } from '@/components/SyllableText';
+import { SyllableText, countSyllables } from '@/components/SyllableText';
 
 // Multilingual stop words — short functional words that shouldn't be clickable
 const STOP_WORDS = new Set([
@@ -28,11 +28,11 @@ const STOP_WORDS = new Set([
   'ja', 'ti', 'mi', 'vi', 'on', 'ona', 'ono', 'oni', 'one',
 ]);
 
-const MIN_WORD_LENGTH = 3;
+const MIN_WORD_LENGTH_CLICKABLE = 3;
 
 function isStopWord(word: string): boolean {
   const clean = word.toLowerCase().replace(/[.,!?;:'"«»\-–—()[\]{}]/g, '');
-  return STOP_WORDS.has(clean) || clean.length < MIN_WORD_LENGTH;
+  return STOP_WORDS.has(clean) || clean.length < MIN_WORD_LENGTH_CLICKABLE;
 }
 
 interface ImmersivePageRendererProps {
@@ -51,68 +51,12 @@ interface ImmersivePageRendererProps {
 }
 
 /**
- * Renders a word as a clickable span, optionally with syllable coloring.
- */
-// Debug: log once to confirm syllable mode is active
-let _wordSpanLogCount = 0;
-
-function WordSpan({
-  word,
-  syllableMode,
-  language,
-  onWordTap,
-  isHighlighted,
-}: {
-  word: string;
-  syllableMode: boolean;
-  language: string;
-  onWordTap: (word: string) => void;
-  isHighlighted: boolean;
-}) {
-  const isSpace = /^\s+$/.test(word);
-  if (isSpace) return <>{word}</>;
-
-  if (_wordSpanLogCount < 3 && !isSpace) {
-    console.log('[WordSpan] syllableMode:', syllableMode, 'language:', language, 'word:', word);
-    _wordSpanLogCount++;
-  }
-
-  const canBeClicked = !isStopWord(word);
-
-  if (syllableMode) {
-    return (
-      <SyllableText
-        text={word}
-        language={language}
-        onClick={canBeClicked ? (e) => {
-          e.stopPropagation();
-          onWordTap(word);
-        } : undefined}
-        className={`${canBeClicked ? 'cursor-pointer hover:bg-primary/10 rounded transition-colors' : ''} ${isHighlighted ? 'bg-yellow-200/70 rounded px-0.5' : ''}`}
-      />
-    );
-  }
-
-  if (!canBeClicked) {
-    return <span>{word}</span>;
-  }
-
-  return (
-    <span
-      data-word="true"
-      onClick={(e) => {
-        e.stopPropagation();
-        onWordTap(word);
-      }}
-      className={`cursor-pointer hover:bg-primary/10 rounded transition-colors ${isHighlighted ? 'bg-yellow-200/70 rounded px-0.5' : ''}`}
-    >
-      {word}
-    </span>
-  );
-}
-
-/**
  * Renders the text paragraphs with clickable words and optional syllable coloring.
+ *
+ * When syllableMode is ON:
+ * - EVERY word gets colored (blue/red alternating across the entire page)
+ * - A running colorOffset counter ensures colors alternate continuously
+ * - No word is left black — even stop words, short words, and punctuation
  */
 function TextContent({
   paragraphs,
@@ -133,6 +77,9 @@ function TextContent({
   onWordTap: (word: string) => void;
   highlightedWord?: string | null;
 }) {
+  // Running color counter — resets per page render, counts across all paragraphs
+  let colorOffset = 0;
+
   return (
     <div
       className="immersive-text-content px-5 sm:px-8"
@@ -152,17 +99,49 @@ function TextContent({
           }}
         >
           {para.split(/(\s+)/).map((word, wIdx) => {
+            const isSpace = /^\s+$/.test(word);
+            if (isSpace) return <span key={wIdx}>{word}</span>;
+
             const cleanWord = word.toLowerCase().replace(/[.,!?;:'"«»\-–—()[\]{}]/g, '');
             const isHighlighted = !!(highlightedWord && cleanWord === highlightedWord.toLowerCase());
+            const canBeClicked = !isStopWord(word);
+
+            if (syllableMode) {
+              const currentOffset = colorOffset;
+              colorOffset += countSyllables(word, storyLanguage);
+
+              return (
+                <SyllableText
+                  key={wIdx}
+                  text={word}
+                  language={storyLanguage}
+                  colorOffset={currentOffset}
+                  onClick={canBeClicked ? (e) => {
+                    e.stopPropagation();
+                    onWordTap(word);
+                  } : undefined}
+                  className={`${canBeClicked ? 'cursor-pointer hover:bg-primary/10 rounded transition-colors' : ''} ${isHighlighted ? 'bg-yellow-200/70 rounded px-0.5' : ''}`}
+                />
+              );
+            }
+
+            // syllableMode OFF — normal rendering
+            if (!canBeClicked) {
+              return <span key={wIdx}>{word}</span>;
+            }
+
             return (
-              <WordSpan
+              <span
                 key={wIdx}
-                word={word}
-                syllableMode={syllableMode}
-                language={storyLanguage}
-                onWordTap={onWordTap}
-                isHighlighted={isHighlighted}
-              />
+                data-word="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWordTap(word);
+                }}
+                className={`cursor-pointer hover:bg-primary/10 rounded transition-colors ${isHighlighted ? 'bg-yellow-200/70 rounded px-0.5' : ''}`}
+              >
+                {word}
+              </span>
             );
           })}
         </p>
@@ -192,7 +171,6 @@ const ImmersivePageRenderer: React.FC<ImmersivePageRendererProps> = ({
   page,
   layoutMode,
   imageUrl,
-  imageSide = 'left',
   storyTheme,
   fontSize,
   lineHeight,

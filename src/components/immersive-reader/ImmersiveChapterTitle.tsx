@@ -1,6 +1,7 @@
 import React from 'react';
 import { getImmersiveLabels, t } from './labels';
 import { FABLINO_TEAL, LayoutMode } from './constants';
+import { SyllableText, countSyllables } from '@/components/SyllableText';
 
 interface ImmersiveChapterTitleProps {
   chapterNumber?: number;
@@ -13,6 +14,8 @@ interface ImmersiveChapterTitleProps {
   fontSize?: number;
   lineHeight?: number;
   letterSpacing?: string;
+  syllableMode?: boolean;
+  storyLanguage?: string;
 }
 
 /**
@@ -35,6 +38,8 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
   fontSize = 19,
   lineHeight = 1.65,
   letterSpacing = '0.1px',
+  syllableMode = false,
+  storyLanguage = 'de',
 }) => {
   const labels = getImmersiveLabels(language);
   const isLandscape = layoutMode === 'landscape-spread';
@@ -81,6 +86,7 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
     />
   );
 
+  // First paragraph — rendered with syllable coloring when active
   const firstParaEl = firstParagraph ? (
     <p
       className="text-left"
@@ -89,10 +95,28 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
         fontSize: `${fontSize}px`,
         lineHeight,
         letterSpacing,
-        color: '#374151',
+        color: syllableMode ? undefined : '#374151',
       }}
     >
-      {firstParagraph}
+      {(() => {
+        if (!syllableMode) return firstParagraph;
+
+        // Render with running color counter
+        let colorOffset = 0;
+        return firstParagraph.split(/(\s+)/).map((token, i) => {
+          if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
+          const currentOffset = colorOffset;
+          colorOffset += countSyllables(token, storyLanguage);
+          return (
+            <SyllableText
+              key={i}
+              text={token}
+              language={storyLanguage}
+              colorOffset={currentOffset}
+            />
+          );
+        });
+      })()}
     </p>
   ) : null;
 

@@ -472,6 +472,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Chapter title as single spread page */}
                 {currentSpread.left.type === 'chapter-title' ? (
                   <ImmersiveChapterTitle
+                    key={`cover-landscape-syl-${syllableActive}`}
                     chapterNumber={isChapterStory ? chapterNumber : undefined}
                     totalChapters={isChapterStory ? totalChapters : undefined}
                     title={story.title}
@@ -482,9 +483,12 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
+                    syllableMode={syllableActive}
+                    storyLanguage={hyphenLanguage}
                   />
                 ) : (
                   <ImmersiveSpreadRenderer
+                    key={`spread-${currentSpreadIndex}-syl-${syllableActive}`}
                     spread={currentSpread}
                     visibleImages={visibleImages}
                     storyTheme={story.concrete_theme}
@@ -500,6 +504,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Chapter Title Page */}
                 {isChapterTitlePage && (
                   <ImmersiveChapterTitle
+                    key={`cover-portrait-syl-${syllableActive}`}
                     chapterNumber={isChapterStory ? chapterNumber : undefined}
                     totalChapters={isChapterStory ? totalChapters : undefined}
                     title={story.title}
@@ -510,12 +515,15 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
+                    syllableMode={syllableActive}
+                    storyLanguage={hyphenLanguage}
                   />
                 )}
 
                 {/* Content Pages (text-only or image-text) */}
                 {!isChapterTitlePage && currentPageData && (
                   <ImmersivePageRenderer
+                    key={`page-${currentPage}-syl-${syllableActive}`}
                     page={currentPageData}
                     layoutMode={layoutMode}
                     imageUrl={currentImageUrl}
