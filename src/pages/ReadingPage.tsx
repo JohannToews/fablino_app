@@ -1391,6 +1391,11 @@ const ReadingPage = () => {
                   const isSpace = /^\s+$/.test(word);
                   const canBeMarked = !isStopWord(word);
 
+                  // Debug: log path taken for first few non-space words
+                  if (!isSpace && pIndex === 0 && sIndex === 0 && wIndex < 10) {
+                    console.log(`[ReadingPage word] "${word}" syllableMode=${syllableMode} canBeMarked=${canBeMarked}`);
+                  }
+
                   if (isSpace) {
                     const prevKey = `${pIndex}-${sIndex}-${wIndex - 1}`;
                     const nextKey = `${pIndex}-${sIndex}-${wIndex + 1}`;
