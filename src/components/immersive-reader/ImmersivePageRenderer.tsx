@@ -53,6 +53,9 @@ interface ImmersivePageRendererProps {
 /**
  * Renders a word as a clickable span, optionally with syllable coloring.
  */
+// Debug: log once to confirm syllable mode is active
+let _wordSpanLogCount = 0;
+
 function WordSpan({
   word,
   syllableMode,
@@ -68,6 +71,11 @@ function WordSpan({
 }) {
   const isSpace = /^\s+$/.test(word);
   if (isSpace) return <>{word}</>;
+
+  if (_wordSpanLogCount < 3 && !isSpace) {
+    console.log('[WordSpan] syllableMode:', syllableMode, 'language:', language, 'word:', word);
+    _wordSpanLogCount++;
+  }
 
   const canBeClicked = !isStopWord(word);
 

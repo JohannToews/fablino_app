@@ -7,14 +7,14 @@ import hyphenNl from "hyphen/nl";
 import hyphenIt from "hyphen/it";
 import hyphenEn from "hyphen/en-us";
 
-// Colors for syllables (matching the design - blue and amber)
-const SYLLABLE_COLORS = ["#2563eb", "#b45309"]; // blue-600, amber-700
+// Colors for syllables — high-contrast blue/red for easy reading
+const SYLLABLE_COLORS = ["#2563EB", "#DC2626"]; // blue-600, red-600
 
 // Soft hyphen character
 const SOFT_HYPHEN = "\u00AD";
 
 // Map language codes to hyphenation modules
-const hyphenators: Record<string, { hyphenateSync: (text: string) => string }> = {
+const hyphenators: Record<string, { hyphenateSync: (text: string, options?: Record<string, unknown>) => string }> = {
   de: hyphenDe,
   fr: hyphenFr,
   es: hyphenEs,

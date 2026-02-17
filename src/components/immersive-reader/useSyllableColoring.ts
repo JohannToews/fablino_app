@@ -41,8 +41,15 @@ export function useSyllableColoring(language: string, enabled: boolean) {
     return 'de';
   }, [language]);
 
+  const isActive = enabled && isSupported;
+
+  // Debug: log syllable mode state when it changes
+  if (enabled) {
+    console.log('[SyllableColoring] enabled:', enabled, 'isSupported:', isSupported, 'isActive:', isActive, 'language:', language, '→ hyphenLanguage:', hyphenLanguage);
+  }
+
   return {
-    isActive: enabled && isSupported,
+    isActive,
     isSupported,
     hyphenLanguage,
   };
