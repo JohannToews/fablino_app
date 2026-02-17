@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import {
   ImmersivePage,
-  FontSizeSetting,
   getMaxWordsPerPage,
   MIN_PAGES,
   MIN_PAGES_REDUCTION_FACTOR,
@@ -183,7 +182,7 @@ function splitIntoPages(
 /**
  * Hook: splits story text into ImmersivePage[].
  *
- * Re-computes when content, age, fontSizeSetting, or imagePositions change.
+ * Re-computes when content, age, or imagePositions change.
  * Enforces a minimum of MIN_PAGES pages (reduces maxWords by 30% and re-splits if needed).
  */
 /**
@@ -212,7 +211,6 @@ function mergeSparsePages(pages: ImmersivePage[]): ImmersivePage[] {
 export function useContentSplitter(
   content: string,
   age: number,
-  fontSizeSetting: FontSizeSetting,
   imagePositions: number[],
   skipFirstParagraph: boolean = false,
 ): ImmersivePage[] {
@@ -228,9 +226,9 @@ export function useContentSplitter(
     }
 
     const totalWords = paragraphs.reduce((sum, p) => sum + countWords(p), 0);
-    let maxWords = getMaxWordsPerPage(age, fontSizeSetting);
+    let maxWords = getMaxWordsPerPage(age);
 
-    console.log('[ContentSplitter] age:', age, 'fontSize:', fontSizeSetting, 'maxWordsPerPage:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length, 'skipFirst:', skipFirstParagraph);
+    console.log('[ContentSplitter] age:', age, 'maxWordsPerPage:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length, 'skipFirst:', skipFirstParagraph);
 
     let pages = splitIntoPages(paragraphs, maxWords, imagePositions);
 
@@ -254,5 +252,5 @@ export function useContentSplitter(
     console.log('[ContentSplitter] Final pages:', pages.length, 'maxWords:', maxWords);
 
     return pages;
-  }, [content, age, fontSizeSetting, imagePositions, skipFirstParagraph]);
+  }, [content, age, imagePositions, skipFirstParagraph]);
 }

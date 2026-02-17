@@ -4,7 +4,6 @@ import { useContentSplitter, normalizeToParagraphs } from './useContentSplitter'
 import { usePagePosition } from './usePagePosition';
 import { useSyllableColoring } from './useSyllableColoring';
 import {
-  FontSizeSetting,
   getTypographyForAge,
   PAGE_TRANSITION_MS,
   PAGE_TRANSITION_EASING,
@@ -98,10 +97,9 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const uiLanguage = storyLanguage; // Use story language for UI labels
   const labels = getImmersiveLabels(uiLanguage);
 
-  const [fontSizeSetting, setFontSizeSetting] = useState<FontSizeSetting>('medium');
   const typography = useMemo(
-    () => getTypographyForAge(age, fontSizeSetting),
-    [age, fontSizeSetting]
+    () => getTypographyForAge(age),
+    [age]
   );
 
   // ── Syllable Coloring ─────────────────────────────────────
@@ -142,32 +140,32 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   );
 
   // ── Cover page logic ─────────────────────────────────────
-  // Chapter stories get a cover/title page that shows the first paragraph.
-  // The splitter skips this paragraph so it's not duplicated.
+  // ALL stories get a cover page showing title + first paragraph.
+  // The splitter skips the first paragraph so it's not duplicated.
   const isChapterStory = !!(story.series_id && story.episode_number);
   const chapterNumber = story.episode_number || 1;
   const totalChapters = story.series_episode_count || 5;
+  const hasCoverPage = !!(story.cover_image_url || story.title);
 
   const firstParagraph = useMemo(() => {
-    if (!isChapterStory) return null;
+    if (!hasCoverPage) return null;
     const paras = normalizeToParagraphs(story.content);
     return paras.length > 0 ? paras[0] : null;
-  }, [story.content, isChapterStory]);
+  }, [story.content, hasCoverPage]);
 
   // ── Content Splitting ─────────────────────────────────────
   const contentPages = useContentSplitter(
     story.content,
     age,
-    fontSizeSetting,
     imagePositions,
-    isChapterStory, // skip first paragraph — it's on the cover page
+    hasCoverPage, // skip first paragraph — it's on the cover page
   );
 
   const allPages = useMemo(() => {
     const pages = [...contentPages];
 
-    // Insert chapter title page at the beginning for chapter stories
-    if (isChapterStory) {
+    // Insert cover/title page at the beginning for all stories
+    if (hasCoverPage) {
       pages.unshift({
         paragraphs: [],
         hasImage: false,
@@ -176,7 +174,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     }
 
     return pages;
-  }, [contentPages, isChapterStory]);
+  }, [contentPages, hasCoverPage]);
 
   // ── Page Position ─────────────────────────────────────────
   const {
@@ -397,8 +395,8 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const handleQuizRetry = useCallback(() => {
     setReaderPhase('reading');
     setQuizResult(null);
-    goToPage(isChapterStory ? 1 : 0);
-  }, [isChapterStory, goToPage]);
+    goToPage(hasCoverPage ? 1 : 0);
+  }, [hasCoverPage, goToPage]);
 
   const handleStartQuizFromEndScreen = useCallback(() => {
     setReaderPhase('quiz');
@@ -474,8 +472,8 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Chapter title as single spread page */}
                 {currentSpread.left.type === 'chapter-title' ? (
                   <ImmersiveChapterTitle
-                    chapterNumber={chapterNumber}
-                    totalChapters={totalChapters}
+                    chapterNumber={isChapterStory ? chapterNumber : undefined}
+                    totalChapters={isChapterStory ? totalChapters : undefined}
                     title={story.title}
                     coverImageUrl={story.cover_image_url}
                     language={uiLanguage}
@@ -502,8 +500,8 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Chapter Title Page */}
                 {isChapterTitlePage && (
                   <ImmersiveChapterTitle
-                    chapterNumber={chapterNumber}
-                    totalChapters={totalChapters}
+                    chapterNumber={isChapterStory ? chapterNumber : undefined}
+                    totalChapters={isChapterStory ? totalChapters : undefined}
                     title={story.title}
                     coverImageUrl={story.cover_image_url}
                     language={uiLanguage}
@@ -586,8 +584,6 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
       {/* Toolbar (font size, syllables, fullscreen) — only during reading */}
       {readerPhase === 'reading' && (
         <ImmersiveToolbar
-          fontSizeSetting={fontSizeSetting}
-          onFontSizeChange={setFontSizeSetting}
           syllableMode={syllableModeEnabled}
           onSyllableModeChange={setSyllableModeEnabled}
           isFullscreen={isFullscreen}

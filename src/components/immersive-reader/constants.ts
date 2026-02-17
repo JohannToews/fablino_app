@@ -70,57 +70,36 @@ export interface TypographyConfig {
 }
 
 const AGE_TYPOGRAPHY_DEFAULTS: Record<string, TypographyConfig> = {
-  '5-7':  { fontSize: 24, lineHeight: 1.8, letterSpacing: '0.3px' },
-  '8-9':  { fontSize: 21, lineHeight: 1.7, letterSpacing: '0.2px' },
-  '10-11': { fontSize: 19, lineHeight: 1.65, letterSpacing: '0.1px' },
-  '12+':  { fontSize: 17, lineHeight: 1.6, letterSpacing: '0' },
+  '5-7':  { fontSize: 22, lineHeight: 1.75, letterSpacing: '0.2px' },
+  '8-9':  { fontSize: 20, lineHeight: 1.7,  letterSpacing: '0.15px' },
+  '10-11': { fontSize: 18, lineHeight: 1.65, letterSpacing: '0.1px' },
+  '12+':  { fontSize: 16, lineHeight: 1.6,  letterSpacing: '0' },
 };
 
-const FONT_SIZE_OFFSET: Record<FontSizeSetting, number> = {
-  small: -3,
-  medium: 0,
-  large: 3,
-};
-
-export function getTypographyForAge(age: number, setting: FontSizeSetting = 'medium'): TypographyConfig {
+/**
+ * Typography is fixed per age group — no user-selectable font size.
+ * The `setting` param is kept for backward compat but always uses 'medium'.
+ */
+export function getTypographyForAge(age: number, _setting?: FontSizeSetting): TypographyConfig {
   let key: string;
   if (age <= 7) key = '5-7';
   else if (age <= 9) key = '8-9';
   else if (age <= 11) key = '10-11';
   else key = '12+';
 
-  const base = AGE_TYPOGRAPHY_DEFAULTS[key];
-  return {
-    fontSize: base.fontSize + FONT_SIZE_OFFSET[setting],
-    lineHeight: base.lineHeight,
-    letterSpacing: base.letterSpacing,
-  };
+  return AGE_TYPOGRAPHY_DEFAULTS[key];
 }
 
 // ── Words per Page by Age ───────────────────────────────────
 
-const WORDS_PER_PAGE_BASE: Record<string, number> = {
-  '5-7': 70,
-  '8-9': 100,
-  '10-11': 130,
-  '12+': 170,
-};
-
-const FONT_SIZE_WORD_MULTIPLIER: Record<FontSizeSetting, number> = {
-  small: 1.3,   // +30% more words (smaller text fits more)
-  medium: 1.0,
-  large: 0.6,   // only 60% of words (large text needs much more space)
-};
-
-export function getMaxWordsPerPage(age: number, fontSizeSetting: FontSizeSetting = 'medium'): number {
-  let key: string;
-  if (age <= 7) key = '5-7';
-  else if (age <= 9) key = '8-9';
-  else if (age <= 11) key = '10-11';
-  else key = '12+';
-
-  const base = WORDS_PER_PAGE_BASE[key];
-  return Math.round(base * FONT_SIZE_WORD_MULTIPLIER[fontSizeSetting]);
+/**
+ * Max words per page — fixed per age group (no font-size multiplier).
+ */
+export function getMaxWordsPerPage(age: number): number {
+  if (age <= 7) return 65;
+  if (age <= 9) return 90;
+  if (age <= 11) return 120;
+  return 155;
 }
 
 // ── Image Limits by Account Tier ────────────────────────────

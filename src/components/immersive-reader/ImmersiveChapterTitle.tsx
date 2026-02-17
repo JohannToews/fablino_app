@@ -3,22 +3,23 @@ import { getImmersiveLabels, t } from './labels';
 import { FABLINO_TEAL, LayoutMode } from './constants';
 
 interface ImmersiveChapterTitleProps {
-  chapterNumber: number;
-  totalChapters: number;
+  chapterNumber?: number;
+  totalChapters?: number;
   title: string;
   coverImageUrl: string | null;
   language?: string | null;
   layoutMode?: LayoutMode;
-  /** First paragraph of the story — shown on the cover page to fill the space */
   firstParagraph?: string | null;
-  /** Typography props for rendering the first paragraph */
   fontSize?: number;
   lineHeight?: number;
   letterSpacing?: string;
 }
 
 /**
- * Chapter title / cover page.
+ * Cover / title page for ALL stories.
+ *
+ * Chapter stories: show chapter badge + counter.
+ * Single stories: show title only (no badge).
  *
  * Portrait: image top, title, first paragraph below.
  * Landscape: image left 50%, title + separator + first paragraph right 50%.
@@ -37,43 +38,45 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
 }) => {
   const labels = getImmersiveLabels(language);
   const isLandscape = layoutMode === 'landscape-spread';
+  const isChapter = !!(chapterNumber && totalChapters);
 
-  const chapterBadge = (
+  const chapterBadge = isChapter ? (
     <div
-      className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-white text-sm font-semibold mb-4 shadow-md"
+      className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-white text-sm font-semibold mb-3 shadow-md"
       style={{ backgroundColor: FABLINO_TEAL }}
     >
       {labels.chapter} {chapterNumber}
     </div>
-  );
+  ) : null;
 
   const titleEl = (
     <h1
       style={{
         fontFamily: "'Nunito', sans-serif",
-        fontSize: '28px',
+        fontSize: '26px',
         fontWeight: 700,
         lineHeight: 1.3,
-        marginBottom: '12px',
+        marginBottom: '8px',
+        color: '#1F2937',
       }}
     >
       {title}
     </h1>
   );
 
-  const chapterCounter = (
-    <p className="text-sm text-muted-foreground mb-3">
-      {t(labels.chapterOf, { current: chapterNumber, total: totalChapters })}
+  const chapterCounter = isChapter ? (
+    <p className="text-sm text-muted-foreground mb-2">
+      {t(labels.chapterOf, { current: chapterNumber!, total: totalChapters! })}
     </p>
-  );
+  ) : null;
 
   const separator = (
     <div
-      className="mx-auto mb-4"
       style={{
-        width: '60%',
+        width: '40%',
         height: '1px',
-        backgroundColor: 'rgba(0, 0, 0, 0.15)',
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        margin: '16px 0',
       }}
     />
   );
@@ -106,26 +109,34 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
   if (isLandscape) {
     return (
       <div className="flex h-full min-h-[80vh]">
-        {/* Left: cover image */}
+        {/* Left: cover image (max 85% height) */}
         <div
           className="flex-1 flex items-center justify-center p-6 overflow-hidden"
           style={{ borderRight: '1px solid rgba(0, 0, 0, 0.06)' }}
         >
           {coverImageUrl ? (
-            <img
-              src={coverImageUrl}
-              alt={title}
-              className="max-w-full max-h-full object-contain rounded-2xl shadow-lg"
-              loading="eager"
-              onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
-            />
+            <div className="relative flex items-center justify-center w-full h-full">
+              <img
+                src={coverImageUrl}
+                alt={title}
+                style={{ maxHeight: '85%', maxWidth: '100%', width: 'auto', objectFit: 'contain' }}
+                className="rounded-2xl"
+                loading="eager"
+                onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+              />
+              {/* Subtle gradient fade on bottom edge */}
+              <div
+                className="absolute bottom-0 left-0 right-0 pointer-events-none"
+                style={{ height: '50px', background: 'linear-gradient(to bottom, transparent, #FFF9F0)' }}
+              />
+            </div>
           ) : (
             imageFallback
           )}
         </div>
 
         {/* Right: title + separator + first paragraph */}
-        <div className="flex-1 flex flex-col justify-start px-8 py-8 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-start px-8 overflow-hidden" style={{ paddingTop: '40px' }}>
           {chapterBadge}
           {titleEl}
           {chapterCounter}
@@ -138,27 +149,30 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
 
   // ── Portrait: stacked ───────────────────────────────────
   return (
-    <div className="flex flex-col items-center min-h-[80vh] px-6 py-8 overflow-hidden">
+    <div className="flex flex-col items-center min-h-[80vh] px-6 py-6 overflow-hidden">
       {coverImageUrl ? (
-        <div className="w-full max-w-sm mb-6 flex-shrink-0">
+        <div className="relative w-full max-w-sm mb-5 flex-shrink-0">
           <img
             src={coverImageUrl}
             alt={title}
-            className="w-full rounded-2xl shadow-lg object-cover max-h-[35vh]"
+            className="w-full rounded-2xl object-cover max-h-[40vh]"
             loading="eager"
             onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
           />
+          {/* Gradient fade at bottom */}
+          <div
+            className="absolute bottom-0 left-0 right-0 rounded-b-2xl pointer-events-none"
+            style={{ height: '50px', background: 'linear-gradient(to bottom, transparent, #FFF9F0)' }}
+          />
         </div>
       ) : (
-        <div className="w-full max-w-sm h-40 mb-6 flex-shrink-0">
+        <div className="w-full max-w-sm h-40 mb-5 flex-shrink-0">
           {imageFallback}
         </div>
       )}
 
-      <div className="text-center mb-2">
-        {chapterBadge}
-      </div>
-      {titleEl}
+      {chapterBadge && <div className="text-center mb-1">{chapterBadge}</div>}
+      <div className="text-center">{titleEl}</div>
       {chapterCounter}
       {separator}
       <div className="w-full overflow-hidden">

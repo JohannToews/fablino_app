@@ -227,16 +227,14 @@ const ImmersivePageRenderer: React.FC<ImmersivePageRendererProps> = ({
           <img
             src={imageUrl}
             alt="Story illustration"
-            className={`w-full ${imageHeight} object-cover rounded-b-2xl`}
+            className={`w-full ${imageHeight} object-cover`}
             loading="lazy"
             onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
           />
-          {/* Gradient fade overlay — matches warm cream background */}
+          {/* Bottom gradient fade into background */}
           <div
-            className="absolute bottom-0 left-0 right-0 h-16 rounded-b-2xl"
-            style={{
-              background: 'linear-gradient(transparent 0%, #FFF9F0 100%)',
-            }}
+            className="absolute bottom-0 left-0 right-0 pointer-events-none"
+            style={{ height: '80px', background: 'linear-gradient(to bottom, transparent, #FFF9F0)' }}
           />
         </div>
         {/* Text area */}
@@ -264,17 +262,34 @@ export default ImmersivePageRenderer;
 // ═════════════════════════════════════════════════════════════
 
 /**
- * Full-bleed image for one half of a spread. No text, just the image.
+ * Full-bleed image for one half of a spread.
+ * Includes gradient fades on the side facing text and on the bottom.
  */
-function SpreadImageHalf({ imageUrl }: { imageUrl: string }) {
+function SpreadImageHalf({ imageUrl, fadeSide = 'right' }: { imageUrl: string; fadeSide?: 'left' | 'right' }) {
   return (
-    <div className="flex items-center justify-center h-full overflow-hidden p-4">
+    <div className="relative flex items-center justify-center h-full overflow-hidden p-4">
       <img
         src={imageUrl}
         alt="Story illustration"
-        className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
+        className="max-w-full max-h-full object-contain"
         loading="lazy"
         onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+      />
+      {/* Side fade toward text */}
+      <div
+        className="absolute top-0 bottom-0 pointer-events-none"
+        style={{
+          [fadeSide]: 0,
+          width: '60px',
+          background: fadeSide === 'right'
+            ? 'linear-gradient(to right, transparent, #FFF9F0)'
+            : 'linear-gradient(to left, transparent, #FFF9F0)',
+        }}
+      />
+      {/* Bottom fade */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{ height: '40px', background: 'linear-gradient(to bottom, transparent, #FFF9F0)', zIndex: 1 }}
       />
     </div>
   );
@@ -362,7 +377,7 @@ export const ImmersiveSpreadRenderer: React.FC<ImmersiveSpreadRendererProps> = (
       return (
         <div className="flex h-full min-h-[80vh]">
           <div className="flex-[3]">
-            <SpreadImageHalf imageUrl={leftImageUrl} />
+            <SpreadImageHalf imageUrl={leftImageUrl} fadeSide="right" />
           </div>
           <div className="flex-[2]">
             <SpreadEmptyHalf />
@@ -387,21 +402,15 @@ export const ImmersiveSpreadRenderer: React.FC<ImmersiveSpreadRendererProps> = (
   // One entire half = image, the other entire half = ALL text from both pages
   if (hasAnyImage && imageUrl) {
     const imageOnLeft = !!leftImageUrl;
-    const imageHalf = <SpreadImageHalf imageUrl={imageUrl} />;
+    const imageHalf = <SpreadImageHalf imageUrl={imageUrl} fadeSide={imageOnLeft ? 'right' : 'left'} />;
     const textHalf = <SpreadTextHalf paragraphs={allParagraphs} typo={typo} />;
 
     return (
       <div className="flex h-full min-h-[80vh]">
-        <div
-          className="flex-1"
-          style={imageOnLeft ? { borderRight: '1px solid rgba(0, 0, 0, 0.06)' } : undefined}
-        >
+        <div className="flex-1">
           {imageOnLeft ? imageHalf : textHalf}
         </div>
-        <div
-          className="flex-1"
-          style={!imageOnLeft ? { borderLeft: '1px solid rgba(0, 0, 0, 0.06)' } : undefined}
-        >
+        <div className="flex-1">
           {imageOnLeft ? textHalf : imageHalf}
         </div>
       </div>
