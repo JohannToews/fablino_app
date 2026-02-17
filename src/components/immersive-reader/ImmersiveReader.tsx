@@ -10,6 +10,8 @@ import {
   PAGE_TRANSITION_EASING,
   NAV_HINT_TIMEOUT_MS,
   NAV_HINT_STORAGE_KEY,
+  Spread,
+  buildSpreads,
 } from './constants';
 import {
   getImagePositionsFromPlan,
@@ -19,7 +21,7 @@ import {
   parseImagePlan,
 } from './imageUtils';
 import { getImmersiveLabels } from './labels';
-import ImmersivePageRenderer from './ImmersivePageRenderer';
+import ImmersivePageRenderer, { ImmersiveSpreadRenderer } from './ImmersivePageRenderer';
 import ImmersiveNavigation from './ImmersiveNavigation';
 import ImmersiveProgressBar from './ImmersiveProgressBar';
 import ImmersiveWordSheet from './ImmersiveWordSheet';
@@ -119,17 +121,19 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     [allImages, accountTier]
   );
 
-  // Normalize story content (handle escaped newlines)
-  const normalizedContent = useMemo(() => {
-    return story.content
-      .replace(/\\n\\n/g, '\n\n')
-      .replace(/\\n/g, '\n');
+  // Paragraph count for image position calculation.
+  // Uses same normalization logic as useContentSplitter.
+  const paragraphCount = useMemo(() => {
+    let text = story.content
+      .replace(/\\n/g, '\n')
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{2,}/g, '\n\n');
+    let paras = text.split('\n\n').map(p => p.trim()).filter(Boolean);
+    if (paras.length <= 1 && text.includes('\n')) {
+      paras = text.split('\n').map(p => p.trim()).filter(Boolean);
+    }
+    return paras.length;
   }, [story.content]);
-
-  const paragraphCount = useMemo(
-    () => normalizedContent.split('\n\n').filter(p => p.trim()).length,
-    [normalizedContent]
-  );
 
   const imagePlan = useMemo(() => parseImagePlan(story.image_plan), [story.image_plan]);
   const imagePositions = useMemo(
@@ -139,7 +143,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
 
   // ── Content Splitting ─────────────────────────────────────
   const contentPages = useContentSplitter(
-    normalizedContent,
+    story.content,
     age,
     fontSizeSetting,
     imagePositions
@@ -169,11 +173,33 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const {
     currentPage,
     totalPages,
+    goToPage,
     goNext: rawGoNext,
     goPrev: rawGoPrev,
     isFirstPage,
     isLastPage,
   } = usePagePosition(allPages);
+
+  // ── Spreads (landscape double-page layout) ─────────────
+  const isLandscape = layoutMode === 'landscape-spread';
+  const spreads = useMemo(
+    () => buildSpreads(allPages, isLandscape),
+    [allPages, isLandscape]
+  );
+
+  // Map currentPage → current spread index
+  const currentSpreadIndex = useMemo(() => {
+    for (let si = 0; si < spreads.length; si++) {
+      const s = spreads[si];
+      if (s.leftPageIndex === currentPage) return si;
+      if (s.rightPageIndex === currentPage) return si;
+    }
+    return 0;
+  }, [spreads, currentPage]);
+
+  const currentSpread = spreads[currentSpreadIndex] || spreads[0];
+  const isFirstSpread = currentSpreadIndex === 0;
+  const isLastSpread = currentSpreadIndex === spreads.length - 1;
 
   // ── Reader Phase (reading → quiz → end) ────────────────
   type ReaderPhase = 'reading' | 'quiz' | 'end-screen';
@@ -210,19 +236,24 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const [slideDirection, setSlideDirection] = useState<'none' | 'left' | 'right'>('none');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  /**
+   * Helper: check if we're on the very last viewable unit (page or spread).
+   * Used to trigger completion flow.
+   */
+  const isAtEnd = isLandscape ? isLastSpread : isLastPage;
+
   const goNext = useCallback(() => {
-    if (isTransitioning || isLastPage) return;
+    if (isTransitioning || isAtEnd) return;
 
-    // If on last page: fire onComplete and transition to quiz or end screen
-    if (currentPage === totalPages - 1) {
+    // If on last viewable unit: fire onComplete and transition to quiz or end screen
+    const reachedEnd = isLandscape
+      ? currentSpreadIndex === spreads.length - 1
+      : currentPage === totalPages - 1;
+
+    if (reachedEnd) {
       onComplete();
-
-      // Chapter stories: always go to quiz first (mandatory)
       if (isChapterStory && hasQuiz) {
         setReaderPhase('quiz');
-      } else if (hasQuiz) {
-        // Single story: go to end screen, quiz is optional (button there)
-        setReaderPhase('end-screen');
       } else {
         setReaderPhase('end-screen');
       }
@@ -232,23 +263,39 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     setSlideDirection('left');
     setIsTransitioning(true);
     setTimeout(() => {
-      rawGoNext();
+      if (isLandscape) {
+        // Advance to the left page of the NEXT spread
+        const nextSpread = spreads[currentSpreadIndex + 1];
+        if (nextSpread) {
+          goToPage(nextSpread.leftPageIndex);
+        }
+      } else {
+        rawGoNext();
+      }
       setSlideDirection('none');
       setIsTransitioning(false);
     }, PAGE_TRANSITION_MS);
-  }, [isTransitioning, isLastPage, currentPage, totalPages, rawGoNext, onComplete, isChapterStory, hasQuiz]);
+  }, [isTransitioning, isAtEnd, isLandscape, currentSpreadIndex, spreads, currentPage, totalPages, rawGoNext, goToPage, onComplete, isChapterStory, hasQuiz]);
 
   const goPrev = useCallback(() => {
-    if (isTransitioning || isFirstPage) return;
+    const atStart = isLandscape ? isFirstSpread : isFirstPage;
+    if (isTransitioning || atStart) return;
 
     setSlideDirection('right');
     setIsTransitioning(true);
     setTimeout(() => {
-      rawGoPrev();
+      if (isLandscape) {
+        const prevSpread = spreads[currentSpreadIndex - 1];
+        if (prevSpread) {
+          goToPage(prevSpread.leftPageIndex);
+        }
+      } else {
+        rawGoPrev();
+      }
       setSlideDirection('none');
       setIsTransitioning(false);
     }, PAGE_TRANSITION_MS);
-  }, [isTransitioning, isFirstPage, rawGoPrev]);
+  }, [isTransitioning, isLandscape, isFirstSpread, isFirstPage, currentSpreadIndex, spreads, rawGoPrev, goToPage]);
 
   // ── Navigation Hint ───────────────────────────────────────
   const [showNavHint, setShowNavHint] = useState(false);
@@ -291,11 +338,11 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // ── Resolve current page content ──────────────────────────
+  // ── Resolve current page content (portrait mode) ──────────
   const currentPageData = allPages[currentPage];
   const isChapterTitlePage = currentPageData?.type === 'chapter-title';
 
-  // Track which image page we're on for landscape alternation
+  // Track which image page we're on for portrait image alternation
   const imagePageIndex = useMemo(() => {
     let count = 0;
     for (let i = 0; i < currentPage; i++) {
@@ -309,6 +356,17 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     : undefined;
 
   const currentImageSide = currentImageUrl ? getImageSide(imagePageIndex) : undefined;
+
+  // ── Shared typography props for spread renderer ──────────
+  const typoProps = useMemo(() => ({
+    fontSize: typography.fontSize,
+    lineHeight: typography.lineHeight,
+    letterSpacing: typography.letterSpacing,
+    syllableMode: syllableActive,
+    storyLanguage: hyphenLanguage,
+    onWordTap: handleWordTap,
+    highlightedWord: selectedWord,
+  }), [typography, syllableActive, hyphenLanguage, handleWordTap, selectedWord]);
 
   // ── Slide animation CSS ───────────────────────────────────
   const slideStyle: React.CSSProperties = useMemo(() => {
@@ -328,15 +386,10 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   }, [onQuizComplete]);
 
   const handleQuizRetry = useCallback(() => {
-    // Navigate back to page 1 (or page 0 for chapter title)
     setReaderPhase('reading');
     setQuizResult(null);
-    const startPage = isChapterStory ? 1 : 0; // skip chapter title
-    if (allPages[startPage]) {
-      // Reset to the start via goToPage from usePagePosition
-      // We use rawGoPrev repeatedly or just set page 0
-    }
-  }, [isChapterStory, allPages]);
+    goToPage(isChapterStory ? 1 : 0);
+  }, [isChapterStory, goToPage]);
 
   const handleStartQuizFromEndScreen = useCallback(() => {
     setReaderPhase('quiz');
@@ -345,7 +398,8 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const handleReadAgain = useCallback(() => {
     setReaderPhase('reading');
     setQuizResult(null);
-  }, []);
+    goToPage(0);
+  }, [goToPage]);
 
   // ── Render ────────────────────────────────────────────────
   if (!story.content || allPages.length === 0) {
@@ -359,7 +413,8 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   return (
     <div
       ref={readerRef}
-      className="immersive-reader bg-background min-h-screen flex flex-col"
+      className="immersive-reader min-h-screen flex flex-col"
+      style={{ backgroundColor: '#FFF9F0' }}
     >
       {/* Progress Bar (only during reading phase) */}
       {readerPhase === 'reading' && (
@@ -369,6 +424,8 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
           chapterNumber={isChapterStory ? chapterNumber : undefined}
           totalChapters={isChapterStory ? totalChapters : undefined}
           language={uiLanguage}
+          layoutMode={layoutMode}
+          spread={isLandscape ? currentSpread : undefined}
         />
       )}
 
@@ -380,33 +437,67 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
           disabled={isWordSheetOpen || isTransitioning}
         >
           <div className="flex-1 relative overflow-hidden" style={slideStyle}>
-            {/* Chapter Title Page */}
-            {isChapterTitlePage && (
-              <ImmersiveChapterTitle
-                chapterNumber={chapterNumber}
-                totalChapters={totalChapters}
-                title={story.title}
-                coverImageUrl={story.cover_image_url}
-                language={uiLanguage}
-              />
+
+            {/* ── Landscape Spread Mode ── */}
+            {isLandscape && currentSpread && (
+              <>
+                {/* Chapter title as single spread page */}
+                {currentSpread.left.type === 'chapter-title' ? (
+                  <div className="flex h-full min-h-[80vh]">
+                    <div className="flex-[3] flex items-center justify-center px-8">
+                      <ImmersiveChapterTitle
+                        chapterNumber={chapterNumber}
+                        totalChapters={totalChapters}
+                        title={story.title}
+                        coverImageUrl={story.cover_image_url}
+                        language={uiLanguage}
+                      />
+                    </div>
+                    <div className="flex-[2]" style={{ backgroundColor: '#FAF8F5' }} />
+                  </div>
+                ) : (
+                  <ImmersiveSpreadRenderer
+                    spread={currentSpread}
+                    visibleImages={visibleImages}
+                    storyTheme={story.concrete_theme}
+                    typo={typoProps}
+                  />
+                )}
+              </>
             )}
 
-            {/* Content Pages (text-only or image-text) */}
-            {!isChapterTitlePage && currentPageData && (
-              <ImmersivePageRenderer
-                page={currentPageData}
-                layoutMode={layoutMode}
-                imageUrl={currentImageUrl}
-                imageSide={currentImageSide}
-                storyTheme={story.concrete_theme}
-                fontSize={typography.fontSize}
-                lineHeight={typography.lineHeight}
-                letterSpacing={typography.letterSpacing}
-                syllableMode={syllableActive}
-                storyLanguage={hyphenLanguage}
-                onWordTap={handleWordTap}
-                highlightedWord={selectedWord}
-              />
+            {/* ── Portrait Single-Page Mode ── */}
+            {!isLandscape && (
+              <>
+                {/* Chapter Title Page */}
+                {isChapterTitlePage && (
+                  <ImmersiveChapterTitle
+                    chapterNumber={chapterNumber}
+                    totalChapters={totalChapters}
+                    title={story.title}
+                    coverImageUrl={story.cover_image_url}
+                    language={uiLanguage}
+                  />
+                )}
+
+                {/* Content Pages (text-only or image-text) */}
+                {!isChapterTitlePage && currentPageData && (
+                  <ImmersivePageRenderer
+                    page={currentPageData}
+                    layoutMode={layoutMode}
+                    imageUrl={currentImageUrl}
+                    imageSide={currentImageSide}
+                    storyTheme={story.concrete_theme}
+                    fontSize={typography.fontSize}
+                    lineHeight={typography.lineHeight}
+                    letterSpacing={typography.letterSpacing}
+                    syllableMode={syllableActive}
+                    storyLanguage={hyphenLanguage}
+                    onWordTap={handleWordTap}
+                    highlightedWord={selectedWord}
+                  />
+                )}
+              </>
             )}
           </div>
 

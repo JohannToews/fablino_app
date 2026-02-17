@@ -7,16 +7,52 @@ import {
   MIN_PAGES_REDUCTION_FACTOR,
 } from './constants';
 
+// ── Helpers ──────────────────────────────────────────────────
+
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Normalize content into clean paragraphs.
+ *
+ * LLM-generated stories use inconsistent newline patterns:
+ *  - `\\n\\n` (escaped double), `\n\n` (real double), `\\n` (escaped single), `\n` (real single)
+ *
+ * Strategy:
+ *  1. Unescape literal `\\n` → real newlines
+ *  2. Collapse 2+ consecutive newlines into a paragraph break marker
+ *  3. Single remaining newlines also become paragraph breaks
+ *     (stories rarely use intentional soft-wraps)
+ *  4. Filter empty paragraphs
+ */
+function normalizeToParagraphs(content: string): string[] {
+  let text = content
+    .replace(/\\n/g, '\n')          // unescape literal \n
+    .replace(/\r\n/g, '\n')         // normalize CRLF
+    .replace(/\n{2,}/g, '\n\n');    // collapse 3+ newlines → double
+
+  // Split at double-newlines first
+  let paragraphs = text.split('\n\n').map(p => p.trim()).filter(Boolean);
+
+  // If that produced only 1 huge block, try single newlines
+  if (paragraphs.length <= 1 && text.includes('\n')) {
+    paragraphs = text.split('\n').map(p => p.trim()).filter(Boolean);
+  }
+
+  return paragraphs;
+}
+
 /**
  * Split a paragraph at the nearest sentence boundary within the word limit.
- * Sentence boundaries: `. `, `! `, `? `, or end-of-string.
+ * Sentence boundaries: `.` `!` `?` followed by space or end-of-string.
  */
 function splitParagraphAtSentences(para: string, maxWords: number): string[] {
   const chunks: string[] = [];
   let remaining = para;
 
   while (remaining.trim()) {
-    const words = remaining.split(/\s+/);
+    const words = remaining.split(/\s+/).filter(Boolean);
     if (words.length <= maxWords) {
       chunks.push(remaining.trim());
       break;
@@ -29,16 +65,15 @@ function splitParagraphAtSentences(para: string, maxWords: number): string[] {
     let match: RegExpExecArray | null;
 
     while ((match = sentenceEndRegex.exec(candidate)) !== null) {
-      lastBoundary = match.index + match[0].length - 1; // end of punctuation + space
+      lastBoundary = match.index + match[0].length - 1;
     }
 
     if (lastBoundary > 0) {
-      // Split at the last sentence boundary (include the punctuation)
       const splitPoint = candidate.substring(0, lastBoundary + 1).trimEnd();
       chunks.push(splitPoint);
       remaining = remaining.substring(splitPoint.length).trimStart();
     } else {
-      // No sentence boundary found — take the whole maxWords chunk (avoid infinite loop)
+      // No sentence boundary — take the whole chunk (avoid infinite loop)
       chunks.push(candidate);
       remaining = words.slice(maxWords).join(' ');
     }
@@ -47,10 +82,17 @@ function splitParagraphAtSentences(para: string, maxWords: number): string[] {
   return chunks.filter(c => c.length > 0);
 }
 
+// ── Page assembly ────────────────────────────────────────────
+
 interface PageDraft {
   paragraphs: string[];
+  wordCount: number;
   hasImage: boolean;
   imageIndex?: number;
+}
+
+function newDraft(): PageDraft {
+  return { paragraphs: [], wordCount: 0, hasImage: false };
 }
 
 function finalizePage(draft: PageDraft): ImmersivePage {
@@ -64,21 +106,20 @@ function finalizePage(draft: PageDraft): ImmersivePage {
 
 /**
  * Core splitting algorithm.
- * Distributes paragraphs to pages respecting maxWordsPerPage.
- * Handles overflow by splitting at sentence boundaries.
- * Maps images to pages based on imagePositions (paragraph indices).
+ *
+ * Key behaviour: multiple paragraphs are packed onto the SAME page
+ * until maxWordsPerPage is reached. A page break only happens when
+ * adding the next paragraph would exceed the limit.
  */
 function splitIntoPages(
-  content: string,
+  paragraphs: string[],
   maxWordsPerPage: number,
   imagePositions: number[],
 ): ImmersivePage[] {
-  const paragraphs = content.split('\n\n').filter(p => p.trim());
   const pages: ImmersivePage[] = [];
-  let currentPage: PageDraft = { paragraphs: [], hasImage: false };
-  let currentWordCount = 0;
+  let current: PageDraft = newDraft();
 
-  // Build a map: paragraph index → image array index
+  // paragraph index → image array index
   const paraToImageIdx = new Map<number, number>();
   imagePositions.forEach((paraIdx, imgIdx) => {
     paraToImageIdx.set(paraIdx, imgIdx);
@@ -86,32 +127,24 @@ function splitIntoPages(
 
   for (let i = 0; i < paragraphs.length; i++) {
     const para = paragraphs[i];
-    const wordCount = para.split(/\s+/).length;
+    const wc = countWords(para);
 
-    // If adding this paragraph exceeds limit and we already have content, start new page
-    if (currentWordCount + wordCount > maxWordsPerPage && currentPage.paragraphs.length > 0) {
-      pages.push(finalizePage(currentPage));
-      currentPage = { paragraphs: [], hasImage: false };
-      currentWordCount = 0;
-    }
-
-    // If single paragraph exceeds limit, split at sentence boundary
-    if (wordCount > maxWordsPerPage) {
-      // First, flush any accumulated page
-      if (currentPage.paragraphs.length > 0) {
-        pages.push(finalizePage(currentPage));
-        currentPage = { paragraphs: [], hasImage: false };
-        currentWordCount = 0;
+    // ── Single paragraph too long → split at sentences ──
+    if (wc > maxWordsPerPage) {
+      // Flush accumulated content first
+      if (current.paragraphs.length > 0) {
+        pages.push(finalizePage(current));
+        current = newDraft();
       }
 
       const chunks = splitParagraphAtSentences(para, maxWordsPerPage);
-      const hasImageForPara = paraToImageIdx.has(i);
+      const hasImg = paraToImageIdx.has(i);
 
       for (let ci = 0; ci < chunks.length; ci++) {
-        // Assign the image to the first chunk of the split paragraph
-        const assignImage = hasImageForPara && ci === 0;
+        const assignImage = hasImg && ci === 0;
         pages.push(finalizePage({
           paragraphs: [chunks[ci]],
+          wordCount: countWords(chunks[ci]),
           hasImage: assignImage,
           imageIndex: assignImage ? paraToImageIdx.get(i) : undefined,
         }));
@@ -119,23 +152,31 @@ function splitIntoPages(
       continue;
     }
 
-    currentPage.paragraphs.push(para);
-    currentWordCount += wordCount;
+    // ── Would this paragraph overflow the current page? ──
+    if (current.wordCount + wc > maxWordsPerPage && current.paragraphs.length > 0) {
+      pages.push(finalizePage(current));
+      current = newDraft();
+    }
 
-    // Check if this paragraph has an image assigned
+    // ── Add paragraph to current page ──
+    current.paragraphs.push(para);
+    current.wordCount += wc;
+
     if (paraToImageIdx.has(i)) {
-      currentPage.hasImage = true;
-      currentPage.imageIndex = paraToImageIdx.get(i);
+      current.hasImage = true;
+      current.imageIndex = paraToImageIdx.get(i);
     }
   }
 
   // Flush remaining
-  if (currentPage.paragraphs.length > 0) {
-    pages.push(finalizePage(currentPage));
+  if (current.paragraphs.length > 0) {
+    pages.push(finalizePage(current));
   }
 
   return pages;
 }
+
+// ── Public hook ──────────────────────────────────────────────
 
 /**
  * Hook: splits story text into ImmersivePage[].
@@ -152,13 +193,17 @@ export function useContentSplitter(
   return useMemo(() => {
     if (!content || !content.trim()) return [];
 
-    let maxWords = getMaxWordsPerPage(age, fontSizeSetting);
-    let pages = splitIntoPages(content, maxWords, imagePositions);
+    const paragraphs = normalizeToParagraphs(content);
+    if (paragraphs.length === 0) return [];
 
-    // Validation: if too few pages, reduce maxWords and re-split
-    if (pages.length < MIN_PAGES && content.split(/\s+/).length >= MIN_PAGES * 3) {
+    let maxWords = getMaxWordsPerPage(age, fontSizeSetting);
+    let pages = splitIntoPages(paragraphs, maxWords, imagePositions);
+
+    // If too few pages, reduce maxWords and re-split
+    const totalWords = paragraphs.reduce((sum, p) => sum + countWords(p), 0);
+    if (pages.length < MIN_PAGES && totalWords >= MIN_PAGES * 3) {
       maxWords = Math.round(maxWords * MIN_PAGES_REDUCTION_FACTOR);
-      pages = splitIntoPages(content, maxWords, imagePositions);
+      pages = splitIntoPages(paragraphs, maxWords, imagePositions);
     }
 
     return pages;

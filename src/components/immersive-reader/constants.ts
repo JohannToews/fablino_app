@@ -131,6 +131,61 @@ export const IMAGE_LIMITS: Record<string, number> = {
   premium: 6,
 };
 
+// ── Spread (landscape double-page) ──────────────────────────
+
+export interface Spread {
+  left: ImmersivePage;
+  right: ImmersivePage | null;
+  leftPageIndex: number;         // index into allPages
+  rightPageIndex: number | null; // index into allPages (null if single)
+}
+
+/**
+ * Group individual pages into landscape spreads (book-style double pages).
+ *
+ * Rules:
+ *  - Page 0 (cover / chapter title) always stands alone as the first spread
+ *  - Pages 1+ are paired: [1,2], [3,4], [5,6], ...
+ *  - If the total is odd, the last page stands alone
+ *
+ * In non-landscape modes, each page becomes its own "spread" (left only).
+ */
+export function buildSpreads(pages: ImmersivePage[], isLandscape: boolean): Spread[] {
+  if (!isLandscape || pages.length === 0) {
+    return pages.map((p, i) => ({
+      left: p,
+      right: null,
+      leftPageIndex: i,
+      rightPageIndex: null,
+    }));
+  }
+
+  const spreads: Spread[] = [];
+
+  // Page 0 stands alone (cover, chapter title, or first content page)
+  if (pages.length > 0) {
+    spreads.push({
+      left: pages[0],
+      right: null,
+      leftPageIndex: 0,
+      rightPageIndex: null,
+    });
+  }
+
+  // Pages 1+ paired
+  for (let i = 1; i < pages.length; i += 2) {
+    const hasRight = i + 1 < pages.length;
+    spreads.push({
+      left: pages[i],
+      right: hasRight ? pages[i + 1] : null,
+      leftPageIndex: i,
+      rightPageIndex: hasRight ? i + 1 : null,
+    });
+  }
+
+  return spreads;
+}
+
 // ── Page Transition ─────────────────────────────────────────
 
 export const PAGE_TRANSITION_MS = 300;

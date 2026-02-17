@@ -1,5 +1,5 @@
 import React from 'react';
-import { FABLINO_TEAL } from './constants';
+import { FABLINO_TEAL, LayoutMode, Spread } from './constants';
 import { getImmersiveLabels, t } from './labels';
 
 interface ImmersiveProgressBarProps {
@@ -8,6 +8,9 @@ interface ImmersiveProgressBarProps {
   chapterNumber?: number | null;
   totalChapters?: number | null;
   language?: string | null;
+  layoutMode?: LayoutMode;
+  /** Current spread (only provided in landscape mode) */
+  spread?: Spread;
 }
 
 /**
@@ -15,7 +18,7 @@ interface ImmersiveProgressBarProps {
  *
  * - Segmented bar (one segment per page)
  * - Filled segments = visited pages
- * - Page counter: "3 / 8"
+ * - Page counter: "3 / 8" or "3–4 / 8" in landscape spread mode
  * - Chapter label for chapter stories: "Kapitel 2 von 5"
  */
 const ImmersiveProgressBar: React.FC<ImmersiveProgressBarProps> = ({
@@ -24,11 +27,27 @@ const ImmersiveProgressBar: React.FC<ImmersiveProgressBarProps> = ({
   chapterNumber,
   totalChapters,
   language,
+  layoutMode,
+  spread,
 }) => {
   const labels = getImmersiveLabels(language);
+  const isLandscape = layoutMode === 'landscape-spread';
+
+  // In landscape mode with a spread showing two pages, highlight both
+  const highestVisiblePage = (isLandscape && spread?.rightPageIndex != null)
+    ? spread.rightPageIndex
+    : currentPage;
+
+  // Page counter text
+  const counterText = (isLandscape && spread?.rightPageIndex != null)
+    ? `${spread.leftPageIndex + 1}–${spread.rightPageIndex + 1} / ${totalPages}`
+    : `${currentPage + 1} / ${totalPages}`;
 
   return (
-    <div className="immersive-progress-bar sticky top-0 z-30 bg-background/95 backdrop-blur-sm pt-3 pb-2 px-4 sm:px-6">
+    <div
+      className="immersive-progress-bar sticky top-0 z-30 backdrop-blur-sm pt-3 pb-2 px-4 sm:px-6"
+      style={{ backgroundColor: 'rgba(255, 249, 240, 0.95)' }}
+    >
       {/* Chapter label (only for chapter stories) */}
       {chapterNumber && totalChapters && (
         <div className="text-xs font-medium text-muted-foreground mb-1.5 text-center">
@@ -43,7 +62,7 @@ const ImmersiveProgressBar: React.FC<ImmersiveProgressBarProps> = ({
             key={i}
             className="h-1.5 rounded-full flex-1 transition-colors duration-300"
             style={{
-              backgroundColor: i <= currentPage
+              backgroundColor: i <= highestVisiblePage
                 ? FABLINO_TEAL
                 : 'hsl(var(--muted))',
             }}
@@ -53,7 +72,7 @@ const ImmersiveProgressBar: React.FC<ImmersiveProgressBarProps> = ({
 
       {/* Page counter */}
       <div className="text-right text-xs text-muted-foreground tabular-nums">
-        {currentPage + 1} / {totalPages}
+        {counterText}
       </div>
     </div>
   );

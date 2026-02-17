@@ -18,6 +18,7 @@ export {
   getTypographyForAge,
   getMaxWordsPerPage,
   getThemeGradient,
+  buildSpreads,
   FABLINO_TEAL,
   SYLLABLE_COLORS,
   PAGE_TRANSITION_MS,
@@ -50,6 +51,7 @@ export type {
   FontSizeSetting,
   PageType,
   TypographyConfig,
+  Spread,
 } from './constants';
 export type { ImagePlan, ImagePlanScene } from './imageUtils';
 export type { ImmersiveLabels } from './labels';
