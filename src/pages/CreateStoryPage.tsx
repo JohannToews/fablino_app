@@ -519,50 +519,76 @@ const CreateStoryPage = () => {
       // Determine include_self from character selection
       const includeSelf = selectedCharacters.some(c => c.type === "me");
 
-      // Abort any previous request + set 120s timeout
+      // Abort any previous request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
-      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 120_000);
-      
-      const { data, error } = await supabase.functions.invoke("generate-story", {
-        body: {
-          length: storyLength,
-          difficulty: storyDifficulty,
-          description,
-          textType: "fiction",
-          textLanguage,
-          globalLanguage: kidAppLanguage,
-          userId: user.id,
-          source: 'kid',
-          isSeries,
-          storyType: selectedStoryType,
-          characters: selectedCharacters.map(c => ({
-            name: c.name,
-            type: c.type,
-            age: c.age,
-            gender: c.gender,
-            role: c.role,
-            relation: c.relation,
-            description: c.description,
-          })),
-          specialAttributes: allAttributes,
-          subElements: selectedSubElements,
-          humorLevel,
-          additionalDescription: userDescription,
-          kidName: selectedProfile?.name,
-          kidHobbies: selectedProfile?.hobbies,
-          seriesMode: isSeries ? seriesMode : undefined,
-          endingType: isSeries ? 'C' : 'A',
-          storyLanguage: effectiveLanguage,
-          includeSelf,
-          surprise_characters: surpriseCharactersFlag,
-          kidProfileId: selectedProfile?.id,
-          kidAge: selectedProfile?.age,
-          difficultyLevel: selectedProfile?.difficulty_level,
-          contentSafetyLevel: selectedProfile?.content_safety_level,
-        },
-      });
-      clearTimeout(timeoutId);
+
+      // Wrap invoke in Promise.race with a 150s timeout for mobile reliability
+      const GENERATION_TIMEOUT_MS = 150_000;
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), GENERATION_TIMEOUT_MS)
+      );
+
+      let data: any;
+      let error: any;
+      try {
+        const result = await Promise.race([
+          supabase.functions.invoke("generate-story", {
+            body: {
+              length: storyLength,
+              difficulty: storyDifficulty,
+              description,
+              textType: "fiction",
+              textLanguage,
+              globalLanguage: kidAppLanguage,
+              userId: user.id,
+              source: 'kid',
+              isSeries,
+              storyType: selectedStoryType,
+              characters: selectedCharacters.map(c => ({
+                name: c.name,
+                type: c.type,
+                age: c.age,
+                gender: c.gender,
+                role: c.role,
+                relation: c.relation,
+                description: c.description,
+              })),
+              specialAttributes: allAttributes,
+              subElements: selectedSubElements,
+              humorLevel,
+              additionalDescription: userDescription,
+              kidName: selectedProfile?.name,
+              kidHobbies: selectedProfile?.hobbies,
+              seriesMode: isSeries ? seriesMode : undefined,
+              endingType: isSeries ? 'C' : 'A',
+              storyLanguage: effectiveLanguage,
+              includeSelf,
+              surprise_characters: surpriseCharactersFlag,
+              kidProfileId: selectedProfile?.id,
+              kidAge: selectedProfile?.age,
+              difficultyLevel: selectedProfile?.difficulty_level,
+              contentSafetyLevel: selectedProfile?.content_safety_level,
+            },
+          }),
+          timeoutPromise,
+        ]);
+        data = result.data;
+        error = result.error;
+      } catch (timeoutErr: any) {
+        if (timeoutErr?.message === 'TIMEOUT') {
+          console.error('[CreateStory] Generation timed out after', GENERATION_TIMEOUT_MS / 1000, 's');
+          toast.error(
+            kidAppLanguage === 'de' ? 'Die Generierung hat zu lange gedauert. Bitte versuche es erneut.' :
+            kidAppLanguage === 'fr' ? 'La génération a pris trop de temps. Veuillez réessayer.' :
+            'Generation timed out. Please try again.'
+          );
+          setIsGenerating(false);
+          setCurrentScreen("entry");
+          return;
+        }
+        throw timeoutErr;
+      }
 
       if (error) {
         console.error("Generation error:", error);
