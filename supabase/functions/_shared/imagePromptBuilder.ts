@@ -16,6 +16,7 @@ export interface ImagePlan {
     description: string;
     emotion: string;
     key_elements: string[];
+    target_paragraph?: number;  // 0-based paragraph index (new stories); absent on old stories
   }>;
 }
 

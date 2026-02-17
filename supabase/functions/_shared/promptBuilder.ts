@@ -1699,6 +1699,7 @@ export async function buildStoryPrompt(
     '## IMAGE PLAN INSTRUCTIONS',
     `Generate exactly ${sceneCount} scene(s) in the image_plan.`,
     sceneGuidance,
+    'For each scene in image_plan, include "target_paragraph": the 0-based index of the paragraph in the story text that this image best illustrates. Count paragraphs starting from 0. Distribute images evenly across the story — do not cluster them at the beginning or end.',
     'All descriptions in ENGLISH. No text, signs, or readable writing in any scene.',
   ].join('\n');
   sections.push(imagePlanSection);

@@ -2049,7 +2049,7 @@ Required JSON structure:
   "content": "The complete story text as a single string...",
   "questions": [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "expectedAnswer": "..."}],
   "vocabulary": [{"word": "...", "explanation": "..."}],
-  "image_plan": {"character_anchor": "...", "world_anchor": "...", "scenes": [{"scene_id": 1, "setting": "...", "characters_present": "...", "action": "...", "emotion": "..."}]}
+  "image_plan": {"character_anchor": "...", "world_anchor": "...", "scenes": [{"scene_id": 1, "setting": "...", "characters_present": "...", "action": "...", "emotion": "...", "target_paragraph": 0}]}
 }
 Fields episode_summary, continuity_state, visual_style_sheet, branch_options are ONLY required for series episodes.`;
     }
