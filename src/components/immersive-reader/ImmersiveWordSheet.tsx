@@ -100,8 +100,9 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
       story_id: storyId,
       word: cleanWord,
       explanation,
-      kid_profile_id: kidProfileId || null,
-    } as Record<string, unknown>);
+      word_language: storyLanguage,
+      explanation_language: explanationLanguage,
+    });
 
     if (saveError) {
       console.error('Failed to save word:', saveError);
