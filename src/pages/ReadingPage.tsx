@@ -1401,7 +1401,6 @@ const ReadingPage = () => {
                   const markingClass = isSingleWordMarked ? "word-marked" : (isPhraseMarked ? "phrase-marked" : "");
 
                   if (!canBeMarked) {
-                    /* Syllable mode disabled for now
                     return syllableMode ? (
                       <SyllableText
                         key={wIndex}
@@ -1410,8 +1409,7 @@ const ReadingPage = () => {
                         className={markingClass}
                         language={textLang}
                       />
-                    ) : ( */
-                    return (
+                    ) : (
                       <span
                         key={wIndex}
                         data-position={positionKey}
@@ -1422,7 +1420,6 @@ const ReadingPage = () => {
                     );
                   }
 
-                  /* Syllable mode disabled for now
                   return syllableMode ? (
                     <SyllableText
                       key={wIndex}
@@ -1431,10 +1428,8 @@ const ReadingPage = () => {
                       onClick={(e) => handleWordClick(word, e)}
                       className={`word-highlight ${markingClass}`}
                       language={textLang}
-                      data-word-clickable
                     />
-                  ) : ( */
-                  return (
+                  ) : (
                     <span
                       key={wIndex}
                       data-position={positionKey}
@@ -1737,10 +1732,9 @@ const ReadingPage = () => {
                 onFontSizeChange={setFontSize}
                 onLineSpacingChange={setLineSpacing}
                 language={textLang}
-                // Syllable mode disabled for now
-                // syllableMode={syllableMode}
-                // onSyllableModeChange={setSyllableMode}
-                showSyllableOption={false /* isSyllableModeSupported(textLang) */}
+                syllableMode={syllableMode}
+                onSyllableModeChange={setSyllableMode}
+                showSyllableOption={isSyllableModeSupported(textLang)}
               />
             </div>
 

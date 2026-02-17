@@ -133,8 +133,8 @@ const ReadingSettings = ({
           />
           {syllableMode && (
             <span className="text-xs">
-              <span style={{ color: "#2563eb" }}>Sil</span>
-              <span style={{ color: "#92400e" }}>ben</span>
+              <span style={{ color: "#2563EB" }}>Sil</span>
+              <span style={{ color: "#DC2626" }}>ben</span>
             </span>
           )}
         </div>
