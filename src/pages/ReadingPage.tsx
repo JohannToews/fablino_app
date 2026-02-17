@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw } from "lucide-react";
+import { Sparkles, X, Loader2, BookOpen, MessageCircleQuestion, CheckCircle2, HelpCircle, Save, RotateCcw, BookOpenText, ScrollText } from "lucide-react";
 import ShareStoryButton from "@/components/story-sharing/ShareStoryButton";
 import ComprehensionQuiz from "@/components/ComprehensionQuiz";
 import QuizCompletionResult from "@/components/QuizCompletionResult";
@@ -21,6 +21,7 @@ import PageHeader from "@/components/PageHeader";
 import { Language, getTranslations } from "@/lib/translations";
 import BranchDecisionScreen from "@/components/story-creation/BranchDecisionScreen";
 import type { BranchOption as BranchOptionType } from "@/components/story-creation/BranchDecisionScreen";
+import ImmersiveReader from "@/components/immersive-reader/ImmersiveReader";
 
 // UI labels for word explanation popup in different languages
 const readingLabels: Record<string, {
@@ -248,6 +249,14 @@ const ReadingPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+
+  // ── View Mode: immersive (default) or classic ─────────────
+  const modeParam = searchParams.get('mode');
+  const [viewMode, setViewMode] = useState<'immersive' | 'classic'>(
+    modeParam === 'classic' ? 'classic' : 'immersive'
+  );
+
   const [story, setStory] = useState<Story | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -1468,6 +1477,127 @@ const ReadingPage = () => {
     );
   }
 
+  // ── Immersive Reader Mode ─────────────────────────────────
+  if (viewMode === 'immersive' && story) {
+    return (
+      <div className="min-h-screen relative">
+        {/* Mode toggle: switch back to classic */}
+        <button
+          onClick={() => setViewMode('classic')}
+          className="fixed top-3 left-3 z-50 bg-background/80 backdrop-blur-sm border rounded-full p-2 shadow-sm hover:bg-muted transition-colors"
+          title="Classic mode"
+        >
+          <ScrollText className="h-4 w-4 text-muted-foreground" />
+        </button>
+
+        {/* Back button */}
+        <button
+          onClick={() => navigate('/stories')}
+          className="fixed top-3 left-14 z-50 bg-background/80 backdrop-blur-sm border rounded-full px-3 py-2 shadow-sm hover:bg-muted transition-colors text-xs text-muted-foreground font-medium"
+        >
+          ← {story.title.length > 20 ? story.title.substring(0, 20) + '…' : story.title}
+        </button>
+
+        <ImmersiveReader
+          story={story}
+          kidProfile={selectedProfile ? {
+            id: selectedProfile.id,
+            name: selectedProfile.name,
+            age: selectedProfile.age,
+            explanation_language: kidExplanationLanguage,
+          } : null}
+          accountTier="standard"
+          onComplete={async () => {
+            const childId = story.kid_profile_id || selectedProfile?.id || null;
+
+            // Mark story as completed
+            await actions.markStoryComplete(id!);
+            setIsMarkedAsRead(true);
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+
+            // Log activity via RPC with retry
+            let logSuccess = false;
+            for (let attempt = 0; attempt < 3 && !logSuccess; attempt++) {
+              try {
+                const result = await supabase.rpc('log_activity', {
+                  p_child_id: childId,
+                  p_activity_type: 'story_read',
+                  p_stars: starRewards.stars_story_read,
+                  p_metadata: { story_id: id, difficulty: story.difficulty || 'medium', language: story.text_language || 'de' },
+                });
+                if (result.error) {
+                  console.error(`[Immersive] log_activity attempt ${attempt + 1} failed:`, result.error.message);
+                  if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                  continue;
+                }
+                logSuccess = true;
+                const data = result.data as any;
+                if (data?.new_badges?.length > 0) {
+                  setPendingBadges(data.new_badges);
+                }
+              } catch (e) {
+                console.error(`[Immersive] log_activity attempt ${attempt + 1} threw:`, e);
+                if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+              }
+            }
+            refreshProgress();
+
+            // Show Fablino celebration
+            setFablinoReaction({
+              type: 'celebrate',
+              message: t.fablinoStoryDone,
+              stars: starRewards.stars_story_read,
+            });
+          }}
+          onQuizStart={() => setShowQuiz(true)}
+          onNavigateToStories={() => navigate('/stories')}
+        />
+
+        {/* Fablino Feedback Overlay (shared with classic mode) */}
+        {fablinoReaction && (
+          <FablinoReaction
+            type={fablinoReaction.type}
+            message={fablinoReaction.message}
+            stars={fablinoReaction.stars}
+            autoClose={fablinoReaction.autoClose}
+            buttonLabel={t.continueButton}
+            onClose={() => {
+              const wasStoryDone = fablinoReaction.type === 'celebrate' && fablinoReaction.message === t.fablinoStoryDone;
+              setFablinoReaction(null);
+              if (wasStoryDone) {
+                if (hasQuestions) {
+                  setShowQuiz(true);
+                } else {
+                  navigate("/stories");
+                }
+              }
+            }}
+          />
+        )}
+
+        {/* Badge / Level-Up overlays */}
+        {pendingBadges.length > 0 && !fablinoReaction && (
+          <BadgeCelebrationModal
+            badges={pendingBadges}
+            onDismiss={() => setPendingBadges([])}
+            language={textLang}
+          />
+        )}
+        {pendingLevelUp && !fablinoReaction && pendingBadges.length === 0 && (
+          <FablinoReaction
+            type="levelUp"
+            message={t.fablinoLevelUp.replace('{title}', pendingLevelUp.title)}
+            levelEmoji={pendingLevelUp.icon}
+            levelTitle={pendingLevelUp.title}
+            buttonLabel={t.continueButton}
+            onClose={clearPendingLevelUp}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ── Classic Reading Mode ──────────────────────────────────
   return (
     <div className="min-h-screen">
       <PageHeader 
@@ -1475,6 +1605,16 @@ const ReadingPage = () => {
         backTo="/stories"
         rightContent={
           <div className="flex items-center gap-2">
+            {/* Mode toggle: switch to immersive */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setViewMode('immersive')}
+              title="Immersive Reader"
+              className="h-9 w-9"
+            >
+              <BookOpenText className="h-4 w-4" />
+            </Button>
             {/* Star counter */}
             {gamificationState && (
               <div className="flex items-center gap-1 text-primary font-bold text-sm bg-primary/10 px-2.5 py-1 rounded-full">

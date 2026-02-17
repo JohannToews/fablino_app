@@ -35,6 +35,10 @@ export { default as ImmersiveProgressBar } from './ImmersiveProgressBar';
 export { default as ImmersiveWordSheet } from './ImmersiveWordSheet';
 export { default as ImmersiveToolbar } from './ImmersiveToolbar';
 
+// Phase 3: Orchestrator + Chapter Title
+export { default as ImmersiveReader } from './ImmersiveReader';
+export { default as ImmersiveChapterTitle } from './ImmersiveChapterTitle';
+
 // Types
 export type {
   ImmersivePage,
