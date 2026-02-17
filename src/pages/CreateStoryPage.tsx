@@ -27,6 +27,17 @@ import { useTranslations } from "@/lib/translations";
 import StoryGenerationProgress, { PerformanceData } from "@/components/story-creation/StoryGenerationProgress";
 import { useDailyStoryLimit } from "@/hooks/useDailyStoryLimit";
 
+// Daily limit labels per language
+const dailyLimitLabels: Record<string, { remaining: string; limitReached: string }> = {
+  de: { remaining: 'Noch {remaining} von {total} Geschichten heute übrig', limitReached: 'Tageslimit erreicht ({n}/{n})' },
+  fr: { remaining: 'Encore {remaining} sur {total} histoires aujourd\'hui', limitReached: 'Limite quotidienne atteinte ({n}/{n})' },
+  en: { remaining: '{remaining} of {total} stories remaining today', limitReached: 'Daily limit reached ({n}/{n})' },
+  es: { remaining: 'Quedan {remaining} de {total} historias hoy', limitReached: 'Límite diario alcanzado ({n}/{n})' },
+  nl: { remaining: 'Nog {remaining} van {total} verhalen vandaag over', limitReached: 'Daglimiet bereikt ({n}/{n})' },
+  it: { remaining: 'Ancora {remaining} di {total} storie oggi', limitReached: 'Limite giornaliero raggiunto ({n}/{n})' },
+  bs: { remaining: 'Još {remaining} od {total} priča danas', limitReached: 'Dnevni limit dostignut ({n}/{n})' },
+};
+
 // Screen states for the wizard
 type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "generating";
 
@@ -811,8 +822,8 @@ const CreateStoryPage = () => {
               <span>{limitReached ? '🚫' : '📖'}</span>
               <span>
                 {limitReached
-                  ? `Tageslimit erreicht (${dailyLimit}/${dailyLimit})`
-                  : `Noch ${storiesRemaining} von ${dailyLimit} Geschichten heute übrig`}
+                  ? dailyLimitLabels[kidAppLanguage]?.limitReached.replace('{n}', String(dailyLimit)) ?? `Tageslimit erreicht (${dailyLimit}/${dailyLimit})`
+                  : dailyLimitLabels[kidAppLanguage]?.remaining.replace('{remaining}', String(storiesRemaining)).replace('{total}', String(dailyLimit)) ?? `Noch ${storiesRemaining} von ${dailyLimit} Geschichten heute übrig`}
               </span>
             </div>
           </div>
