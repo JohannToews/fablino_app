@@ -28,7 +28,7 @@ function countWords(text: string): number {
  *     (stories rarely use intentional soft-wraps)
  *  4. Filter empty paragraphs
  */
-function normalizeToParagraphs(content: string): string[] {
+export function normalizeToParagraphs(content: string): string[] {
   let text = content
     .replace(/\\n/g, '\n')          // unescape literal \n
     .replace(/\r\n/g, '\n')         // normalize CRLF
@@ -186,22 +186,51 @@ function splitIntoPages(
  * Re-computes when content, age, fontSizeSetting, or imagePositions change.
  * Enforces a minimum of MIN_PAGES pages (reduces maxWords by 30% and re-splits if needed).
  */
+/**
+ * Merge sparse text-only pages (< MIN_SPARSE words) into the previous page.
+ * Skips first and last pages and pages with images.
+ */
+const MIN_SPARSE_WORDS = 30;
+
+function mergeSparsePages(pages: ImmersivePage[]): ImmersivePage[] {
+  const result = [...pages];
+  for (let i = 1; i < result.length - 1; i++) {
+    const wc = result[i].paragraphs.join(' ').split(/\s+/).filter(Boolean).length;
+    if (wc < MIN_SPARSE_WORDS && !result[i].hasImage) {
+      // Merge into previous page
+      result[i - 1] = {
+        ...result[i - 1],
+        paragraphs: [...result[i - 1].paragraphs, ...result[i].paragraphs],
+      };
+      result.splice(i, 1);
+      i--; // re-check the same index
+    }
+  }
+  return result;
+}
+
 export function useContentSplitter(
   content: string,
   age: number,
   fontSizeSetting: FontSizeSetting,
   imagePositions: number[],
+  skipFirstParagraph: boolean = false,
 ): ImmersivePage[] {
   return useMemo(() => {
     if (!content || !content.trim()) return [];
 
-    const paragraphs = normalizeToParagraphs(content);
+    let paragraphs = normalizeToParagraphs(content);
     if (paragraphs.length === 0) return [];
+
+    // When a cover page shows the first paragraph, skip it in the splitter
+    if (skipFirstParagraph && paragraphs.length > 1) {
+      paragraphs = paragraphs.slice(1);
+    }
 
     const totalWords = paragraphs.reduce((sum, p) => sum + countWords(p), 0);
     let maxWords = getMaxWordsPerPage(age, fontSizeSetting);
 
-    console.log('[ContentSplitter] age:', age, 'fontSize:', fontSizeSetting, 'maxWordsPerPage:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length);
+    console.log('[ContentSplitter] age:', age, 'fontSize:', fontSizeSetting, 'maxWordsPerPage:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length, 'skipFirst:', skipFirstParagraph);
 
     let pages = splitIntoPages(paragraphs, maxWords, imagePositions);
 
@@ -219,8 +248,11 @@ export function useContentSplitter(
       pages = splitIntoPages(paragraphs, maxWords, imagePositions);
     }
 
+    // Merge sparse pages (< 30 words, no image) into previous
+    pages = mergeSparsePages(pages);
+
     console.log('[ContentSplitter] Final pages:', pages.length, 'maxWords:', maxWords);
 
     return pages;
-  }, [content, age, fontSizeSetting, imagePositions]);
+  }, [content, age, fontSizeSetting, imagePositions, skipFirstParagraph]);
 }

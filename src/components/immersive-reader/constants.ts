@@ -107,9 +107,9 @@ const WORDS_PER_PAGE_BASE: Record<string, number> = {
 };
 
 const FONT_SIZE_WORD_MULTIPLIER: Record<FontSizeSetting, number> = {
-  small: 1.2,   // +20% more words
+  small: 1.3,   // +30% more words (smaller text fits more)
   medium: 1.0,
-  large: 0.8,   // -20% fewer words
+  large: 0.6,   // only 60% of words (large text needs much more space)
 };
 
 export function getMaxWordsPerPage(age: number, fontSizeSetting: FontSizeSetting = 'medium'): number {

@@ -273,11 +273,11 @@ function SpreadImageHalf({ imageUrl }: { imageUrl: string }) {
 }
 
 /**
- * Text half of a spread. Vertically centered, no scrolling.
+ * Text half of a spread. Top-aligned (book-like), no scrolling.
  */
 function SpreadTextHalf({ paragraphs, typo }: { paragraphs: string[]; typo: TypoProps }) {
   return (
-    <div className="flex flex-col justify-center h-full overflow-hidden px-8 py-6">
+    <div className="flex flex-col justify-start h-full overflow-hidden px-8" style={{ paddingTop: '40px', paddingBottom: '24px' }}>
       <TextContent
         paragraphs={paragraphs}
         fontSize={typo.fontSize}

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useImmersiveLayout } from './useImmersiveLayout';
-import { useContentSplitter } from './useContentSplitter';
+import { useContentSplitter, normalizeToParagraphs } from './useContentSplitter';
 import { usePagePosition } from './usePagePosition';
 import { useSyllableColoring } from './useSyllableColoring';
 import {
@@ -141,18 +141,27 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     [imagePlan, paragraphCount, visibleImages.length]
   );
 
+  // ── Cover page logic ─────────────────────────────────────
+  // Chapter stories get a cover/title page that shows the first paragraph.
+  // The splitter skips this paragraph so it's not duplicated.
+  const isChapterStory = !!(story.series_id && story.episode_number);
+  const chapterNumber = story.episode_number || 1;
+  const totalChapters = story.series_episode_count || 5;
+
+  const firstParagraph = useMemo(() => {
+    if (!isChapterStory) return null;
+    const paras = normalizeToParagraphs(story.content);
+    return paras.length > 0 ? paras[0] : null;
+  }, [story.content, isChapterStory]);
+
   // ── Content Splitting ─────────────────────────────────────
   const contentPages = useContentSplitter(
     story.content,
     age,
     fontSizeSetting,
-    imagePositions
+    imagePositions,
+    isChapterStory, // skip first paragraph — it's on the cover page
   );
-
-  // ── Build final page list (chapter title + content + end) ─
-  const isChapterStory = !!(story.series_id && story.episode_number);
-  const chapterNumber = story.episode_number || 1;
-  const totalChapters = story.series_episode_count || 5;
 
   const allPages = useMemo(() => {
     const pages = [...contentPages];
@@ -471,6 +480,10 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     coverImageUrl={story.cover_image_url}
                     language={uiLanguage}
                     layoutMode={layoutMode}
+                    firstParagraph={firstParagraph}
+                    fontSize={typography.fontSize}
+                    lineHeight={typography.lineHeight}
+                    letterSpacing={typography.letterSpacing}
                   />
                 ) : (
                   <ImmersiveSpreadRenderer
@@ -495,6 +508,10 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     coverImageUrl={story.cover_image_url}
                     language={uiLanguage}
                     layoutMode={layoutMode}
+                    firstParagraph={firstParagraph}
+                    fontSize={typography.fontSize}
+                    lineHeight={typography.lineHeight}
+                    letterSpacing={typography.letterSpacing}
                   />
                 )}
 

@@ -26,6 +26,14 @@ const hyphenators: Record<string, { hyphenateSync: (text: string) => string }> =
 /**
  * Split word into syllables using language-specific hyphenation patterns
  */
+// Debug counter to limit console spam (log first N words only)
+let _syllableLogCount = 0;
+const SYLLABLE_LOG_LIMIT = 15;
+
+// Per-call options: lower minWordLength from default 5 to 3
+// so that short children's words (3-4 chars) still get syllable-split.
+const HYPHEN_OPTIONS = { minWordLength: 3 };
+
 function splitSyllables(word: string, language: string): string[] {
   // Only skip truly tiny words (1-2 chars)
   if (!word || word.length <= 2) return [word];
@@ -33,15 +41,20 @@ function splitSyllables(word: string, language: string): string[] {
   const hyphenModule = hyphenators[language] || hyphenators.de;
   
   try {
-    const hyphenated = hyphenModule.hyphenateSync(word);
+    const hyphenated = hyphenModule.hyphenateSync(word, HYPHEN_OPTIONS);
     
     // Split by soft hyphen
     const syllables = hyphenated.split(SOFT_HYPHEN);
+
+    if (_syllableLogCount < SYLLABLE_LOG_LIMIT) {
+      console.log('[Syllable]', language, word, '→', syllables);
+      _syllableLogCount++;
+    }
     
     return syllables.length > 0 ? syllables : [word];
   } catch (e) {
     // If hyphenation fails, return original word
-    console.warn("Hyphenation failed for:", word, e);
+    console.warn("Hyphenation failed for:", word, language, e);
     return [word];
   }
 }
