@@ -5,6 +5,8 @@ import {
   getMaxWordsPerPage,
   MIN_PAGES,
   MIN_PAGES_REDUCTION_FACTOR,
+  MAX_PAGES,
+  MAX_PAGES_INCREASE_FACTOR,
 } from './constants';
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -196,15 +198,28 @@ export function useContentSplitter(
     const paragraphs = normalizeToParagraphs(content);
     if (paragraphs.length === 0) return [];
 
+    const totalWords = paragraphs.reduce((sum, p) => sum + countWords(p), 0);
     let maxWords = getMaxWordsPerPage(age, fontSizeSetting);
+
+    console.log('[ContentSplitter] age:', age, 'fontSize:', fontSizeSetting, 'maxWordsPerPage:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length);
+
     let pages = splitIntoPages(paragraphs, maxWords, imagePositions);
 
-    // If too few pages, reduce maxWords and re-split
-    const totalWords = paragraphs.reduce((sum, p) => sum + countWords(p), 0);
+    // Guard: too many pages → increase limit and re-split (once)
+    if (pages.length > MAX_PAGES) {
+      const boosted = Math.round(maxWords * MAX_PAGES_INCREASE_FACTOR);
+      console.log('[ContentSplitter] Too many pages:', pages.length, '→ boosting maxWords from', maxWords, 'to', boosted);
+      maxWords = boosted;
+      pages = splitIntoPages(paragraphs, maxWords, imagePositions);
+    }
+
+    // Guard: too few pages → reduce limit and re-split (once)
     if (pages.length < MIN_PAGES && totalWords >= MIN_PAGES * 3) {
       maxWords = Math.round(maxWords * MIN_PAGES_REDUCTION_FACTOR);
       pages = splitIntoPages(paragraphs, maxWords, imagePositions);
     }
+
+    console.log('[ContentSplitter] Final pages:', pages.length, 'maxWords:', maxWords);
 
     return pages;
   }, [content, age, fontSizeSetting, imagePositions]);

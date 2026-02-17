@@ -414,19 +414,40 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     <div
       ref={readerRef}
       className="immersive-reader min-h-screen flex flex-col"
-      style={{ backgroundColor: '#FFF9F0' }}
+      style={{
+        backgroundColor: '#FFF9F0',
+        ...(isFullscreen ? { width: '100%', height: '100%' } : {}),
+      }}
     >
       {/* Progress Bar (only during reading phase) */}
       {readerPhase === 'reading' && (
-        <ImmersiveProgressBar
-          currentPage={currentPage}
-          totalPages={totalPages}
-          chapterNumber={isChapterStory ? chapterNumber : undefined}
-          totalChapters={isChapterStory ? totalChapters : undefined}
-          language={uiLanguage}
-          layoutMode={layoutMode}
-          spread={isLandscape ? currentSpread : undefined}
-        />
+        <div className="relative">
+          <ImmersiveProgressBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            chapterNumber={isChapterStory ? chapterNumber : undefined}
+            totalChapters={isChapterStory ? totalChapters : undefined}
+            language={uiLanguage}
+            layoutMode={layoutMode}
+            spread={isLandscape ? currentSpread : undefined}
+          />
+          {/* Fullscreen button — always visible top-right */}
+          {typeof document !== 'undefined' && document.fullscreenEnabled && (
+            <button
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              className="absolute top-2 right-2 z-50 flex items-center justify-center h-8 w-8 rounded-lg transition-colors"
+              style={{
+                background: 'rgba(255, 255, 255, 0.8)',
+                border: '1px solid #E5E7EB',
+              }}
+            >
+              <span className="text-sm leading-none">
+                {isFullscreen ? '✕' : '⛶'}
+              </span>
+            </button>
+          )}
+        </div>
       )}
 
       {/* ═══ READING PHASE ═══ */}
@@ -443,18 +464,14 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
               <>
                 {/* Chapter title as single spread page */}
                 {currentSpread.left.type === 'chapter-title' ? (
-                  <div className="flex h-full min-h-[80vh]">
-                    <div className="flex-[3] flex items-center justify-center px-8">
-                      <ImmersiveChapterTitle
-                        chapterNumber={chapterNumber}
-                        totalChapters={totalChapters}
-                        title={story.title}
-                        coverImageUrl={story.cover_image_url}
-                        language={uiLanguage}
-                      />
-                    </div>
-                    <div className="flex-[2]" style={{ backgroundColor: '#FAF8F5' }} />
-                  </div>
+                  <ImmersiveChapterTitle
+                    chapterNumber={chapterNumber}
+                    totalChapters={totalChapters}
+                    title={story.title}
+                    coverImageUrl={story.cover_image_url}
+                    language={uiLanguage}
+                    layoutMode={layoutMode}
+                  />
                 ) : (
                   <ImmersiveSpreadRenderer
                     spread={currentSpread}
@@ -477,6 +494,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     title={story.title}
                     coverImageUrl={story.cover_image_url}
                     language={uiLanguage}
+                    layoutMode={layoutMode}
                   />
                 )}
 

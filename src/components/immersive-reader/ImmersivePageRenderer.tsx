@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ImmersivePage, LayoutMode, Spread, getThemeGradient } from './constants';
+import { ImmersivePage, LayoutMode, Spread } from './constants';
 import { SyllableText } from '@/components/SyllableText';
 
 // Multilingual stop words — short functional words that shouldn't be clickable
@@ -136,7 +136,13 @@ function TextContent({
       }}
     >
       {paragraphs.map((para, pIdx) => (
-        <p key={pIdx} className="mb-4 last:mb-0">
+        <p
+          key={pIdx}
+          style={{
+            marginBottom: pIdx < paragraphs.length - 1 ? '16px' : '0',
+            textIndent: pIdx > 0 ? '1.5em' : '0',
+          }}
+        >
           {para.split(/(\s+)/).map((word, wIdx) => {
             const cleanWord = word.toLowerCase().replace(/[.,!?;:'"«»\-–—()[\]{}]/g, '');
             const isHighlighted = !!(highlightedWord && cleanWord === highlightedWord.toLowerCase());
@@ -188,8 +194,6 @@ const ImmersivePageRenderer: React.FC<ImmersivePageRendererProps> = ({
   onWordTap,
   highlightedWord,
 }) => {
-  const gradient = useMemo(() => getThemeGradient(storyTheme), [storyTheme]);
-
   const textBlock = (
     <TextContent
       paragraphs={page.paragraphs}
@@ -228,21 +232,17 @@ const ImmersivePageRenderer: React.FC<ImmersivePageRendererProps> = ({
           />
         </div>
         {/* Text area */}
-        <div className="flex-1 pt-4 pb-6 overflow-y-auto">
+        <div className="flex-1 pt-4 pb-6 overflow-hidden">
           {textBlock}
         </div>
       </div>
     );
   }
 
-  // Text-only vertical: subtle themed gradient accent at top
+  // Text-only vertical: warm background, no gradient bar
   return (
     <div className={`flex flex-col min-h-[80vh] ${padding}`}>
-      <div
-        className="h-2 w-full rounded-full mt-4 mb-6 flex-shrink-0 opacity-50"
-        style={{ background: gradient }}
-      />
-      <div className="flex-1 pb-6 overflow-y-auto">
+      <div className="flex-1 pt-6 pb-6 overflow-hidden">
         {textBlock}
       </div>
     </div>
@@ -255,64 +255,39 @@ export default ImmersivePageRenderer;
 // Spread Renderer (landscape double-page layout)
 // ═════════════════════════════════════════════════════════════
 
-interface SpreadHalfProps {
-  page: ImmersivePage;
-  imageUrl?: string;
-  gradient: string;
-  typo: TypoProps;
+/**
+ * Full-bleed image for one half of a spread. No text, just the image.
+ */
+function SpreadImageHalf({ imageUrl }: { imageUrl: string }) {
+  return (
+    <div className="flex items-center justify-center h-full overflow-hidden p-4">
+      <img
+        src={imageUrl}
+        alt="Story illustration"
+        className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+      />
+    </div>
+  );
 }
 
 /**
- * Renders one half of a landscape spread (either left or right page).
+ * Text half of a spread. Vertically centered, no scrolling.
  */
-function SpreadHalf({ page, imageUrl, gradient, typo }: SpreadHalfProps) {
-  const textBlock = (
-    <TextContent
-      paragraphs={page.paragraphs}
-      fontSize={typo.fontSize}
-      lineHeight={typo.lineHeight}
-      letterSpacing={typo.letterSpacing}
-      syllableMode={typo.syllableMode}
-      storyLanguage={typo.storyLanguage}
-      onWordTap={typo.onWordTap}
-      highlightedWord={typo.highlightedWord}
-    />
-  );
-
-  // Image page — full image with gradient fade + text below
-  if (page.hasImage && imageUrl) {
-    return (
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="relative flex-shrink-0">
-          <img
-            src={imageUrl}
-            alt="Story illustration"
-            className="w-full max-h-[50vh] object-cover rounded-b-xl"
-            loading="lazy"
-            onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 h-12 rounded-b-xl"
-            style={{ background: 'linear-gradient(transparent 0%, #FFF9F0 100%)' }}
-          />
-        </div>
-        <div className="flex-1 pt-3 pb-4 overflow-y-auto">
-          {textBlock}
-        </div>
-      </div>
-    );
-  }
-
-  // Text-only page
+function SpreadTextHalf({ paragraphs, typo }: { paragraphs: string[]; typo: TypoProps }) {
   return (
-    <div className="flex flex-col h-full">
-      <div
-        className="h-1.5 w-full rounded-full mt-3 mb-4 flex-shrink-0 opacity-40"
-        style={{ background: gradient }}
+    <div className="flex flex-col justify-center h-full overflow-hidden px-8 py-6">
+      <TextContent
+        paragraphs={paragraphs}
+        fontSize={typo.fontSize}
+        lineHeight={typo.lineHeight}
+        letterSpacing={typo.letterSpacing}
+        syllableMode={typo.syllableMode}
+        storyLanguage={typo.storyLanguage}
+        onWordTap={typo.onWordTap}
+        highlightedWord={typo.highlightedWord}
       />
-      <div className="flex-1 pb-4 overflow-y-auto">
-        {textBlock}
-      </div>
     </div>
   );
 }
@@ -339,10 +314,11 @@ export interface ImmersiveSpreadRendererProps {
 /**
  * Renders a landscape double-page spread.
  *
- * Three variants:
- *  A) Image + Text  — one side has the image, the other has text
- *  B) Text + Text   — two text pages side by side like a book
- *  C) Single page   — left page centered (~60%), right side empty
+ * Variant A: Image + Text — image fills one ENTIRE half, text fills the other.
+ * Variant B: Text + Text  — two text pages side by side like a book.
+ * Variant C: Single page  — centered left, right side empty.
+ *
+ * RULE: Image and text NEVER share the same half. No scrolling allowed.
  */
 export const ImmersiveSpreadRenderer: React.FC<ImmersiveSpreadRendererProps> = ({
   spread,
@@ -350,8 +326,6 @@ export const ImmersiveSpreadRenderer: React.FC<ImmersiveSpreadRendererProps> = (
   storyTheme,
   typo,
 }) => {
-  const gradient = useMemo(() => getThemeGradient(storyTheme), [storyTheme]);
-
   const leftImageUrl = spread.left.hasImage && spread.left.imageIndex !== undefined
     ? visibleImages[spread.left.imageIndex]
     : undefined;
@@ -362,20 +336,38 @@ export const ImmersiveSpreadRenderer: React.FC<ImmersiveSpreadRendererProps> = (
 
   const isSinglePage = spread.right === null;
 
+  // Collect all text paragraphs from both pages for image+text spreads
+  const allParagraphs = useMemo(() => {
+    const paras = [...spread.left.paragraphs];
+    if (spread.right) paras.push(...spread.right.paragraphs);
+    return paras;
+  }, [spread.left.paragraphs, spread.right]);
+
+  // Determine if this spread has any image
+  const hasAnyImage = !!(leftImageUrl || rightImageUrl);
+  const imageUrl = leftImageUrl || rightImageUrl;
+
   // ── Variant C: Single page (cover, chapter title, last odd page) ──
   if (isSinglePage) {
+    if (leftImageUrl) {
+      // Single image page: image left, empty right
+      return (
+        <div className="flex h-full min-h-[80vh]">
+          <div className="flex-[3]">
+            <SpreadImageHalf imageUrl={leftImageUrl} />
+          </div>
+          <div className="flex-[2]">
+            <SpreadEmptyHalf />
+          </div>
+        </div>
+      );
+    }
+    // Single text page
     return (
       <div className="flex h-full min-h-[80vh]">
-        {/* Centered single page (~60% width) */}
-        <div className="flex-[3] px-8 py-4 flex flex-col justify-center">
-          <SpreadHalf
-            page={spread.left}
-            imageUrl={leftImageUrl}
-            gradient={gradient}
-            typo={typo}
-          />
+        <div className="flex-[3]">
+          <SpreadTextHalf paragraphs={spread.left.paragraphs} typo={typo} />
         </div>
-        {/* Empty right side */}
         <div className="flex-[2]">
           <SpreadEmptyHalf />
         </div>
@@ -383,30 +375,42 @@ export const ImmersiveSpreadRenderer: React.FC<ImmersiveSpreadRendererProps> = (
     );
   }
 
-  // ── Variant A & B: Two pages side by side ──
+  // ── Variant A: Image + Text spread ──
+  // One entire half = image, the other entire half = ALL text from both pages
+  if (hasAnyImage && imageUrl) {
+    const imageOnLeft = !!leftImageUrl;
+    const imageHalf = <SpreadImageHalf imageUrl={imageUrl} />;
+    const textHalf = <SpreadTextHalf paragraphs={allParagraphs} typo={typo} />;
+
+    return (
+      <div className="flex h-full min-h-[80vh]">
+        <div
+          className="flex-1"
+          style={imageOnLeft ? { borderRight: '1px solid rgba(0, 0, 0, 0.06)' } : undefined}
+        >
+          {imageOnLeft ? imageHalf : textHalf}
+        </div>
+        <div
+          className="flex-1"
+          style={!imageOnLeft ? { borderLeft: '1px solid rgba(0, 0, 0, 0.06)' } : undefined}
+        >
+          {imageOnLeft ? textHalf : imageHalf}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Variant B: Text + Text (both pages are text-only) ──
   return (
     <div className="flex h-full min-h-[80vh]">
-      {/* Left page */}
       <div
-        className="flex-1 px-6 py-4"
+        className="flex-1"
         style={{ borderRight: '1px solid rgba(0, 0, 0, 0.06)' }}
       >
-        <SpreadHalf
-          page={spread.left}
-          imageUrl={leftImageUrl}
-          gradient={gradient}
-          typo={typo}
-        />
+        <SpreadTextHalf paragraphs={spread.left.paragraphs} typo={typo} />
       </div>
-
-      {/* Right page */}
-      <div className="flex-1 px-6 py-4">
-        <SpreadHalf
-          page={spread.right}
-          imageUrl={rightImageUrl}
-          gradient={gradient}
-          typo={typo}
-        />
+      <div className="flex-1">
+        <SpreadTextHalf paragraphs={spread.right!.paragraphs} typo={typo} />
       </div>
     </div>
   );

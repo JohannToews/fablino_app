@@ -100,10 +100,10 @@ export function getTypographyForAge(age: number, setting: FontSizeSetting = 'med
 // ── Words per Page by Age ───────────────────────────────────
 
 const WORDS_PER_PAGE_BASE: Record<string, number> = {
-  '5-7': 50,
-  '8-9': 75,
-  '10-11': 105,
-  '12+': 140,
+  '5-7': 70,
+  '8-9': 100,
+  '10-11': 130,
+  '12+': 170,
 };
 
 const FONT_SIZE_WORD_MULTIPLIER: Record<FontSizeSetting, number> = {
@@ -200,3 +200,5 @@ export const NAV_HINT_STORAGE_KEY = 'fablino_immersive_hint_shown';
 
 export const MIN_PAGES = 3;
 export const MIN_PAGES_REDUCTION_FACTOR = 0.7; // reduce maxWords by 30% if < MIN_PAGES
+export const MAX_PAGES = 8;
+export const MAX_PAGES_INCREASE_FACTOR = 1.3;  // increase maxWords by 30% if > MAX_PAGES
