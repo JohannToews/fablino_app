@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
 // Import language-specific hyphenation modules
-import hyphenDe from "hyphen/de";
-import hyphenFr from "hyphen/fr";
-import hyphenEs from "hyphen/es";
-import hyphenNl from "hyphen/nl";
-import hyphenIt from "hyphen/it";
-import hyphenEn from "hyphen/en-us";
+// Use `* as` to handle both CJS module.exports and ESM default export correctly
+import * as hyphenDeModule from "hyphen/de";
+import * as hyphenFrModule from "hyphen/fr";
+import * as hyphenEsModule from "hyphen/es";
+import * as hyphenNlModule from "hyphen/nl";
+import * as hyphenItModule from "hyphen/it";
+import * as hyphenEnModule from "hyphen/en-us";
 
 // Colors for syllables — high-contrast blue/red for easy reading
 const SYLLABLE_COLORS = ["#2563EB", "#DC2626"]; // blue-600, red-600
@@ -13,15 +14,68 @@ const SYLLABLE_COLORS = ["#2563EB", "#DC2626"]; // blue-600, red-600
 // Soft hyphen character
 const SOFT_HYPHEN = "\u00AD";
 
-// Map language codes to hyphenation modules
-const hyphenators: Record<string, { hyphenateSync: (text: string, options?: Record<string, unknown>) => string }> = {
-  de: hyphenDe,
-  fr: hyphenFr,
-  es: hyphenEs,
-  nl: hyphenNl,
-  it: hyphenIt,
-  en: hyphenEn,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HyphenModule = any;
+
+/**
+ * Robustly extract hyphenateSync from a hyphen module.
+ * The `hyphen` package uses CJS module.exports which Vite may wrap differently.
+ * This handles: direct property, .default wrapper, .default.hyphenateSync, etc.
+ */
+function getHyphenateSync(mod: HyphenModule): ((text: string, options?: Record<string, unknown>) => string) | null {
+  if (!mod) return null;
+  // Direct property (CJS interop or namespace import)
+  if (typeof mod.hyphenateSync === 'function') return mod.hyphenateSync.bind(mod);
+  // Vite may put CJS exports under .default
+  if (mod.default && typeof mod.default.hyphenateSync === 'function') return mod.default.hyphenateSync.bind(mod.default);
+  // Sometimes the whole module IS the function (unlikely but safe)
+  if (typeof mod === 'function') return mod;
+  // Deep default nesting
+  if (mod.default?.default && typeof mod.default.default.hyphenateSync === 'function') return mod.default.default.hyphenateSync.bind(mod.default.default);
+  return null;
+}
+
+// Build map of language → hyphenateSync function
+const hyphenateSyncFns: Record<string, (text: string, options?: Record<string, unknown>) => string> = {};
+
+const rawModules: Record<string, HyphenModule> = {
+  de: hyphenDeModule,
+  fr: hyphenFrModule,
+  es: hyphenEsModule,
+  nl: hyphenNlModule,
+  it: hyphenItModule,
+  en: hyphenEnModule,
 };
+
+// One-time initialization with debug logging
+let _initLogged = false;
+for (const [lang, mod] of Object.entries(rawModules)) {
+  const fn = getHyphenateSync(mod);
+  if (fn) {
+    hyphenateSyncFns[lang] = fn;
+  }
+  if (!_initLogged) {
+    console.log('[SyllableText] hyphen module structure for', lang, ':', {
+      type: typeof mod,
+      keys: mod ? Object.keys(mod).slice(0, 8) : 'null',
+      hasHyphenateSync: typeof mod?.hyphenateSync === 'function',
+      hasDefault: !!mod?.default,
+      defaultType: typeof mod?.default,
+      defaultKeys: mod?.default ? Object.keys(mod.default).slice(0, 8) : 'none',
+      resolved: !!fn,
+    });
+    if (fn) {
+      try {
+        const testResult = fn('Geheimnis', { minWordLength: 1 });
+        const syllables = testResult.split(SOFT_HYPHEN);
+        console.log('[SyllableText] TEST split "Geheimnis" →', syllables, '(count:', syllables.length, ')');
+      } catch (e) {
+        console.error('[SyllableText] TEST FAILED:', e);
+      }
+    }
+    _initLogged = true;
+  }
+}
 
 // Allow hyphenation for ALL words, even very short ones
 const HYPHEN_OPTIONS = { minWordLength: 1 };
@@ -29,10 +83,15 @@ const HYPHEN_OPTIONS = { minWordLength: 1 };
 function splitSyllables(word: string, language: string): string[] {
   if (!word) return [word];
 
-  const hyphenModule = hyphenators[language] || hyphenators.de;
+  const hyphenateSyncFn = hyphenateSyncFns[language] || hyphenateSyncFns.de;
+
+  if (!hyphenateSyncFn) {
+    // No hyphenation available — return word as single syllable
+    return [word];
+  }
 
   try {
-    const hyphenated = hyphenModule.hyphenateSync(word, HYPHEN_OPTIONS);
+    const hyphenated = hyphenateSyncFn(word, HYPHEN_OPTIONS);
     const syllables = hyphenated.split(SOFT_HYPHEN);
     return syllables.length > 0 ? syllables : [word];
   } catch {
