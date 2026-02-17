@@ -77,9 +77,12 @@ export const SyllableText = ({ text, className = "", onClick, dataPosition, lang
     const syllables = splitSyllables(cleanWord, language);
 
     // Color ALL syllables — even single-syllable words
+    // Punctuation also gets colored so nothing remains black
+    const firstColor = SYLLABLE_COLORS[colorOffset % 2];
+    const lastSyllableColor = SYLLABLE_COLORS[(colorOffset + syllables.length - 1) % 2];
     return (
       <span>
-        {leadingPunct && <span>{leadingPunct}</span>}
+        {leadingPunct && <span style={{ color: firstColor }}>{leadingPunct}</span>}
         {syllables.map((syllable, index) => (
           <span
             key={index}
@@ -88,7 +91,7 @@ export const SyllableText = ({ text, className = "", onClick, dataPosition, lang
             {syllable}
           </span>
         ))}
-        {trailingPunct && <span>{trailingPunct}</span>}
+        {trailingPunct && <span style={{ color: lastSyllableColor }}>{trailingPunct}</span>}
       </span>
     );
   }, [text, language, colorOffset]);

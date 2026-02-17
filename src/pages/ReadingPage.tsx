@@ -11,7 +11,7 @@ import QuizCompletionResult from "@/components/QuizCompletionResult";
 import StoryAudioPlayer from "@/components/StoryAudioPlayer";
 import StoryFeedbackDialog from "@/components/StoryFeedbackDialog";
 import ReadingSettings, { FontSizeLevel, LineSpacingLevel, getReadingTextClasses } from "@/components/ReadingSettings";
-import SyllableText, { isSyllableModeSupported } from "@/components/SyllableText";
+import SyllableText, { isSyllableModeSupported, countSyllables } from "@/components/SyllableText";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
@@ -1361,6 +1361,13 @@ const ReadingPage = () => {
 
     const elements: React.ReactNode[] = [];
 
+    // Running color offset for continuous syllable color alternation across ALL text
+    let globalColorOffset = 0;
+
+    if (syllableMode) {
+      console.log('[ReadingPage] renderFormattedText: syllableMode=TRUE, lang=', textLang);
+    }
+
     paragraphs.forEach((paragraph, pIndex) => {
       const sentences = paragraph.split(/(?<=[.!?])\s+/);
 
@@ -1375,7 +1382,7 @@ const ReadingPage = () => {
             return (
               <span
                 key={sIndex}
-                className={`${shouldBold ? "font-bold" : ""} ${shouldItalic ? "italic text-foreground" : ""}`}
+                className={`${shouldBold ? "font-bold" : ""} ${shouldItalic ? "italic" : ""}`}
               >
                 {words.map((word, wIndex) => {
                   const positionKey = `${pIndex}-${sIndex}-${wIndex}`;
@@ -1400,16 +1407,26 @@ const ReadingPage = () => {
 
                   const markingClass = isSingleWordMarked ? "word-marked" : (isPhraseMarked ? "phrase-marked" : "");
 
-                  if (!canBeMarked) {
-                    return syllableMode ? (
+                  // When syllable mode is ON, ALL words go through SyllableText
+                  if (syllableMode) {
+                    const currentOffset = globalColorOffset;
+                    globalColorOffset += countSyllables(word, textLang);
+                    return (
                       <SyllableText
-                        key={wIndex}
+                        key={`syl-${wIndex}-${currentOffset}`}
                         text={word}
+                        colorOffset={currentOffset}
                         dataPosition={positionKey}
-                        className={markingClass}
+                        onClick={canBeMarked ? (e) => handleWordClick(word, e) : undefined}
+                        className={`${canBeMarked ? 'word-highlight' : ''} ${markingClass}`.trim()}
                         language={textLang}
                       />
-                    ) : (
+                    );
+                  }
+
+                  // syllableMode OFF — normal rendering
+                  if (!canBeMarked) {
+                    return (
                       <span
                         key={wIndex}
                         data-position={positionKey}
@@ -1420,16 +1437,7 @@ const ReadingPage = () => {
                     );
                   }
 
-                  return syllableMode ? (
-                    <SyllableText
-                      key={wIndex}
-                      text={word}
-                      dataPosition={positionKey}
-                      onClick={(e) => handleWordClick(word, e)}
-                      className={`word-highlight ${markingClass}`}
-                      language={textLang}
-                    />
-                  ) : (
+                  return (
                     <span
                       key={wIndex}
                       data-position={positionKey}
