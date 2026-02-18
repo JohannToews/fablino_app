@@ -121,6 +121,14 @@ Deno.serve(async (req) => {
 
     // updateLanguage and updateLanguages are handled above (before requireAdmin)
 
+    if (action === "deleteAuthUser" && body.authId) {
+      const { error } = await supabase.auth.admin.deleteUser(body.authId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "delete" && userId) {
       // Delete user and all related data
       // First delete user role
