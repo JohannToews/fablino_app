@@ -92,7 +92,7 @@ const WelcomePage = () => {
         email: trimmedEmail,
         password: trimmedPassword,
         options: {
-          emailRedirectTo: `${window.location.origin}/welcome`,
+          emailRedirectTo: `https://fablino.lovable.app/welcome`,
         },
       });
 
