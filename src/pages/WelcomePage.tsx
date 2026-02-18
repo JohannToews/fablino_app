@@ -96,9 +96,22 @@ const WelcomePage = () => {
       if (data.session) {
         // Auto-confirmed → redirect
         await handleAuthRedirect();
-      } else {
-        // Email confirmation required
-        setShowEmailConfirm(true);
+      } else if (data.user && !data.session) {
+        // Check if this is a repeated signup (user already exists but unconfirmed or existing)
+        // Supabase returns identities array - if empty, user already exists
+        const identities = data.user.identities;
+        if (identities && identities.length === 0) {
+          // User already exists - show message to login instead
+          toast({
+            title: "E-Mail bereits registriert",
+            description: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
+            variant: "destructive",
+          });
+          setMode("login");
+        } else {
+          // New user - email confirmation required
+          setShowEmailConfirm(true);
+        }
       }
     } catch {
       toast({ title: "Fehler", description: "Ein Fehler ist aufgetreten.", variant: "destructive" });
