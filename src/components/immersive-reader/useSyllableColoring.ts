@@ -1,13 +1,10 @@
 import { useMemo } from 'react';
 
 /**
- * Supported languages for syllable coloring.
- *
- * Uses the `hypher` package with TeX hyphenation patterns.
- * Language support: DE, FR, EN, ES, NL, IT
- * BS (Bosnian) not available — falls back to DE patterns.
+ * Languages where syllable coloring is offered in the UI.
+ * Other languages have patterns but quality is insufficient for children.
  */
-const SUPPORTED_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it'];
+const SUPPORTED_LANGUAGES = ['de', 'fr'];
 
 /**
  * Check if syllable coloring is available for the given language.

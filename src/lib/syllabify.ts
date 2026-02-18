@@ -151,9 +151,11 @@ export function countSyllables(word: string, language: string): number {
 /** Languages that have hyphenation patterns loaded. */
 export const SUPPORTED_LANGUAGES = [...Object.keys(hyphers), 'fr'];
 
+const SYLLABLE_UI_LANGUAGES = ['de', 'fr'];
+
 export function isSyllableModeSupported(language: string): boolean {
   const lang = language.toLowerCase().substring(0, 2);
-  return lang in hyphers || asyncLanguages.includes(lang);
+  return SYLLABLE_UI_LANGUAGES.includes(lang);
 }
 
 /** Whether FR preloading has completed. */
