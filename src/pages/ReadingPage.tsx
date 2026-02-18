@@ -653,6 +653,7 @@ const ReadingPage = () => {
           episode_summary: data.episode_summary ?? null,
           continuity_state: data.continuity_state ?? null,
           visual_style_sheet: data.visual_style_sheet ?? null,
+          image_style_key: data.image_style_key ?? null,
           // Classification & performance (same as Episode 1)
           generation_status: "verified",
           structure_beginning: data.structure_beginning ?? null,
@@ -979,6 +980,7 @@ const ReadingPage = () => {
             episode_summary: genData.episode_summary ?? null,
             continuity_state: genData.continuity_state ?? null,
             visual_style_sheet: genData.visual_style_sheet ?? null,
+            image_style_key: genData.image_style_key ?? null,
             // Classification & performance
             generation_status: "verified",
             structure_beginning: genData.structure_beginning ?? null,

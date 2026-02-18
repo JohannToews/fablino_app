@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
 import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
+import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import {
   StoryType,
@@ -39,7 +40,7 @@ const dailyLimitLabels: Record<string, { remaining: string; limitReached: string
 };
 
 // Screen states for the wizard
-type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "generating";
+type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "image-style" | "generating";
 
 // Wizard path: free (Weg A) or guided (Weg B)
 type WizardPath = "free" | "guided" | null;
@@ -117,6 +118,7 @@ const CreateStoryPage = () => {
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
   const [additionalDescription, setAdditionalDescription] = useState<string>("");
   const [selectedSubElements, setSelectedSubElements] = useState<StorySubElement[]>([]);
+  const [selectedImageStyleKey, setSelectedImageStyleKey] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
 
@@ -139,7 +141,8 @@ const CreateStoryPage = () => {
   // Generate educational story directly
   const generateEducationalStory = async (
     topic: EducationalTopic,
-    customTopicText: string | undefined
+    customTopicText: string | undefined,
+    imageStyleKey?: string
   ) => {
     if (!user?.id) {
       toast.error("Bitte melde dich erneut an");
@@ -193,6 +196,7 @@ const CreateStoryPage = () => {
           kidAge: selectedProfile?.age,
           difficultyLevel: selectedProfile?.difficulty_level,
           contentSafetyLevel: selectedProfile?.content_safety_level,
+          image_style_key: imageStyleKey || undefined,
         },
       });
       clearTimeout(timeoutId);
@@ -290,6 +294,7 @@ const CreateStoryPage = () => {
             story_length: storyLength,
             series_id: null, // Will self-reference after insert for series
             series_mode: isSeries ? (storySettings?.seriesMode || 'normal') : null,
+            image_style_key: imageStyleKey || data.image_style_key || null,
             // Block 2.3c: Story classification metadata
             structure_beginning: data.structure_beginning ?? null,
             structure_middle: data.structure_middle ?? null,
@@ -321,6 +326,16 @@ const CreateStoryPage = () => {
           setIsGenerating(false);
           setCurrentScreen("entry");
           return;
+        }
+
+        // Save image style preference to kid profile
+        if (imageStyleKey && selectedProfile?.id) {
+          supabase.from('kid_profiles')
+            .update({ image_style: imageStyleKey })
+            .eq('id', selectedProfile.id)
+            .then(({ error: prefErr }) => {
+              if (prefErr) console.warn('[CreateStory] Failed to save style preference:', prefErr);
+            });
         }
 
         // For series: set series_id to the story's own ID (self-reference)
@@ -409,9 +424,9 @@ const CreateStoryPage = () => {
     setCustomTopic(customTopicText);
     setSelectedSubElements(subElements || []);
 
-    // For educational stories, generate directly without character/setting screens
+    // For educational stories, skip characters/effects and go to image style picker
     if (storyType === "educational" && topic) {
-      await generateEducationalStory(topic, customTopicText);
+      setCurrentScreen("image-style");
       return;
     }
 
@@ -429,6 +444,13 @@ const CreateStoryPage = () => {
     setCurrentScreen("effects");
   };
   
+  // Stashed effects data — used after image style selection to trigger generation
+  const [pendingEffects, setPendingEffects] = useState<{
+    attributes: SpecialAttribute[];
+    description: string;
+    settingsOverride?: StorySettingsFromEffects;
+  } | null>(null);
+
   // Handle special effects selection complete
   const handleEffectsComplete = async (
     attributes: SpecialAttribute[],
@@ -438,7 +460,6 @@ const CreateStoryPage = () => {
     setSelectedAttributes(attributes);
     setAdditionalDescription(description);
     
-    // For Weg A (free path), settings come from the effects screen
     if (settingsFromEffects) {
       setStorySettings({
         length: settingsFromEffects.length,
@@ -449,15 +470,31 @@ const CreateStoryPage = () => {
       });
     }
     
-    // Generate the story with all collected data
-    await generateFictionStory(attributes, description, settingsFromEffects);
+    // Stash effects data and navigate to image style picker
+    setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
+    setCurrentScreen("image-style");
+  };
+
+  // Handle image style selection — triggers story generation
+  const handleImageStyleSelect = async (styleKey: string) => {
+    setSelectedImageStyleKey(styleKey);
+    // Educational story path
+    if (selectedStoryType === 'educational' && educationalTopic) {
+      await generateEducationalStory(educationalTopic, customTopic, styleKey);
+      return;
+    }
+    // Fiction story path
+    if (pendingEffects) {
+      await generateFictionStory(pendingEffects.attributes, pendingEffects.description, pendingEffects.settingsOverride, styleKey);
+    }
   };
 
   // Generate fiction story (adventure, detective, friendship, funny)
   const generateFictionStory = async (
     effectAttributes: SpecialAttribute[],
     userDescription: string,
-    settingsOverride?: StorySettingsFromEffects
+    settingsOverride?: StorySettingsFromEffects,
+    imageStyleKey?: string
   ) => {
     if (!user?.id) {
       toast.error("Bitte melde dich erneut an");
@@ -569,6 +606,7 @@ const CreateStoryPage = () => {
               kidAge: selectedProfile?.age,
               difficultyLevel: selectedProfile?.difficulty_level,
               contentSafetyLevel: selectedProfile?.content_safety_level,
+              image_style_key: imageStyleKey || undefined,
             },
           }),
           timeoutPromise,
@@ -677,6 +715,7 @@ const CreateStoryPage = () => {
             story_length: storyLength,
             series_id: null, // Will self-reference after insert for series
             series_mode: isSeries ? seriesMode : null,
+            image_style_key: imageStyleKey || data.image_style_key || null,
             // Block 2.3c: Story classification metadata
             structure_beginning: data.structure_beginning ?? null,
             structure_middle: data.structure_middle ?? null,
@@ -708,6 +747,16 @@ const CreateStoryPage = () => {
           setIsGenerating(false);
           setCurrentScreen("entry");
           return;
+        }
+
+        // Save image style preference to kid profile
+        if (imageStyleKey && selectedProfile?.id) {
+          supabase.from('kid_profiles')
+            .update({ image_style: imageStyleKey })
+            .eq('id', selectedProfile.id)
+            .then(({ error: prefErr }) => {
+              if (prefErr) console.warn('[CreateStory] Failed to save style preference:', prefErr);
+            });
         }
 
         // For series: set series_id to the story's own ID (self-reference)
@@ -799,10 +848,15 @@ const CreateStoryPage = () => {
       setCurrentScreen("story-type");
     } else if (currentScreen === "effects") {
       if (wizardPath === "free") {
-        // Weg A: go back to entry
         setCurrentScreen("entry");
       } else {
         setCurrentScreen("characters");
+      }
+    } else if (currentScreen === "image-style") {
+      if (selectedStoryType === 'educational') {
+        setCurrentScreen("story-type");
+      } else {
+        setCurrentScreen("effects");
       }
     }
   };
@@ -930,6 +984,16 @@ const CreateStoryPage = () => {
           isAdmin={isSeriesEnabled(user?.role)}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
+        />
+      )}
+
+      {currentScreen === "image-style" && (
+        <ImageStylePicker
+          kidAge={selectedProfile?.age || 8}
+          kidProfileImageStyle={selectedProfile?.image_style}
+          uiLanguage={kidAppLanguage}
+          onSelect={handleImageStyleSelect}
+          onBack={handleBack}
         />
       )}
     </div>
