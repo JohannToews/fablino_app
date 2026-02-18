@@ -7,12 +7,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, BookOpen, RefreshCw } from "lucide-react";
 import confetti from "canvas-confetti";
 
-// Default theme per age range
-const getDefaultTheme = (age: number) => {
-  if (age <= 6) return "Ein magisches Tier im Wald";
-  if (age <= 8) return "Ein Abenteuer mit einem freundlichen Drachen";
-  if (age <= 10) return "Eine geheimnisvolle Schatzkarte";
-  return "Ein Rätsel in einer alten Bibliothek";
+// Theme per story type and age
+const getThemeForStoryType = (storyType: string, age: number): string => {
+  if (storyType === "adventure") {
+    if (age <= 7) return "Ein mutiger kleiner Held rettet ein magisches Dorf";
+    if (age <= 9) return "Ein Abenteuer mit einer geheimnisvollen Schatzkarte";
+    return "Ein episches Abenteuer in einem fernen Königreich";
+  }
+  if (storyType === "animals") {
+    if (age <= 7) return "Ein niedlicher Fuchs und seine Waldfreunde";
+    if (age <= 9) return "Ein sprechendes Tier löst ein großes Rätsel im Wald";
+    return "Eine Tierexpedition durch den Dschungel";
+  }
+  // fantasy (default)
+  if (age <= 7) return "Ein magisches Tier im Wald";
+  if (age <= 9) return "Ein Abenteuer mit einem freundlichen Drachen";
+  return "Eine geheimnisvolle Begegnung mit einer Fee";
 };
 
 // Default image style per age
@@ -43,6 +53,7 @@ type Status = "generating" | "done" | "error";
 const OnboardingStoryPage = () => {
   const [searchParams] = useSearchParams();
   const kidId = searchParams.get("kid");
+  const storyTypeParam = searchParams.get("storyType");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -116,7 +127,8 @@ const OnboardingStoryPage = () => {
     setKidName(kid.name || "");
 
     const age = kid.age || 8;
-    const theme = getDefaultTheme(age);
+    const resolvedStoryType = storyTypeParam || "fantasy";
+    const theme = getThemeForStoryType(resolvedStoryType, age);
     const imageStyle = getDefaultImageStyle(age);
     const readingLang = kid.reading_language || kid.school_system || "fr";
     const difficulty = getDifficultyForAge(age);
@@ -133,7 +145,7 @@ const OnboardingStoryPage = () => {
           userId: user.id,
           source: "onboarding",
           isSeries: false,
-          storyType: "fantasy",
+          storyType: resolvedStoryType,
           kidName: kid.name,
           kidHobbies: kid.hobbies || "",
           storyLanguage: readingLang,

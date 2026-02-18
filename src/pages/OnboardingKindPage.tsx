@@ -6,24 +6,31 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowRight } from "lucide-react";
-
-const AGES = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+import { Loader2 } from "lucide-react";
 
 const LANGUAGES = [
   { code: "fr", flag: "🇫🇷", label: "Français" },
   { code: "de", flag: "🇩🇪", label: "Deutsch" },
   { code: "en", flag: "🇬🇧", label: "English" },
   { code: "es", flag: "🇪🇸", label: "Español" },
-  { code: "nl", flag: "🇳🇱", label: "Nederlands" },
-  { code: "it", flag: "🇮🇹", label: "Italiano" },
 ];
 
+const STORY_TYPES = [
+  { key: "adventure", emoji: "🏰", label: "Abenteuer", description: "Mutige Helden & spannende Quests" },
+  { key: "fantasy", emoji: "🧚", label: "Märchen & Magie", description: "Zauber, Feen & Wunderwelten" },
+  { key: "animals", emoji: "🐾", label: "Tiergeschichte", description: "Niedliche Tiere & ihre Freundschaften" },
+];
+
+const AGES = [6, 7, 8, 9, 10];
+
+type Step = "profile" | "storyType";
+
 const OnboardingKindPage = () => {
+  const [step, setStep] = useState<Step>("profile");
   const [name, setName] = useState("");
   const [selectedAge, setSelectedAge] = useState<number | null>(null);
   const [readingLang, setReadingLang] = useState<string | null>(null);
-  const [homeLangs, setHomeLangs] = useState<string[]>([]);
+  const [selectedStoryType, setSelectedStoryType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -51,14 +58,7 @@ const OnboardingKindPage = () => {
     })();
   }, [user]);
 
-  const toggleHomeLang = (code: string) => {
-    setHomeLangs((prev) =>
-      prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code]
-    );
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProfileNext = () => {
     if (!name.trim()) {
       toast({ title: "Fehler", description: "Bitte einen Namen eingeben.", variant: "destructive" });
       return;
@@ -71,42 +71,50 @@ const OnboardingKindPage = () => {
       toast({ title: "Fehler", description: "Bitte eine Lesesprache auswählen.", variant: "destructive" });
       return;
     }
+    setStep("storyType");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedStoryType) {
+      toast({ title: "Fehler", description: "Bitte eine Geschichte wählen.", variant: "destructive" });
+      return;
+    }
     if (!user) return;
 
     setIsLoading(true);
     try {
-      // Map reading language to school_system (legacy field still used in app)
-      const schoolSystem = readingLang;
+      const schoolSystem = readingLang!;
+      const age = selectedAge!;
 
       const { data: savedProfile, error } = await supabase
         .from("kid_profiles")
         .insert({
           user_id: user.id,
           name: name.trim().slice(0, 30),
-          age: selectedAge,
-          reading_language: readingLang,
-          home_languages: homeLangs.length > 0 ? homeLangs : [readingLang],
-          ui_language: readingLang,
+          age,
+          reading_language: readingLang!,
+          home_languages: [readingLang!],
+          ui_language: readingLang!,
           school_system: schoolSystem,
-          school_class: getSchoolClass(selectedAge),
-          difficulty_level: getDifficultyLevel(selectedAge),
+          school_class: getSchoolClass(age),
+          difficulty_level: getDifficultyLevel(age),
           content_safety_level: 2,
           color_palette: "warm",
           hobbies: "",
-          story_languages: [readingLang],
-          explanation_language: homeLangs[0] || "de",
+          story_languages: [readingLang!],
+          explanation_language: "de",
         })
         .select()
         .single();
 
-      if (error) {
+      if (error || !savedProfile) {
         console.error("Kid profile save error:", error);
         toast({ title: "Fehler", description: "Profil konnte nicht gespeichert werden.", variant: "destructive" });
         return;
       }
 
-      // Navigate to story generation with profile id
-      navigate(`/onboarding/story?kid=${savedProfile.id}`, { replace: true });
+      navigate(`/onboarding/story?kid=${savedProfile.id}&storyType=${selectedStoryType}`, { replace: true });
     } catch (err) {
       console.error(err);
       toast({ title: "Fehler", description: "Ein Fehler ist aufgetreten.", variant: "destructive" });
@@ -125,35 +133,26 @@ const OnboardingKindPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-8 overflow-y-auto" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
-      {/* Progress */}
-      <div className="w-full max-w-md mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="flex-1 h-2 rounded-full" style={{ background: "#E8863A" }} />
-          <div className="flex-1 h-2 rounded-full" style={{ background: "rgba(232,134,58,0.2)" }} />
-        </div>
-        <p className="text-xs text-center" style={{ color: "rgba(45,24,16,0.5)" }}>Schritt 1 von 2</p>
-      </div>
-
       {/* Header */}
-      <div className="flex flex-col items-center mb-6">
+      <div className="flex flex-col items-center mb-6 w-full max-w-md">
         <img
           src="/mascot/6_Onboarding.png"
           alt="Fablino"
-          className="h-20 w-auto drop-shadow-md"
+          className="h-24 w-auto drop-shadow-md"
           style={{ animation: "gentleBounce 2.5s ease-in-out infinite" }}
         />
-        <h1 className="text-2xl font-bold mt-3" style={{ color: "#E8863A" }}>
-          Wer liest mit Fablino? 🦊
+        <h1 className="text-2xl font-bold mt-3 text-center" style={{ color: "#E8863A" }}>
+          {step === "profile" ? "Wer liest mit Fablino? 🦊" : "Was für eine Geschichte? 📖"}
         </h1>
-        <p className="text-sm mt-1" style={{ color: "rgba(45,24,16,0.6)" }}>
-          Erstelle ein Profil für dein Kind
+        <p className="text-sm mt-1 text-center" style={{ color: "rgba(45,24,16,0.6)" }}>
+          {step === "profile" ? "Erstelle ein Profil für dein Kind" : `Eine Geschichte für ${name} ✨`}
         </p>
       </div>
 
-      {/* Form Card */}
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* A: Name */}
+      {/* === STEP 1: Profile === */}
+      {step === "profile" && (
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-6">
+          {/* Name */}
           <div className="space-y-1.5">
             <Label className="text-sm font-semibold">Name des Kindes</Label>
             <Input
@@ -164,19 +163,20 @@ const OnboardingKindPage = () => {
               className="h-12 rounded-xl border-2 text-base"
               style={{ borderColor: "rgba(232,134,58,0.3)" }}
               autoComplete="off"
+              autoFocus
             />
           </div>
 
-          {/* B: Alter */}
+          {/* Alter */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Alter</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-3">
               {AGES.map((age) => (
                 <button
                   key={age}
                   type="button"
                   onClick={() => setSelectedAge(age)}
-                  className="w-12 h-12 rounded-xl text-sm font-bold transition-all border-2"
+                  className="flex-1 h-14 rounded-xl text-base font-bold transition-all border-2"
                   style={{
                     background: selectedAge === age ? "#E8863A" : "transparent",
                     color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
@@ -189,80 +189,94 @@ const OnboardingKindPage = () => {
             </div>
           </div>
 
-          {/* C: Lesesprache */}
+          {/* Lesesprache */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Lesesprache 📚</Label>
-            <p className="text-xs" style={{ color: "rgba(45,24,16,0.5)" }}>In welcher Sprache liest das Kind?</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.code}
                   type="button"
                   onClick={() => setReadingLang(lang.code)}
-                  className="flex flex-col items-center py-2.5 px-1 rounded-xl border-2 transition-all"
+                  className="flex items-center gap-2.5 py-3 px-4 rounded-xl border-2 transition-all"
                   style={{
                     background: readingLang === lang.code ? "#E8863A" : "transparent",
                     color: readingLang === lang.code ? "white" : "rgba(45,24,16,0.75)",
                     borderColor: readingLang === lang.code ? "#E8863A" : "rgba(232,134,58,0.25)",
                   }}
                 >
-                  <span className="text-2xl mb-0.5">{lang.flag}</span>
-                  <span className="text-xs font-medium leading-tight">{lang.label}</span>
+                  <span className="text-2xl">{lang.flag}</span>
+                  <span className="text-sm font-semibold">{lang.label}</span>
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* D: Sprache zu Hause */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Sprache zu Hause</Label>
-            <p className="text-xs" style={{ color: "rgba(45,24,16,0.5)" }}>In welcher Sprache sprecht ihr zu Hause? (optional)</p>
-            <div className="grid grid-cols-3 gap-2">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang.code}
-                  type="button"
-                  onClick={() => toggleHomeLang(lang.code)}
-                  className="flex flex-col items-center py-2.5 px-1 rounded-xl border-2 transition-all"
-                  style={{
-                    background: homeLangs.includes(lang.code) ? "rgba(232,134,58,0.15)" : "transparent",
-                    color: "rgba(45,24,16,0.75)",
-                    borderColor: homeLangs.includes(lang.code) ? "#E8863A" : "rgba(232,134,58,0.2)",
-                  }}
-                >
-                  <span className="text-2xl mb-0.5">{lang.flag}</span>
-                  <span className="text-xs font-medium leading-tight">{lang.label}</span>
-                </button>
-              ))}
-            </div>
-            {homeLangs.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setHomeLangs([])}
-                className="text-xs underline mt-1"
-                style={{ color: "rgba(45,24,16,0.4)" }}
-              >
-                Auswahl löschen
-              </button>
-            )}
           </div>
 
           <Button
-            type="submit"
-            disabled={isLoading}
+            type="button"
+            onClick={handleProfileNext}
             className="w-full font-semibold rounded-2xl text-white shadow-md"
             style={{ backgroundColor: "#E8863A", height: "52px", fontSize: "1rem" }}
+          >
+            Weiter →
+          </Button>
+        </div>
+      )}
+
+      {/* === STEP 2: Story Type === */}
+      {step === "storyType" && (
+        <div className="w-full max-w-md space-y-4">
+          {STORY_TYPES.map((type) => (
+            <button
+              key={type.key}
+              type="button"
+              onClick={() => setSelectedStoryType(type.key)}
+              className="w-full flex items-center gap-4 px-5 py-5 rounded-2xl border-2 text-left transition-all shadow-sm"
+              style={{
+                background: selectedStoryType === type.key ? "#FFF3E8" : "white",
+                borderColor: selectedStoryType === type.key ? "#E8863A" : "rgba(232,134,58,0.2)",
+                transform: selectedStoryType === type.key ? "scale(1.02)" : "scale(1)",
+              }}
+            >
+              <span className="text-5xl flex-shrink-0">{type.emoji}</span>
+              <div>
+                <p className="text-base font-bold" style={{ color: "rgba(45,24,16,0.9)" }}>{type.label}</p>
+                <p className="text-sm mt-0.5" style={{ color: "rgba(45,24,16,0.5)" }}>{type.description}</p>
+              </div>
+              {selectedStoryType === type.key && (
+                <span className="ml-auto text-xl flex-shrink-0">✅</span>
+              )}
+            </button>
+          ))}
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading || !selectedStoryType}
+            className="w-full font-bold rounded-2xl text-white shadow-lg mt-2"
+            style={{
+              backgroundColor: selectedStoryType ? "#E8863A" : "rgba(232,134,58,0.4)",
+              height: "56px",
+              fontSize: "1.05rem",
+            }}
           >
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <span className="flex items-center gap-2">
-                Weiter <ArrowRight className="h-4 w-4" />
-              </span>
+              "Los geht's! 🦊"
             )}
           </Button>
-        </form>
-      </div>
+
+          <button
+            type="button"
+            onClick={() => setStep("profile")}
+            className="w-full text-sm text-center mt-1 py-2"
+            style={{ color: "rgba(45,24,16,0.4)" }}
+          >
+            ← Zurück
+          </button>
+        </div>
+      )}
 
       <style>{`
         @keyframes gentleBounce {
@@ -274,26 +288,19 @@ const OnboardingKindPage = () => {
   );
 };
 
-// Helpers
 function getSchoolClass(age: number): string {
-  if (age <= 5) return "1";
   if (age <= 6) return "1";
   if (age <= 7) return "2";
   if (age <= 8) return "3";
   if (age <= 9) return "4";
-  if (age <= 10) return "5";
-  if (age <= 11) return "6";
-  if (age <= 12) return "7";
-  if (age <= 13) return "8";
-  return "9";
+  return "5";
 }
 
 function getDifficultyLevel(age: number): number {
   if (age <= 6) return 1;
   if (age <= 8) return 2;
   if (age <= 10) return 3;
-  if (age <= 12) return 4;
-  return 5;
+  return 4;
 }
 
 export default OnboardingKindPage;

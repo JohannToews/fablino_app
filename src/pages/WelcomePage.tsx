@@ -34,14 +34,23 @@ const WelcomePage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Get user profile id
-      const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("id")
-        .eq("auth_id", session.user.id)
-        .maybeSingle();
+      // Retry loop: the handle_new_user DB trigger may take a moment after email verification
+      let profile = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { data } = await supabase
+          .from("user_profiles")
+          .select("id")
+          .eq("auth_id", session.user.id)
+          .maybeSingle();
+        if (data) { profile = data; break; }
+        await new Promise((r) => setTimeout(r, 800));
+      }
 
-      if (!profile) return;
+      if (!profile) {
+        // Profile not yet ready → send to onboarding anyway
+        navigate("/onboarding/kind", { replace: true });
+        return;
+      }
 
       const { data: kids } = await supabase
         .from("kid_profiles")
@@ -55,7 +64,7 @@ const WelcomePage = () => {
         navigate("/onboarding/kind", { replace: true });
       }
     } catch {
-      navigate("/", { replace: true });
+      navigate("/onboarding/kind", { replace: true });
     }
   };
 
