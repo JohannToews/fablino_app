@@ -213,9 +213,20 @@ async function callLovableAI(
       }
       const content = data.choices?.[0]?.message?.content;
       
+      // If gateway returns an error object (e.g. {"error": ..., "user_id": ...}), retry
+      if (!content && data.error) {
+        console.error('[LOVABLE-AI] Gateway returned error object:', JSON.stringify(data.error).substring(0, 200));
+        lastError = new Error(`Gateway error: ${JSON.stringify(data.error).substring(0, 100)}`);
+        // Backoff before retry
+        await sleep(Math.pow(2, attempt + 1) * 1000);
+        continue;
+      }
+      
       if (!content) {
         console.error('[LOVABLE-AI] No content in response. Keys:', JSON.stringify(Object.keys(data)).substring(0, 200));
-        throw new Error("No content in AI response");
+        lastError = new Error("No content in AI response");
+        await sleep(2000);
+        continue;
       }
       
       return content;
