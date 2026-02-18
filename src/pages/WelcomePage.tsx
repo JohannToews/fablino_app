@@ -101,13 +101,12 @@ const WelcomePage = () => {
         // Supabase returns identities array - if empty, user already exists
         const identities = data.user.identities;
         if (identities && identities.length === 0) {
-          // User already exists - show message to login instead
+          // User already exists - switch to login mode with clear hint
+          setMode("login");
           toast({
             title: "E-Mail bereits registriert",
-            description: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
-            variant: "destructive",
+            description: "Melde dich einfach mit deinem Passwort an.",
           });
-          setMode("login");
         } else {
           // New user - email confirmation required
           setShowEmailConfirm(true);
@@ -160,24 +159,21 @@ const WelcomePage = () => {
   if (showEmailConfirm) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
-        <div className="w-full max-w-sm bg-white rounded-3xl shadow-lg px-8 py-10 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 rounded-full shadow-md" style={{ background: "linear-gradient(135deg, #4ade80, #16a34a)" }}>
-              <CheckCircle className="w-8 h-8 text-white" />
+        <div className="w-full max-w-sm bg-white rounded-3xl shadow-lg px-8 py-12 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="p-5 rounded-full shadow-md" style={{ background: "linear-gradient(135deg, #4ade80, #16a34a)" }}>
+              <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold mb-2" style={{ color: "#E8863A" }}>E-Mail bestätigen</h2>
-          <p className="text-sm mb-4" style={{ color: "rgba(45, 24, 16, 0.65)" }}>
-            Wir haben eine E-Mail an <strong>{email}</strong> gesendet. Klicke auf den Bestätigungs-Link, um dein Konto zu aktivieren.
+          <h2 className="text-3xl font-bold mb-3" style={{ color: "#E8863A" }}>E-Mail bestätigen</h2>
+          <p className="text-base mb-3 leading-relaxed" style={{ color: "rgba(45, 24, 16, 0.65)" }}>
+            Wir haben eine Bestätigungs-E-Mail an
           </p>
-          <p className="text-xs text-muted-foreground mb-6">Keine E-Mail erhalten? Prüfe deinen Spam-Ordner.</p>
-          <Button
-            onClick={() => setShowEmailConfirm(false)}
-            variant="outline"
-            className="w-full h-12 rounded-2xl text-base"
-          >
-            Zurück zur Anmeldung
-          </Button>
+          <p className="text-base font-bold mb-4" style={{ color: "rgba(45, 24, 16, 0.85)" }}>{email}</p>
+          <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(45, 24, 16, 0.6)" }}>
+            Klicke auf den Link in der E-Mail, um dein Konto zu aktivieren. Du wirst danach automatisch eingeloggt. ✨
+          </p>
+          <p className="text-xs" style={{ color: "rgba(45, 24, 16, 0.4)" }}>Keine E-Mail erhalten? Prüfe deinen Spam-Ordner.</p>
         </div>
         <style>{`@keyframes gentleBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }`}</style>
       </div>
