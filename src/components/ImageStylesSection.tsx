@@ -75,7 +75,19 @@ const ImageStylesSection = ({ language }: Props) => {
       toast.error("Fehler beim Laden der Bildstile");
       console.error(error);
     } else {
-      setStyles(data || []);
+      setStyles((data || []).map(s => ({
+        ...s,
+        labels: (s.labels ?? {}) as Record<string, string>,
+        description: (s.description ?? {}) as Record<string, string>,
+        age_modifiers: (s.age_modifiers ?? {}) as Record<string, string>,
+        age_groups: s.age_groups as string[],
+        default_for_ages: (s.default_for_ages ?? []) as string[],
+        is_active: s.is_active ?? true,
+        sort_order: s.sort_order ?? 0,
+        preview_image_url: s.preview_image_url ?? null,
+        created_at: s.created_at ?? "",
+        updated_at: s.updated_at ?? "",
+      })));
     }
     setLoading(false);
   };
@@ -157,7 +169,8 @@ const ImageStylesSection = ({ language }: Props) => {
         toast.error("Fehler beim Erstellen: " + error.message);
       } else {
         toast.success("Stil erstellt");
-        setStyles(prev => [...prev, data].sort((a, b) => a.sort_order - b.sort_order));
+        const mapped = { ...data, labels: (data.labels ?? {}) as Record<string, string>, description: (data.description ?? {}) as Record<string, string>, age_modifiers: (data.age_modifiers ?? {}) as Record<string, string>, age_groups: data.age_groups as string[], default_for_ages: (data.default_for_ages ?? []) as string[] };
+        setStyles(prev => [...prev, mapped].sort((a, b) => a.sort_order - b.sort_order));
         setEditStyle(null);
       }
     } else {
