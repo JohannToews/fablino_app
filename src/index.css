@@ -191,7 +191,7 @@
   }
 
   .reading-text p {
-    @apply mb-4 first-letter:text-3xl first-letter:font-semibold first-letter:text-primary first-letter:mr-1;
+    @apply mb-4 first-letter:text-3xl first-letter:font-semibold first-letter:mr-1;
   }
 
   .explanation-panel p {

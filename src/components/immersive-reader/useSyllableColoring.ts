@@ -3,9 +3,9 @@ import { useMemo } from 'react';
 /**
  * Supported languages for syllable coloring.
  *
- * Uses the existing `hyphen` package already installed in the project.
+ * Uses the `hypher` package with TeX hyphenation patterns.
  * Language support: DE, FR, EN, ES, NL, IT
- * BS (Bosnian) not available in `hyphen` — falls back to DE patterns.
+ * BS (Bosnian) not available — falls back to DE patterns.
  */
 const SUPPORTED_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it'];
 

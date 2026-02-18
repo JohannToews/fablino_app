@@ -1335,9 +1335,6 @@ const ReadingPage = () => {
     // Running color offset for continuous syllable color alternation across ALL text
     let globalColorOffset = 0;
 
-    // Version marker — remove after confirming deploy works
-    console.log('[ReadingPage v2] syllableMode=', syllableMode, 'words will ALL go through SyllableText');
-
     paragraphs.forEach((paragraph, pIndex) => {
       const sentences = paragraph.split(/(?<=[.!?])\s+/);
 
