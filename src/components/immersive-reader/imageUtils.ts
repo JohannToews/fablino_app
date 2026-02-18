@@ -111,6 +111,7 @@ export function getVisibleImages(
 
 /**
  * Build the full image array from cover + story_images.
+ * Deduplicates: if the first story_image matches the cover, skip it.
  */
 export function buildImageArray(
   coverImageUrl: string | null | undefined,
@@ -119,7 +120,11 @@ export function buildImageArray(
   const images: string[] = [];
   if (coverImageUrl) images.push(coverImageUrl);
   if (storyImages && Array.isArray(storyImages)) {
-    images.push(...storyImages);
+    for (const img of storyImages) {
+      if (img && img !== coverImageUrl) {
+        images.push(img);
+      }
+    }
   }
   return images;
 }

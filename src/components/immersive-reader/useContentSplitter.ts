@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   ImmersivePage,
   getMaxWordsPerPage,
+  getTypographyForAge,
   MIN_PAGES,
   MIN_PAGES_REDUCTION_FACTOR,
   MAX_PAGES,
@@ -44,43 +45,39 @@ export function normalizeToParagraphs(content: string): string[] {
   return paragraphs;
 }
 
-/**
- * Split a paragraph at the nearest sentence boundary within the word limit.
- * Sentence boundaries: `.` `!` `?` followed by space or end-of-string.
- */
-function splitParagraphAtSentences(para: string, maxWords: number): string[] {
-  const chunks: string[] = [];
-  let remaining = para;
+function splitIntoSentences(text: string): string[] {
+  return text.match(/[^.!?]+[.!?]+\s*/g) || [text];
+}
 
-  while (remaining.trim()) {
-    const words = remaining.split(/\s+/).filter(Boolean);
-    if (words.length <= maxWords) {
-      chunks.push(remaining.trim());
-      break;
-    }
+// ── Pixel-based measurement ─────────────────────────────────
 
-    // Take maxWords worth of text and find the last sentence boundary
-    const candidate = words.slice(0, maxWords).join(' ');
-    const sentenceEndRegex = /[.!?]\s+/g;
-    let lastBoundary = -1;
-    let match: RegExpExecArray | null;
+interface MeasureConfig {
+  containerWidth: number;
+  fontSize: number;
+  lineHeight: number;
+  letterSpacing: string;
+}
 
-    while ((match = sentenceEndRegex.exec(candidate)) !== null) {
-      lastBoundary = match.index + match[0].length - 1;
-    }
-
-    if (lastBoundary > 0) {
-      const splitPoint = candidate.substring(0, lastBoundary + 1).trimEnd();
-      chunks.push(splitPoint);
-      remaining = remaining.substring(splitPoint.length).trimStart();
-    } else {
-      // No sentence boundary — take the whole chunk (avoid infinite loop)
-      chunks.push(candidate);
-      remaining = words.slice(maxWords).join(' ');
-    }
-  }
-
-  return chunks.filter(c => c.length > 0);
+function measureTextHeight(text: string, config: MeasureConfig): number {
+  const div = document.createElement('div');
+  div.style.cssText = `
+    position: absolute;
+    visibility: hidden;
+    width: ${config.containerWidth}px;
+    font-size: ${config.fontSize}px;
+    line-height: ${config.lineHeight};
+    letter-spacing: ${config.letterSpacing};
+    font-family: 'Nunito', sans-serif;
+    padding: 0;
+    margin: 0;
+    white-space: normal;
+    word-wrap: break-word;
+  `;
+  div.innerHTML = text.replace(/\n\n/g, '<br><br>');
+  document.body.appendChild(div);
+  const height = div.scrollHeight;
+  document.body.removeChild(div);
+  return height;
 }
 
 // ── Page assembly ────────────────────────────────────────────
@@ -106,21 +103,20 @@ function finalizePage(draft: PageDraft): ImmersivePage {
 }
 
 /**
- * Core splitting algorithm.
- *
- * Key behaviour: multiple paragraphs are packed onto the SAME page
- * until maxWordsPerPage is reached. A page break only happens when
- * adding the next paragraph would exceed the limit.
+ * Pixel-based splitting: fills pages until the available height is reached.
+ * Falls back to word-based limits as a safety net.
  */
-function splitIntoPages(
+function splitIntoPagesPixel(
   paragraphs: string[],
-  maxWordsPerPage: number,
+  maxHeight: number,
+  measureConfig: MeasureConfig,
   imagePositions: number[],
+  maxWordsFallback: number,
 ): ImmersivePage[] {
   const pages: ImmersivePage[] = [];
   let current: PageDraft = newDraft();
+  let currentText = '';
 
-  // paragraph index → image array index
   const paraToImageIdx = new Map<number, number>();
   imagePositions.forEach((paraIdx, imgIdx) => {
     paraToImageIdx.set(paraIdx, imgIdx);
@@ -130,9 +126,95 @@ function splitIntoPages(
     const para = paragraphs[i];
     const wc = countWords(para);
 
-    // ── Single paragraph too long → split at sentences ──
+    const testText = currentText ? currentText + '\n\n' + para : para;
+    const measuredHeight = measureTextHeight(testText, measureConfig);
+    const wordOverflow = current.wordCount + wc > maxWordsFallback * 1.5;
+
+    if ((measuredHeight > maxHeight || wordOverflow) && current.paragraphs.length > 0) {
+      pages.push(finalizePage(current));
+      current = newDraft();
+      currentText = '';
+    }
+
+    // Check if this single paragraph alone is too tall
+    if (current.paragraphs.length === 0) {
+      const singleHeight = measureTextHeight(para, measureConfig);
+      if (singleHeight > maxHeight) {
+        const sentences = splitIntoSentences(para);
+        let sentenceBuffer = '';
+        let sentenceDraft: PageDraft = newDraft();
+
+        if (paraToImageIdx.has(i)) {
+          sentenceDraft.hasImage = true;
+          sentenceDraft.imageIndex = paraToImageIdx.get(i);
+        }
+
+        for (const sentence of sentences) {
+          const testSentence = sentenceBuffer ? sentenceBuffer + ' ' + sentence : sentence;
+          const h = measureTextHeight(testSentence, measureConfig);
+
+          if (h > maxHeight && sentenceBuffer) {
+            sentenceDraft.paragraphs = [sentenceBuffer.trim()];
+            sentenceDraft.wordCount = countWords(sentenceBuffer);
+            pages.push(finalizePage(sentenceDraft));
+            sentenceDraft = newDraft();
+            sentenceBuffer = sentence;
+          } else {
+            sentenceBuffer = testSentence;
+          }
+        }
+
+        if (sentenceBuffer.trim()) {
+          current.paragraphs = [sentenceBuffer.trim()];
+          current.wordCount = countWords(sentenceBuffer);
+          currentText = sentenceBuffer.trim();
+          if (paraToImageIdx.has(i) && !pages.some(p => p.imageIndex === paraToImageIdx.get(i))) {
+            current.hasImage = true;
+            current.imageIndex = paraToImageIdx.get(i);
+          }
+        }
+        continue;
+      }
+    }
+
+    current.paragraphs.push(para);
+    current.wordCount += wc;
+    currentText = currentText ? currentText + '\n\n' + para : para;
+
+    if (paraToImageIdx.has(i)) {
+      current.hasImage = true;
+      current.imageIndex = paraToImageIdx.get(i);
+    }
+  }
+
+  if (current.paragraphs.length > 0) {
+    pages.push(finalizePage(current));
+  }
+
+  return pages;
+}
+
+/**
+ * Word-based splitting (fallback for SSR or when DOM is unavailable).
+ */
+function splitIntoPages(
+  paragraphs: string[],
+  maxWordsPerPage: number,
+  imagePositions: number[],
+): ImmersivePage[] {
+  const pages: ImmersivePage[] = [];
+  let current: PageDraft = newDraft();
+
+  const paraToImageIdx = new Map<number, number>();
+  imagePositions.forEach((paraIdx, imgIdx) => {
+    paraToImageIdx.set(paraIdx, imgIdx);
+  });
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const para = paragraphs[i];
+    const wc = countWords(para);
+
     if (wc > maxWordsPerPage) {
-      // Flush accumulated content first
       if (current.paragraphs.length > 0) {
         pages.push(finalizePage(current));
         current = newDraft();
@@ -153,13 +235,11 @@ function splitIntoPages(
       continue;
     }
 
-    // ── Would this paragraph overflow the current page? ──
     if (current.wordCount + wc > maxWordsPerPage && current.paragraphs.length > 0) {
       pages.push(finalizePage(current));
       current = newDraft();
     }
 
-    // ── Add paragraph to current page ──
     current.paragraphs.push(para);
     current.wordCount += wc;
 
@@ -169,7 +249,6 @@ function splitIntoPages(
     }
   }
 
-  // Flush remaining
   if (current.paragraphs.length > 0) {
     pages.push(finalizePage(current));
   }
@@ -177,18 +256,41 @@ function splitIntoPages(
   return pages;
 }
 
-// ── Public hook ──────────────────────────────────────────────
+function splitParagraphAtSentences(para: string, maxWords: number): string[] {
+  const chunks: string[] = [];
+  let remaining = para;
 
-/**
- * Hook: splits story text into ImmersivePage[].
- *
- * Re-computes when content, age, or imagePositions change.
- * Enforces a minimum of MIN_PAGES pages (reduces maxWords by 30% and re-splits if needed).
- */
-/**
- * Merge sparse text-only pages (< MIN_SPARSE words) into the previous page.
- * Skips first and last pages and pages with images.
- */
+  while (remaining.trim()) {
+    const words = remaining.split(/\s+/).filter(Boolean);
+    if (words.length <= maxWords) {
+      chunks.push(remaining.trim());
+      break;
+    }
+
+    const candidate = words.slice(0, maxWords).join(' ');
+    const sentenceEndRegex = /[.!?]\s+/g;
+    let lastBoundary = -1;
+    let match: RegExpExecArray | null;
+
+    while ((match = sentenceEndRegex.exec(candidate)) !== null) {
+      lastBoundary = match.index + match[0].length - 1;
+    }
+
+    if (lastBoundary > 0) {
+      const splitPoint = candidate.substring(0, lastBoundary + 1).trimEnd();
+      chunks.push(splitPoint);
+      remaining = remaining.substring(splitPoint.length).trimStart();
+    } else {
+      chunks.push(candidate);
+      remaining = words.slice(maxWords).join(' ');
+    }
+  }
+
+  return chunks.filter(c => c.length > 0);
+}
+
+// ── Sparse page merging ─────────────────────────────────────
+
 const MIN_SPARSE_WORDS = 30;
 
 function mergeSparsePages(pages: ImmersivePage[]): ImmersivePage[] {
@@ -196,61 +298,144 @@ function mergeSparsePages(pages: ImmersivePage[]): ImmersivePage[] {
   for (let i = 1; i < result.length - 1; i++) {
     const wc = result[i].paragraphs.join(' ').split(/\s+/).filter(Boolean).length;
     if (wc < MIN_SPARSE_WORDS && !result[i].hasImage) {
-      // Merge into previous page
       result[i - 1] = {
         ...result[i - 1],
         paragraphs: [...result[i - 1].paragraphs, ...result[i].paragraphs],
       };
       result.splice(i, 1);
-      i--; // re-check the same index
+      i--;
     }
   }
   return result;
 }
 
+// ── Layout dimensions ────────────────────────────────────────
+
+function getAvailableHeight(isLandscape: boolean): number {
+  if (typeof window === 'undefined') return 600;
+  const viewport = window.innerHeight;
+  const toolbarAndProgress = 96;
+  const paddingTopBottom = 80;
+  return viewport - toolbarAndProgress - paddingTopBottom;
+}
+
+function getTextContainerWidth(isLandscape: boolean): number {
+  if (typeof window === 'undefined') return 400;
+  const viewport = window.innerWidth;
+  if (isLandscape) {
+    return (viewport / 2) - 64;
+  }
+  return Math.min(viewport - 48, 560);
+}
+
+// ── Public hook ──────────────────────────────────────────────
+
 export function useContentSplitter(
   content: string,
   age: number,
   imagePositions: number[],
-  skipFirstParagraph: boolean = false,
+  skipParagraphCount: number | boolean = 0,
 ): ImmersivePage[] {
+  const [windowSize, setWindowSize] = useState({
+    w: typeof window !== 'undefined' ? window.innerWidth : 800,
+    h: typeof window !== 'undefined' ? window.innerHeight : 600,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ w: window.innerWidth, h: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return useMemo(() => {
     if (!content || !content.trim()) return [];
 
     let paragraphs = normalizeToParagraphs(content);
     if (paragraphs.length === 0) return [];
 
-    // When a cover page shows the first paragraph, skip it in the splitter
-    if (skipFirstParagraph && paragraphs.length > 1) {
-      paragraphs = paragraphs.slice(1);
+    // Support both boolean (legacy) and number (how many paragraphs to skip)
+    const skipCount = typeof skipParagraphCount === 'boolean'
+      ? (skipParagraphCount ? 1 : 0)
+      : skipParagraphCount;
+
+    if (skipCount > 0 && paragraphs.length > skipCount) {
+      paragraphs = paragraphs.slice(skipCount);
     }
 
     const totalWords = paragraphs.reduce((sum, p) => sum + countWords(p), 0);
-    let maxWords = getMaxWordsPerPage(age);
+    const maxWords = getMaxWordsPerPage(age);
+    const typography = getTypographyForAge(age);
 
-    console.log('[ContentSplitter] age:', age, 'maxWordsPerPage:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length, 'skipFirst:', skipFirstParagraph);
+    const isLandscape = windowSize.w > 1024 && windowSize.w > windowSize.h;
+    const availableHeight = getAvailableHeight(isLandscape);
+    const containerWidth = getTextContainerWidth(isLandscape);
 
-    let pages = splitIntoPages(paragraphs, maxWords, imagePositions);
+    const canMeasure = typeof document !== 'undefined';
 
-    // Guard: too many pages → increase limit and re-split (once)
+    console.log('[ContentSplitter] age:', age, 'maxWords:', maxWords, 'totalWords:', totalWords, 'paragraphs:', paragraphs.length, 'skipped:', skipCount, 'pixelMode:', canMeasure, 'availableH:', availableHeight, 'containerW:', containerWidth);
+
+    let pages: ImmersivePage[];
+
+    if (canMeasure) {
+      const measureConfig: MeasureConfig = {
+        containerWidth,
+        fontSize: typography.fontSize,
+        lineHeight: typography.lineHeight,
+        letterSpacing: typography.letterSpacing,
+      };
+
+      pages = splitIntoPagesPixel(
+        paragraphs,
+        availableHeight,
+        measureConfig,
+        imagePositions,
+        maxWords,
+      );
+    } else {
+      pages = splitIntoPages(paragraphs, maxWords, imagePositions);
+    }
+
+    // Guard: too many pages → re-split with more height tolerance
     if (pages.length > MAX_PAGES) {
-      const boosted = Math.round(maxWords * MAX_PAGES_INCREASE_FACTOR);
-      console.log('[ContentSplitter] Too many pages:', pages.length, '→ boosting maxWords from', maxWords, 'to', boosted);
-      maxWords = boosted;
-      pages = splitIntoPages(paragraphs, maxWords, imagePositions);
+      const boostedHeight = Math.round(availableHeight * MAX_PAGES_INCREASE_FACTOR);
+      console.log('[ContentSplitter] Too many pages:', pages.length, '→ boosting height from', availableHeight, 'to', boostedHeight);
+      if (canMeasure) {
+        pages = splitIntoPagesPixel(
+          paragraphs,
+          boostedHeight,
+          { containerWidth, fontSize: typography.fontSize, lineHeight: typography.lineHeight, letterSpacing: typography.letterSpacing },
+          imagePositions,
+          maxWords,
+        );
+      } else {
+        const boostedWords = Math.round(maxWords * MAX_PAGES_INCREASE_FACTOR);
+        pages = splitIntoPages(paragraphs, boostedWords, imagePositions);
+      }
     }
 
-    // Guard: too few pages → reduce limit and re-split (once)
+    // Guard: too few pages → re-split with less height
     if (pages.length < MIN_PAGES && totalWords >= MIN_PAGES * 3) {
-      maxWords = Math.round(maxWords * MIN_PAGES_REDUCTION_FACTOR);
-      pages = splitIntoPages(paragraphs, maxWords, imagePositions);
+      const reducedHeight = Math.round(availableHeight * MIN_PAGES_REDUCTION_FACTOR);
+      if (canMeasure) {
+        pages = splitIntoPagesPixel(
+          paragraphs,
+          reducedHeight,
+          { containerWidth, fontSize: typography.fontSize, lineHeight: typography.lineHeight, letterSpacing: typography.letterSpacing },
+          imagePositions,
+          maxWords,
+        );
+      } else {
+        const reducedWords = Math.round(maxWords * MIN_PAGES_REDUCTION_FACTOR);
+        pages = splitIntoPages(paragraphs, reducedWords, imagePositions);
+      }
     }
 
-    // Merge sparse pages (< 30 words, no image) into previous
     pages = mergeSparsePages(pages);
 
-    console.log('[ContentSplitter] Final pages:', pages.length, 'maxWords:', maxWords);
+    console.log('[ContentSplitter] Final pages:', pages.length);
 
     return pages;
-  }, [content, age, imagePositions, skipFirstParagraph]);
+  }, [content, age, imagePositions, skipParagraphCount, windowSize.w, windowSize.h]);
 }

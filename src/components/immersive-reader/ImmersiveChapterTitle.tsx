@@ -11,6 +11,7 @@ interface ImmersiveChapterTitleProps {
   language?: string | null;
   layoutMode?: LayoutMode;
   firstParagraph?: string | null;
+  coverParagraphs?: string[];
   fontSize?: number;
   lineHeight?: number;
   letterSpacing?: string;
@@ -35,12 +36,16 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
   language,
   layoutMode = 'phone',
   firstParagraph,
+  coverParagraphs,
   fontSize = 19,
   lineHeight = 1.65,
   letterSpacing = '0.1px',
   syllableMode = false,
   storyLanguage = 'de',
 }) => {
+  const allCoverParas = coverParagraphs && coverParagraphs.length > 0
+    ? coverParagraphs
+    : firstParagraph ? [firstParagraph] : [];
   const labels = getImmersiveLabels(language);
   const isLandscape = layoutMode === 'landscape-spread';
   const isChapter = !!(chapterNumber && totalChapters);
@@ -86,38 +91,46 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
     />
   );
 
-  // First paragraph — rendered with syllable coloring when active
-  const firstParaEl = firstParagraph ? (
-    <p
-      className="text-left"
+  // Cover paragraphs — rendered with syllable coloring when active
+  let globalColorOffset = 0;
+  const coverParaEls = allCoverParas.length > 0 ? (
+    <div
+      className="text-left overflow-hidden"
       style={{
         fontFamily: "'Nunito', sans-serif",
         fontSize: `${fontSize}px`,
         lineHeight,
         letterSpacing,
-        color: syllableMode ? undefined : '#374151',
       }}
     >
-      {(() => {
-        if (!syllableMode) return firstParagraph;
-
-        // Render with running color counter
-        let colorOffset = 0;
-        return firstParagraph.split(/(\s+)/).map((token, i) => {
-          if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
-          const currentOffset = colorOffset;
-          colorOffset += countSyllables(token, storyLanguage);
-          return (
-            <SyllableText
-              key={i}
-              text={token}
-              language={storyLanguage}
-              colorOffset={currentOffset}
-            />
-          );
-        });
-      })()}
-    </p>
+      {allCoverParas.map((para, pIdx) => (
+        <p
+          key={pIdx}
+          style={{
+            marginBottom: pIdx < allCoverParas.length - 1 ? '14px' : '0',
+            textIndent: pIdx > 0 ? '1.5em' : '0',
+            color: syllableMode ? undefined : '#374151',
+          }}
+        >
+          {(() => {
+            if (!syllableMode) return para;
+            return para.split(/(\s+)/).map((token, i) => {
+              if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
+              const currentOffset = globalColorOffset;
+              globalColorOffset += countSyllables(token, storyLanguage);
+              return (
+                <SyllableText
+                  key={i}
+                  text={token}
+                  language={storyLanguage}
+                  colorOffset={currentOffset}
+                />
+              );
+            });
+          })()}
+        </p>
+      ))}
+    </div>
   ) : null;
 
   const imageFallback = (
@@ -146,7 +159,7 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
                 style={{ maxHeight: '85%', maxWidth: '100%', width: 'auto', objectFit: 'contain' }}
                 className="rounded-2xl"
                 loading="eager"
-                onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               {/* Subtle gradient fade on bottom edge */}
               <div
@@ -165,7 +178,7 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
           {titleEl}
           {chapterCounter}
           {separator}
-          {firstParaEl}
+          {coverParaEls}
         </div>
       </div>
     );
@@ -181,7 +194,7 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
             alt={title}
             className="w-full rounded-2xl object-cover max-h-[40vh]"
             loading="eager"
-            onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
           {/* Gradient fade at bottom */}
           <div
@@ -200,7 +213,7 @@ const ImmersiveChapterTitle: React.FC<ImmersiveChapterTitleProps> = ({
       {chapterCounter}
       {separator}
       <div className="w-full overflow-hidden">
-        {firstParaEl}
+        {coverParaEls}
       </div>
     </div>
   );

@@ -170,7 +170,7 @@ const ImmersivePageRenderer: React.FC<ImmersivePageRendererProps> = ({
             alt="Story illustration"
             className={`w-full ${imageHeight} object-cover`}
             loading="lazy"
-            onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
           {/* Bottom gradient fade into background */}
           <div
@@ -214,7 +214,7 @@ function SpreadImageHalf({ imageUrl, fadeSide = 'right' }: { imageUrl: string; f
         alt="Story illustration"
         className="max-w-full max-h-full object-contain"
         loading="lazy"
-        onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
       {/* Side fade toward text */}
       <div
@@ -263,7 +263,7 @@ function SpreadEmptyHalf() {
   return (
     <div
       className="flex-1 h-full"
-      style={{ backgroundColor: '#FAF8F5' }}
+      style={{ backgroundColor: '#FFF9F0' }}
     />
   );
 }

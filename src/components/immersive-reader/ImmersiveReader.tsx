@@ -174,18 +174,47 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const totalChapters = story.series_episode_count || 5;
   const hasCoverPage = !!(story.cover_image_url || story.title);
 
-  const firstParagraph = useMemo(() => {
-    if (!hasCoverPage) return null;
+  // Collect paragraphs for the cover page — fill available space
+  const coverParagraphs = useMemo(() => {
+    if (!hasCoverPage) return [];
     const paras = normalizeToParagraphs(story.content);
-    return paras.length > 0 ? paras[0] : null;
-  }, [story.content, hasCoverPage]);
+    if (paras.length === 0) return [];
+
+    if (typeof document === 'undefined') return [paras[0]];
+
+    const isLand = window.innerWidth > 1024 && window.innerWidth > window.innerHeight;
+    const containerW = isLand ? (window.innerWidth / 2) - 80 : Math.min(window.innerWidth - 48, 560);
+    const titleAndSeparatorH = 100;
+    const maxH = (window.innerHeight - 140) - titleAndSeparatorH;
+    const typo = getTypographyForAge(age);
+
+    const div = document.createElement('div');
+    div.style.cssText = `position:absolute;visibility:hidden;width:${containerW}px;font-size:${typo.fontSize}px;line-height:${typo.lineHeight};letter-spacing:${typo.letterSpacing};font-family:'Nunito',sans-serif;white-space:normal;word-wrap:break-word;`;
+    document.body.appendChild(div);
+
+    const result: string[] = [];
+    let runningText = '';
+    for (const p of paras) {
+      const test = runningText ? runningText + '\n\n' + p : p;
+      div.innerHTML = test.replace(/\n\n/g, '<br><br>');
+      if (div.scrollHeight > maxH && result.length > 0) break;
+      result.push(p);
+      runningText = test;
+    }
+
+    document.body.removeChild(div);
+    return result.length > 0 ? result : [paras[0]];
+  }, [story.content, hasCoverPage, age]);
+
+  const firstParagraph = coverParagraphs.length > 0 ? coverParagraphs[0] : null;
+  const coverParagraphCount = coverParagraphs.length;
 
   // ── Content Splitting ─────────────────────────────────────
   const contentPages = useContentSplitter(
     story.content,
     age,
     imagePositions,
-    hasCoverPage, // skip first paragraph — it's on the cover page
+    hasCoverPage ? coverParagraphCount : 0,
   );
 
   const allPages = useMemo(() => {
@@ -509,6 +538,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     language={uiLanguage}
                     layoutMode={layoutMode}
                     firstParagraph={firstParagraph}
+                    coverParagraphs={coverParagraphs}
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
@@ -541,6 +571,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     language={uiLanguage}
                     layoutMode={layoutMode}
                     firstParagraph={firstParagraph}
+                    coverParagraphs={coverParagraphs}
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
