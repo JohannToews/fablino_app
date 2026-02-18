@@ -43,6 +43,32 @@ export function syllabify(word: string, language: string): string[] {
   }
 }
 
+// ── Live monitoring (first 20 words per page) ───────────────
+let _liveLogCount = 0;
+const LIVE_LOG_MAX = 20;
+
+export function syllabifyWithLog(word: string, language: string): string[] {
+  const result = syllabify(word, language);
+
+  if (_liveLogCount < LIVE_LOG_MAX) {
+    const status = result.length > 1 ? '✂️' : '1️⃣';
+    console.log(
+      `[LIVE ${_liveLogCount + 1}/${LIVE_LOG_MAX}] ${status} "${word}" (${language}) → [${result.join('|')}] (${result.length} Silben)`
+    );
+    _liveLogCount++;
+
+    if (_liveLogCount === LIVE_LOG_MAX) {
+      console.log('[LIVE] — Stop nach 20 Wörtern.');
+      console.log('[LIVE] ✂️ = mehrere Silben (gut!)');
+      console.log('[LIVE] 1️⃣ = Einsilber (OK wenn kurzes Wort)');
+      console.log('[LIVE] ❌ Wenn 3+ Buchstaben Wörter nur 1 Silbe haben → Problem');
+    }
+  }
+  return result;
+}
+
+export function resetLiveLog() { _liveLogCount = 0; }
+
 /** Count syllables without allocating the full array when only the count is needed. */
 export function countSyllables(word: string, language: string): number {
   if (!word || word.trim().length === 0) return 0;

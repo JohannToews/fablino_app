@@ -1,5 +1,5 @@
 import React from 'react';
-import { syllabify, isSyllableModeSupported } from '@/lib/syllabify';
+import { syllabifyWithLog, isSyllableModeSupported } from '@/lib/syllabify';
 export { isSyllableModeSupported };
 export { countSyllables } from '@/lib/syllabify';
 
@@ -48,7 +48,7 @@ export const SyllableText: React.FC<SyllableTextProps> = ({
     );
   }
 
-  const syllables = syllabify(cleanWord, language);
+  const syllables = syllabifyWithLog(cleanWord, language);
   const firstColor = COLORS[colorOffset % 2];
   const lastColor = COLORS[(colorOffset + syllables.length - 1) % 2];
 

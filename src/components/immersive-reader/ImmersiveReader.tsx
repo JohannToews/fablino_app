@@ -3,6 +3,7 @@ import { useImmersiveLayout } from './useImmersiveLayout';
 import { useContentSplitter, normalizeToParagraphs } from './useContentSplitter';
 import { usePagePosition } from './usePagePosition';
 import { useSyllableColoring } from './useSyllableColoring';
+import { resetLiveLog } from '@/lib/syllabify';
 import {
   getTypographyForAge,
   PAGE_TRANSITION_MS,
@@ -251,6 +252,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
 
   const goNext = useCallback(() => {
     if (isTransitioning || isAtEnd) return;
+    resetLiveLog();
 
     // If on last viewable unit: fire onComplete and transition to quiz or end screen
     const reachedEnd = isLandscape
@@ -287,6 +289,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const goPrev = useCallback(() => {
     const atStart = isLandscape ? isFirstSpread : isFirstPage;
     if (isTransitioning || atStart) return;
+    resetLiveLog();
 
     setSlideDirection('right');
     setIsTransitioning(true);
