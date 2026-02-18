@@ -61,12 +61,12 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/admin" element={
-              <ProtectedRoute>
+              <ProtectedRoute skipKidCheck>
                 <AdminPage />
               </ProtectedRoute>
             } />
             <Route path="/admin/config" element={
-              <ProtectedRoute>
+              <ProtectedRoute skipKidCheck>
                 <AdminConfigPage />
               </ProtectedRoute>
             } />
