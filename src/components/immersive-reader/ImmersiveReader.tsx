@@ -3,7 +3,7 @@ import { useImmersiveLayout } from './useImmersiveLayout';
 import { useContentSplitter, normalizeToParagraphs } from './useContentSplitter';
 import { usePagePosition } from './usePagePosition';
 import { useSyllableColoring } from './useSyllableColoring';
-import { resetLiveLog } from '@/lib/syllabify';
+import { resetLiveLog, preloadSyllables, isFrenchReady } from '@/lib/syllabify';
 import {
   getTypographyForAge,
   PAGE_TRANSITION_MS,
@@ -109,6 +109,32 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     storyLanguage,
     syllableModeEnabled
   );
+
+  // FR async preload: cache all words before enabling syllable rendering
+  const needsPreload = storyLanguage.toLowerCase().startsWith('fr');
+  const [syllablesReady, setSyllablesReady] = useState(!needsPreload);
+  const [, setForceUpdate] = useState(0);
+
+  useEffect(() => {
+    if (!needsPreload) {
+      setSyllablesReady(true);
+      return;
+    }
+    if (isFrenchReady()) {
+      setSyllablesReady(true);
+      return;
+    }
+    let cancelled = false;
+    preloadSyllables(story.content, storyLanguage).then(() => {
+      if (!cancelled) {
+        setSyllablesReady(true);
+        setForceUpdate(prev => prev + 1);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [story.id, storyLanguage, needsPreload, story.content]);
+
+  const effectiveSyllableActive = syllableActive && syllablesReady;
 
   // ── Images ────────────────────────────────────────────────
   const allImages = useMemo(
@@ -372,11 +398,11 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
     fontSize: typography.fontSize,
     lineHeight: typography.lineHeight,
     letterSpacing: typography.letterSpacing,
-    syllableMode: syllableActive,
+    syllableMode: effectiveSyllableActive,
     storyLanguage: hyphenLanguage,
     onWordTap: handleWordTap,
     highlightedWord: selectedWord,
-  }), [typography, syllableActive, hyphenLanguage, handleWordTap, selectedWord]);
+  }), [typography, effectiveSyllableActive, hyphenLanguage, handleWordTap, selectedWord]);
 
   // ── Slide animation CSS ───────────────────────────────────
   const slideStyle: React.CSSProperties = useMemo(() => {
@@ -475,7 +501,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Chapter title as single spread page */}
                 {currentSpread.left.type === 'chapter-title' ? (
                   <ImmersiveChapterTitle
-                    key={`cover-landscape-syl-${syllableActive}`}
+                    key={`cover-landscape-syl-${effectiveSyllableActive}`}
                     chapterNumber={isChapterStory ? chapterNumber : undefined}
                     totalChapters={isChapterStory ? totalChapters : undefined}
                     title={story.title}
@@ -486,12 +512,12 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
-                    syllableMode={syllableActive}
+                    syllableMode={effectiveSyllableActive}
                     storyLanguage={hyphenLanguage}
                   />
                 ) : (
                   <ImmersiveSpreadRenderer
-                    key={`spread-${currentSpreadIndex}-syl-${syllableActive}`}
+                    key={`spread-${currentSpreadIndex}-syl-${effectiveSyllableActive}`}
                     spread={currentSpread}
                     visibleImages={visibleImages}
                     storyTheme={story.concrete_theme}
@@ -507,7 +533,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Chapter Title Page */}
                 {isChapterTitlePage && (
                   <ImmersiveChapterTitle
-                    key={`cover-portrait-syl-${syllableActive}`}
+                    key={`cover-portrait-syl-${effectiveSyllableActive}`}
                     chapterNumber={isChapterStory ? chapterNumber : undefined}
                     totalChapters={isChapterStory ? totalChapters : undefined}
                     title={story.title}
@@ -518,7 +544,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
-                    syllableMode={syllableActive}
+                    syllableMode={effectiveSyllableActive}
                     storyLanguage={hyphenLanguage}
                   />
                 )}
@@ -526,7 +552,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                 {/* Content Pages (text-only or image-text) */}
                 {!isChapterTitlePage && currentPageData && (
                   <ImmersivePageRenderer
-                    key={`page-${currentPage}-syl-${syllableActive}`}
+                    key={`page-${currentPage}-syl-${effectiveSyllableActive}`}
                     page={currentPageData}
                     layoutMode={layoutMode}
                     imageUrl={currentImageUrl}
@@ -535,7 +561,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
                     fontSize={typography.fontSize}
                     lineHeight={typography.lineHeight}
                     letterSpacing={typography.letterSpacing}
-                    syllableMode={syllableActive}
+                    syllableMode={effectiveSyllableActive}
                     storyLanguage={hyphenLanguage}
                     onWordTap={handleWordTap}
                     highlightedWord={selectedWord}

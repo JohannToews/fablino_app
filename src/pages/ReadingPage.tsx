@@ -12,6 +12,7 @@ import StoryAudioPlayer from "@/components/StoryAudioPlayer";
 import StoryFeedbackDialog from "@/components/StoryFeedbackDialog";
 import ReadingSettings, { FontSizeLevel, LineSpacingLevel, getReadingTextClasses } from "@/components/ReadingSettings";
 import SyllableText, { isSyllableModeSupported, countSyllables } from "@/components/SyllableText";
+import { preloadSyllables, isFrenchReady } from "@/lib/syllabify";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
@@ -278,8 +279,9 @@ const ReadingPage = () => {
   // Reading settings (font size and line spacing)
   const [fontSize, setFontSize] = useState<FontSizeLevel>(2);
   const [lineSpacing, setLineSpacing] = useState<LineSpacingLevel>(2);
-  // Syllable mode for reading assistance (German only)
+  // Syllable mode for reading assistance
   const [syllableMode, setSyllableMode] = useState(false);
+  const [syllablesReady, setSyllablesReady] = useState(true);
   // Badge celebration
   const [pendingBadges, setPendingBadges] = useState<EarnedBadge[]>([]);
   // Track if story is already marked as read
@@ -317,6 +319,28 @@ const ReadingPage = () => {
       checkForQuestions();
     }
   }, [id]);
+
+  // FR syllable preload: cache words when syllable mode is enabled for a French story
+  useEffect(() => {
+    if (!story || !syllableMode) return;
+    const lang = (story.text_language || 'de').toLowerCase().substring(0, 2);
+    if (lang !== 'fr') {
+      setSyllablesReady(true);
+      return;
+    }
+    if (isFrenchReady()) {
+      setSyllablesReady(true);
+      return;
+    }
+    setSyllablesReady(false);
+    let cancelled = false;
+    preloadSyllables(story.content, 'fr').then(() => {
+      if (!cancelled) setSyllablesReady(true);
+    });
+    return () => { cancelled = true; };
+  }, [story?.id, story?.text_language, syllableMode]);
+
+  const effectiveSyllableMode = syllableMode && syllablesReady;
 
   // Load system prompt for continuation
   useEffect(() => {
@@ -1373,8 +1397,8 @@ const ReadingPage = () => {
 
                   const markingClass = isSingleWordMarked ? "word-marked" : (isPhraseMarked ? "phrase-marked" : "");
 
-                  // When syllable mode is ON, ALL words go through SyllableText
-                  if (syllableMode) {
+                  // When syllable mode is ON (and FR preload is done), ALL words go through SyllableText
+                  if (effectiveSyllableMode) {
                     const currentOffset = globalColorOffset;
                     globalColorOffset += countSyllables(word, textLang);
                     return (
