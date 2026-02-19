@@ -76,7 +76,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/read/:id" element={
-              <ProtectedRoute>
+              <ProtectedRoute skipKidCheck>
                 <ReadingPage />
               </ProtectedRoute>
             } />
