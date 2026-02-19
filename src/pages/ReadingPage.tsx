@@ -1682,9 +1682,9 @@ const ReadingPage = () => {
       />
 
       <div className="container max-w-7xl p-4 md:p-8" onClick={handleBackgroundClick}>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Reading Area - wider for tablets */}
-          <div className="lg:col-span-3">
+          <div className="xl:col-span-3">
             {/* Cover image above the text */}
             {story?.cover_image_url && (
               <div className="mb-6 rounded-2xl overflow-hidden shadow-card bg-muted/30">
@@ -1757,10 +1757,10 @@ const ReadingPage = () => {
                 </div>
               )}
 
-              {/* Mobile Popup backdrop - click to close */}
+              {/* Mobile/Tablet Popup backdrop - click to close */}
               {selectedWord && mobilePopupY !== null && (
                 <div 
-                  className="lg:hidden fixed inset-0 z-40"
+                  className="xl:hidden fixed inset-0 z-40"
                   onClick={(e) => {
                     e.stopPropagation();
                     closeExplanation();
@@ -1768,11 +1768,11 @@ const ReadingPage = () => {
                 />
               )}
 
-              {/* Mobile Popup for word explanation - only visible on mobile/tablet */}
+              {/* Mobile/Tablet Popup for word explanation */}
               {selectedWord && mobilePopupY !== null && (
                 <div 
                   data-mobile-popup
-                  className="lg:hidden fixed left-4 right-4 z-50 animate-in fade-in zoom-in-95 duration-200"
+                  className="xl:hidden fixed left-4 right-4 z-50 animate-in fade-in zoom-in-95 duration-200"
                   style={{
                     top: `${Math.min(Math.max(mobilePopupY - 80, 100), window.innerHeight - 250)}px`,
                   }}
@@ -2199,8 +2199,8 @@ const ReadingPage = () => {
             </div>
           </div>
 
-          {/* Explanation Panel - Desktop only */}
-          <div className="hidden lg:block lg:col-span-1">
+          {/* Explanation Panel - Large Desktop only (xl+) */}
+          <div className="hidden xl:block xl:col-span-1">
             <div className="sticky top-24">
               {selectedWord ? (
                 <div className="explanation-panel animate-in fade-in slide-in-from-right-4 duration-300">
