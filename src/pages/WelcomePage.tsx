@@ -199,29 +199,29 @@ const WelcomePage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
+    <div className="h-screen flex items-center justify-center p-4 overflow-hidden" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
       <div className="w-full max-w-sm">
         {/* Mascot + Logo */}
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-3">
           <img
             src="/mascot/6_Onboarding.png"
             alt="Fablino Fuchs"
-            className="h-28 w-auto drop-shadow-md"
+            className="h-20 w-auto drop-shadow-md"
             style={{ animation: "gentleBounce 2.2s ease-in-out infinite" }}
           />
-          <h1 className="text-3xl font-bold mt-2" style={{ color: "#E8863A" }}>Fablino</h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(45, 24, 16, 0.6)" }}>
+          <h1 className="text-2xl font-bold mt-1" style={{ color: "#E8863A" }}>Fablino</h1>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(45, 24, 16, 0.6)" }}>
             Magische Geschichten für junge Leser ✨
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-lg px-8 py-8">
+        <div className="bg-white rounded-3xl shadow-lg px-6 py-5">
           {/* Tab switcher */}
-          <div className="flex rounded-2xl overflow-hidden border mb-6" style={{ borderColor: "rgba(232, 134, 58, 0.25)" }}>
+          <div className="flex rounded-2xl overflow-hidden border mb-4" style={{ borderColor: "rgba(232, 134, 58, 0.25)" }}>
             <button
               onClick={() => setMode("register")}
-              className="flex-1 py-2.5 text-sm font-semibold transition-all"
+              className="flex-1 py-2 text-sm font-semibold transition-all"
               style={{
                 background: mode === "register" ? "#E8863A" : "transparent",
                 color: mode === "register" ? "white" : "rgba(45,24,16,0.5)",
@@ -231,7 +231,7 @@ const WelcomePage = () => {
             </button>
             <button
               onClick={() => setMode("login")}
-              className="flex-1 py-2.5 text-sm font-semibold transition-all"
+              className="flex-1 py-2 text-sm font-semibold transition-all"
               style={{
                 background: mode === "login" ? "#E8863A" : "transparent",
                 color: mode === "login" ? "white" : "rgba(45,24,16,0.5)",
@@ -242,8 +242,8 @@ const WelcomePage = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={mode === "register" ? handleRegister : handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
+          <form onSubmit={mode === "register" ? handleRegister : handleLogin} className="space-y-3">
+            <div className="space-y-1">
               <Label htmlFor="email" className="text-sm font-medium">E-Mail</Label>
               <Input
                 id="email"
@@ -251,13 +251,13 @@ const WelcomePage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="deine@email.com"
-                className="h-12 rounded-xl border-2 text-base"
+                className="h-11 rounded-xl border-2 text-base"
                 style={inputStyle}
                 autoComplete="email"
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label htmlFor="password" className="text-sm font-medium">Passwort</Label>
               <div className="relative">
                 <Input
@@ -266,7 +266,7 @@ const WelcomePage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={mode === "register" ? "Mindestens 6 Zeichen..." : "Dein Passwort..."}
-                  className="h-12 rounded-xl border-2 pr-12 text-base"
+                  className="h-11 rounded-xl border-2 pr-12 text-base"
                   style={inputStyle}
                   autoComplete={mode === "register" ? "new-password" : "current-password"}
                 />
@@ -296,8 +296,8 @@ const WelcomePage = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-13 text-base font-semibold rounded-2xl text-white shadow-md mt-1"
-              style={{ backgroundColor: "#E8863A", height: "52px" }}
+              className="w-full text-base font-semibold rounded-2xl text-white shadow-md"
+              style={{ backgroundColor: "#E8863A", height: "48px" }}
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
