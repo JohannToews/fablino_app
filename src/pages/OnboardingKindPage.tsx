@@ -14,10 +14,70 @@ const ALL_LANGUAGES = [...LANGUAGES]
   .filter((l) => l.storySupported)
   .sort((a, b) => a.nameNative.localeCompare(b.nameNative));
 
-const STORY_TYPES = [
-  { key: "adventure", emoji: "🏰", label: "Abenteuer", description: "Mutige Helden & spannende Quests" },
-  { key: "fantasy", emoji: "🧚", label: "Märchen & Magie", description: "Zauber, Feen & Wunderwelten" },
-  { key: "animals", emoji: "🐾", label: "Tiergeschichte", description: "Niedliche Tiere & ihre Freundschaften" },
+// Story categories and subtypes
+const STORY_CATEGORIES = [
+  {
+    key: "adventure",
+    emoji: "🏰",
+    label: "Abenteuer",
+    subtypes: [
+      {
+        key: "heroes",
+        emoji: "🦸",
+        label: "Helden & Schurken",
+        description: "Superhelden, geheime Kräfte, Bösewichte besiegen",
+        placeholder: "z.B. Ein Mädchen entdeckt, dass sie unsichtbar werden kann...",
+        voicePrompt: "Du hast Helden & Schurken gewählt – möchtest du noch mehr erzählen? 🎤",
+      },
+      {
+        key: "detective",
+        emoji: "🔍",
+        label: "Geheimnisse & Detektive",
+        description: "Rätsel lösen, versteckte Hinweise, mysteriöse Fälle",
+        placeholder: "z.B. Im Schulkeller verschwindet jede Nacht etwas...",
+        voicePrompt: "Du hast Geheimnisse & Detektive gewählt – möchtest du noch mehr erzählen? 🎤",
+      },
+      {
+        key: "space",
+        emoji: "🚀",
+        label: "Weltraum & Entdecker",
+        description: "Fremde Planeten, Zeitreisen, unbekannte Welten",
+        placeholder: "z.B. Auf dem Weg zum Mars entdecken sie einen geheimen Planeten...",
+        voicePrompt: "Du hast Weltraum & Entdecker gewählt – möchtest du noch mehr erzählen? 🎤",
+      },
+    ],
+  },
+  {
+    key: "fantasy",
+    emoji: "🧚",
+    label: "Fantasie",
+    subtypes: [
+      {
+        key: "wizards",
+        emoji: "🧙",
+        label: "Zauberer & Hexen",
+        description: "Magie, Zaubertränke, Sprüche",
+        placeholder: "z.B. Ein junger Zauberlehrling braut seinen ersten Trank...",
+        voicePrompt: "Du hast Zauberei & Hexen gewählt – möchtest du noch mehr erzählen? 🎤",
+      },
+      {
+        key: "dragons",
+        emoji: "🐉",
+        label: "Drachen & Fabelwesen",
+        description: "Einhörner, Phönixe, magische Tiere",
+        placeholder: "z.B. Ein kleiner Drache, der kein Feuer spucken kann...",
+        voicePrompt: "Du hast Drachen & Fabelwesen gewählt – möchtest du noch mehr erzählen? 🎤",
+      },
+      {
+        key: "enchanted",
+        emoji: "🌿",
+        label: "Verwunschene Welten",
+        description: "Geheime Portale, verzauberte Wälder, verborgene Königreiche",
+        placeholder: "z.B. Hinter dem alten Baum öffnet sich ein Portal in eine andere Welt...",
+        voicePrompt: "Du hast Verwunschene Welten gewählt – möchtest du noch mehr erzählen? 🎤",
+      },
+    ],
+  },
 ];
 
 const AGES = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -180,7 +240,9 @@ const OnboardingKindPage = () => {
   const [gender, setGender] = useState<string | null>(null);
   const [schoolLang, setSchoolLang] = useState<string | null>(null);
   const [extraLangs, setExtraLangs] = useState<string[]>([]);
-  const [selectedStoryType, setSelectedStoryType] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubtype, setSelectedSubtype] = useState<string | null>(null);
+  const [customDetail, setCustomDetail] = useState("");
   const [selectedStoryLang, setSelectedStoryLang] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -238,7 +300,7 @@ const OnboardingKindPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedStoryType) {
+    if (!selectedSubtype) {
       toast({ title: "Fehler", description: "Bitte eine Geschichte wählen.", variant: "destructive" });
       return;
     }
@@ -247,7 +309,6 @@ const OnboardingKindPage = () => {
     setIsLoading(true);
     try {
       const age = selectedAge!;
-      // All story languages = school lang + extra langs (deduplicated)
       const storyLanguages = Array.from(new Set([schoolLang!, ...extraLangs]));
 
       const { data: savedProfile, error } = await supabase
@@ -265,7 +326,7 @@ const OnboardingKindPage = () => {
           difficulty_level: getDifficultyLevel(age),
           content_safety_level: 2,
           color_palette: "warm",
-          hobbies: "",
+          hobbies: customDetail.trim() || "",
           story_languages: storyLanguages,
           explanation_language: "de",
         })
@@ -278,9 +339,9 @@ const OnboardingKindPage = () => {
         return;
       }
 
-      // Use selected story language (defaults to school lang)
       const storyLang = selectedStoryLang || schoolLang!;
-      navigate(`/onboarding/story?kid=${savedProfile.id}&storyType=${selectedStoryType}&lang=${storyLang}`, { replace: true });
+      const detailParam = customDetail.trim() ? `&detail=${encodeURIComponent(customDetail.trim())}` : "";
+      navigate(`/onboarding/story?kid=${savedProfile.id}&storyType=${selectedCategory!}&subtype=${selectedSubtype}&lang=${storyLang}${detailParam}`, { replace: true });
     } catch (err) {
       console.error(err);
       toast({ title: "Fehler", description: "Ein Fehler ist aufgetreten.", variant: "destructive" });
@@ -422,7 +483,7 @@ const OnboardingKindPage = () => {
       {step === "storyType" && (
         <div className="w-full max-w-md space-y-4">
 
-          {/* Language toggle – shows selected languages, user can switch */}
+          {/* Language toggle – shows only when multiple languages */}
           {(() => {
             const allLangs = Array.from(new Set([schoolLang!, ...extraLangs]));
             if (allLangs.length <= 1) return null;
@@ -460,36 +521,87 @@ const OnboardingKindPage = () => {
             );
           })()}
 
-          {STORY_TYPES.map((type) => (
-            <button
-              key={type.key}
-              type="button"
-              onClick={() => setSelectedStoryType(type.key)}
-              className="w-full flex items-center gap-4 px-5 py-5 rounded-2xl border-2 text-left transition-all shadow-sm"
-              style={{
-                background: selectedStoryType === type.key ? "#FFF3E8" : "white",
-                borderColor: selectedStoryType === type.key ? "#E8863A" : "rgba(232,134,58,0.2)",
-                transform: selectedStoryType === type.key ? "scale(1.02)" : "scale(1)",
-              }}
-            >
-              <span className="text-5xl flex-shrink-0">{type.emoji}</span>
-              <div>
-                <p className="text-base font-bold" style={{ color: "rgba(45,24,16,0.9)" }}>{type.label}</p>
-                <p className="text-sm mt-0.5" style={{ color: "rgba(45,24,16,0.5)" }}>{type.description}</p>
+          {/* Two main categories with subtypes */}
+          {STORY_CATEGORIES.map((cat) => (
+            <div key={cat.key} className="bg-white rounded-2xl shadow-sm overflow-hidden border" style={{ borderColor: "rgba(232,134,58,0.15)" }}>
+              {/* Category header */}
+              <div className="px-5 py-3 flex items-center gap-2.5" style={{ background: "rgba(232,134,58,0.08)" }}>
+                <span className="text-2xl">{cat.emoji}</span>
+                <span className="font-bold text-base" style={{ color: "rgba(45,24,16,0.85)" }}>{cat.label}</span>
               </div>
-              {selectedStoryType === type.key && (
-                <span className="ml-auto text-xl flex-shrink-0">✅</span>
-              )}
-            </button>
+
+              {/* Subtypes */}
+              <div className="divide-y" style={{ borderColor: "rgba(232,134,58,0.1)" }}>
+                {cat.subtypes.map((sub) => {
+                  const isSelected = selectedCategory === cat.key && selectedSubtype === sub.key;
+                  return (
+                    <button
+                      key={sub.key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat.key);
+                        setSelectedSubtype(sub.key);
+                        setCustomDetail("");
+                      }}
+                      className="w-full flex items-center gap-3 px-5 py-4 text-left transition-all"
+                      style={{
+                        background: isSelected ? "#FFF3E8" : "transparent",
+                      }}
+                    >
+                      <span className="text-2xl flex-shrink-0">{sub.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold" style={{ color: "rgba(45,24,16,0.9)" }}>{sub.label}</p>
+                        <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(45,24,16,0.5)" }}>{sub.description}</p>
+                      </div>
+                      {isSelected && (
+                        <div className="h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#E8863A" }}>
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
+
+          {/* Voice / text detail input – appears after a subtype is picked */}
+          {selectedSubtype && (() => {
+            const cat = STORY_CATEGORIES.find(c => c.key === selectedCategory);
+            const sub = cat?.subtypes.find(s => s.key === selectedSubtype);
+            if (!sub) return null;
+            return (
+              <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border animate-fade-in" style={{ borderColor: "rgba(232,134,58,0.2)" }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: "rgba(45,24,16,0.75)" }}>
+                  {sub.voicePrompt}
+                </p>
+                <textarea
+                  value={customDetail}
+                  onChange={(e) => setCustomDetail(e.target.value)}
+                  placeholder={sub.placeholder}
+                  maxLength={200}
+                  rows={3}
+                  className="w-full rounded-xl border-2 px-4 py-3 text-sm resize-none outline-none transition-colors"
+                  style={{
+                    borderColor: customDetail ? "#E8863A" : "rgba(232,134,58,0.25)",
+                    color: "rgba(45,24,16,0.85)",
+                    background: "transparent",
+                  }}
+                />
+                <p className="text-xs mt-1 text-right" style={{ color: "rgba(45,24,16,0.35)" }}>
+                  {customDetail.length}/200
+                </p>
+              </div>
+            );
+          })()}
 
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={isLoading || !selectedStoryType}
+            disabled={isLoading || !selectedSubtype}
             className="w-full font-bold rounded-2xl text-white shadow-lg mt-2"
             style={{
-              backgroundColor: selectedStoryType ? "#E8863A" : "rgba(232,134,58,0.4)",
+              backgroundColor: selectedSubtype ? "#E8863A" : "rgba(232,134,58,0.4)",
               height: "56px",
               fontSize: "1.05rem",
             }}
