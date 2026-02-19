@@ -137,7 +137,7 @@ const OnboardingStoryPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-story", {
         body: {
-          length: "medium",
+          length: "short",
           difficulty,
           description: theme,
           textType: "fiction",
@@ -155,7 +155,7 @@ const OnboardingStoryPage = () => {
           difficultyLevel: kid.difficulty_level || 2,
           contentSafetyLevel: kid.content_safety_level || 2,
           image_style_key: imageStyle,
-          story_length: "medium",
+          story_length: "short",
         },
       });
 

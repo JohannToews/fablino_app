@@ -2051,7 +2051,8 @@ ${oldSeriesContext}
 
 Antworte NUR mit einem validen JSON-Objekt.
 Erstelle genau ${questionCount} Multiple-Choice Fragen.
-Wähle genau 10 Vokabelwörter aus.${seriesOutputInstructions}
+Wähle genau 10 Vokabelwörter aus.
+Im image_plan MÜSSEN genau ${genConfig.scene_image_count} scenes enthalten sein (scene_id 1 bis ${genConfig.scene_image_count}).${seriesOutputInstructions}
 
 CRITICAL: Your response must be VALID JSON only. No markdown, no backticks, no explanation.
 Required JSON structure:
@@ -2060,7 +2061,7 @@ Required JSON structure:
   "content": "The complete story text as a single string...",
   "questions": [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "expectedAnswer": "..."}],
   "vocabulary": [{"word": "...", "explanation": "..."}],
-  "image_plan": {"character_anchor": "...", "world_anchor": "...", "scenes": [{"scene_id": 1, "setting": "...", "characters_present": "...", "action": "...", "emotion": "...", "target_paragraph": 0}]}
+  "image_plan": {"character_anchor": "...", "world_anchor": "...", "scenes": [EXACTLY ${genConfig.scene_image_count} scene objects, one per scene image: {"scene_id": 1, "setting": "...", "characters_present": "...", "action": "...", "emotion": "...", "target_paragraph": 0}]}
 }
 Fields episode_summary, continuity_state, visual_style_sheet, branch_options are ONLY required for series episodes.`;
     }

@@ -1688,7 +1688,7 @@ export async function buildStoryPrompt(
   }
 
   // IMAGE PLAN INSTRUCTIONS (Block 2.4)
-  const sceneCount = getSceneCount(request.length || 'medium');
+  const sceneCount = request.word_count_override?.scene_image_count ?? getSceneCount(request.length || 'medium');
   const sceneGuidance = sceneCount === 1
     ? 'Scene should capture the emotional highlight of the story.'
     : sceneCount === 2
