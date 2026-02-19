@@ -88,7 +88,10 @@ const GENDERS = [
   { value: "other", label: "Divers", emoji: "🧒" },
 ];
 
-type Step = "profile" | "storyType";
+// UI-supported languages for admin language selection
+const UI_LANGUAGES = LANGUAGES.filter((l) => l.uiSupported).sort((a, b) => a.nameNative.localeCompare(b.nameNative));
+
+type Step = "adminLang" | "profile" | "storyType";
 
 // Helper: get flag+native name for a language code
 function getLangMeta(code: string) {
@@ -234,7 +237,8 @@ function MultiSelect({
 
 // ── Main Component ──────────────────────────────────────────────
 const OnboardingKindPage = () => {
-  const [step, setStep] = useState<Step>("profile");
+  const [step, setStep] = useState<Step>("adminLang");
+  const [adminLang, setAdminLang] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [selectedAge, setSelectedAge] = useState<number | null>(null);
   const [gender, setGender] = useState<string | null>(null);
@@ -278,6 +282,15 @@ const OnboardingKindPage = () => {
     flag: l.flag,
   }));
 
+  const handleAdminLangNext = () => {
+    if (!adminLang) {
+      toast({ title: "Fehler", description: "Bitte eine Sprache auswählen.", variant: "destructive" });
+      return;
+    }
+    setStep("profile");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleProfileNext = () => {
     if (!name.trim()) {
       toast({ title: "Fehler", description: "Bitte einen Namen eingeben.", variant: "destructive" });
@@ -311,6 +324,14 @@ const OnboardingKindPage = () => {
       const age = selectedAge!;
       const storyLanguages = Array.from(new Set([schoolLang!, ...extraLangs]));
 
+      // Save admin language to user_profiles
+      if (adminLang && user.id) {
+        await supabase
+          .from("user_profiles")
+          .update({ app_language: adminLang, admin_language: adminLang })
+          .eq("auth_id", user.id);
+      }
+
       const { data: savedProfile, error } = await supabase
         .from("kid_profiles")
         .insert({
@@ -328,7 +349,7 @@ const OnboardingKindPage = () => {
           color_palette: "warm",
           hobbies: customDetail.trim() || "",
           story_languages: storyLanguages,
-          explanation_language: "de",
+          explanation_language: adminLang || "de",
         })
         .select()
         .single();
@@ -369,12 +390,52 @@ const OnboardingKindPage = () => {
           style={{ animation: "gentleBounce 2.5s ease-in-out infinite" }}
         />
         <h1 className="text-2xl font-bold mt-3 text-center" style={{ color: "#E8863A" }}>
-          {step === "profile" ? "Wer liest mit Fablino? 🦊" : "Was für eine Geschichte? 📖"}
+          {step === "adminLang" ? "Willkommen bei Fablino! 🦊" : step === "profile" ? "Wer liest mit Fablino? 🦊" : "Was für eine Geschichte? 📖"}
         </h1>
         <p className="text-sm mt-1 text-center" style={{ color: "rgba(45,24,16,0.6)" }}>
-          {step === "profile" ? "Erstelle ein Profil für dein Kind" : `Eine Geschichte für ${name} ✨`}
+          {step === "adminLang" ? "In welcher Sprache möchtest du Fablino verwalten?" : step === "profile" ? "Erstelle ein Profil für dein Kind" : `Eine Geschichte für ${name} ✨`}
         </p>
       </div>
+
+      {/* === STEP 0: Admin Language === */}
+      {step === "adminLang" && (
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold">🌐 Sprache für App-Administration</Label>
+            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+              In dieser Sprache siehst du Menüs, Einstellungen und Benachrichtigungen
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {UI_LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => setAdminLang(lang.code)}
+                  className="flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 transition-all text-left"
+                  style={{
+                    background: adminLang === lang.code ? "#E8863A" : "transparent",
+                    color: adminLang === lang.code ? "white" : "rgba(45,24,16,0.8)",
+                    borderColor: adminLang === lang.code ? "#E8863A" : "rgba(232,134,58,0.25)",
+                  }}
+                >
+                  <span className="text-2xl">{lang.flag}</span>
+                  <span className="text-sm font-semibold">{lang.nameNative}</span>
+                  {adminLang === lang.code && <Check className="h-4 w-4 ml-auto" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleAdminLangNext}
+            className="w-full font-semibold rounded-2xl text-white shadow-md"
+            style={{ backgroundColor: "#E8863A", height: "52px", fontSize: "1rem" }}
+          >
+            Weiter →
+          </Button>
+        </div>
+      )}
 
       {/* === STEP 1: Profile === */}
       {step === "profile" && (
