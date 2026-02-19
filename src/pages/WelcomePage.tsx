@@ -92,7 +92,7 @@ const WelcomePage = () => {
         email: trimmedEmail,
         password: trimmedPassword,
         options: {
-          emailRedirectTo: `https://fablino.lovable.app/onboarding/kind`,
+          emailRedirectTo: `${window.location.origin}/onboarding/kind`,
         },
       });
 
