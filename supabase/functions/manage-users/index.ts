@@ -130,14 +130,17 @@ Deno.serve(async (req) => {
     }
 
     if (action === "delete" && userId) {
+      // Fetch auth_id before deleting profile
+      const { data: userProfile } = await supabase
+        .from("user_profiles")
+        .select("auth_id")
+        .eq("id", userId)
+        .maybeSingle();
+
       // Delete user and all related data
-      // First delete user role
       await supabase.from("user_roles").delete().eq("user_id", userId);
-      
-      // Delete kid_profiles
       await supabase.from("kid_profiles").delete().eq("user_id", userId);
       
-      // Delete stories and related data
       const { data: stories } = await supabase
         .from("stories")
         .select("id")
@@ -151,16 +154,20 @@ Deno.serve(async (req) => {
         await supabase.from("stories").delete().eq("user_id", userId);
       }
       
-      // Delete user results
       await supabase.from("user_results").delete().eq("user_id", userId);
       
-      // Finally delete user profile
+      // Delete user profile
       const { error } = await supabase
         .from("user_profiles")
         .delete()
         .eq("id", userId);
 
       if (error) throw error;
+
+      // Also delete the Auth user so the email can be re-registered
+      if (userProfile?.auth_id) {
+        await supabase.auth.admin.deleteUser(userProfile.auth_id);
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
