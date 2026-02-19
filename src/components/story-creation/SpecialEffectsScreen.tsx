@@ -510,21 +510,19 @@ const SpecialEffectsScreen = ({
           <h2 className="text-sm font-semibold text-center text-[#2D1810]">
             {t.descriptionHeader}
           </h2>
-          <div className="relative">
-            <Textarea
-              value={additionalDescription}
-              onChange={(e) => setAdditionalDescription(e.target.value)}
-              placeholder={t.descriptionPlaceholder}
-              className="min-h-[56px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A] pr-16"
+          <Textarea
+            value={additionalDescription}
+            onChange={(e) => setAdditionalDescription(e.target.value)}
+            placeholder={t.descriptionPlaceholder}
+            className="min-h-[72px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A]"
+          />
+          <div className="flex justify-center pt-1">
+            <VoiceRecordButton
+              language={storyLanguage || kidReadingLanguage || 'de'}
+              onTranscript={(text) => {
+                setAdditionalDescription((prev) => prev ? `${prev} ${text}` : text);
+              }}
             />
-            <div className="absolute right-2 bottom-2">
-              <VoiceRecordButton
-                language={showSettings ? storyLanguage : (kidReadingLanguage || 'de')}
-                onTranscript={(text) => {
-                  setAdditionalDescription((prev) => prev ? `${prev} ${text}` : text);
-                }}
-              />
-            </div>
           </div>
         </div>
 
