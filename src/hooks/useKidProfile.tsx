@@ -83,6 +83,10 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // Always set loading=true at the start so ProtectedRoute
+    // doesn't flash the onboarding screen while profiles are fetched
+    setIsLoading(true);
+
     const { data } = await supabase
       .from("kid_profiles")
       .select("*")
