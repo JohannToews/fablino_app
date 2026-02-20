@@ -211,14 +211,14 @@ const WelcomePage = () => {
             className="h-20 w-auto drop-shadow-md"
             style={{ animation: "gentleBounce 2.2s ease-in-out infinite" }}
           />
-          <h1 className="text-2xl font-bold mt-1" style={{ color: "#E8863A" }}>Fablino</h1>
+          <h1 className="text-3xl font-bold mt-1" style={{ color: "#E8863A" }}>Fablino</h1>
           <p className="text-xs mt-0.5" style={{ color: "rgba(45, 24, 16, 0.6)" }}>
             Magische Geschichten für junge Leser ✨
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-lg px-6 py-5">
+        <div className="bg-white rounded-3xl shadow-lg px-6 py-8">
           {/* Tab switcher */}
           <div className="flex rounded-2xl overflow-hidden border mb-4" style={{ borderColor: "rgba(232, 134, 58, 0.25)" }}>
             <button
@@ -283,25 +283,23 @@ const WelcomePage = () => {
               </div>
             </div>
 
-            {mode === "login" && (
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={rememberMe}
-                    onCheckedChange={(v) => setRememberMe(v === true)}
-                    className="border-[rgba(232,134,58,0.4)] data-[state=checked]:bg-[#E8863A] data-[state=checked]:border-[#E8863A]"
-                  />
-                  <span className="text-xs" style={{ color: "rgba(45,24,16,0.6)" }}>Angemeldet bleiben</span>
-                </label>
-                <a
-                  href="/reset-password"
-                  className="text-xs underline"
-                  style={{ color: "#E8863A" }}
-                >
-                  Passwort vergessen?
-                </a>
-              </div>
-            )}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                  className="border-[rgba(232,134,58,0.4)] data-[state=checked]:bg-[#E8863A] data-[state=checked]:border-[#E8863A]"
+                />
+                <span className="text-sm" style={{ color: "rgba(45,24,16,0.6)" }}>Angemeldet bleiben</span>
+              </label>
+              <a
+                href="/reset-password"
+                className="text-sm underline"
+                style={{ color: "#E8863A" }}
+              >
+                Passwort vergessen?
+              </a>
+            </div>
 
             <Button
               type="submit"
