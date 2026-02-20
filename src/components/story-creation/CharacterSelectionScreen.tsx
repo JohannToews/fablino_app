@@ -325,6 +325,16 @@ const CharacterSelectionScreen = ({
     return chars.some(c => selectedCharacters.some(sc => sc.id === `saved-${c.id}`));
   };
 
+  const defaultCharacterMessages: Record<string, string> = {
+    de: "Wer soll in der Geschichte vorkommen? 👥",
+    fr: "Qui doit apparaître dans l'histoire ? 👥",
+    en: "Who should be in the story? 👥",
+    es: "¿Quién debe aparecer en la historia? 👥",
+    nl: "Wie moet er in het verhaal voorkomen? 👥",
+    it: "Chi deve comparire nella storia? 👥",
+    bs: "Ko treba da se pojavi u priči? 👥",
+  };
+
   // Modal title based on category
   const getModalTitle = (category: "family" | "friends") => {
     // Use a generic "Who comes along?" phrasing
@@ -333,25 +343,25 @@ const CharacterSelectionScreen = ({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col items-stretch px-5 max-w-[480px] mx-auto w-full gap-4 pb-20">
+      <div className="flex-1 flex flex-col items-stretch px-4 max-w-[480px] mx-auto w-full gap-3 pb-20">
         {/* Back button */}
-        <div className="pt-3">
+        <div className="pt-2">
           <BackButton onClick={viewState === "main" ? onBack : () => setViewState("main")} />
         </div>
 
-        {/* Fablino Header */}
-        {fablinoMessage && viewState === "main" && (
+        {/* Fablino Header — compact for tablet */}
+        {viewState === "main" && (
           <FablinoPageHeader
             mascotImage="/mascot/4_come_back.png"
-            message={fablinoMessage}
-            mascotSize="md"
+            message={fablinoMessage || defaultCharacterMessages[kidAppLanguage] || defaultCharacterMessages['de']}
+            mascotSize="sm"
           />
         )}
 
         {/* Main Content */}
         {viewState === "main" && (
           <div className="w-full space-y-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2.5">
               {mainTiles.map((tile) => {
                 const isExpandable = tile.type === "family" || tile.type === "friends";
                 const hasSelections = isExpandable && hasSavedSelections(tile.type as "family" | "friends");
@@ -383,8 +393,8 @@ const CharacterSelectionScreen = ({
         )}
 
         {viewState === "family" && (
-          <div className="w-full space-y-3">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="w-full space-y-2">
+            <div className="grid grid-cols-2 gap-2.5">
               {familyTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}

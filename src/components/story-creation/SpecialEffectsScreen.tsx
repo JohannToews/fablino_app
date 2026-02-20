@@ -1,13 +1,12 @@
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import BackButton from "@/components/BackButton";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useStoryLengthOptions } from "@/hooks/useStoryLengthOptions";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
-import FablinoMascot from "@/components/FablinoMascot";
 import VoiceRecordButton from "./VoiceRecordButton";
 
 interface SpecialEffectsTranslations {
@@ -26,12 +25,14 @@ interface SpecialEffectsTranslations {
   continueEpisode1: string;
   seriesHint: string;
   back: string;
+  specialEffectsToggle: string;
+  noEffects: string;
 }
 
 const translations: Record<string, SpecialEffectsTranslations> = {
   de: {
     header: "Spezialeffekte & Details",
-    effectsHeader: "Sollen manche Hauptpersonen besondere Eigenschaften haben?",
+    effectsHeader: "Besondere Eigenschaften?",
     effectsHint: "Wähle beliebig viele aus",
     superpowers: "Superkräfte",
     magic: "Magische Kräfte",
@@ -39,16 +40,18 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     transformations: "Verwandlungen",
     talents: "Besondere Talente",
     normal: "Nein, ganz normal",
-    descriptionHeader: "Optional: Möchtest du noch etwas zur Geschichte sagen?",
+    descriptionHeader: "Optional: Wünsche zur Geschichte?",
     descriptionPlaceholder: "z.B. \"Eine Geschichte über Piraten auf dem Mond\"",
     continue: "Geschichte erstellen",
     continueEpisode1: "Episode 1 erstellen",
-    seriesHint: "Du startest eine Serie mit 5 Episoden. Die Charaktere und die Welt bleiben gleich.",
+    seriesHint: "Du startest eine Serie mit 5 Episoden.",
     back: "Zurück",
+    specialEffectsToggle: "Spezialeffekte",
+    noEffects: "Keine Spezialeffekte",
   },
   fr: {
     header: "Effets spéciaux & Détails",
-    effectsHeader: "Certains personnages principaux doivent-ils avoir des capacités spéciales?",
+    effectsHeader: "Capacités spéciales ?",
     effectsHint: "Choisis autant que tu veux",
     superpowers: "Super-pouvoirs",
     magic: "Pouvoirs magiques",
@@ -60,12 +63,14 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     descriptionPlaceholder: "p.ex. \"Une histoire de pirates sur la lune\"",
     continue: "Créer l'histoire",
     continueEpisode1: "Créer l'épisode 1",
-    seriesHint: "Tu commences une série de 5 épisodes. Les personnages et le monde restent les mêmes.",
+    seriesHint: "Tu commences une série de 5 épisodes.",
     back: "Retour",
+    specialEffectsToggle: "Effets spéciaux",
+    noEffects: "Pas d'effets spéciaux",
   },
   en: {
     header: "Special Effects & Details",
-    effectsHeader: "Should some main characters have special abilities?",
+    effectsHeader: "Special abilities?",
     effectsHint: "Choose as many as you like",
     superpowers: "Superpowers",
     magic: "Magical powers",
@@ -73,16 +78,18 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     transformations: "Transformations",
     talents: "Special talents",
     normal: "No, completely normal",
-    descriptionHeader: "Optional: Would you like to add anything?",
+    descriptionHeader: "Optional: Any wishes for the story?",
     descriptionPlaceholder: "e.g. \"A story about pirates on the moon\"",
     continue: "Create story",
     continueEpisode1: "Create Episode 1",
-    seriesHint: "You're starting a series with 5 episodes. Characters and the world stay the same.",
+    seriesHint: "You're starting a series with 5 episodes.",
     back: "Back",
+    specialEffectsToggle: "Special effects",
+    noEffects: "No special effects",
   },
   es: {
     header: "Efectos especiales y detalles",
-    effectsHeader: "¿Deberían algunos personajes principales tener habilidades especiales?",
+    effectsHeader: "¿Habilidades especiales?",
     effectsHint: "Elige tantos como quieras",
     superpowers: "Superpoderes",
     magic: "Poderes mágicos",
@@ -90,16 +97,18 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     transformations: "Transformaciones",
     talents: "Talentos especiales",
     normal: "No, completamente normal",
-    descriptionHeader: "Opcional: ¿Quieres añadir algo?",
+    descriptionHeader: "Opcional: ¿Deseos para la historia?",
     descriptionPlaceholder: "p.ej. \"Una historia de piratas en la luna\"",
     continue: "Crear historia",
     continueEpisode1: "Crear episodio 1",
-    seriesHint: "Comienzas una serie de 5 episodios. Los personajes y el mundo permanecen iguales.",
+    seriesHint: "Comienzas una serie de 5 episodios.",
     back: "Atrás",
+    specialEffectsToggle: "Efectos especiales",
+    noEffects: "Sin efectos especiales",
   },
   nl: {
     header: "Speciale effecten & Details",
-    effectsHeader: "Moeten sommige hoofdpersonen speciale eigenschappen hebben?",
+    effectsHeader: "Speciale eigenschappen?",
     effectsHint: "Kies er zoveel als je wilt",
     superpowers: "Superkrachten",
     magic: "Magische krachten",
@@ -107,16 +116,18 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     transformations: "Transformaties",
     talents: "Speciale talenten",
     normal: "Nee, helemaal normaal",
-    descriptionHeader: "Optioneel: Wil je nog iets toevoegen?",
+    descriptionHeader: "Optioneel: Wensen voor het verhaal?",
     descriptionPlaceholder: "bijv. \"Een verhaal over piraten op de maan\"",
     continue: "Verhaal maken",
     continueEpisode1: "Maak aflevering 1",
-    seriesHint: "Je start een serie van 5 afleveringen. De personages en de wereld blijven hetzelfde.",
+    seriesHint: "Je start een serie van 5 afleveringen.",
     back: "Terug",
+    specialEffectsToggle: "Speciale effecten",
+    noEffects: "Geen speciale effecten",
   },
   it: {
     header: "Effetti speciali e dettagli",
-    effectsHeader: "Alcuni personaggi principali dovrebbero avere abilità speciali?",
+    effectsHeader: "Abilità speciali?",
     effectsHint: "Scegli quanti ne vuoi",
     superpowers: "Superpoteri",
     magic: "Poteri magici",
@@ -124,16 +135,18 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     transformations: "Trasformazioni",
     talents: "Talenti speciali",
     normal: "No, del tutto normale",
-    descriptionHeader: "Opzionale: Vuoi aggiungere qualcosa?",
+    descriptionHeader: "Opzionale: Desideri per la storia?",
     descriptionPlaceholder: "es. \"Una storia di pirati sulla luna\"",
     continue: "Crea storia",
     continueEpisode1: "Crea episodio 1",
-    seriesHint: "Inizi una serie di 5 episodi. I personaggi e il mondo rimangono gli stessi.",
+    seriesHint: "Inizi una serie di 5 episodi.",
     back: "Indietro",
+    specialEffectsToggle: "Effetti speciali",
+    noEffects: "Nessun effetto speciale",
   },
   bs: {
     header: "Specijalni efekti i detalji",
-    effectsHeader: "Trebaju li neki glavni likovi imati posebne sposobnosti?",
+    effectsHeader: "Posebne sposobnosti?",
     effectsHint: "Odaberi koliko želiš",
     superpowers: "Supermoći",
     magic: "Magične moći",
@@ -141,12 +154,14 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     transformations: "Transformacije",
     talents: "Posebni talenti",
     normal: "Ne, sasvim normalno",
-    descriptionHeader: "Opcionalno: Želiš li dodati nešto?",
+    descriptionHeader: "Opcionalno: Želje za priču?",
     descriptionPlaceholder: "npr. \"Priča o piratima na mjesecu\"",
     continue: "Kreiraj priču",
     continueEpisode1: "Kreiraj epizodu 1",
-    seriesHint: "Pokrećeš seriju od 5 epizoda. Likovi i svijet ostaju isti.",
+    seriesHint: "Pokrećeš seriju od 5 epizoda.",
     back: "Nazad",
+    specialEffectsToggle: "Specijalni efekti",
+    noEffects: "Bez specijalnih efekata",
   },
 };
 
@@ -165,7 +180,6 @@ const attributeOptions: AttributeOption[] = [
   { id: "normal", emoji: "❌", labelKey: "normal" },
 ];
 
-// Settings translations (reused from StoryTypeSelectionScreen, inline for independence)
 const settingsTranslations: Record<string, Record<string, string>> = {
   de: { lengthLabel: 'Länge', short: 'Kurz', medium: 'Mittel', long: 'Lang', extra_long: 'Extra-Lang', difficultyLabel: 'Schwierigkeit', easy: 'Leicht', hard: 'Schwer', seriesLabel: 'Serie', seriesNo: 'Nein', seriesYes: 'Ja', languageLabel: 'Sprache', seriesModeNormal: 'Normale Serie', seriesModeNormalDesc: 'Die Geschichte fließt von Episode zu Episode', seriesModeInteractive: 'Mitgestalten', seriesModeInteractiveDesc: 'Dein Kind entscheidet am Ende jeder Episode wie es weitergeht' },
   fr: { lengthLabel: 'Longueur', short: 'Court', medium: 'Moyen', long: 'Long', extra_long: 'Très long', difficultyLabel: 'Difficulté', easy: 'Facile', hard: 'Difficile', seriesLabel: 'Série', seriesNo: 'Non', seriesYes: 'Oui', languageLabel: 'Langue', seriesModeNormal: 'Série normale', seriesModeNormalDesc: "L'histoire suit son cours d'épisode en épisode", seriesModeInteractive: 'Participer', seriesModeInteractiveDesc: "Ton enfant décide comment l'histoire continue" },
@@ -187,16 +201,14 @@ export interface StorySettingsFromEffects {
 interface SpecialEffectsScreenProps {
   onComplete: (attributes: SpecialAttribute[], additionalDescription: string, settings?: StorySettingsFromEffects) => void;
   onBack: () => void;
-  /** When true, show length/difficulty/series/language settings (used by Weg A "free path") */
   showSettings?: boolean;
-  /** When true, show series toggle (admin only) */
   isAdmin?: boolean;
   availableLanguages?: string[];
   defaultLanguage?: string;
   fablinoMessage?: string;
 }
 
-const LENGTH_CARD_EMOJIS: Record<string, string> = {
+const LENGTH_EMOJIS: Record<string, string> = {
   short: "📖",
   medium: "📚",
   long: "📚📚",
@@ -216,17 +228,16 @@ const SpecialEffectsScreen = ({
   const t = translations[kidAppLanguage] || translations.de;
   const st = settingsTranslations[kidAppLanguage] || settingsTranslations.de;
 
-  // Load generation config from DB based on kid's age
   const { options: lengthOptions, defaultLength, loading: lengthLoading } = useStoryLengthOptions(selectedProfile?.age);
-  
+
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
   const [additionalDescription, setAdditionalDescription] = useState("");
-  
-  // Settings state (only used when showSettings = true, i.e. Weg A)
+  const [effectsExpanded, setEffectsExpanded] = useState(false);
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+
   const [storyLength, setStoryLength] = useState<StoryLength>("medium");
   const [storyDifficulty, setStoryDifficulty] = useState<StoryDifficulty>("medium");
 
-  // Set default length from DB when loaded
   const [defaultApplied, setDefaultApplied] = useState(false);
   if (!defaultApplied && !lengthLoading && defaultLength) {
     setStoryLength(defaultLength as StoryLength);
@@ -238,13 +249,11 @@ const SpecialEffectsScreen = ({
 
   const toggleAttribute = (attr: SpecialAttribute) => {
     if (attr === "normal") {
-      // Toggle "normal": if already selected, deselect; otherwise clear others
       setSelectedAttributes((prev) =>
         prev.includes("normal") ? [] : ["normal"]
       );
     } else {
       setSelectedAttributes((prev) => {
-        // Remove "normal" if selecting something else
         const filtered = prev.filter((a) => a !== "normal");
         if (filtered.includes(attr)) {
           return filtered.filter((a) => a !== attr);
@@ -255,7 +264,6 @@ const SpecialEffectsScreen = ({
   };
 
   const handleContinue = () => {
-    // Always pass settings (Length, Difficulty, Language, Series)
     onComplete(selectedAttributes, additionalDescription.trim(), {
       length: storyLength,
       difficulty: storyDifficulty,
@@ -265,253 +273,53 @@ const SpecialEffectsScreen = ({
     });
   };
 
+  const selectedEffectLabels = selectedAttributes
+    .filter(a => a !== "normal")
+    .map(a => {
+      const opt = attributeOptions.find(o => o.id === a);
+      return opt ? `${opt.emoji} ${t[opt.labelKey]}` : a;
+    });
+
+  const effectsSummary = selectedAttributes.includes("normal")
+    ? `❌ ${t.normal}`
+    : selectedEffectLabels.length > 0
+      ? selectedEffectLabels.join(", ")
+      : t.noEffects;
+
+  const lengthItems = lengthOptions.length > 0
+    ? lengthOptions.map((opt) => ({
+        key: opt.story_length as StoryLength,
+        label: (opt.length_labels as Record<string, string>)?.[kidAppLanguage]
+          || (opt.length_labels as Record<string, string>)?.de
+          || opt.story_length,
+      }))
+    : (["short", "medium", "long", "extra_long"] as StoryLength[]).map((len) => ({
+        key: len,
+        label: len === "short" ? st.short : len === "medium" ? st.medium : len === "long" ? st.long : st.extra_long,
+      }));
+
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col items-stretch px-5 max-w-[600px] mx-auto w-full gap-2.5 pb-4">
+      <div className="flex-1 flex flex-col items-stretch px-4 max-w-[600px] mx-auto w-full gap-2 pb-2">
         {/* Back button */}
         <div className="pt-2">
           <BackButton onClick={onBack} />
         </div>
 
-        {/* Fablino Header */}
+        {/* Fablino Header — compact */}
         <FablinoPageHeader
           mascotImage="/mascot/5_new_story.png"
-          message={fablinoMessage || t.effectsHeader}
-          mascotSize="md"
+          message={fablinoMessage || t.descriptionHeader}
+          mascotSize="sm"
         />
 
-        {/* Story Settings (only for Weg A / free path) – compact toggle rows */}
-        {true && (
-          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-3 space-y-2">
-            {/* Length — dynamic from generation_config */}
-            <div className="space-y-1.5">
-              <span className="text-sm font-semibold text-[#92400E]">{st.lengthLabel}</span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(lengthOptions.length > 0
-                  ? lengthOptions.map((opt) => ({
-                      key: opt.story_length as StoryLength,
-                      label: (opt.length_labels as Record<string, string>)?.[kidAppLanguage]
-                        || (opt.length_labels as Record<string, string>)?.de
-                        || opt.story_length,
-                      desc: (opt.length_description as Record<string, string>)?.[kidAppLanguage]
-                        || (opt.length_description as Record<string, string>)?.de
-                        || "",
-                      images: opt.scene_image_count + (opt.include_cover ? 1 : 0),
-                    }))
-                  : (["short", "medium", "long", "extra_long"] as StoryLength[]).map((len) => ({
-                      key: len,
-                      label: len === "short" ? st.short : len === "medium" ? st.medium : len === "long" ? st.long : st.extra_long,
-                      desc: "",
-                      images: 0,
-                    }))
-                ).map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setStoryLength(item.key)}
-                    className={cn(
-                      "flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl transition-all duration-200 text-center",
-                      storyLength === item.key
-                        ? "bg-[#E8863A] text-white shadow-md scale-[1.02]"
-                        : "bg-orange-50/60 text-[#2D1810]/70 hover:bg-white/80 hover:text-[#2D1810]"
-                    )}
-                  >
-                    <span className="text-lg leading-none">{LENGTH_CARD_EMOJIS[item.key] || "📖"}</span>
-                    <span className="text-xs font-semibold leading-tight">{item.label}</span>
-                    {item.desc && <span className="text-[10px] opacity-80 leading-tight">{item.desc}</span>}
-                    {item.images > 0 && (
-                      <span className="text-[10px] opacity-70 leading-tight">{item.images} Bilder</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-orange-100/60" />
-
-            {/* Difficulty */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.difficultyLabel}</span>
-              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
-                {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
-                  <button
-                    key={diff}
-                    onClick={() => setStoryDifficulty(diff)}
-                    className={cn(
-                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
-                      storyDifficulty === diff
-                        ? "bg-[#E8863A] text-white shadow-sm"
-                        : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
-                    )}
-                  >
-                    {diff === "easy" ? st.easy : diff === "medium" ? st.medium : st.hard}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Language */}
-            {availableLanguages.length > 0 && (
-              <>
-                <div className="border-t border-orange-100/60" />
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.languageLabel}</span>
-                  <div className="flex-1 flex gap-1.5 flex-wrap bg-orange-50/60 rounded-xl p-1">
-                    {availableLanguages.map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => setStoryLanguage(lang)}
-                        className={cn(
-                          "flex-1 min-w-0 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
-                          storyLanguage === lang
-                            ? "bg-[#E8863A] text-white shadow-sm"
-                            : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
-                        )}
-                      >
-                        {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[kidAppLanguage] || lang.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Series Toggle – only inside settings panel */}
-            {showSettings && (
-              <>
-                <div className="border-t border-orange-100/60" />
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.seriesLabel}</span>
-                  <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
-                    {[false, true].map((val) => (
-                      <button
-                        key={String(val)}
-                        onClick={() => setIsSeries(val)}
-                        className={cn(
-                          "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
-                          isSeries === val
-                            ? "bg-[#E8863A] text-white shadow-sm"
-                            : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
-                        )}
-                      >
-                        {val ? st.seriesYes : st.seriesNo}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Series Toggle for Admin (standalone, for Weg B where showSettings is false) */}
-        {!showSettings && isAdmin && (
-          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm p-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-[#92400E] w-24 shrink-0">{st.seriesLabel}</span>
-              <div className="flex-1 flex gap-1.5 bg-orange-50/60 rounded-xl p-1">
-                {[false, true].map((val) => (
-                  <button
-                    key={String(val)}
-                    onClick={() => setIsSeries(val)}
-                    className={cn(
-                      "flex-1 py-1.5 text-sm rounded-lg transition-all duration-200 font-medium text-center",
-                      isSeries === val
-                        ? "bg-[#E8863A] text-white shadow-sm"
-                        : "text-[#2D1810]/70 hover:text-[#2D1810] hover:bg-white/60"
-                    )}
-                  >
-                    {val ? st.seriesYes : st.seriesNo}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Series Mode Toggle (normal vs interactive) – shown when series is active */}
-        {isAdmin && isSeries && (
-          <div className="w-full space-y-2 animate-fade-in">
-            <button
-              onClick={() => setSeriesMode('normal')}
-              className={cn(
-                "w-full text-left p-3 rounded-2xl border-2 transition-all duration-200",
-                seriesMode === 'normal'
-                  ? "border-[#E8863A] bg-white shadow-md"
-                  : "border-orange-100 bg-white/70 hover:border-orange-200"
-              )}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg mt-0.5">📖</span>
-                <div>
-                  <p className="text-sm font-semibold text-[#2D1810]">{st.seriesModeNormal}</p>
-                  <p className="text-xs text-[#2D1810]/60 mt-0.5">{st.seriesModeNormalDesc}</p>
-                </div>
-              </div>
-            </button>
-            <button
-              onClick={() => setSeriesMode('interactive')}
-              className={cn(
-                "w-full text-left p-3 rounded-2xl border-2 transition-all duration-200",
-                seriesMode === 'interactive'
-                  ? "border-[#E8863A] bg-white shadow-md"
-                  : "border-orange-100 bg-white/70 hover:border-orange-200"
-              )}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg mt-0.5">✨</span>
-                <div>
-                  <p className="text-sm font-semibold text-[#2D1810]">
-                    {st.seriesModeInteractive}
-                    <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white">Premium</span>
-                  </p>
-                  <p className="text-xs text-[#2D1810]/60 mt-0.5">{st.seriesModeInteractiveDesc}</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
-        <div className="w-full space-y-1.5">
-          <h2 className="text-sm font-semibold text-center text-[#2D1810]">
-            {t.effectsHeader}
-          </h2>
-          <div className="grid grid-cols-3 gap-2">
-            {attributeOptions.map((option) => {
-              const isSelected = selectedAttributes.includes(option.id);
-              return (
-                <button
-                   key={option.id}
-                   onClick={() => toggleAttribute(option.id)}
-                   className={cn(
-                     "flex flex-col items-center justify-center gap-1 w-full py-2.5 rounded-2xl",
-                     "transition-all duration-150 cursor-pointer",
-                     "hover:scale-105 active:scale-95",
-                     "focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1",
-                     isSelected
-                       ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
-                       : "border border-gray-200 bg-white hover:border-gray-300"
-                   )}
-                 >
-                  <span className="text-2xl leading-none">{option.emoji}</span>
-                  <span className="text-[11px] font-medium text-center leading-tight text-[#2D1810]">
-                    {t[option.labelKey]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-
-        {/* Additional Description – compact */}
-        <div className="w-full space-y-1.5">
-          <h2 className="text-sm font-semibold text-center text-[#2D1810]">
-            {t.descriptionHeader}
-          </h2>
+        {/* Text input + voice */}
+        <div className="w-full">
           <Textarea
             value={additionalDescription}
             onChange={(e) => setAdditionalDescription(e.target.value)}
             placeholder={t.descriptionPlaceholder}
-            className="min-h-[72px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A]"
+            className="min-h-[56px] text-sm resize-none rounded-xl border border-gray-200 focus:border-[#E8863A]"
           />
           <div className="flex justify-center pt-1">
             <VoiceRecordButton
@@ -523,20 +331,228 @@ const SpecialEffectsScreen = ({
           </div>
         </div>
 
-        {/* Series hint – shown when series toggle is active */}
+        {/* Compact settings panel */}
+        {true && (
+          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2 space-y-1.5">
+            {/* Length — horizontal chips */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#92400E] w-20 shrink-0">{st.lengthLabel}</span>
+              <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-lg p-0.5">
+                {lengthItems.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setStoryLength(item.key)}
+                    className={cn(
+                      "flex-1 py-1 text-xs rounded-md transition-all duration-150 font-medium text-center whitespace-nowrap",
+                      storyLength === item.key
+                        ? "bg-[#E8863A] text-white shadow-sm"
+                        : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
+                    )}
+                  >
+                    {LENGTH_EMOJIS[item.key] ? `${LENGTH_EMOJIS[item.key]} ` : ''}{item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty — inline chips */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#92400E] w-20 shrink-0">{st.difficultyLabel}</span>
+              <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-lg p-0.5">
+                {(["easy", "medium", "hard"] as StoryDifficulty[]).map((diff) => (
+                  <button
+                    key={diff}
+                    onClick={() => setStoryDifficulty(diff)}
+                    className={cn(
+                      "flex-1 py-1 text-xs rounded-md transition-all duration-150 font-medium text-center",
+                      storyDifficulty === diff
+                        ? "bg-[#E8863A] text-white shadow-sm"
+                        : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
+                    )}
+                  >
+                    {diff === "easy" ? st.easy : diff === "medium" ? st.medium : st.hard}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Language — dropdown */}
+            {availableLanguages.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#92400E] w-20 shrink-0">{st.languageLabel}</span>
+                <div className="flex-1 relative">
+                  <button
+                    onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                    className="w-full flex items-center justify-between py-1.5 px-3 text-xs font-medium rounded-lg bg-orange-50/60 hover:bg-white/60 transition-colors"
+                  >
+                    <span>
+                      {LANGUAGE_FLAGS[storyLanguage] || ''} {LANGUAGE_LABELS[storyLanguage]?.[kidAppLanguage] || storyLanguage.toUpperCase()}
+                    </span>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-[#92400E] transition-transform", langDropdownOpen && "rotate-180")} />
+                  </button>
+                  {langDropdownOpen && (
+                    <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-lg border border-orange-100 py-1 max-h-48 overflow-y-auto">
+                      {availableLanguages.map((lang) => (
+                        <button
+                          key={lang}
+                          onClick={() => { setStoryLanguage(lang); setLangDropdownOpen(false); }}
+                          className={cn(
+                            "w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-orange-50 transition-colors",
+                            storyLanguage === lang ? "bg-orange-50 text-[#E8863A]" : "text-[#2D1810]"
+                          )}
+                        >
+                          {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[kidAppLanguage] || lang.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Series toggle */}
+            {showSettings && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#92400E] w-20 shrink-0">{st.seriesLabel}</span>
+                <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-lg p-0.5">
+                  {[false, true].map((val) => (
+                    <button
+                      key={String(val)}
+                      onClick={() => setIsSeries(val)}
+                      className={cn(
+                        "flex-1 py-1 text-xs rounded-md transition-all duration-150 font-medium text-center",
+                        isSeries === val
+                          ? "bg-[#E8863A] text-white shadow-sm"
+                          : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
+                      )}
+                    >
+                      {val ? st.seriesYes : st.seriesNo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Admin series toggle (standalone, for Weg B where showSettings is false) */}
+        {!showSettings && isAdmin && (
+          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#92400E] w-20 shrink-0">{st.seriesLabel}</span>
+              <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-lg p-0.5">
+                {[false, true].map((val) => (
+                  <button
+                    key={String(val)}
+                    onClick={() => setIsSeries(val)}
+                    className={cn(
+                      "flex-1 py-1 text-xs rounded-md transition-all duration-150 font-medium text-center",
+                      isSeries === val
+                        ? "bg-[#E8863A] text-white shadow-sm"
+                        : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
+                    )}
+                  >
+                    {val ? st.seriesYes : st.seriesNo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Series mode toggle (normal vs interactive) */}
+        {isAdmin && isSeries && (
+          <div className="w-full flex gap-2 animate-fade-in">
+            <button
+              onClick={() => setSeriesMode('normal')}
+              className={cn(
+                "flex-1 text-left p-2.5 rounded-xl border-2 transition-all duration-200",
+                seriesMode === 'normal'
+                  ? "border-[#E8863A] bg-white shadow-md"
+                  : "border-orange-100 bg-white/70 hover:border-orange-200"
+              )}
+            >
+              <p className="text-xs font-semibold text-[#2D1810]">📖 {st.seriesModeNormal}</p>
+              <p className="text-[10px] text-[#2D1810]/50 mt-0.5">{st.seriesModeNormalDesc}</p>
+            </button>
+            <button
+              onClick={() => setSeriesMode('interactive')}
+              className={cn(
+                "flex-1 text-left p-2.5 rounded-xl border-2 transition-all duration-200",
+                seriesMode === 'interactive'
+                  ? "border-[#E8863A] bg-white shadow-md"
+                  : "border-orange-100 bg-white/70 hover:border-orange-200"
+              )}
+            >
+              <p className="text-xs font-semibold text-[#2D1810]">
+                ✨ {st.seriesModeInteractive}
+                <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white">Premium</span>
+              </p>
+              <p className="text-[10px] text-[#2D1810]/50 mt-0.5">{st.seriesModeInteractiveDesc}</p>
+            </button>
+          </div>
+        )}
+
+        {/* Special Effects — collapsible */}
+        <div className="w-full">
+          <button
+            onClick={() => setEffectsExpanded(!effectsExpanded)}
+            className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/70 border border-orange-100 shadow-sm hover:bg-white/90 transition-colors"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-semibold text-[#92400E]">{t.specialEffectsToggle}</span>
+              <span className="text-[10px] text-[#2D1810]/50 truncate">{effectsSummary}</span>
+            </div>
+            <ChevronDown className={cn("h-4 w-4 text-[#92400E] shrink-0 transition-transform", effectsExpanded && "rotate-180")} />
+          </button>
+
+          {effectsExpanded && (
+            <div className="grid grid-cols-3 gap-1.5 mt-1.5 animate-fade-in">
+              {attributeOptions.map((option) => {
+                const isSelected = selectedAttributes.includes(option.id);
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => toggleAttribute(option.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-0.5 w-full py-2 rounded-xl",
+                      "transition-all duration-150 cursor-pointer",
+                      "active:scale-95",
+                      isSelected
+                        ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
+                        : "border border-gray-200 bg-white hover:border-gray-300"
+                    )}
+                  >
+                    <span className="text-lg leading-none">{option.emoji}</span>
+                    <span className="text-[10px] font-medium text-center leading-tight text-[#2D1810]">
+                      {t[option.labelKey]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Series hint */}
         {isSeries && (
-          <p className="text-xs text-center text-[#92400E]/70 bg-orange-50/80 rounded-xl px-3 py-2 border border-orange-100/60">
+          <p className="text-[10px] text-center text-[#92400E]/70 bg-orange-50/80 rounded-lg px-2 py-1 border border-orange-100/60">
             {t.seriesHint}
           </p>
         )}
 
-        {/* Create Story Button – orange, inline (not fixed) */}
-        <button
-          onClick={handleContinue}
-          className="w-full h-14 rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors"
-        >
-          {isSeries ? t.continueEpisode1 : t.continue} ✨
-        </button>
+        {/* Spacer to push button down */}
+        <div className="flex-1 min-h-1" />
+
+        {/* Create Story Button — sticky at bottom */}
+        <div className="sticky bottom-0 pb-3 pt-2 bg-gradient-to-t from-[#FFF8F0] via-[#FFF8F0] to-transparent">
+          <button
+            onClick={handleContinue}
+            className="w-full h-12 rounded-2xl text-base font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg"
+          >
+            {isSeries ? t.continueEpisode1 : t.continue} ✨
+          </button>
+        </div>
       </div>
     </div>
   );

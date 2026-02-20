@@ -876,22 +876,22 @@ const CreateStoryPage = () => {
        {currentScreen === "entry" && (
         <div className="min-h-screen flex flex-col">
           {/* Header */}
-          <div className="py-3 px-4 max-w-lg mx-auto w-full">
+          <div className="pt-2 pb-1 px-4 max-w-lg mx-auto w-full">
             <BackButton to="/" />
           </div>
 
-          {/* Fablino + Speech Bubble */}
+          {/* Fablino + Speech Bubble — compact */}
           <div className="px-4 max-w-lg mx-auto w-full">
             <FablinoPageHeader
               mascotImage="/mascot/6_Onboarding.png"
               message={`${t.wizardEntryTitle} 🦊`}
-              mascotSize="md"
+              mascotSize="sm"
             />
           </div>
 
           {/* Daily limit indicator */}
-          <div className="px-4 max-w-lg mx-auto w-full">
-            <div className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-sm font-medium ${
+          <div className="px-4 max-w-lg mx-auto w-full mt-1">
+            <div className={`flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl text-xs font-medium ${
               limitReached
                 ? 'bg-red-100 text-red-700'
                 : storiesRemaining <= 2
@@ -908,7 +908,7 @@ const CreateStoryPage = () => {
           </div>
 
           {/* Two path cards */}
-          <div className="flex-1 flex flex-col items-center px-4 py-6 gap-4 max-w-lg mx-auto w-full">
+          <div className="flex-1 flex flex-col items-center px-4 py-4 gap-3 max-w-lg mx-auto w-full">
             {/* Weg A: Free */}
             <button
               onClick={() => handlePathSelect("free")}

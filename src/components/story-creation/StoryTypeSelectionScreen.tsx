@@ -213,22 +213,22 @@ const StoryTypeSelectionScreen = ({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col items-stretch px-5 max-w-[480px] mx-auto w-full gap-4 pb-6">
+      <div className="flex-1 flex flex-col items-stretch px-4 max-w-[480px] mx-auto w-full gap-3 pb-4">
         {/* Back button */}
-        <div className="pt-3">
+        <div className="pt-2">
           <BackButton onClick={handleBack} />
         </div>
 
-        {/* Fablino Header */}
+        {/* Fablino Header — compact for tablet */}
         <FablinoPageHeader
           mascotImage="/mascot/6_Onboarding.png"
           message={resolvedFablinoMessage}
-          mascotSize="md"
+          mascotSize="sm"
         />
 
-        {/* Main Category Grid – 2x3 with larger tiles */}
+        {/* Main Category Grid – 3 columns, compact gaps for 640px */}
         {viewState === "main" && (
-          <div className="grid grid-cols-3 gap-4 w-full">
+          <div className="grid grid-cols-3 gap-2.5 w-full">
             {mainCategoryTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
@@ -243,11 +243,9 @@ const StoryTypeSelectionScreen = ({
           </div>
         )}
 
-
-
         {viewState === "educational" && (
-          <div className="w-full space-y-3">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="w-full space-y-2">
+            <div className="grid grid-cols-3 gap-2.5">
               {educationalTopicTiles.map((tile) => (
                 <CharacterTile
                   key={tile.type}
