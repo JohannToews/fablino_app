@@ -15,8 +15,9 @@ import AdminPage from "./pages/AdminPage";
 import AdminConfigPage from "./pages/AdminConfigPage";
 import StorySelectPage from "./pages/StorySelectPage";
 import ReadingPage from "./pages/ReadingPage";
-import VocabularyQuizPage from "./pages/VocabularyQuizPage";
-import VocabularyManagePage from "./pages/VocabularyManagePage";
+// POST-BETA: Vokabel-Quiz & Verwaltung — reaktivieren wenn Wort-Tracking zeigt dass Feature genutzt wird
+// import VocabularyQuizPage from "./pages/VocabularyQuizPage";
+// import VocabularyManagePage from "./pages/VocabularyManagePage";
 import ResultsPage from "./pages/ResultsPage";
 import CollectionPage from "./pages/CollectionPage";
 import FeedbackStatsPage from "./pages/FeedbackStatsPage";
@@ -80,6 +81,7 @@ const App = () => (
                 <ReadingPage />
               </ProtectedRoute>
             } />
+            {/* POST-BETA: Vokabel-Quiz Route — reaktivieren wenn Wort-Tracking zeigt dass Feature genutzt wird
             <Route path="/quiz" element={
               <ProtectedRoute>
                 <VocabularyQuizPage />
@@ -90,6 +92,7 @@ const App = () => (
                 <VocabularyManagePage />
               </ProtectedRoute>
             } />
+            */}
             <Route path="/results" element={
               <ProtectedRoute>
                 <ResultsPage />

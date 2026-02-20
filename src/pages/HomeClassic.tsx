@@ -219,7 +219,7 @@ const HomeClassic = () => {
             </CardContent>
           </Card>
 
-          {/* Quiz */}
+          {/* POST-BETA: Vokabel-Quiz — reaktivieren wenn Wort-Tracking zeigt dass Feature genutzt wird
           <Card
             onClick={() => navigate("/quiz")}
             className="cursor-pointer border-2 border-emerald-200 hover:border-emerald-400 hover:shadow-lg transition-all group touch-manipulation"
@@ -231,6 +231,7 @@ const HomeClassic = () => {
               <h3 className="font-baloo font-bold text-sm md:text-base leading-tight">{t.wordQuiz}</h3>
             </CardContent>
           </Card>
+          */}
 
           {/* Mon album de stickers */}
           <Card

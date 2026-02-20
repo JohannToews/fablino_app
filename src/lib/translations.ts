@@ -315,6 +315,12 @@ export interface Translations {
   wordQuiz: string;
   createStory: string;
   readStory: string;
+
+  // Word List Panel (Reading Page)
+  wordsButton: string;
+  wordsTitle: string;
+  wordsEmpty: string;
+  wordKnown: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -589,6 +595,10 @@ const translations: Record<Language, Translations> = {
     wordQuiz: 'Wörter-Quiz',
     createStory: 'Eine Geschichte erstellen',
     readStory: 'Eine Geschichte lesen',
+    wordsButton: 'Wörter',
+    wordsTitle: 'Deine Wörter aus dieser Geschichte',
+    wordsEmpty: 'Tippe auf ein Wort in der Geschichte um es zu speichern! 📖',
+    wordKnown: 'Kenne ich',
   },
   
   en: {
@@ -862,6 +872,10 @@ const translations: Record<Language, Translations> = {
     wordQuiz: 'Word Quiz',
     createStory: 'Create a Story',
     readStory: 'Read a Story',
+    wordsButton: 'Words',
+    wordsTitle: 'Your words from this story',
+    wordsEmpty: 'Tap on a word in the story to save it! 📖',
+    wordKnown: 'I know it',
   },
   
   fr: {
@@ -1135,6 +1149,10 @@ const translations: Record<Language, Translations> = {
     wordQuiz: 'Quiz des Mots',
     createStory: 'Créer une histoire',
     readStory: 'Lire une histoire',
+    wordsButton: 'Mots',
+    wordsTitle: 'Tes mots de cette histoire',
+    wordsEmpty: 'Touche un mot dans l\'histoire pour le sauvegarder ! 📖',
+    wordKnown: 'Je connais',
   },
   
   es: {
@@ -1408,6 +1426,10 @@ const translations: Record<Language, Translations> = {
     wordQuiz: 'Quiz de Palabras',
     createStory: 'Crear una historia',
     readStory: 'Leer una historia',
+    wordsButton: 'Palabras',
+    wordsTitle: 'Tus palabras de esta historia',
+    wordsEmpty: '¡Toca una palabra en la historia para guardarla! 📖',
+    wordKnown: 'La sé',
   },
   
   nl: {
@@ -1681,6 +1703,10 @@ const translations: Record<Language, Translations> = {
     wordQuiz: 'Woordenquiz',
     createStory: 'Een verhaal maken',
     readStory: 'Een verhaal lezen',
+    wordsButton: 'Woorden',
+    wordsTitle: 'Jouw woorden uit dit verhaal',
+    wordsEmpty: 'Tik op een woord in het verhaal om het op te slaan! 📖',
+    wordKnown: 'Ken ik',
   },
   
   it: {
@@ -1954,6 +1980,10 @@ const translations: Record<Language, Translations> = {
     wordQuiz: 'Quiz delle Parole',
     createStory: 'Creare una storia',
     readStory: 'Leggere una storia',
+    wordsButton: 'Parole',
+    wordsTitle: 'Le tue parole da questa storia',
+    wordsEmpty: 'Tocca una parola nella storia per salvarla! 📖',
+    wordKnown: 'La conosco',
   },
   
   bs: {

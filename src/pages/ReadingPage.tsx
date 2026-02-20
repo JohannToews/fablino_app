@@ -24,6 +24,7 @@ import { Language, getTranslations } from "@/lib/translations";
 import BranchDecisionScreen from "@/components/story-creation/BranchDecisionScreen";
 import type { BranchOption as BranchOptionType } from "@/components/story-creation/BranchDecisionScreen";
 import ImmersiveReader from "@/components/immersive-reader/ImmersiveReader";
+import WordListPanel from "@/components/WordListPanel";
 
 // UI labels for word explanation popup in different languages
 const readingLabels: Record<string, {
@@ -252,6 +253,7 @@ const ReadingPage = () => {
   const [cachedExplanations, setCachedExplanations] = useState<Map<string, string>>(new Map());
   // Total marked words count from DB (for display)
   const [totalMarkedCount, setTotalMarkedCount] = useState(0);
+  const [showWordPanel, setShowWordPanel] = useState(false);
   // Current text selection for phrase marking
   const [currentSelection, setCurrentSelection] = useState<string | null>(null);
   const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
@@ -1270,6 +1272,7 @@ const ReadingPage = () => {
       return;
     }
 
+    console.log("[Analytics] word_saved", { storyId: id, word: selectedWord, language: kidAppLanguage });
     setTotalMarkedCount(prev => prev + 1);
     setCachedExplanations(prev => new Map(prev.set(selectedWord.toLowerCase(), explanation)));
     setIsSaved(true);
@@ -1660,6 +1663,23 @@ const ReadingPage = () => {
                 <span>{gamificationState.stars}</span>
               </div>
             )}
+            {/* Words panel toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowWordPanel(true)}
+              className="h-9 px-2.5 text-xs font-semibold text-orange-600 hover:bg-orange-50 gap-1"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {kidAppLanguage === 'fr' ? 'Mots' : kidAppLanguage === 'en' ? 'Words' : kidAppLanguage === 'es' ? 'Palabras' : 'Wörter'}
+              </span>
+              {totalMarkedCount > 0 && (
+                <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {totalMarkedCount}
+                </span>
+              )}
+            </Button>
             {/* Share — icon-only on mobile */}
             {story && (
               <ShareStoryButton 
@@ -2313,6 +2333,14 @@ const ReadingPage = () => {
           onClose={clearPendingLevelUp}
         />
       )}
+
+      {/* Inline Word List Panel */}
+      <WordListPanel
+        storyId={id || ""}
+        language={kidAppLanguage}
+        open={showWordPanel}
+        onClose={() => setShowWordPanel(false)}
+      />
     </div>
   );
 };
