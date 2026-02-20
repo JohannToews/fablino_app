@@ -333,13 +333,12 @@ const CharacterSelectionScreen = ({
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Back button */}
-      <div className="px-4 pt-3 pb-0">
-        <BackButton onClick={viewState === "main" ? onBack : () => setViewState("main")} />
-      </div>
-
-      {/* Vertically centered content */}
       <div className="flex-1 flex flex-col items-stretch px-5 max-w-[480px] mx-auto w-full gap-4 pb-20">
+        {/* Back button */}
+        <div className="pt-3">
+          <BackButton onClick={viewState === "main" ? onBack : () => setViewState("main")} />
+        </div>
+
         {/* Fablino Header */}
         {fablinoMessage && viewState === "main" && (
           <FablinoPageHeader

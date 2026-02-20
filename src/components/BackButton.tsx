@@ -27,8 +27,8 @@ const BackButton = ({ onClick, to, className = "" }: BackButtonProps) => {
         flex items-center justify-center
         w-11 h-11 md:w-12 md:h-12
         rounded-full
-        bg-white/80 backdrop-blur-sm
-        shadow-sm hover:shadow-md hover:bg-white
+        bg-white border border-orange-200
+        shadow-md hover:shadow-lg hover:bg-orange-50
         transition-all duration-150
         active:scale-95
         ${className}

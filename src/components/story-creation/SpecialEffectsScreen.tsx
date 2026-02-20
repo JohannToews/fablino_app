@@ -267,14 +267,13 @@ const SpecialEffectsScreen = ({
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Back button */}
-      <div className="px-4 pt-2 pb-0">
-        <BackButton onClick={onBack} />
-      </div>
-
-      {/* Vertically centered content – consistent with all other screens */}
       <div className="flex-1 flex flex-col items-stretch px-5 max-w-[600px] mx-auto w-full gap-2.5 pb-4">
-        {/* Fablino Header – identical to Home, Entry, Theme screens */}
+        {/* Back button */}
+        <div className="pt-2">
+          <BackButton onClick={onBack} />
+        </div>
+
+        {/* Fablino Header */}
         <FablinoPageHeader
           mascotImage="/mascot/5_new_story.png"
           message={fablinoMessage || t.effectsHeader}

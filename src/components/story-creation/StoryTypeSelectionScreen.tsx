@@ -197,23 +197,34 @@ const StoryTypeSelectionScreen = ({
     return translations.educationalTopicHeader;
   };
 
+  const defaultFablinoMessages: Record<string, string> = {
+    de: "Welches Abenteuer soll es werden? 🏰",
+    fr: "Quelle aventure veux-tu vivre ? 🏰",
+    en: "What adventure awaits? 🏰",
+    es: "¿Qué aventura te espera? 🏰",
+    nl: "Welk avontuur wacht er? 🏰",
+    it: "Quale avventura ti aspetta? 🏰",
+    bs: "Koja te avantura čeka? 🏰",
+  };
+
+  const resolvedFablinoMessage = fablinoMessage
+    || defaultFablinoMessages[uiLanguage]
+    || defaultFablinoMessages['de'];
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Back button */}
-      <div className="px-4 pt-3 pb-0">
-        <BackButton onClick={handleBack} />
-      </div>
-
-      {/* Vertically centered content */}
       <div className="flex-1 flex flex-col items-stretch px-5 max-w-[480px] mx-auto w-full gap-4 pb-6">
+        {/* Back button */}
+        <div className="pt-3">
+          <BackButton onClick={handleBack} />
+        </div>
+
         {/* Fablino Header */}
-        {fablinoMessage && (
-          <FablinoPageHeader
-            mascotImage="/mascot/6_Onboarding.png"
-            message={fablinoMessage}
-            mascotSize="md"
-          />
-        )}
+        <FablinoPageHeader
+          mascotImage="/mascot/6_Onboarding.png"
+          message={resolvedFablinoMessage}
+          mascotSize="md"
+        />
 
         {/* Main Category Grid – 2x3 with larger tiles */}
         {viewState === "main" && (
