@@ -11,7 +11,6 @@ import CharacterSelectionScreen from "@/components/story-creation/CharacterSelec
 import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
 import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
-import BackButton from "@/components/BackButton";
 import {
   StoryType,
   StorySubElement,
@@ -875,17 +874,14 @@ const CreateStoryPage = () => {
     <div className="min-h-screen">
        {currentScreen === "entry" && (
         <div className="min-h-screen flex flex-col">
-          {/* Header */}
-          <div className="pt-2 pb-1 px-4 max-w-lg mx-auto w-full">
-            <BackButton to="/" />
-          </div>
-
-          {/* Fablino + Speech Bubble — compact */}
+          {/* Fablino + Speech Bubble + inline Back — compact */}
           <div className="px-4 max-w-lg mx-auto w-full">
             <FablinoPageHeader
               mascotImage="/mascot/6_Onboarding.png"
               message={`${t.wizardEntryTitle} 🦊`}
               mascotSize="sm"
+              showBackButton
+              backTo="/"
             />
           </div>
 
