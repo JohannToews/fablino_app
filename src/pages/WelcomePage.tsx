@@ -50,7 +50,7 @@ const WelcomePage = () => {
 
       if (!profile) {
         // Profile not yet ready → send to onboarding anyway
-        navigate("/onboarding/kind", { replace: true });
+        navigate("/onboarding/child", { replace: true });
         return;
       }
 
@@ -63,10 +63,10 @@ const WelcomePage = () => {
       if (kids && kids.length > 0) {
         navigate("/", { replace: true });
       } else {
-        navigate("/onboarding/kind", { replace: true });
+        navigate("/onboarding/child", { replace: true });
       }
     } catch {
-      navigate("/onboarding/kind", { replace: true });
+      navigate("/onboarding/child", { replace: true });
     }
   };
 
@@ -94,7 +94,7 @@ const WelcomePage = () => {
         email: trimmedEmail,
         password: trimmedPassword,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding/kind`,
+          emailRedirectTo: `${window.location.origin}/onboarding/child`,
         },
       });
 

@@ -54,7 +54,7 @@ const App = () => (
             <Route path="/install" element={<InstallPage />} />
             <Route path="/s/:token" element={<ShareRedirectPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
-            <Route path="/onboarding/kind" element={<OnboardingKindPage />} />
+            <Route path="/onboarding/child" element={<OnboardingKindPage />} />
             <Route path="/onboarding/story" element={<OnboardingStoryPage />} />
             <Route path="/" element={
               <ProtectedRoute>

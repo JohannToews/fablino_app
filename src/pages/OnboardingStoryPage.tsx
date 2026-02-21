@@ -74,10 +74,10 @@ const OnboardingStoryPage = () => {
     }
   }, [authLoading, isAuthenticated]);
 
-  // Guard: no kidId → /onboarding/kind
+   // Guard: no kidId → /onboarding/child
   useEffect(() => {
     if (!authLoading && !kidId) {
-      navigate("/onboarding/kind", { replace: true });
+      navigate("/onboarding/child", { replace: true });
     }
   }, [authLoading, kidId]);
 

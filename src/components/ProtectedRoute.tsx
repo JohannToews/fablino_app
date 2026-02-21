@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children, skipKidCheck = false }: ProtectedRouteProps)
 
   // If user has no kid profiles, send them to onboarding
   if (!skipKidCheck && kidProfiles && kidProfiles.length === 0) {
-    return <Navigate to="/onboarding/kind" replace />;
+    return <Navigate to="/onboarding/child" replace />;
   }
 
   return <>{children}</>;
