@@ -150,11 +150,11 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
 
   const loadCustomThemes = async () => {
     if (!selectedProfileId) return;
-    const { data } = await supabase
-      .from("custom_learning_themes")
+    const { data } = await (supabase
+      .from("custom_learning_themes" as any)
       .select("*")
       .eq("kid_profile_id", selectedProfileId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any);
 
     if (data) {
       setCustomThemes(data.map((row: any) => ({
@@ -206,8 +206,8 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
       const userId = userData?.user?.id;
       if (!userId) throw new Error("No user");
 
-      const { data: inserted, error } = await supabase
-        .from("custom_learning_themes")
+      const { data: inserted, error } = await (supabase
+        .from("custom_learning_themes" as any)
         .insert({
           user_id: userId,
           kid_profile_id: selectedProfileId,
@@ -219,7 +219,7 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
           is_active: true,
         })
         .select()
-        .single();
+        .single() as any);
 
       if (error) throw error;
 
@@ -250,7 +250,7 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
 
   const handleDeleteCustomTheme = async (themeId: string) => {
     try {
-      await supabase.from("custom_learning_themes").delete().eq("id", themeId);
+      await (supabase.from("custom_learning_themes" as any).delete().eq("id", themeId) as any);
       setCustomThemes((prev) => prev.filter((ct) => ct.id !== themeId));
       setActiveThemes((prev) => prev.filter((k) => k !== `custom:${themeId}`));
       toast.success(t.storyDeleted);
