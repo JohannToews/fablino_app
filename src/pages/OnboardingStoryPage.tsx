@@ -5,10 +5,39 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, BookOpen, RefreshCw } from "lucide-react";
+import FablinoMascot from "@/components/FablinoMascot";
+import SpeechBubble from "@/components/SpeechBubble";
 import confetti from "canvas-confetti";
 
-// Theme per story type and age
-const getThemeForStoryType = (storyType: string, age: number): string => {
+// Subtype-specific themes for onboarding
+const SUBTYPE_THEMES: Record<string, Record<string, string>> = {
+  adventure: {
+    heroes: "Superhelden, geheime Kräfte, einen Bösewicht besiegen",
+    detective: "Geheimnisse lösen, versteckte Hinweise, ein mysteriöser Fall",
+    space: "Weltraumreise, fremde Planeten, unbekannte Welten entdecken",
+  },
+  animals: {
+    forest: "Waldtiere erleben ein Abenteuer",
+    pets: "Haustiere auf einem besonderen Ausflug",
+    safari: "Wildtiere in der Savanne",
+  },
+  fantasy: {
+    magic: "Magische Kräfte und Zauberwelten",
+    dragons: "Freundliche Drachen und Abenteuer",
+    fairy: "Feen, Elfen und verzauberte Wälder",
+  },
+};
+
+// Fallback theme per story type and age (only if no subtype)
+const getThemeForStoryType = (storyType: string, age: number, subtype?: string, detail?: string): string => {
+  // If user provided custom detail, use it as primary theme
+  if (detail) return detail;
+  
+  // If subtype exists, use subtype-specific theme
+  if (subtype && SUBTYPE_THEMES[storyType]?.[subtype]) {
+    return SUBTYPE_THEMES[storyType][subtype];
+  }
+
   if (storyType === "adventure") {
     if (age <= 7) return "Ein mutiger kleiner Held rettet ein magisches Dorf";
     if (age <= 9) return "Ein Abenteuer mit einer geheimnisvollen Schatzkarte";
@@ -40,13 +69,33 @@ const PROGRESS_TEXTS = [
   "Fast fertig! 🎉",
 ];
 
-const FUN_FACTS = [
-  "Kinder die täglich 15 Minuten lesen, lernen bis zu 1000 neue Wörter im Jahr!",
-  "Lesen stärkt die Vorstellungskraft und fördert die Kreativität.",
-  "Geschichten helfen Kindern, Empathie zu entwickeln.",
-  "Zweisprachige Kinder haben besondere kognitive Vorteile!",
-  "Das Gehirn eines Kindes beim Lesen ist genauso aktiv wie beim Spielen.",
+const MASCOT_CYCLE = [
+  "/mascot/3_wating_story_generated.png",
+  "/mascot/6_Onboarding.png",
+  "/mascot/5_new_story.png",
 ];
+
+const DID_YOU_KNOW: Record<string, string> = {
+  de: "Wusstest du, dass",
+  fr: "Savais-tu que",
+  en: "Did you know that",
+  es: "¿Sabías que",
+  nl: "Wist je dat",
+  it: "Lo sapevi che",
+  bs: "Jesi li znao/la da",
+};
+
+const SHOW_DURATION = 4500;
+const HIDE_DURATION = 800;
+
+const shuffle = (arr: string[]) => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
 
 type Status = "generating" | "done" | "error";
 
@@ -54,7 +103,9 @@ const OnboardingStoryPage = () => {
   const [searchParams] = useSearchParams();
   const kidId = searchParams.get("kid");
   const storyTypeParam = searchParams.get("storyType");
+  const subtypeParam = searchParams.get("subtype");
   const storyLangParam = searchParams.get("lang");
+  const detailParam = searchParams.get("detail");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -63,9 +114,15 @@ const OnboardingStoryPage = () => {
   const [storyId, setStoryId] = useState<string | null>(null);
   const [kidName, setKidName] = useState<string>("");
   const [progressTextIdx, setProgressTextIdx] = useState(0);
-  const [funFactIdx] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
   const [dots, setDots] = useState(".");
   const hasStarted = useRef(false);
+
+  // Fun facts from DB (same as StoryGenerationProgress)
+  const [facts, setFacts] = useState<string[]>([]);
+  const [shuffledFacts, setShuffledFacts] = useState<string[]>([]);
+  const [factIndex, setFactIndex] = useState(0);
+  const [factVisible, setFactVisible] = useState(true);
+  const [mascotIndex, setMascotIndex] = useState(0);
 
   // Guard: not logged in → /welcome
   useEffect(() => {
@@ -102,6 +159,49 @@ const OnboardingStoryPage = () => {
     return () => clearInterval(timer);
   }, [status]);
 
+  // Load fun facts from DB
+  useEffect(() => {
+    const loadFacts = async () => {
+      const lang = storyLangParam || "de";
+      const { data, error } = await supabase
+        .from("fun_facts")
+        .select("translations, emoji");
+      if (error || !data?.length) return;
+
+      const extracted = data
+        .map((row) => {
+          const translations = row.translations as Record<string, string>;
+          const text = translations?.[lang] || translations?.de || translations?.en;
+          return text ? `${text} ${row.emoji}` : null;
+        })
+        .filter(Boolean) as string[];
+
+      setFacts(extracted);
+      setShuffledFacts(shuffle(extracted));
+    };
+    loadFacts();
+  }, [storyLangParam]);
+
+  // Fun fact cycling (same as StoryGenerationProgress)
+  useEffect(() => {
+    if (shuffledFacts.length === 0 || status !== "generating") return;
+    const timer = setTimeout(() => {
+      if (factVisible) {
+        setFactVisible(false);
+      } else {
+        let nextIndex = factIndex + 1;
+        if (nextIndex >= shuffledFacts.length) {
+          setShuffledFacts(shuffle(facts));
+          nextIndex = 0;
+        }
+        setFactIndex(nextIndex);
+        setMascotIndex((prev) => (prev + 1) % MASCOT_CYCLE.length);
+        setFactVisible(true);
+      }
+    }, factVisible ? SHOW_DURATION : HIDE_DURATION);
+    return () => clearTimeout(timer);
+  }, [factVisible, factIndex, shuffledFacts, facts, status]);
+
   // Load kid profile and start generation
   useEffect(() => {
     if (!kidId || !user || hasStarted.current) return;
@@ -129,7 +229,7 @@ const OnboardingStoryPage = () => {
 
     const age = kid.age || 8;
     const resolvedStoryType = storyTypeParam || "fantasy";
-    const theme = getThemeForStoryType(resolvedStoryType, age);
+    const theme = getThemeForStoryType(resolvedStoryType, age, subtypeParam || undefined, detailParam || undefined);
     const imageStyle = getDefaultImageStyle(age);
     const readingLang = storyLangParam || kid.reading_language || kid.school_system || "fr";
     const difficulty = getDifficultyForAge(age);
@@ -266,7 +366,9 @@ const OnboardingStoryPage = () => {
 
   const handleReadStory = () => {
     if (storyId) {
-      navigate(`/read/${storyId}`, { replace: true });
+      // Replace current history with home so browser-back goes to "/" not onboarding
+      window.history.replaceState(null, "", "/");
+      navigate(`/read/${storyId}`);
     }
   };
 
@@ -298,31 +400,36 @@ const OnboardingStoryPage = () => {
       </div>
 
       <div className="w-full max-w-md flex flex-col items-center">
-        {/* Mascot */}
-        <div className="relative mb-4">
-          <img
-            src={status === "done" ? "/mascot/1_happy_success.png" : "/mascot/3_wating_story_generated.png"}
-            alt="Fablino"
-            className="h-36 w-auto drop-shadow-lg"
-            style={{
-              animation: status === "generating" ? "fablinoFloat 3s ease-in-out infinite" : "gentleBounce 1.5s ease-in-out infinite",
-            }}
-          />
-          {status === "generating" && (
-            <div className="absolute -top-2 -right-2 flex gap-0.5">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-2 w-2 rounded-full"
-                  style={{
-                    background: "#E8863A",
-                    animation: `sparkle 1.4s ${i * 0.2}s ease-in-out infinite`,
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Mascot + Fun fact speech bubble */}
+        {status === "generating" && (
+          <div
+            className="flex items-center gap-3 justify-center mb-4 min-h-[120px] transition-opacity duration-500"
+            style={{ opacity: factVisible ? 1 : 0 }}
+          >
+            <FablinoMascot
+              src={MASCOT_CYCLE[mascotIndex]}
+              size="md"
+              bounce={factVisible}
+            />
+            {shuffledFacts[factIndex] && (
+              <SpeechBubble variant="hero">
+                {(DID_YOU_KNOW[storyLangParam || "de"] || DID_YOU_KNOW.de)} {shuffledFacts[factIndex]}
+              </SpeechBubble>
+            )}
+          </div>
+        )}
+
+        {/* Done/Error mascot */}
+        {status !== "generating" && (
+          <div className="relative mb-4">
+            <img
+              src={status === "done" ? "/mascot/1_happy_success.png" : "/mascot/2_encouriging_wrong_answer.png"}
+              alt="Fablino"
+              className="h-36 w-auto drop-shadow-lg"
+              style={{ animation: "gentleBounce 1.5s ease-in-out infinite" }}
+            />
+          </div>
+        )}
 
         {/* Headline */}
         <h1 className="text-xl font-bold text-center mb-1" style={{ color: "#E8863A" }}>
@@ -349,15 +456,9 @@ const OnboardingStoryPage = () => {
                 className="h-full rounded-full"
                 style={{
                   background: "#E8863A",
-                  animation: "loadingBar 30s linear forwards",
+                  animation: "loadingBar 60s linear forwards",
                 }}
               />
-            </div>
-
-            {/* Fun fact */}
-            <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 w-full">
-              <p className="text-xs font-semibold mb-1" style={{ color: "#E8863A" }}>💡 Wusstest du?</p>
-              <p className="text-sm" style={{ color: "rgba(45,24,16,0.75)" }}>{FUN_FACTS[funFactIdx]}</p>
             </div>
           </div>
         )}
