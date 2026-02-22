@@ -483,6 +483,15 @@ export interface Translations {
   onboardingProgress3: string;
   onboardingProgress4: string;
 
+
+  // Hooks
+  hookAuthProfileNotFound: string;
+  hookAuthLoginFailed: string;
+  hookAuthGenericError: string;
+  hookAuthInvalidCredentials: string;
+  hookAuthMigrated: string;
+  hookCollectionPerfectQuiz: string;
+
 }
 
 const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en', Translations> = {
@@ -919,6 +928,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'Die Charaktere werden lebendig... 🌟',
     onboardingProgress3: 'Fablino malt die Bilder... 🎨',
     onboardingProgress4: 'Fast fertig! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'Benutzerprofil nicht gefunden',
+    hookAuthLoginFailed: 'Login fehlgeschlagen',
+    hookAuthGenericError: 'Ein Fehler ist aufgetreten',
+    hookAuthInvalidCredentials: 'Ungültige Anmeldedaten',
+    hookAuthMigrated: 'Dieses Konto wurde migriert. Bitte melde dich mit deiner E-Mail-Adresse an.',
+    hookCollectionPerfectQuiz: 'Für ein perfektes Quiz!',
   },
   
   en: {
@@ -1354,6 +1371,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   
   fr: {
@@ -1789,6 +1814,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'Les personnages prennent vie... 🌟',
     onboardingProgress3: 'Fablino peint les images... 🎨',
     onboardingProgress4: 'Presque fini ! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'Profil utilisateur introuvable',
+    hookAuthLoginFailed: 'Connexion échouée',
+    hookAuthGenericError: 'Une erreur est survenue',
+    hookAuthInvalidCredentials: 'Identifiants invalides',
+    hookAuthMigrated: 'Ce compte a été migré. Veuillez vous connecter avec votre adresse e-mail.',
+    hookCollectionPerfectQuiz: 'Pour un quiz parfait !',
   },
   
   es: {
@@ -2224,6 +2257,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'Los personajes cobran vida... 🌟',
     onboardingProgress3: 'Fablino está pintando las imágenes... 🎨',
     onboardingProgress4: '¡Casi listo! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'Perfil de usuario no encontrado',
+    hookAuthLoginFailed: 'Inicio de sesión fallido',
+    hookAuthGenericError: 'Ha ocurrido un error',
+    hookAuthInvalidCredentials: 'Credenciales inválidas',
+    hookAuthMigrated: 'Esta cuenta ha sido migrada. Inicia sesión con tu correo electrónico.',
+    hookCollectionPerfectQuiz: '¡Por un quiz perfecto!',
   },
   
   nl: {
@@ -2659,6 +2700,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'De personages komen tot leven... 🌟',
     onboardingProgress3: 'Fablino schildert de plaatjes... 🎨',
     onboardingProgress4: 'Bijna klaar! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'Gebruikersprofiel niet gevonden',
+    hookAuthLoginFailed: 'Inloggen mislukt',
+    hookAuthGenericError: 'Er is een fout opgetreden',
+    hookAuthInvalidCredentials: 'Ongeldige inloggegevens',
+    hookAuthMigrated: 'Dit account is gemigreerd. Log in met je e-mailadres.',
+    hookCollectionPerfectQuiz: 'Voor een perfecte quiz!',
   },
   
   it: {
@@ -3094,6 +3143,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'I personaggi prendono vita... 🌟',
     onboardingProgress3: 'Fablino sta dipingendo le immagini... 🎨',
     onboardingProgress4: 'Quasi finito! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'Profilo utente non trovato',
+    hookAuthLoginFailed: 'Accesso fallito',
+    hookAuthGenericError: 'Si è verificato un errore',
+    hookAuthInvalidCredentials: 'Credenziali non valide',
+    hookAuthMigrated: 'Questo account è stato migrato. Accedi con il tuo indirizzo e-mail.',
+    hookCollectionPerfectQuiz: 'Per un quiz perfetto!',
   },
   
   bs: {
@@ -3529,6 +3586,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'Likovi oživljavaju... 🌟',
     onboardingProgress3: 'Fablino crta slike... 🎨',
     onboardingProgress4: 'Skoro gotovo! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'Korisnički profil nije pronađen',
+    hookAuthLoginFailed: 'Prijava neuspješna',
+    hookAuthGenericError: 'Došlo je do greške',
+    hookAuthInvalidCredentials: 'Neispravni podaci za prijavu',
+    hookAuthMigrated: 'Ovaj račun je migriran. Prijavite se sa svojom e-mail adresom.',
+    hookCollectionPerfectQuiz: 'Za savršen kviz!',
   },
   tr: {
     save: 'Save',
@@ -3963,6 +4028,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   bg: {
     save: 'Save',
@@ -4397,6 +4470,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   ro: {
     save: 'Save',
@@ -4831,6 +4912,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   pl: {
     save: 'Save',
@@ -5265,6 +5354,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   lt: {
     save: 'Save',
@@ -5699,6 +5796,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   hu: {
     save: 'Save',
@@ -6133,6 +6238,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   ca: {
     save: 'Save',
@@ -6567,6 +6680,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   sl: {
     save: 'Save',
@@ -7001,6 +7122,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   pt: {
     save: 'Save',
@@ -7435,6 +7564,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
   sk: {
     save: 'Save',
@@ -7869,6 +8006,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     onboardingProgress2: 'The characters are coming alive... 🌟',
     onboardingProgress3: 'Fablino is painting the pictures... 🎨',
     onboardingProgress4: 'Almost done! 🎉',
+  
+    // Hooks
+    hookAuthProfileNotFound: 'User profile not found',
+    hookAuthLoginFailed: 'Login failed',
+    hookAuthGenericError: 'An error occurred',
+    hookAuthInvalidCredentials: 'Invalid credentials',
+    hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookCollectionPerfectQuiz: 'For a perfect quiz!',
   },
 };
 

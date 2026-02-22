@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { getTranslations, Language } from "@/lib/translations";
 
 export type CollectibleCategory = 'creature' | 'place' | 'object' | 'star';
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
@@ -270,7 +271,7 @@ export const useCollection = () => {
         category: 'star',
         item_name: starName,
         item_emoji: starEmoji,
-        item_description: `Für ein perfektes Quiz!`,
+        item_description: getTranslations((navigator.language?.slice(0, 2)?.toLowerCase() || 'de') as Language).hookCollectionPerfectQuiz,
         rarity
       })
       .select()

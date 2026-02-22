@@ -1,6 +1,12 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
+import { getTranslations, Language } from "@/lib/translations";
+
+function detectLang(): Language {
+  const b = navigator.language?.slice(0, 2)?.toLowerCase();
+  return (['de','en','fr','es','nl','it','bs'].includes(b) ? b : 'de') as Language;
+}
 
 export type UserRole = 'admin' | 'standard';
 export type AuthMode = 'supabase' | 'legacy' | null;
@@ -252,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profile = await fetchUserProfile(data.user);
         if (!profile) {
           await supabase.auth.signOut();
-          return { success: false, error: 'Benutzerprofil nicht gefunden' };
+          return { success: false, error: getTranslations(detectLang()).hookAuthProfileNotFound };
         }
         setSession(data.session);
         setUser(profile);
@@ -262,10 +268,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       }
 
-      return { success: false, error: 'Login fehlgeschlagen' };
+      return { success: false, error: getTranslations(detectLang()).hookAuthLoginFailed };
     } catch (error) {
       console.error('Email login error:', error);
-      return { success: false, error: 'Ein Fehler ist aufgetreten' };
+      return { success: false, error: getTranslations(detectLang()).hookAuthGenericError };
     }
   };
 
@@ -278,13 +284,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Username login error:', error);
-        return { success: false, error: 'Login fehlgeschlagen' };
+        return { success: false, error: getTranslations(detectLang()).hookAuthLoginFailed };
       }
 
       // If user is migrated, block legacy login and show hint
       if (data?.migrated) {
         const emailHint = data.email ? ` (${data.email})` : '';
-        return { success: false, error: `This account has been migrated. Please sign in with your email address${emailHint} and the password you set during migration.` };
+        return { success: false, error: `${getTranslations(detectLang()).hookAuthMigrated}${emailHint}` };
       }
 
       if (data?.success && data?.user) {
@@ -340,10 +346,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       }
 
-      return { success: false, error: data?.error || 'Ungültige Anmeldedaten' };
+      return { success: false, error: data?.error || getTranslations(detectLang()).hookAuthInvalidCredentials };
     } catch (error) {
       console.error('Username login error:', error);
-      return { success: false, error: 'Ein Fehler ist aufgetreten' };
+      return { success: false, error: getTranslations(detectLang()).hookAuthGenericError };
     }
   };
 
