@@ -2505,20 +2505,6 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Još nema faktura',
     betaUpgradeToast: 'Uskoro! Sve je besplatno tokom Bete 🦊',
   },
-};
-
-const FALLBACK_CHAIN: Language[] = ['en', 'de'];
-
-export const getTranslations = (lang: Language): Translations => {
-  if (translations[lang]) return translations[lang];
-  for (const fb of FALLBACK_CHAIN) {
-    if (translations[fb]) return translations[fb];
-  }
-  return translations.de;
-};
-
-export const useTranslations = (lang: Language) => {
-  return getTranslations(lang);
   tr: {
     save: 'Save',
     cancel: 'Cancel',
@@ -5579,4 +5565,18 @@ export const useTranslations = (lang: Language) => {
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   },
+};
+
+const FALLBACK_CHAIN: Language[] = ['en', 'de'];
+
+export const getTranslations = (lang: Language): Translations => {
+  if (translations[lang]) return translations[lang];
+  for (const fb of FALLBACK_CHAIN) {
+    if (translations[fb]) return translations[fb];
+  }
+  return translations.de;
+};
+
+export const useTranslations = (lang: Language) => {
+  return getTranslations(lang);
 };

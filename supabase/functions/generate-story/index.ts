@@ -1534,6 +1534,7 @@ Deno.serve(async (req) => {
     let userMessageFinal: string = "";
     let usedNewPromptPath = false;
     let learningThemeApplied: string | null = null;
+    let promptWarnings: string[] = [];
 
     // Resolve the effective story language (new param > textLanguage mapping > default)
     const effectiveStoryLanguage = storyLanguageParam
@@ -1850,7 +1851,7 @@ Deno.serve(async (req) => {
       // 3. Build dynamic user message
       const promptResult = await buildStoryPrompt(storyRequest, supabase);
       userMessageFinal = promptResult.prompt;
-      const promptWarnings = promptResult.warnings;
+      promptWarnings = promptResult.warnings;
       if (promptWarnings.length > 0) {
         console.warn(`[generate-story] Prompt builder warnings: ${promptWarnings.join('; ')}`);
       }

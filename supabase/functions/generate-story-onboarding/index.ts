@@ -645,7 +645,11 @@ Deno.serve(async (req) => {
     }
 
     // ── Build Story Prompt via shared promptBuilder ──
-    const userMessage = await buildStoryPrompt(storyRequest, supabase);
+    const promptResult = await buildStoryPrompt(storyRequest, supabase);
+    const userMessage = promptResult.prompt;
+    if (promptResult.warnings.length > 0) {
+      console.warn(`[onboarding] Prompt builder warnings: ${promptResult.warnings.join('; ')}`);
+    }
     console.log(`[onboarding] Prompt built (${userMessage.length} chars). Calling LLM...`);
 
     // ── Call LLM ──
