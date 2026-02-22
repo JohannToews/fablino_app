@@ -422,3 +422,92 @@ describe('History tables migration (Task 2.2) is correct', () => {
     expect(migrationContent).toMatch(/REFERENCES\s+stories.*ON DELETE SET NULL/);
   });
 });
+
+// ─── Test Suite 9: Stories columns migration (Task 2.3) ───
+
+describe('Stories table extension migration (Task 2.3) is correct', () => {
+  let migrationContent: string;
+
+  beforeAll(() => {
+    const files = fs.readdirSync(MIGRATIONS_DIR);
+    const storiesColMigration = files.find(f => f.includes('emotion_flow_stories_columns'));
+    expect(storiesColMigration).toBeDefined();
+    migrationContent = fs.readFileSync(path.join(MIGRATIONS_DIR, storiesColMigration!), 'utf-8');
+  });
+
+  const EXPECTED_COLUMNS = [
+    'emotion_blueprint_key',
+    'tone_mode',
+    'intensity_level',
+    'character_seed_key',
+    'sidekick_seed_key',
+    'opening_element_key',
+    'perspective_element_key',
+  ];
+
+  it('adds exactly 7 columns via ALTER TABLE stories', () => {
+    const alterMatches = migrationContent.match(/ALTER TABLE stories/g) || [];
+    expect(alterMatches.length).toBe(7);
+  });
+
+  for (const col of EXPECTED_COLUMNS) {
+    it(`adds ${col} column`, () => {
+      expect(migrationContent).toMatch(new RegExp(`ADD COLUMN.*${col}\\s+TEXT`));
+    });
+
+    it(`${col} is NULLABLE (no NOT NULL)`, () => {
+      const colBlock = migrationContent.split(col)[1]?.split(/ALTER TABLE|$/)[0] || '';
+      expect(colBlock).not.toMatch(/NOT NULL/);
+    });
+  }
+
+  it('tone_mode has CHECK constraint with 5 modes', () => {
+    expect(migrationContent).toMatch(/tone_mode IS NULL OR tone_mode IN/);
+    expect(migrationContent).toMatch(/dramatic/);
+    expect(migrationContent).toMatch(/comedic/);
+    expect(migrationContent).toMatch(/adventurous/);
+    expect(migrationContent).toMatch(/gentle/);
+    expect(migrationContent).toMatch(/absurd/);
+  });
+
+  it('intensity_level has CHECK constraint with 3 levels', () => {
+    expect(migrationContent).toMatch(/intensity_level IS NULL OR intensity_level IN/);
+    expect(migrationContent).toMatch(/light/);
+    expect(migrationContent).toMatch(/medium/);
+    expect(migrationContent).toMatch(/deep/);
+  });
+
+  it('emotion_blueprint_key references emotion_blueprints(blueprint_key)', () => {
+    expect(migrationContent).toMatch(/emotion_blueprint_key\s+TEXT[\s\S]*?REFERENCES\s+emotion_blueprints\(blueprint_key\)/);
+  });
+
+  it('character_seed_key references character_seeds(seed_key)', () => {
+    expect(migrationContent).toMatch(/character_seed_key\s+TEXT[\s\S]*?REFERENCES\s+character_seeds\(seed_key\)/);
+  });
+
+  it('sidekick_seed_key references character_seeds(seed_key)', () => {
+    expect(migrationContent).toMatch(/sidekick_seed_key\s+TEXT[\s\S]*?REFERENCES\s+character_seeds\(seed_key\)/);
+  });
+
+  it('opening_element_key references story_elements(element_key)', () => {
+    expect(migrationContent).toMatch(/opening_element_key\s+TEXT[\s\S]*?REFERENCES\s+story_elements\(element_key\)/);
+  });
+
+  it('perspective_element_key references story_elements(element_key)', () => {
+    expect(migrationContent).toMatch(/perspective_element_key\s+TEXT[\s\S]*?REFERENCES\s+story_elements\(element_key\)/);
+  });
+
+  it('does NOT add NOT NULL to any column', () => {
+    const addBlocks = migrationContent.match(/ADD COLUMN.*?;/gs) || [];
+    for (const block of addBlocks) {
+      expect(block).not.toMatch(/NOT NULL/);
+    }
+  });
+
+  it('does NOT change any other table besides stories', () => {
+    const alterTargets = migrationContent.match(/ALTER TABLE\s+(\w+)/g) || [];
+    for (const target of alterTargets) {
+      expect(target).toBe('ALTER TABLE stories');
+    }
+  });
+});
