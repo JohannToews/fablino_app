@@ -18,15 +18,17 @@ export const LANGUAGES: AppLanguage[] = [
   { code: 'it', nameNative: 'Italiano',    nameEN: 'Italian',    flag: '🇮🇹', uiSupported: true,  storySupported: true, tier: 'core' },
   { code: 'bs', nameNative: 'Bosanski',    nameEN: 'Bosnian',    flag: '🇧🇦', uiSupported: true,  storySupported: true, tier: 'core' },
 
-  // Beta — Story-only, keine UI-Übersetzungen (8 neue Sprachen)
-  { code: 'hu', nameNative: 'Magyar',      nameEN: 'Hungarian',  flag: '🇭🇺', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'pt', nameNative: 'Português',   nameEN: 'Portuguese', flag: '🇵🇹', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'tr', nameNative: 'Türkçe',      nameEN: 'Turkish',    flag: '🇹🇷', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'bg', nameNative: 'Български',   nameEN: 'Bulgarian',  flag: '🇧🇬', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'lt', nameNative: 'Lietuvių',    nameEN: 'Lithuanian', flag: '🇱🇹', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'ca', nameNative: 'Català',      nameEN: 'Catalan',    flag: '🏴', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'pl', nameNative: 'Polski',      nameEN: 'Polish',     flag: '🇵🇱', uiSupported: false, storySupported: true, tier: 'beta' },
-  { code: 'sk', nameNative: 'Slovenčina',  nameEN: 'Slovak',     flag: '🇸🇰', uiSupported: false, storySupported: true, tier: 'beta' },
+  // Beta — UI uses EN fallback until real translations land (10 Sprachen)
+  { code: 'tr', nameNative: 'Türkçe',      nameEN: 'Turkish',    flag: '🇹🇷', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'bg', nameNative: 'Български',   nameEN: 'Bulgarian',  flag: '🇧🇬', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'ro', nameNative: 'Română',      nameEN: 'Romanian',   flag: '🇷🇴', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'pl', nameNative: 'Polski',      nameEN: 'Polish',     flag: '🇵🇱', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'lt', nameNative: 'Lietuvių',    nameEN: 'Lithuanian', flag: '🇱🇹', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'hu', nameNative: 'Magyar',      nameEN: 'Hungarian',  flag: '🇭🇺', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'ca', nameNative: 'Català',      nameEN: 'Catalan',    flag: '🏴', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'sl', nameNative: 'Slovenščina', nameEN: 'Slovenian',  flag: '🇸🇮', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'pt', nameNative: 'Português',   nameEN: 'Portuguese', flag: '🇵🇹', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'sk', nameNative: 'Slovenčina',  nameEN: 'Slovak',     flag: '🇸🇰', uiSupported: true, storySupported: true, tier: 'beta' },
 ];
 
 export const STORY_LANGUAGES = LANGUAGES.filter(l => l.storySupported);

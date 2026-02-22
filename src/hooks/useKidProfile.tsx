@@ -2,7 +2,8 @@ import { useState, useEffect, createContext, useContext, ReactNode, useCallback 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs';
+export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs'
+  | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk';
 
 export interface KidProfile {
   id: string;
@@ -26,20 +27,21 @@ export interface KidProfile {
 }
 
 // Derive app language from school_system (legacy fallback)
+const VALID_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl'];
+
 export const getKidLanguage = (schoolSystem: string | undefined): KidLanguage => {
   if (!schoolSystem) return 'fr';
   const lang = schoolSystem.toLowerCase();
-  if (['de', 'fr', 'en', 'es', 'nl', 'it', 'bs'].includes(lang)) {
+  if (VALID_LANGUAGES.includes(lang)) {
     return lang as KidLanguage;
   }
   return 'fr';
 };
 
-// Get language as KidLanguage from string (with validation)
 const toKidLanguage = (lang: string | undefined): KidLanguage => {
   if (!lang) return 'fr';
   const lower = lang.toLowerCase();
-  if (['de', 'fr', 'en', 'es', 'nl', 'it', 'bs'].includes(lower)) {
+  if (VALID_LANGUAGES.includes(lower)) {
     return lower as KidLanguage;
   }
   return 'fr';

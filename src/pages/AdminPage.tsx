@@ -59,6 +59,16 @@ const AdminPage = () => {
     { value: 'nl', label: 'Nederlands', flag: '🇳🇱' },
     { value: 'it', label: 'Italiano', flag: '🇮🇹' },
     { value: 'bs', label: 'Bosanski', flag: '🇧🇦' },
+    { value: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+    { value: 'bg', label: 'Български', flag: '🇧🇬' },
+    { value: 'ro', label: 'Română', flag: '🇷🇴' },
+    { value: 'pl', label: 'Polski', flag: '🇵🇱' },
+    { value: 'lt', label: 'Lietuvių', flag: '🇱🇹' },
+    { value: 'hu', label: 'Magyar', flag: '🇭🇺' },
+    { value: 'ca', label: 'Català', flag: '🏴' },
+    { value: 'sl', label: 'Slovenščina', flag: '🇸🇮' },
+    { value: 'pt', label: 'Português', flag: '🇵🇹' },
+    { value: 'sk', label: 'Slovenčina', flag: '🇸🇰' },
   ];
 
   const handleAdminLanguageChange = async (newLang: Language) => {
