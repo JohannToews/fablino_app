@@ -146,6 +146,69 @@ export type Database = {
         }
         Relationships: []
       }
+      character_seeds: {
+        Row: {
+          age_range: string[] | null
+          appearance_en: string | null
+          compatible_themes: string[] | null
+          created_at: string | null
+          creature_type: string
+          cultural_background: string | null
+          gender: string | null
+          id: string
+          is_active: boolean | null
+          labels: Json
+          name_pool: Json | null
+          personality_trait_en: string | null
+          seed_key: string
+          seed_type: string
+          strength_en: string | null
+          updated_at: string | null
+          weakness_en: string | null
+          weight: number | null
+        }
+        Insert: {
+          age_range?: string[] | null
+          appearance_en?: string | null
+          compatible_themes?: string[] | null
+          created_at?: string | null
+          creature_type?: string
+          cultural_background?: string | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          labels: Json
+          name_pool?: Json | null
+          personality_trait_en?: string | null
+          seed_key: string
+          seed_type: string
+          strength_en?: string | null
+          updated_at?: string | null
+          weakness_en?: string | null
+          weight?: number | null
+        }
+        Update: {
+          age_range?: string[] | null
+          appearance_en?: string | null
+          compatible_themes?: string[] | null
+          created_at?: string | null
+          creature_type?: string
+          cultural_background?: string | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          labels?: Json
+          name_pool?: Json | null
+          personality_trait_en?: string | null
+          seed_key?: string
+          seed_type?: string
+          strength_en?: string | null
+          updated_at?: string | null
+          weakness_en?: string | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
       collected_items: {
         Row: {
           category: Database["public"]["Enums"]["collectible_category"]
@@ -416,6 +479,72 @@ export type Database = {
           repetition_strategy?: string
           updated_at?: string | null
           vocabulary_scope?: string
+        }
+        Relationships: []
+      }
+      emotion_blueprints: {
+        Row: {
+          arc_by_age: Json
+          arc_description_en: string
+          blueprint_key: string
+          category: string
+          compatible_learning_themes: string[] | null
+          compatible_themes: string[] | null
+          created_at: string | null
+          descriptions: Json
+          ending_feeling: string | null
+          id: string
+          ideal_age_groups: string[]
+          is_active: boolean | null
+          labels: Json
+          min_intensity: string
+          surprise_moment: string | null
+          tension_curve: string | null
+          tone_guidance: string | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          arc_by_age: Json
+          arc_description_en: string
+          blueprint_key: string
+          category: string
+          compatible_learning_themes?: string[] | null
+          compatible_themes?: string[] | null
+          created_at?: string | null
+          descriptions: Json
+          ending_feeling?: string | null
+          id?: string
+          ideal_age_groups: string[]
+          is_active?: boolean | null
+          labels: Json
+          min_intensity: string
+          surprise_moment?: string | null
+          tension_curve?: string | null
+          tone_guidance?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          arc_by_age?: Json
+          arc_description_en?: string
+          blueprint_key?: string
+          category?: string
+          compatible_learning_themes?: string[] | null
+          compatible_themes?: string[] | null
+          created_at?: string | null
+          descriptions?: Json
+          ending_feeling?: string | null
+          id?: string
+          ideal_age_groups?: string[]
+          is_active?: boolean | null
+          labels?: Json
+          min_intensity?: string
+          surprise_moment?: string | null
+          tension_curve?: string | null
+          tone_guidance?: string | null
+          updated_at?: string | null
+          weight?: number | null
         }
         Relationships: []
       }
@@ -1371,6 +1500,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      story_elements: {
+        Row: {
+          age_groups: string[] | null
+          compatible_categories: string[] | null
+          compatible_themes: string[] | null
+          content_en: string
+          created_at: string | null
+          element_key: string
+          element_type: string
+          id: string
+          is_active: boolean | null
+          labels: Json | null
+          weight: number | null
+        }
+        Insert: {
+          age_groups?: string[] | null
+          compatible_categories?: string[] | null
+          compatible_themes?: string[] | null
+          content_en: string
+          created_at?: string | null
+          element_key: string
+          element_type: string
+          id?: string
+          is_active?: boolean | null
+          labels?: Json | null
+          weight?: number | null
+        }
+        Update: {
+          age_groups?: string[] | null
+          compatible_categories?: string[] | null
+          compatible_themes?: string[] | null
+          content_en?: string
+          created_at?: string | null
+          element_key?: string
+          element_type?: string
+          id?: string
+          is_active?: boolean | null
+          labels?: Json | null
+          weight?: number | null
+        }
+        Relationships: []
       }
       story_ratings: {
         Row: {
