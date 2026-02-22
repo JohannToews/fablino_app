@@ -16,6 +16,8 @@ const nl: Translations = {
   readingText: 'Leestekst',
   saveStory: 'Verhaal opslaan',
   saving: 'Opslaan...',
+  createButton: 'Aanmaken',
+  saveConfig: 'Configuratie opslaan',
   existingStories: 'Bestaande verhalen',
   noStoriesYet: 'Nog geen verhalen',
   pointsConfig: 'Puntenconfiguratie',

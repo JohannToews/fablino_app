@@ -16,6 +16,8 @@ const bs: Translations = {
   readingText: 'Tekst za čitanje',
   saveStory: 'Sačuvaj priču',
   saving: 'Čuvanje...',
+  createButton: 'Kreiraj',
+  saveConfig: 'Sačuvaj konfiguraciju',
   existingStories: 'Postojeće priče',
   noStoriesYet: 'Još nema priča',
   pointsConfig: 'Konfiguracija bodova',

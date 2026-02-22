@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Palette, Plus, Pencil, Save, Trash2, Upload, GripVertical, Loader2 } from "lucide-react";
+import { getTranslations, type Language } from "@/lib/translations";
 
 interface ImageStyle {
   id: string;
@@ -538,10 +539,10 @@ const ImageStylesSection = ({ language }: Props) => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditStyle(null)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setEditStyle(null)}>{getTranslations('de' as Language).cancel}</Button>
             <Button onClick={handleSave} disabled={saving} className="gap-1.5">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {isNew ? "Erstellen" : "Speichern"}
+              {isNew ? getTranslations('de' as Language).createButton : getTranslations('de' as Language).save}
             </Button>
           </DialogFooter>
         </DialogContent>

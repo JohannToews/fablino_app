@@ -16,6 +16,8 @@ const it: Translations = {
   readingText: 'Testo di lettura',
   saveStory: 'Salva storia',
   saving: 'Salvataggio...',
+  createButton: 'Crea',
+  saveConfig: 'Salva configurazione',
   existingStories: 'Storie esistenti',
   noStoriesYet: 'Nessuna storia ancora',
   pointsConfig: 'Configurazione punti',

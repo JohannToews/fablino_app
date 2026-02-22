@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Save, Trash2, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { getTranslations, type Language } from "@/lib/translations";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface AgeRule {
@@ -259,9 +260,9 @@ const AgeRulesSection = ({ language }: Props) => {
           <div className="flex gap-2 pt-2">
             <Button onClick={handleSave} disabled={saving} className="flex-1">
               <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Speichern...' : 'Speichern'}
+              {saving ? getTranslations('de' as Language).saving : getTranslations('de' as Language).save}
             </Button>
-            <Button variant="outline" onClick={() => setEditingRule(null)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setEditingRule(null)}>{getTranslations('de' as Language).cancel}</Button>
           </div>
         </CardContent>
       </Card>

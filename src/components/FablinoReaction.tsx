@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import FablinoMascot from "./FablinoMascot";
+import { getTranslations, type Language } from "@/lib/translations";
 
 // ═══ Types ═══
 
@@ -161,8 +162,9 @@ export default function FablinoReaction({
   levelTitle,
   onClose,
   autoClose,
-  buttonLabel = 'Weiter',
+  buttonLabel,
 }: FablinoReactionProps) {
+  const resolvedButtonLabel = buttonLabel || getTranslations('de' as Language).continueButton;
   const [visible, setVisible] = useState(false);
   const [progress, setProgress] = useState(100);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -300,7 +302,7 @@ export default function FablinoReaction({
               onClick={onClose}
               className="mt-2 rounded-full px-8 py-2 text-base font-semibold"
             >
-              {buttonLabel}
+              {resolvedButtonLabel}
             </Button>
           )}
         </div>

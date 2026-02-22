@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Save, Loader2, Settings2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getTranslations, type Language } from "@/lib/translations";
 import {
   type GenerationConfigRow,
   type RateLimitRow,
@@ -370,12 +371,12 @@ const GenerationConfigSection = () => {
         {isSaving ? (
           <>
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Speichern…
+            {getTranslations('de' as Language).saving}
           </>
         ) : (
           <>
             <Save className="h-5 w-5 mr-2" />
-            Konfiguration speichern
+            {getTranslations('de' as Language).saveConfig}
           </>
         )}
       </Button>

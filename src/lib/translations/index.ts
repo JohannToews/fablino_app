@@ -21,6 +21,8 @@ export interface Translations {
   readingText: string;
   saveStory: string;
   saving: string;
+  createButton: string;
+  saveConfig: string;
   existingStories: string;
   noStoriesYet: string;
   pointsConfig: string;
