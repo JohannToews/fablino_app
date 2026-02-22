@@ -48,6 +48,14 @@ const translations: Record<string, {
   nl: { header: "Welke afbeeldingsstijl vind je leuk? 🎨", recommended: "★ Aanbevolen", loading: "Stijlen laden..." },
   it: { header: "Quale stile di immagini preferisci? 🎨", recommended: "★ Consigliato", loading: "Caricamento stili..." },
   bs: { header: "Koji stil slika ti se sviđa? 🎨", recommended: "★ Preporučeno", loading: "Učitavanje stilova..." },
+  tr: { header: "Hangi resim tarzını beğeniyorsun? 🎨", recommended: "★ Önerilen", loading: "Stiller yükleniyor..." },
+  bg: { header: "Кой стил на картините харесваш? 🎨", recommended: "★ Препоръчано", loading: "Зареждане на стилове..." },
+  ro: { header: "Ce stil de imagini îți place? 🎨", recommended: "★ Recomandat", loading: "Se încarcă stiluri..." },
+  pl: { header: "Jaki styl obrazków lubisz? 🎨", recommended: "★ Polecany", loading: "Ładowanie stylów..." },
+  lt: { header: "Koks paveikslėlių stilius tau patinka? 🎨", recommended: "★ Rekomenduojama", loading: "Kraunami stiliai..." },
+  hu: { header: "Melyik képstílus tetszik? 🎨", recommended: "★ Ajánlott", loading: "Stílusok betöltése..." },
+  ca: { header: "Quin estil d'imatges t'agrada? 🎨", recommended: "★ Recomanat", loading: "Carregant estils..." },
+  sl: { header: "Kateri slog slik ti je všeč? 🎨", recommended: "★ Priporočeno", loading: "Nalaganje stilov..." },
 };
 
 function getAgeGroup(age: number): string {
