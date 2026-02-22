@@ -430,6 +430,41 @@ const tr: Translations = {
   hookAuthInvalidCredentials: 'Invalid credentials',
   hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
   hookCollectionPerfectQuiz: 'For a perfect quiz!',
+
+  readingStoryNotFound: 'Hikaye bulunamadı',
+  readingPleaseLogin: 'Lütfen tekrar giriş yapın',
+  readingEpisodeExists: 'Bu bölüm zaten mevcut',
+  readingContinuationError: 'Devam oluşturulurken hata',
+  readingNoStoryData: 'Hikaye verisi alınamadı',
+  readingSaveError: 'Kaydetme hatası',
+  readingEpisodeCreated: 'Bölüm {n} oluşturuldu! 🎉',
+  readingBranchSaveError: 'Seçim kaydedilirken hata',
+  readingWordSaveError: 'Kaydetme hatası',
+  readingWordSaved: 'Açıklama kaydedildi! ⚽',
+  readingYourChoices: 'Senin seçimlerin:',
+  readingSeriesPart: 'Bu hikaye bir serinin parçası!',
+
+  createDailyLimitReached: 'Günlük limit doldu ({n} hikaye/gün)',
+  createTimeoutError: 'Oluşturma zaman aşımına uğradı. Lütfen tekrar deneyin.',
+
+  adminLangUpdated: 'Dil güncellendi',
+  adminLangUpdateError: 'Dil güncellenirken hata',
+  adminFavSaveError: 'Kaydetme hatası',
+  adminAssignFailed: 'Atama başarısız',
+  adminChildAssigned: 'Çocuk atandı',
+  adminStoryFor: 'Hikaye kimin için:',
+  adminSelectChild: 'Çocuk seçin...',
+  adminSearchStories: 'Hikayeleri ara...',
+  adminFilterAll: 'Tümü',
+  adminNoMatches: 'Sonuç yok',
+  adminAssignChild: 'Çocuk ata...',
+  adminNoChild: '— Çocuk yok —',
+  adminPoints: 'Puanlar',
+  adminLevels: 'Seviyeler',
+  adminImageGenConfig: 'Görsel oluşturma – Yapılandırma',
+  adminImageGenConfigDesc: 'Imagen modelleri, maliyetler ve limitleri yönetin',
+
+  stickerStoriesCollectedFallback: '{count} hikaye toplandı! Devam et!',
 };
 
 export default tr;

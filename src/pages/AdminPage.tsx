@@ -102,17 +102,10 @@ const AdminPage = () => {
       }
 
       await refreshUserProfile();
-      toast.success(
-        newLang === 'de' ? 'Sprache aktualisiert' :
-        newLang === 'fr' ? 'Langue mise à jour' :
-        newLang === 'en' ? 'Language updated' :
-        newLang === 'es' ? 'Idioma actualizado' :
-        newLang === 'it' ? 'Lingua aggiornata' :
-        'Taal bijgewerkt'
-      );
+      toast.success(t.adminLangUpdated);
     } catch (error) {
       console.error("Error updating language:", error);
-      toast.error("Error updating language");
+      toast.error(t.adminLangUpdateError);
     }
     setUpdatingLang(false);
   };
@@ -167,7 +160,7 @@ const AdminPage = () => {
       .eq("id", storyId);
     
     if (error) {
-      toast.error(adminLang === 'de' ? 'Fehler beim Speichern' : 'Error saving');
+      toast.error(t.adminFavSaveError);
     } else {
       setStories(prev => prev.map(s => s.id === storyId ? { ...s, is_favorite: !currentValue } : s));
     }
@@ -191,9 +184,9 @@ const AdminPage = () => {
       .eq("id", storyId);
     
     if (error) {
-      toast.error(adminLang === 'de' ? 'Zuordnung fehlgeschlagen' : 'Assignment failed');
+      toast.error(t.adminAssignFailed);
     } else {
-      toast.success(adminLang === 'de' ? 'Kind zugeordnet' : 'Child assigned');
+      toast.success(t.adminChildAssigned);
       loadStories();
     }
   };
@@ -325,7 +318,7 @@ const AdminPage = () => {
               {kidProfiles.length > 0 && (
                 <div className="flex-none mb-4 flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-3">
                   <span className="text-sm text-muted-foreground mr-2">
-                    {adminLang === 'de' ? 'Geschichte für:' : adminLang === 'fr' ? 'Histoire pour:' : 'Story for:'}
+                    {t.adminStoryFor}
                   </span>
                   {kidProfiles.length === 1 ? (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500 text-white">
@@ -346,7 +339,7 @@ const AdminPage = () => {
                       onValueChange={(value) => setSelectedProfileId(value)}
                     >
                       <SelectTrigger className="w-[200px] bg-card">
-                        <SelectValue placeholder={adminLang === 'de' ? 'Kind auswählen...' : adminLang === 'fr' ? 'Choisir enfant...' : 'Select child...'}>
+                        <SelectValue placeholder={t.adminSelectChild}>
                           {selectedProfile && (
                             <div className="flex items-center gap-2">
                               <div className="w-5 h-5 rounded-full overflow-hidden border border-border">
@@ -391,7 +384,7 @@ const AdminPage = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder={adminLang === 'de' ? 'Geschichte suchen...' : adminLang === 'fr' ? 'Rechercher...' : 'Search stories...'}
+                    placeholder={t.adminSearchStories}
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
                     className="pl-9 h-10 rounded-xl bg-card"
@@ -403,7 +396,7 @@ const AdminPage = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{adminLang === 'de' ? 'Alle' : adminLang === 'fr' ? 'Tous' : 'All'}</SelectItem>
+                    <SelectItem value="all">{t.adminFilterAll}</SelectItem>
                     <SelectItem value="read">{t.statusAlreadyRead}</SelectItem>
                     <SelectItem value="unread">{t.statusToRead}</SelectItem>
                   </SelectContent>
@@ -415,7 +408,7 @@ const AdminPage = () => {
                 {filteredStories.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground text-base">
-                      {stories.length === 0 ? t.noStoriesYet : (adminLang === 'de' ? 'Keine Treffer' : 'No matches')}
+                      {stories.length === 0 ? t.noStoriesYet : t.adminNoMatches}
                     </p>
                   </div>
                 ) : (
@@ -458,14 +451,14 @@ const AdminPage = () => {
                                       </span>
                                     ) : (
                                       <span className="text-muted-foreground">
-                                        {adminLang === 'de' ? 'Kind zuordnen...' : 'Assign child...'}
+                                        {t.adminAssignChild}
                                       </span>
                                     )}
                                   </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="none">
-                                    {adminLang === 'de' ? '— Kein Kind —' : '— No child —'}
+                                    {t.adminNoChild}
                                   </SelectItem>
                                   {kidProfiles.map((profile) => (
                                     <SelectItem key={profile.id} value={profile.id}>
@@ -525,7 +518,7 @@ const AdminPage = () => {
                   className="flex items-center gap-2"
                 >
                   <Star className="h-4 w-4" />
-                  Punkte
+                  {t.adminPoints}
                 </Button>
                 <Button
                   variant={settingsSubTab === "levels" ? "default" : "outline"}
@@ -534,7 +527,7 @@ const AdminPage = () => {
                   className="flex items-center gap-2"
                 >
                   <TrendingUp className="h-4 w-4" />
-                  Level
+                  {t.adminLevels}
                 </Button>
               </div>
 
@@ -756,8 +749,8 @@ const AdminPage = () => {
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <Image className="h-5 w-5 text-orange-500" />
                     <div>
-                      <CardTitle className="text-base">Bildgenerierung – Konfiguration</CardTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">Imagen Modelle, Kosten & Limits verwalten</p>
+                      <CardTitle className="text-base">{t.adminImageGenConfig}</CardTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.adminImageGenConfigDesc}</p>
                     </div>
                   </CardHeader>
                 </Card>

@@ -430,6 +430,41 @@ const bs: Translations = {
   hookAuthInvalidCredentials: 'Neispravni podaci za prijavu',
   hookAuthMigrated: 'Ovaj račun je migriran. Prijavite se sa svojom e-mail adresom.',
   hookCollectionPerfectQuiz: 'Za savršen kviz!',
+
+  readingStoryNotFound: 'Priča nije pronađena',
+  readingPleaseLogin: 'Molimo prijavite se ponovo',
+  readingEpisodeExists: 'Ova epizoda već postoji',
+  readingContinuationError: 'Greška pri kreiranju nastavka',
+  readingNoStoryData: 'Nisu primljeni podaci o priči',
+  readingSaveError: 'Greška pri spremanju',
+  readingEpisodeCreated: 'Epizoda {n} kreirana! 🎉',
+  readingBranchSaveError: 'Greška pri spremanju izbora',
+  readingWordSaveError: 'Greška pri spremanju',
+  readingWordSaved: 'Objašnjenje sačuvano! ⚽',
+  readingYourChoices: 'Tvoji izbori:',
+  readingSeriesPart: 'Ova priča je dio serije!',
+
+  createDailyLimitReached: 'Dnevni limit dostignut ({n} priča dnevno)',
+  createTimeoutError: 'Generiranje je trajalo predugo. Pokušajte ponovo.',
+
+  adminLangUpdated: 'Jezik ažuriran',
+  adminLangUpdateError: 'Greška pri ažuriranju jezika',
+  adminFavSaveError: 'Greška pri spremanju',
+  adminAssignFailed: 'Dodjeljivanje neuspješno',
+  adminChildAssigned: 'Dijete dodijeljeno',
+  adminStoryFor: 'Priča za:',
+  adminSelectChild: 'Odaberi dijete...',
+  adminSearchStories: 'Pretraži priče...',
+  adminFilterAll: 'Sve',
+  adminNoMatches: 'Nema rezultata',
+  adminAssignChild: 'Dodijeli dijete...',
+  adminNoChild: '— Bez djeteta —',
+  adminPoints: 'Bodovi',
+  adminLevels: 'Razine',
+  adminImageGenConfig: 'Generiranje slika – Konfiguracija',
+  adminImageGenConfigDesc: 'Upravljajte Imagen modelima, troškovima i limitima',
+
+  stickerStoriesCollectedFallback: '{count} priča sakupljeno! Samo nastavi!',
 };
 
 export default bs;

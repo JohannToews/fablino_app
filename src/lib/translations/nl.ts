@@ -430,6 +430,41 @@ const nl: Translations = {
   hookAuthInvalidCredentials: 'Ongeldige inloggegevens',
   hookAuthMigrated: 'Dit account is gemigreerd. Log in met je e-mailadres.',
   hookCollectionPerfectQuiz: 'Voor een perfecte quiz!',
+
+  readingStoryNotFound: 'Verhaal niet gevonden',
+  readingPleaseLogin: 'Log opnieuw in',
+  readingEpisodeExists: 'Deze aflevering bestaat al',
+  readingContinuationError: 'Fout bij het maken van het vervolg',
+  readingNoStoryData: 'Geen verhaalgegevens ontvangen',
+  readingSaveError: 'Fout bij het opslaan',
+  readingEpisodeCreated: 'Aflevering {n} gemaakt! 🎉',
+  readingBranchSaveError: 'Fout bij het opslaan van de keuze',
+  readingWordSaveError: 'Fout bij het opslaan',
+  readingWordSaved: 'Uitleg opgeslagen! ⚽',
+  readingYourChoices: 'Jouw keuzes:',
+  readingSeriesPart: 'Dit verhaal is onderdeel van een serie!',
+
+  createDailyLimitReached: 'Daglimiet bereikt ({n} verhalen per dag)',
+  createTimeoutError: 'Het genereren duurde te lang. Probeer het opnieuw.',
+
+  adminLangUpdated: 'Taal bijgewerkt',
+  adminLangUpdateError: 'Fout bij het bijwerken van de taal',
+  adminFavSaveError: 'Fout bij het opslaan',
+  adminAssignFailed: 'Toewijzing mislukt',
+  adminChildAssigned: 'Kind toegewezen',
+  adminStoryFor: 'Verhaal voor:',
+  adminSelectChild: 'Kind kiezen...',
+  adminSearchStories: 'Verhalen zoeken...',
+  adminFilterAll: 'Alle',
+  adminNoMatches: 'Geen resultaten',
+  adminAssignChild: 'Kind toewijzen...',
+  adminNoChild: '— Geen kind —',
+  adminPoints: 'Punten',
+  adminLevels: 'Niveaus',
+  adminImageGenConfig: 'Beeldgeneratie – Configuratie',
+  adminImageGenConfigDesc: 'Imagen modellen, kosten & limieten beheren',
+
+  stickerStoriesCollectedFallback: '{count} verhalen verzameld! Ga zo door!',
 };
 
 export default nl;

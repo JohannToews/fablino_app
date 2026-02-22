@@ -430,6 +430,41 @@ const ro: Translations = {
   hookAuthInvalidCredentials: 'Invalid credentials',
   hookAuthMigrated: 'This account has been migrated. Please sign in with your email address.',
   hookCollectionPerfectQuiz: 'For a perfect quiz!',
+
+  readingStoryNotFound: 'Story not found',
+  readingPleaseLogin: 'Please log in again',
+  readingEpisodeExists: 'This episode already exists',
+  readingContinuationError: 'Error creating continuation',
+  readingNoStoryData: 'No story data received',
+  readingSaveError: 'Error saving',
+  readingEpisodeCreated: 'Episode {n} created! 🎉',
+  readingBranchSaveError: 'Error saving selection',
+  readingWordSaveError: 'Error saving',
+  readingWordSaved: 'Explanation saved! ⚽',
+  readingYourChoices: 'Your choices:',
+  readingSeriesPart: 'This story is part of a series!',
+
+  createDailyLimitReached: 'Daily limit reached ({n} stories per day)',
+  createTimeoutError: 'Generation timed out. Please try again.',
+
+  adminLangUpdated: 'Language updated',
+  adminLangUpdateError: 'Error updating language',
+  adminFavSaveError: 'Error saving',
+  adminAssignFailed: 'Assignment failed',
+  adminChildAssigned: 'Child assigned',
+  adminStoryFor: 'Story for:',
+  adminSelectChild: 'Select child...',
+  adminSearchStories: 'Search stories...',
+  adminFilterAll: 'All',
+  adminNoMatches: 'No matches',
+  adminAssignChild: 'Assign child...',
+  adminNoChild: '— No child —',
+  adminPoints: 'Points',
+  adminLevels: 'Levels',
+  adminImageGenConfig: 'Image generation – Configuration',
+  adminImageGenConfigDesc: 'Manage Imagen models, costs & limits',
+
+  stickerStoriesCollectedFallback: '{count} stories collected! Keep going!',
 };
 
 export default ro;

@@ -430,6 +430,45 @@ const de: Translations = {
   hookAuthInvalidCredentials: 'Ungültige Anmeldedaten',
   hookAuthMigrated: 'Dieses Konto wurde migriert. Bitte melde dich mit deiner E-Mail-Adresse an.',
   hookCollectionPerfectQuiz: 'Für ein perfektes Quiz!',
+
+  // ReadingPage
+  readingStoryNotFound: 'Geschichte nicht gefunden',
+  readingPleaseLogin: 'Bitte melde dich erneut an',
+  readingEpisodeExists: 'Diese Episode existiert bereits',
+  readingContinuationError: 'Fehler beim Erstellen der Fortsetzung',
+  readingNoStoryData: 'Keine Story-Daten erhalten',
+  readingSaveError: 'Fehler beim Speichern',
+  readingEpisodeCreated: 'Episode {n} erstellt! 🎉',
+  readingBranchSaveError: 'Fehler beim Speichern der Auswahl',
+  readingWordSaveError: 'Fehler beim Speichern',
+  readingWordSaved: 'Erklärung gespeichert! ⚽',
+  readingYourChoices: 'Deine Entscheidungen:',
+  readingSeriesPart: 'Diese Geschichte ist Teil einer Serie!',
+
+  // CreateStoryPage
+  createDailyLimitReached: 'Tageslimit erreicht ({n} Geschichten pro Tag)',
+  createTimeoutError: 'Die Generierung hat zu lange gedauert. Bitte versuche es erneut.',
+
+  // AdminPage
+  adminLangUpdated: 'Sprache aktualisiert',
+  adminLangUpdateError: 'Fehler beim Aktualisieren der Sprache',
+  adminFavSaveError: 'Fehler beim Speichern',
+  adminAssignFailed: 'Zuordnung fehlgeschlagen',
+  adminChildAssigned: 'Kind zugeordnet',
+  adminStoryFor: 'Geschichte für:',
+  adminSelectChild: 'Kind auswählen...',
+  adminSearchStories: 'Geschichte suchen...',
+  adminFilterAll: 'Alle',
+  adminNoMatches: 'Keine Treffer',
+  adminAssignChild: 'Kind zuordnen...',
+  adminNoChild: '— Kein Kind —',
+  adminPoints: 'Punkte',
+  adminLevels: 'Level',
+  adminImageGenConfig: 'Bildgenerierung – Konfiguration',
+  adminImageGenConfigDesc: 'Imagen Modelle, Kosten & Limits verwalten',
+
+  // StickerBookPage
+  stickerStoriesCollectedFallback: '{count} Geschichten gesammelt! Weiter so!',
 };
 
 export default de;

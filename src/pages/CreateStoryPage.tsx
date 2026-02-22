@@ -145,14 +145,14 @@ const CreateStoryPage = () => {
     imageStyleKey?: string
   ) => {
     if (!user?.id) {
-      toast.error("Bitte melde dich erneut an");
+      toast.error(t.readingPleaseLogin);
       navigate("/");
       return;
     }
 
     // K5: Enforce daily rate limit
     if (limitReached) {
-      toast.error(`Tageslimit erreicht (${dailyLimit} Geschichten pro Tag)`);
+      toast.error(t.createDailyLimitReached.replace('{n}', String(dailyLimit)));
       return;
     }
 
@@ -497,14 +497,14 @@ const CreateStoryPage = () => {
     imageStyleKey?: string
   ) => {
     if (!user?.id) {
-      toast.error("Bitte melde dich erneut an");
+      toast.error(t.readingPleaseLogin);
       navigate("/");
       return;
     }
 
     // K5: Enforce daily rate limit
     if (limitReached) {
-      toast.error(`Tageslimit erreicht (${dailyLimit} Geschichten pro Tag)`);
+      toast.error(t.createDailyLimitReached.replace('{n}', String(dailyLimit)));
       return;
     }
 
@@ -616,11 +616,7 @@ const CreateStoryPage = () => {
       } catch (timeoutErr: any) {
         if (timeoutErr?.message === 'TIMEOUT') {
           console.error('[CreateStory] Generation timed out after', GENERATION_TIMEOUT_MS / 1000, 's');
-          toast.error(
-            kidAppLanguage === 'de' ? 'Die Generierung hat zu lange gedauert. Bitte versuche es erneut.' :
-            kidAppLanguage === 'fr' ? 'La génération a pris trop de temps. Veuillez réessayer.' :
-            'Generation timed out. Please try again.'
-          );
+          toast.error(t.createTimeoutError);
           setIsGenerating(false);
           setCurrentScreen("entry");
           return;

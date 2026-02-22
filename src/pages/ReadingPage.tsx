@@ -496,7 +496,7 @@ const ReadingPage = () => {
         }
       }
     } else {
-      toast.error("Geschichte nicht gefunden");
+      toast.error(t.readingStoryNotFound);
       navigate("/stories");
     }
     setIsLoading(false);
@@ -505,7 +505,7 @@ const ReadingPage = () => {
   // Handle series continuation
   const handleContinueSeries = async () => {
     if (!user?.id) {
-      toast.error("Bitte melde dich erneut an");
+      toast.error(t.readingPleaseLogin);
       return;
     }
     // Allow continuation from Episode 1 (series_id is null, but episode_number is 1)
@@ -533,7 +533,7 @@ const ReadingPage = () => {
       
       if (existingEpisode) {
         console.log("Episode already exists, navigating to it");
-        toast.info("Diese Episode existiert bereits");
+        toast.info(t.readingEpisodeExists);
         navigate(`/read/${existingEpisode.id}`);
         setIsGeneratingContinuation(false);
         return;
@@ -586,7 +586,7 @@ const ReadingPage = () => {
 
       if (error) {
         console.error("Generation error:", error);
-        toast.error("Fehler beim Erstellen der Fortsetzung: " + (error.message || JSON.stringify(error)));
+        toast.error(t.readingContinuationError + ": " + (error.message || JSON.stringify(error)));
         return;
       }
 
@@ -598,13 +598,13 @@ const ReadingPage = () => {
 
       if (!user?.id) {
         console.error("User not authenticated");
-        toast.error("Bitte melde dich erneut an");
+        toast.error(t.readingPleaseLogin);
         return;
       }
       
       if (!data?.title || !data?.content) {
         console.error("Missing title or content in response:", data);
-        toast.error("Keine Story-Daten erhalten");
+        toast.error(t.readingNoStoryData);
         return;
       }
 
@@ -681,7 +681,7 @@ const ReadingPage = () => {
 
       if (storyError) {
         console.error("Error saving continuation:", storyError);
-        toast.error("Fehler beim Speichern: " + storyError.message);
+        toast.error(t.readingSaveError + ": " + storyError.message);
         return;
       }
 
@@ -787,12 +787,12 @@ const ReadingPage = () => {
           await supabase.from("marked_words").insert(wordsToInsert);
         }
 
-        toast.success(`Episode ${nextEpisodeNumber} erstellt! 🎉`);
+        toast.success(t.readingEpisodeCreated.replace('{n}', String(nextEpisodeNumber)));
         navigate(`/read/${newStory.id}`);
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Fehler beim Erstellen der Fortsetzung");
+      toast.error(t.readingContinuationError);
     } finally {
       setIsGeneratingContinuation(false);
     }
@@ -833,7 +833,7 @@ const ReadingPage = () => {
       }
     } catch (err) {
       console.error("Error saving branch choice:", err);
-      toast.error("Fehler beim Speichern der Auswahl");
+      toast.error(t.readingBranchSaveError);
     }
   };
 
@@ -856,7 +856,7 @@ const ReadingPage = () => {
         .maybeSingle();
       
       if (existingEp) {
-        toast.info("Diese Episode existiert bereits");
+        toast.info(t.readingEpisodeExists);
         navigate(`/read/${existingEp.id}`);
         setIsGeneratingContinuation(false);
         return;
@@ -910,7 +910,7 @@ const ReadingPage = () => {
 
       if (error || genData?.error) {
         console.error("Generation error:", error || genData?.error);
-        toast.error("Fehler beim Erstellen der Fortsetzung");
+        toast.error(t.readingContinuationError);
         return;
       }
 
@@ -1005,7 +1005,7 @@ const ReadingPage = () => {
 
         if (storyError) {
           console.error("Save error:", storyError);
-          toast.error("Fehler beim Speichern");
+          toast.error(t.readingSaveError);
           return;
         }
 
@@ -1019,12 +1019,12 @@ const ReadingPage = () => {
           } as any);
         }
 
-        toast.success(`Episode ${nextEpisodeNumber} erstellt! 🎉`);
+        toast.success(t.readingEpisodeCreated.replace('{n}', String(nextEpisodeNumber)));
         navigate(`/read/${newStory.id}`);
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Fehler beim Erstellen der Fortsetzung");
+      toast.error(t.readingContinuationError);
     } finally {
       setIsGeneratingContinuation(false);
     }
@@ -1268,7 +1268,7 @@ const ReadingPage = () => {
     });
 
     if (error) {
-      toast.error("Fehler beim Speichern");
+      toast.error(t.readingWordSaveError);
       return;
     }
 
@@ -1278,7 +1278,7 @@ const ReadingPage = () => {
     setIsSaved(true);
     // Clear unsaved tracking since this is now saved
     setUnsavedPositions(new Set());
-    toast.success("Explication sauvegardée! ⚽");
+    toast.success(t.readingWordSaved);
   };
 
   const closeExplanation = () => {
@@ -2141,13 +2141,7 @@ const ReadingPage = () => {
                       {story?.series_mode === 'interactive' && branchHistory.length > 0 && (
                         <div className="mt-4 bg-gradient-to-b from-[#FFF8F0] to-[#FEF1E1] rounded-2xl p-4 text-left">
                           <p className="text-sm font-semibold text-[#92400E] mb-2">
-                            {textLang === 'de' ? 'Deine Entscheidungen:' :
-                             textLang === 'fr' ? 'Tes choix :' :
-                             textLang === 'es' ? 'Tus decisiones:' :
-                             textLang === 'nl' ? 'Jouw keuzes:' :
-                             textLang === 'it' ? 'Le tue scelte:' :
-                             textLang === 'bs' ? 'Tvoji izbori:' :
-                             'Your choices:'}
+                            {t.readingYourChoices}
                           </p>
                           <ul className="space-y-1.5">
                             {branchHistory.map((b) => (
@@ -2175,13 +2169,7 @@ const ReadingPage = () => {
                 <div className="mt-8 pt-6 border-t border-border">
                     <div className="flex flex-col items-center gap-4">
                       <p className="text-muted-foreground text-center">
-                        {textLang === 'de' ? 'Diese Geschichte ist Teil einer Serie!' : 
-                         textLang === 'fr' ? 'Cette histoire fait partie d\'une série!' :
-                         textLang === 'es' ? '¡Esta historia es parte de una serie!' :
-                         textLang === 'nl' ? 'Dit verhaal is onderdeel van een serie!' :
-                         textLang === 'it' ? 'Questa storia fa parte di una serie!' :
-                         textLang === 'bs' ? 'Ova priča je dio serije!' :
-                         'This story is part of a series!'}
+                        {t.readingSeriesPart}
                       </p>
                       <Button
                         onClick={handleContinueSeries}

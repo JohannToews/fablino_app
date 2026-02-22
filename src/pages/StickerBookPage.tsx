@@ -129,8 +129,7 @@ const StickerBookPage = () => {
                 <FablinoMascot src="/mascot/1_happy_success.png" size="sm" />
                 <div className="flex-1 min-w-0">
                   <SpeechBubble variant="tip">
-                    {t.storiesCollected?.replace('{count}', String(stories.length)) || 
-                      `${stories.length} Geschichten gesammelt! Weiter so!`}
+                    {(t.storiesCollected || t.stickerStoriesCollectedFallback).replace('{count}', String(stories.length))}
                   </SpeechBubble>
                 </div>
               </div>

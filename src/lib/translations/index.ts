@@ -501,6 +501,45 @@ export interface Translations {
   hookAuthMigrated: string;
   hookCollectionPerfectQuiz: string;
 
+  // ReadingPage toast/error messages
+  readingStoryNotFound: string;
+  readingPleaseLogin: string;
+  readingEpisodeExists: string;
+  readingContinuationError: string;
+  readingNoStoryData: string;
+  readingSaveError: string;
+  readingEpisodeCreated: string;
+  readingBranchSaveError: string;
+  readingWordSaveError: string;
+  readingWordSaved: string;
+  readingYourChoices: string;
+  readingSeriesPart: string;
+
+  // CreateStoryPage
+  createDailyLimitReached: string;
+  createTimeoutError: string;
+
+  // AdminPage
+  adminLangUpdated: string;
+  adminLangUpdateError: string;
+  adminFavSaveError: string;
+  adminAssignFailed: string;
+  adminChildAssigned: string;
+  adminStoryFor: string;
+  adminSelectChild: string;
+  adminSearchStories: string;
+  adminFilterAll: string;
+  adminNoMatches: string;
+  adminAssignChild: string;
+  adminNoChild: string;
+  adminPoints: string;
+  adminLevels: string;
+  adminImageGenConfig: string;
+  adminImageGenConfigDesc: string;
+
+  // StickerBookPage
+  stickerStoriesCollectedFallback: string;
+
 }
 
 import de from './de';
