@@ -18,10 +18,10 @@ interface BadgeCelebrationModalProps {
 }
 
 const CATEGORY_LABELS: Record<string, Record<string, string>> = {
-  milestone: { de: "Meilenstein", fr: "Étape", en: "Milestone", es: "Hito", nl: "Mijlpaal", it: "Traguardo", bs: "Prekretnica" },
-  weekly:    { de: "Wochen-Badge", fr: "Badge semaine", en: "Weekly", es: "Semanal", nl: "Week-badge", it: "Settimanale", bs: "Sedmični" },
-  streak:    { de: "Serie", fr: "Série", en: "Streak", es: "Racha", nl: "Reeks", it: "Serie", bs: "Serija" },
-  special:   { de: "Spezial", fr: "Spécial", en: "Special", es: "Especial", nl: "Speciaal", it: "Speciale", bs: "Poseban" },
+  milestone: { de: "Meilenstein", fr: "Étape", en: "Milestone", es: "Hito", nl: "Mijlpaal", it: "Traguardo", bs: "Prekretnica", tr: "Kilometre taşı", bg: "Велика стъпка", ro: "Prag", pl: "Kamień milowy", lt: "Svarbus žingsnis", hu: "Mérföldkő", ca: "Fita", sl: "Prelomnica" },
+  weekly:    { de: "Wochen-Badge", fr: "Badge semaine", en: "Weekly", es: "Semanal", nl: "Week-badge", it: "Settimanale", bs: "Sedmični", tr: "Haftalık", bg: "Седмичен", ro: "Săptămânal", pl: "Tygodniowy", lt: "Savaitinis", hu: "Heti", ca: "Setmanal", sl: "Tedenski" },
+  streak:    { de: "Serie", fr: "Série", en: "Streak", es: "Racha", nl: "Reeks", it: "Serie", bs: "Serija", tr: "Seri", bg: "Серия", ro: "Serie", pl: "Seria", lt: "Serija", hu: "Sorozat", ca: "Ratxa", sl: "Serija" },
+  special:   { de: "Spezial", fr: "Spécial", en: "Special", es: "Especial", nl: "Speciaal", it: "Speciale", bs: "Poseban", tr: "Özel", bg: "Специален", ro: "Special", pl: "Specjalny", lt: "Ypatingas", hu: "Különleges", ca: "Especial", sl: "Poseben" },
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -39,6 +39,14 @@ const t: Record<string, { newSticker: string; wellDone: string; next: string; do
   nl: { newSticker: "Nieuwe sticker!", wellDone: "Goed gedaan! 🎉", next: "Volgende sticker →", done: "Verder" },
   it: { newSticker: "Nuovo sticker!", wellDone: "Ben fatto! 🎉", next: "Prossimo sticker →", done: "Continua" },
   bs: { newSticker: "Novi stiker!", wellDone: "Odlično! 🎉", next: "Sljedeći stiker →", done: "Nastavi" },
+  tr: { newSticker: "Yeni çıkartma!", wellDone: "Harika gittin! 🎉", next: "Sonraki çıkartma →", done: "Devam" },
+  bg: { newSticker: "Нов стикер!", wellDone: "Страхотно! 🎉", next: "Следващ стикер →", done: "Продължи" },
+  ro: { newSticker: "Sticker nou!", wellDone: "Bravo! 🎉", next: "Sticker următor →", done: "Continuă" },
+  pl: { newSticker: "Nowa naklejka!", wellDone: "Świetnie! 🎉", next: "Następna naklejka →", done: "Dalej" },
+  lt: { newSticker: "Naujas lipdukas!", wellDone: "Puikiai! 🎉", next: "Kitas lipdukas →", done: "Tęsti" },
+  hu: { newSticker: "Új matrica!", wellDone: "Szuper! 🎉", next: "Következő matrica →", done: "Tovább" },
+  ca: { newSticker: "Adhesiu nou!", wellDone: "Molt bé! 🎉", next: "Següent adhesiu →", done: "Continua" },
+  sl: { newSticker: "Nova nalepka!", wellDone: "Odlično! 🎉", next: "Naslednja nalepka →", done: "Nadaljuj" },
 };
 
 const BadgeCelebrationModal = ({ badges, onDismiss, language = "de" }: BadgeCelebrationModalProps) => {
