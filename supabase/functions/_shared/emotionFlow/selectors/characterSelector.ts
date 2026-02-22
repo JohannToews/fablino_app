@@ -117,14 +117,26 @@ function getLastSeedKeysByType(history: HistoryRow[], seedType: SeedType, count:
   return keys;
 }
 
-function getLastCulturalBackgrounds(history: HistoryRow[], count: number): string[] {
-  const bg: string[] = [];
+/** Last N keys in order (with duplicates) — for diversity check we need "last 5 entries". */
+function getLastNKeysByTypeOrdered(
+  history: HistoryRow[],
+  seedType: SeedType,
+  count: number
+): string[] {
+  const keys: string[] = [];
+  const typeMap: Record<SeedType, string> = {
+    protagonist_appearance: 'protagonist_appearance',
+    sidekick_archetype: 'sidekick_archetype',
+    antagonist_archetype: 'antagonist_archetype',
+  };
+  const want = typeMap[seedType];
   for (const row of history) {
-    if (row.seed_type !== 'protagonist_appearance') continue;
-    bg.push(row.seed_key);
-    if (bg.length >= count) break;
+    if (row.seed_type === want) {
+      keys.push(row.seed_key);
+      if (keys.length >= count) break;
+    }
   }
-  return bg;
+  return keys;
 }
 
 // History only has seed_key; we need cultural_background from the seed list.
@@ -257,7 +269,7 @@ export async function selectCharacterSeeds(
       candidates = allForCreature.filter(ageFilter);
     }
     if (candidates.length > 0 && creatureType === 'human') {
-      const lastFiveKeys = getLastSeedKeysByType(history, 'protagonist_appearance', 5);
+      const lastFiveKeys = getLastNKeysByTypeOrdered(history, 'protagonist_appearance', 5);
       const dominantBg = getDominantCulturalBackground(allForCreature, lastFiveKeys);
       if (dominantBg) {
         const filtered = candidates.filter((s) => (s.cultural_background ?? '') !== dominantBg);

@@ -8,4 +8,10 @@ export {
   selectCreatureType,
   FALLBACK_SIDEKICK,
 } from './characterSelector.ts';
-export { selectStoryElements } from './elementSelector.ts';
+export {
+  selectStoryElements,
+  shouldSelectElement,
+  FALLBACK_OPENING,
+  FALLBACK_PERSPECTIVE,
+  FALLBACK_CLOSING,
+} from './elementSelector.ts';
