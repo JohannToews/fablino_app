@@ -269,3 +269,77 @@ describe('emotionFlow module exists but is completely isolated', () => {
     }
   });
 });
+
+// ─── Test Suite 7: Core tables migration exists and is correct ───
+
+describe('Core tables migration (Task 2.1) is correct', () => {
+  let migrationContent: string;
+
+  beforeAll(() => {
+    const files = fs.readdirSync(MIGRATIONS_DIR);
+    const coreTablesMigration = files.find(f => f.includes('emotion_flow_core_tables'));
+    expect(coreTablesMigration).toBeDefined();
+    migrationContent = fs.readFileSync(path.join(MIGRATIONS_DIR, coreTablesMigration!), 'utf-8');
+  });
+
+  it('creates emotion_blueprints table', () => {
+    expect(migrationContent).toMatch(/CREATE TABLE.*emotion_blueprints/);
+  });
+
+  it('creates character_seeds table', () => {
+    expect(migrationContent).toMatch(/CREATE TABLE.*character_seeds/);
+  });
+
+  it('creates story_elements table', () => {
+    expect(migrationContent).toMatch(/CREATE TABLE.*story_elements/);
+  });
+
+  it('emotion_blueprints has blueprint_key UNIQUE NOT NULL', () => {
+    expect(migrationContent).toMatch(/blueprint_key\s+TEXT\s+UNIQUE\s+NOT\s+NULL/);
+  });
+
+  it('emotion_blueprints has category CHECK constraint', () => {
+    expect(migrationContent).toMatch(/category.*CHECK.*growth.*social.*courage.*empathy.*humor.*wonder/s);
+  });
+
+  it('emotion_blueprints has min_intensity CHECK constraint', () => {
+    expect(migrationContent).toMatch(/min_intensity.*CHECK.*light.*medium.*deep/s);
+  });
+
+  it('character_seeds has creature_type with human/mythical CHECK', () => {
+    expect(migrationContent).toMatch(/creature_type.*CHECK.*human.*mythical/s);
+  });
+
+  it('character_seeds has seed_type CHECK constraint', () => {
+    expect(migrationContent).toMatch(/seed_type.*CHECK.*protagonist_appearance.*sidekick_archetype.*antagonist_archetype/s);
+  });
+
+  it('character_seeds has gender CHECK constraint', () => {
+    expect(migrationContent).toMatch(/gender.*CHECK.*female.*male.*neutral/s);
+  });
+
+  it('story_elements has element_type CHECK with all 7 types', () => {
+    expect(migrationContent).toMatch(/opening_style/);
+    expect(migrationContent).toMatch(/narrative_perspective/);
+    expect(migrationContent).toMatch(/macguffin/);
+    expect(migrationContent).toMatch(/setting_detail/);
+    expect(migrationContent).toMatch(/humor_technique/);
+    expect(migrationContent).toMatch(/tension_technique/);
+    expect(migrationContent).toMatch(/closing_style/);
+  });
+
+  it('creates updated_at triggers for blueprints and seeds', () => {
+    expect(migrationContent).toMatch(/TRIGGER.*set_updated_at_emotion_blueprints/);
+    expect(migrationContent).toMatch(/TRIGGER.*set_updated_at_character_seeds/);
+  });
+
+  it('enables RLS on all three tables', () => {
+    expect(migrationContent).toMatch(/ENABLE ROW LEVEL SECURITY/);
+  });
+
+  it('does NOT alter existing tables', () => {
+    expect(migrationContent).not.toMatch(/ALTER TABLE stories/);
+    expect(migrationContent).not.toMatch(/ALTER TABLE kid_profiles/);
+    expect(migrationContent).not.toMatch(/ALTER TABLE user_profiles/);
+  });
+});
