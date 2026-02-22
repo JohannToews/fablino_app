@@ -1,0 +1,75 @@
+-- ============================================================
+-- T-C1: DB-Übersetzungen — content_themes_by_level
+-- Adds: tr, bg, ro, pl, lt, hu, ca, sl to labels + example_texts
+-- example_texts = short content examples for parents, in target language
+-- ============================================================
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Arkadaşlar Arası Çatışma", "bg": "Конфликт между приятели", "ro": "Conflict între prieteni", "pl": "Konflikt między przyjaciółmi", "lt": "Konfliktas tarp draugų", "hu": "Konfliktus barátok között", "ca": "Conflicte entre amics", "sl": "Konflikt med prijatelji"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Mia ve Tom son kurabiye için tartıştı ama sonra bir fikir buldular.", "bg": "Миа и Том се караха за последното бисквитка, но после имаха идея.", "ro": "Mia și Tom s-au certat pentru ultima prăjitură, dar apoi au avut o idee.", "pl": "Mia i Tom pokłócili się o ostatnie ciasteczko, ale potem wpadli na pomysł.", "lt": "Mija ir Tomas pyko dėl paskutinio sausainio, bet tada sugalvojo idėją.", "hu": "Mia és Tom a legutolsó sütiért veszekedtek, de aztán volt egy ötletük.", "ca": "La Mia i en Tom es van disputar l''última galeta, però després van tenir una idea.", "sl": "Mia in Tom sta sta prepirala za zadnji piškot, a nato sta imela idejo."}'::jsonb
+WHERE theme_key = 'friend_conflict';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Hafif Üzüntü", "bg": "Лека тъга", "ro": "Tristețe ușoară", "pl": "Lekki smutek", "lt": "Lengva liūdesys", "hu": "Enyhe szomorúság", "ca": "Tristesa lleu", "sl": "Blaga žalost"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Balonu uçup gidince Leo üzüldü — ama sonra gökkuşağını gördü.", "bg": "Когато балонът му отлетя, Лео беше тъжен — но после видя дъгата.", "ro": "Când balonul lui a zburat, Leo era trist — dar apoi a văzut curcubeul.", "pl": "Gdy jego balon odleciał, Leo był smutny — ale potem zobaczył tęczę.", "lt": "Kai jo balionas nuskrido, Leo buvo liūdnas — bet tada pamatė vaivorykštę.", "hu": "Amikor a léggömbje elfújódott, Leo szomorú volt — de aztán meglátta a szivárványt.", "ca": "Quan el seu globus va volar, en Leo estava trist — però després va veure l''arc de Sant Mart.", "sl": "Ko mu je balon odletel, je bil Leo žalosten — a nato je videl mavrico."}'::jsonb
+WHERE theme_key = 'minor_sadness';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Kısa Korku Anları", "bg": "Кратки моменти на страх", "ro": "Momente scurte de frică", "pl": "Krótkie chwile strachu", "lt": "Trumpi baimės momentai", "hu": "Rövid félelem pillanatok", "ca": "Moments breus de por", "sl": "Kratki trenutki strahu"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Karanlık ormanda bir ses duydu — sadece küçük bir sincaptı!", "bg": "В тъмната гора чу шум — беше само малко катериче!", "ro": "În pădurea întunecată a auzit un zgomot — era doar o veveriță mică!", "pl": "W ciemnym lesie usłyszała szmer — to była tylko mała wiewiórka!", "lt": "Tamsiame miške ji išgirdo garsą — tai buvo tik maža voverė!", "hu": "A sötét erdőben hangot hallott — csak egy kis mókus volt!", "ca": "Al bosc fosc va sentir un soroll — només era una esquirol petit!", "sl": "V temnem gozdu je slišala šum — bila je le majhna veverica!"}'::jsonb
+WHERE theme_key = 'minor_fear';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Hayal Kırıklığı", "bg": "Разочарование", "ro": "Dezamăgire", "pl": "Rozczarowanie", "lt": "Nusivylimas", "hu": "Csalódás", "ca": "Decepció", "sl": "Razočaranje"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Piknik yağmur yüzünden iptal oldu ama evde battaniye kalesi kurdular.", "bg": "Пикникът се провали заради дъжда, но у дома направиха крепост от одеяла.", "ro": "Picnicul a fost anulat din cauza ploii, dar acasă au făcut o fortăreață din pături.", "pl": "Piknik się nie udał przez deszcz, ale w domu zbudowali fort z koców.", "lt": "Piknikas nepavyko dėl lietaus, bet namie pastatė antklodeų fortą.", "hu": "A piknik az eső miatt elmaradt, de otthon takaróbol építettek erődöt.", "ca": "El picnic es va cancel·lar per la pluja, però a casa van fer un castell de flassades.", "sl": "Piknik je odpadel zaradi dežja, doma pa so naredili utrdbo iz odej."}'::jsonb
+WHERE theme_key = 'disappointment';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Boşanma / Ayrılık", "bg": "Развод / Раздяла", "ro": "Divorț / Separare", "pl": "Rozwód / Rozstanie", "lt": "Skyrybos / Atskyrimas", "hu": "Válás / Szétválás", "ca": "Divorci / Separació", "sl": "Ločitev / Ločitev"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Lina''nın anne babası artık iki ayrı evde yaşıyor — ama ikisi de onu aynı derecede seviyor.", "bg": "Родителите на Лина вече живеят в две къщи — но и двамата я обичат също толкова.", "ro": "Părinții Linei locuiesc acum în două case — dar amândoi o iubesc la fel de mult.", "pl": "Rodzice Liny mieszkają teraz w dwóch domach — ale oboje kochają ją tak samo.", "lt": "Linos tėvai dabar gyvena dviejuose namuose — bet abu myli ją vienodai.", "hu": "Lina szülei most két külön házban laknak — de mindketten ugyanúgy szeretik.", "ca": "Els pares de la Lina ara viuen en dues cases — però tots dos l''estimen igual.", "sl": "Linini starši zdaj živita v dveh hišah — a oba jo imata enako rada."}'::jsonb
+WHERE theme_key = 'divorce';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Taşınma / Değişim", "bg": "Преместване / Промяна", "ro": "Mutare / Schimbare", "pl": "Przeprowadzka / Zmiana", "lt": "Persikraustymas / Pokytis", "hu": "Költözés / Változás", "ca": "Mudança / Canvi", "sl": "Selitev / Sprememba"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Yeni şehir yabancıydı ama okulda biri gülümsemeyle onu bekliyordu.", "bg": "Новият град беше непознат, но в училище някой го чакаше с усмивка.", "ro": "Noul oraș era ciudat, dar la școală cineva îl aștepta cu un zâmbet.", "pl": "Nowe miasto było obce, ale w szkole ktoś czekał z uśmiechem.", "lt": "Naujasis miestas buvo svetimas, bet mokykloje kažkas laukė su šypsena.", "hu": "Az új város idegen volt, de az iskolában valaki mosollyal várta.", "ca": "La nova ciutat era estranya, però a l''escola algú l''esperava amb un somriure.", "sl": "Novo mesto je bilo tuje, a v šoli ga je nekdo čakal z nasmehom."}'::jsonb
+WHERE theme_key = 'moving';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Zorbalık", "bg": "Побой", "ro": "Hărțuire", "pl": "Znęcanie się", "lt": "Priekabiavimas", "hu": "Megfélemlítés", "ca": "Assetjament", "sl": "Ustrahovanje"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Kimse yanında oturmak istemiyordu — ta ki yeni bir çocuk gelip ''Ben oturabilir miyim?'' deyene kadar.", "bg": "Никой не искаше да седи до нея — докато ново дете не дойде и каза: Мога ли?", "ro": "Nimeni nu voia să stea lângă ea — până când un copil nou a venit și a zis: Pot?", "pl": "Nikt nie chciał siedzieć obok niej — aż przyszedł nowy chłopiec i zapytał: Mogę?", "lt": "Niekas nenorėjo sėdėti šalia jos — kol atėjo naujas vaikas ir tarė: Ar galiu?", "hu": "Senki nem akart mellette ülni — míg egy új gyerek meg nem kérdezte: Leülhetek?", "ca": "Ningú no volia seure al seu costat — fins que un nen nou va dir: Puc?", "sl": "Nihče ni hotel sedeti zraven nje — dokler ni prišel nov otrok in rekel: Smem?"}'::jsonb
+WHERE theme_key = 'bullying';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Yalnızlık", "bg": "Самота", "ro": "Singurătate", "pl": "Samotność", "lt": "Vienatvė", "hu": "Magány", "ca": "Solitud", "sl": "Osamljenost"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Oyun parkının kenarında yalnız duruyordu — ta ki kirpinin de yalnız olduğunu fark edene kadar.", "bg": "На ръба на площадката стоеше сам — докато не забележи, че таралежът също е сам.", "ro": "Sta singur la marginea terenului — până când a observat că ariciul e și el singur.", "pl": "Stał sam na skraju placu zabaw — aż zauważył, że jeż też jest sam.", "lt": "Jis stovėjo vienas žaidimų aikštelės pakraštyje — kol pastebėjo, kad ir ežys vienas.", "hu": "Egyedül állt a játszótér szélén — míg észre nem vette, hogy a sün is egyedül van.", "ca": "Estava sol al voral del pati — fins que es va adonar que el gripau també ho estava.", "sl": "Sam je stal na robu igrišča — dokler ni opazil, da je tudi jež sam."}'::jsonb
+WHERE theme_key = 'loneliness';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Evcil Hayvanın Ölümü", "bg": "Смърт на домашен любимец", "ro": "Moartea unui animal de companie", "pl": "Śmierć zwierzaka", "lt": "Naminio gyvūno mirtis", "hu": "Háziállat halála", "ca": "Mort d''un animal de companyia", "sl": "Smrt hišnega ljubljenčka"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Balık Kabarcık artık yüzmüyordu — ama anılar sonsuza kadar kaldı.", "bg": "Златната рибка Бълбул вече не плуваше — но спомените останаха завинаги.", "ro": "Peștele Bule nu mai înota — dar amintirile au rămas pentru totdeauna.", "pl": "Złota rybka Bąbelek już nie pływała — ale wspomnienia zostały na zawsze.", "lt": "Auksinė žuvelė Burbulis nebeplaukė — bet prisiminimai liko amžinai.", "hu": "A Bubi aranyhal már nem úszott — de az emlékek örökre megmaradtak.", "ca": "El peix Bombolla ja no nedava — però els records van quedar per sempre.", "sl": "Ribica Mehurček ni več plavala — a spomini so ostali za vedno."}'::jsonb
+WHERE theme_key = 'pet_death';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Kıskançlık", "bg": "Ревност", "ro": "Gelozie", "pl": "Zazdrość", "lt": "Pavydas", "hu": "Féltékenység", "ca": "Gelosia", "sl": "Ljubosumnost"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Bebek gelince Max kendini görünmez hissetti — ta ki babası onu büyük abi macerasına götürene kadar.", "bg": "Когато бебето се роди, Макс се чувстваше невидим — докато татко го поведе на приключение като голям брат.", "ro": "Când a venit bebelușul, Max s-a simțit invizibil — până când tata l-a luat la o aventură de frate mare.", "pl": "Gdy urodziło się dziecko, Max czuł się niewidzialny — aż tata zabrał go na wielką przygodę starszego brata.", "lt": "Kai gimė kūdikis, Maksas jautėsi nematomas — kol tėtis jį pasiėmė į vyresnio brolio nuotykius.", "hu": "Amikor megérkezett a baba, Max láthatatlannak érezte magát — míg apu el nem vitte nagyfiú kalandra.", "ca": "Quan va arribar el nadó, en Max es sentia invisible — fins que el pare el va portar a una aventura de germà gran.", "sl": "Ko se je rodil dojenček, se je Max počutil nevidnega — dokler ga oče ni odpeljal na pustolovščino velikega brata."}'::jsonb
+WHERE theme_key = 'jealousy';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Ölüm (çocuğa uygun)", "bg": "Смърт (подходящо за деца)", "ro": "Moarte (adaptat copiilor)", "pl": "Śmierć (odpowiednia dla dzieci)", "lt": "Mirtis (tinkama vaikams)", "hu": "Halál (gyerekbarát)", "ca": "Mort (adaptat als nens)", "sl": "Smrt (primerna za otroke)"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Büyükanne artık yoktu ama rüzgâr yaprakları dans ettirdiğinde Mia hep onu düşünürdü.", "bg": "Баба вече не беше там, но всеки път когато вятърът накара листата да танцуват, Миа мислеше за нея.", "ro": "Bunica nu mai era, dar de fiecare dată când vântul făcea frunzele să danseze, Mia se gândea la ea.", "pl": "Babci już nie było, ale za każdym razem gdy wiatr poruszał liśćmi, Mia o niej myślała.", "lt": "Bobutės jau nebuvo, bet kiekvieną kartą kai vėjas priverždavo lapus šokti, Mija galvojo apie ją.", "hu": "Nagyi már nem volt ott, de minden alkalommal amikor a szél táncoltatta a leveleket, Mia rá gondolt.", "ca": "L''àvia ja no hi era, però cada cop que el vent feia ballar les fulles, la Mia pensava en ella.", "sl": "Stare mamice ni bilo več, a vsakokrat ko je veter zasukal listje, je Mia mislila nanjo."}'::jsonb
+WHERE theme_key = 'death';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Savaş / Kaçış", "bg": "Война / Бягство", "ro": "Război / Refugiu", "pl": "Wojna / Ucieczka", "lt": "Karas / Pabėgimas", "hu": "Háború / Menekülés", "ca": "Guerra / Fugida", "sl": "Vojna / Beg"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Evlerini bırakmak zorunda kaldılar ama sırt çantasında en sevdikleri kitap vardı — bir parça vatan.", "bg": "Трябваше да напуснат дома си, но в раницата беше любимата книга — парче дом.", "ro": "Au fost nevoiți să-și lase casa, dar în rucsac era cartea preferată — o bucată din casă.", "pl": "Musieli opuścić dom, ale w plecaku była ulubiona książka — kawałek domu.", "lt": "Jie turėjo palikti namus, bet kuprinėje buvo mėgstamiausia knyga — namų gabalėlis.", "hu": "El kellett hagyniuk az otthonukat, de a hátizsákban ott volt a kedvenc könyv — egy darabka otthon.", "ca": "Van haver de deixar la seva casa, però a la motxilla hi havia el llibre preferit — un tros de casa.", "sl": "Morali so zapustiti dom, a v nahrbtniku je bila najljubša knjiga — košček doma."}'::jsonb
+WHERE theme_key = 'war_flight';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Ciddi Hastalık", "bg": "Сериозно заболяване", "ro": "Boală gravă", "pl": "Poważna choroba", "lt": "Rimta liga", "hu": "Súlyos betegség", "ca": "Malaltia greu", "sl": "Resna bolezen"}'::jsonb,
+  example_texts = example_texts || '{"tr": "Babası uzun süre hastanede kaldı ama her gün ona bir resim çizdi — her biri bir öncekinden güzel.", "bg": "Татко беше дълго в болницата, но всеки ден му рисуваше картина — всяка по-красива от предишната.", "ro": "Tata a fost mult în spital, dar în fiecare zi îi desena o imagine — fiecare mai frumoasă.", "pl": "Tata długo był w szpitalu, ale codziennie rysowała mu obrazek — każdy piękniejszy.", "lt": "Tėtis ilgai gulėjo ligoninėje, bet kiekvieną dieną jam piešė paveikslėlį — vis gražesnį.", "hu": "Apu sokáig kórházban volt, de minden nap rajzolt neki egy képet — egyre szebbet.", "ca": "El pare va estar molt temps a l''hospital, però cada dia li dibuixava un quadre — cada cop més bonic.", "sl": "Očka je bil dolgo v bolnišnici, a vsak dan mu je narisala sliko — vedno lepšo."}'::jsonb
+WHERE theme_key = 'serious_illness';
+
+UPDATE content_themes_by_level SET
+  labels = labels || '{"tr": "Karmaşık Aile Yapıları", "bg": "Сложни семейни констелации", "ro": "Structuri familiale complexe", "pl": "Złożone struktury rodzinne", "lt": "Sudėtingos šeimos struktūros", "hu": "Összetett családi felépítés", "ca": "Estructures familiars complexes", "sl": "Zapletene družinske strukture"}'::jsonb,
+  example_texts = example_texts || '{"tr": "İki anne, uzaktaki bir baba — yine de orada çok sevgi vardı.", "bg": "Две майки, баща далеч — и все пак имаше толкова много обич.", "ro": "Două mame, un tata departe — și totuși atât de multă iubire.", "pl": "Dwie mamy, tata daleko — a jednak tyle miłości.", "lt": "Dvi mamos, tėtis toli — ir vis tiek daug meilės.", "hu": "Két anyuka, egy távoli apa — és mégis annyi szeretet.", "ca": "Dues mares, un pare lluny — i tot hi havia tant d''amor.", "sl": "Dve mami, oče daleč — in vendar toliko ljubezni."}'::jsonb
+WHERE theme_key = 'complex_families';
