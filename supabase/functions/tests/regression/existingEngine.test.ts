@@ -343,3 +343,82 @@ describe('Core tables migration (Task 2.1) is correct', () => {
     expect(migrationContent).not.toMatch(/ALTER TABLE user_profiles/);
   });
 });
+
+// ─── Test Suite 8: History tables migration (Task 2.2) ───
+
+describe('History tables migration (Task 2.2) is correct', () => {
+  let migrationContent: string;
+
+  beforeAll(() => {
+    const files = fs.readdirSync(MIGRATIONS_DIR);
+    const historyMigration = files.find(f => f.includes('emotion_flow_history_tables'));
+    expect(historyMigration).toBeDefined();
+    migrationContent = fs.readFileSync(path.join(MIGRATIONS_DIR, historyMigration!), 'utf-8');
+  });
+
+  it('creates emotion_blueprint_history table', () => {
+    expect(migrationContent).toMatch(/CREATE TABLE.*emotion_blueprint_history/);
+  });
+
+  it('creates character_seed_history table', () => {
+    expect(migrationContent).toMatch(/CREATE TABLE.*character_seed_history/);
+  });
+
+  it('creates story_element_usage table', () => {
+    expect(migrationContent).toMatch(/CREATE TABLE.*story_element_usage/);
+  });
+
+  it('emotion_blueprint_history has FK to kid_profiles', () => {
+    expect(migrationContent).toMatch(/emotion_blueprint_history[\s\S]*?kid_profile_id.*REFERENCES\s+kid_profiles/);
+  });
+
+  it('emotion_blueprint_history has FK to stories', () => {
+    expect(migrationContent).toMatch(/emotion_blueprint_history[\s\S]*?story_id.*REFERENCES\s+stories/);
+  });
+
+  it('emotion_blueprint_history has tone_mode and intensity_level columns', () => {
+    expect(migrationContent).toMatch(/tone_mode\s+TEXT/);
+    expect(migrationContent).toMatch(/intensity_level\s+TEXT/);
+  });
+
+  it('character_seed_history has seed_type CHECK constraint', () => {
+    expect(migrationContent).toMatch(/character_seed_history[\s\S]*?seed_type.*CHECK.*protagonist_appearance.*sidekick_archetype.*antagonist_archetype/s);
+  });
+
+  it('story_element_usage has element_type CHECK with all 7 types', () => {
+    expect(migrationContent).toMatch(/story_element_usage[\s\S]*?element_type.*CHECK/s);
+    expect(migrationContent).toMatch(/opening_style/);
+    expect(migrationContent).toMatch(/closing_style/);
+    expect(migrationContent).toMatch(/macguffin/);
+  });
+
+  it('has performance index on blueprint_history (kid_profile_id, created_at DESC)', () => {
+    expect(migrationContent).toMatch(/CREATE INDEX.*blueprint_history.*kid_profile_id.*created_at/s);
+  });
+
+  it('has performance index on seed_history (kid_profile_id, seed_type, created_at DESC)', () => {
+    expect(migrationContent).toMatch(/CREATE INDEX.*seed_history.*kid_profile_id.*seed_type.*created_at/s);
+  });
+
+  it('has performance index on element_usage (kid_profile_id, element_type, created_at DESC)', () => {
+    expect(migrationContent).toMatch(/CREATE INDEX.*element_usage.*kid_profile_id.*element_type.*created_at/s);
+  });
+
+  it('enables RLS on all three history tables', () => {
+    const rlsMatches = migrationContent.match(/ENABLE ROW LEVEL SECURITY/g) || [];
+    expect(rlsMatches.length).toBe(3);
+  });
+
+  it('does NOT alter existing tables (only FKs are declarative)', () => {
+    expect(migrationContent).not.toMatch(/ALTER TABLE stories/);
+    expect(migrationContent).not.toMatch(/ALTER TABLE kid_profiles/);
+  });
+
+  it('uses ON DELETE CASCADE for kid_profiles FK', () => {
+    expect(migrationContent).toMatch(/REFERENCES\s+kid_profiles.*ON DELETE CASCADE/);
+  });
+
+  it('uses ON DELETE SET NULL for stories FK', () => {
+    expect(migrationContent).toMatch(/REFERENCES\s+stories.*ON DELETE SET NULL/);
+  });
+});
