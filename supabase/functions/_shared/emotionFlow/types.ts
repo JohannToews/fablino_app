@@ -188,3 +188,24 @@ export interface EngineParams {
   selectedCharacters: Array<{ name: string; relation?: string; description?: string }>;
   learningTheme?: string;
 }
+
+// Minimal Supabase client shape used by selectors (no import from @supabase).
+// Real createClient() return value satisfies this interface.
+export interface EmotionFlowSupabase {
+  from(table: string): {
+    select(columns?: string): {
+      eq(column: string, value: unknown): {
+        order(column: string, options?: { ascending?: boolean }): {
+          limit(n: number): Promise<{ data: unknown; error: unknown }>;
+        };
+        limit(n: number): Promise<{ data: unknown; error: unknown }>;
+        eq(column: string, value: unknown): {
+          limit(n: number): Promise<{ data: unknown; error: unknown }>;
+        };
+        in(column: string, values: unknown[]): {
+          limit(n: number): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+  };
+}
