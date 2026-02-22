@@ -197,7 +197,7 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
       )}
       {isSaved && (
         <Button size="sm" variant="outline" disabled className="flex items-center gap-1.5">
-          <Check className="h-4 w-4 text-green-600" />
+          <Check className="h-4 w-4 text-primary" />
           Saved
         </Button>
       )}
@@ -208,7 +208,7 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
   if (isTablet) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-xs sm:max-w-sm rounded-2xl shadow-xl backdrop-blur-sm bg-background/95 border border-border/50">
           <DialogHeader>
             <div className="flex flex-row items-start gap-3">
               <FablinoMascot

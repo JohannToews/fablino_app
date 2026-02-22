@@ -1613,6 +1613,96 @@ export type Database = {
           },
         ]
       }
+      story_subtype_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          kid_profile_id: string
+          story_id: string | null
+          subtype_key: string
+          theme_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          kid_profile_id: string
+          story_id?: string | null
+          subtype_key: string
+          theme_key: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          kid_profile_id?: string
+          story_id?: string | null
+          subtype_key?: string
+          theme_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_subtype_history_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_subtype_history_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_subtypes: {
+        Row: {
+          age_groups: string[]
+          created_at: string | null
+          descriptions: Json
+          id: string
+          is_active: boolean | null
+          labels: Json
+          prompt_hint_en: string
+          setting_ideas: Json | null
+          subtype_key: string
+          theme_key: string
+          title_seeds: Json | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          age_groups: string[]
+          created_at?: string | null
+          descriptions: Json
+          id?: string
+          is_active?: boolean | null
+          labels: Json
+          prompt_hint_en: string
+          setting_ideas?: Json | null
+          subtype_key: string
+          theme_key: string
+          title_seeds?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          age_groups?: string[]
+          created_at?: string | null
+          descriptions?: Json
+          id?: string
+          is_active?: boolean | null
+          labels?: Json
+          prompt_hint_en?: string
+          setting_ideas?: Json | null
+          subtype_key?: string
+          theme_key?: string
+          title_seeds?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
       streak_milestones: {
         Row: {
           claimed_at: string
