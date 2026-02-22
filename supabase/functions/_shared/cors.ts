@@ -4,6 +4,7 @@ const ALLOWED_ORIGINS = [
   'https://fablino.lovable.app',
   'https://www.fablino.eu',
   'https://fablino.eu',
+  'https://app.fablino.eu',
   'http://localhost:5173',
   'http://localhost:8080',
   'http://localhost:3000',
