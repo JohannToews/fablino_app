@@ -6,7 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslations, Language } from "@/lib/translations";
+import { LANGUAGES } from "@/lib/languages";
 import { Lock, Loader2, Eye, EyeOff } from "lucide-react";
+
+function detectLanguage(): Language {
+  const browserLang = navigator.language?.slice(0, 2)?.toLowerCase();
+  const supported = LANGUAGES.filter(l => l.uiSupported).map(l => l.code);
+  return (supported.includes(browserLang) ? browserLang : 'en') as Language;
+}
 
 const LoginPage = () => {
   const [identifier, setIdentifier] = useState("");
@@ -19,6 +27,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
+  const t = useTranslations(detectLanguage());
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +37,8 @@ const LoginPage = () => {
     
     if (!trimmedIdentifier || !trimmedPassword) {
       toast({
-        title: "Error",
-        description: "Please enter email/username and password.",
+        title: t.authError,
+        description: t.authLoginEnterCredentials,
         variant: "destructive",
       });
       return;
@@ -42,8 +51,8 @@ const LoginPage = () => {
 
       if (result.success) {
         toast({
-          title: "Welcome!",
-          description: "Login successful.",
+          title: t.authLoginWelcome,
+          description: t.authLoginSuccess,
         });
         navigate("/", { replace: true });
       } else {
@@ -56,8 +65,8 @@ const LoginPage = () => {
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: "Error",
-        description: "An error occurred. Please try again.",
+        title: t.authError,
+        description: t.authGenericError,
         variant: "destructive",
       });
     } finally {
@@ -83,21 +92,21 @@ const LoginPage = () => {
           Fablino
         </h1>
         <p className="text-center text-sm mb-8" style={{ color: 'rgba(45, 24, 16, 0.6)' }}>
-          Magical stories for young readers ✨
+          {t.authWelcomeSubtitle}
         </p>
 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="identifier" className="text-base font-medium text-foreground">
-              Email or Username
+              {t.authEmailOrUsername}
             </Label>
             <Input
               id="identifier"
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Email or Username"
+              placeholder={t.authEmailOrUsername}
               className="text-base h-12 rounded-xl border-2 focus:ring-2"
               style={{
                 borderColor: 'rgba(232, 134, 58, 0.3)',
@@ -110,7 +119,7 @@ const LoginPage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="password" className="text-base font-medium text-foreground">
-              Password
+              {t.authPasswordLabel}
             </Label>
             <div className="relative">
               <Input
@@ -118,7 +127,7 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your password..."
+                placeholder={t.authPasswordPlaceholderExisting}
                 className="text-base h-12 rounded-xl border-2 pr-12 focus:ring-2"
                 style={{
                   borderColor: 'rgba(232, 134, 58, 0.3)',
@@ -150,7 +159,7 @@ const LoginPage = () => {
               className="data-[state=checked]:bg-[#E8863A] data-[state=checked]:border-[#E8863A]"
             />
             <Label htmlFor="rememberMe" className="text-sm text-muted-foreground cursor-pointer">
-              Remember me
+              {t.authRememberMe}
             </Label>
           </div>
 
@@ -166,7 +175,7 @@ const LoginPage = () => {
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <span className="flex items-center gap-2">
-                <Lock className="h-5 w-5" /> Sign In
+                <Lock className="h-5 w-5" /> {t.authSignInButton}
               </span>
             )}
           </Button>
@@ -177,19 +186,19 @@ const LoginPage = () => {
               className="text-sm transition-colors underline"
               style={{ color: '#E8863A' }}
             >
-              Forgot password?
+              {t.authForgotPassword}
             </Link>
           </div>
 
           <div className="text-center pt-2 border-t border-border mt-4">
             <p className="text-sm text-muted-foreground pt-4">
-              Don't have an account?{" "}
+              {t.authNoAccount}{" "}
               <Link
                 to="/register"
                 className="font-medium hover:underline"
                 style={{ color: '#E8863A' }}
               >
-                Register now
+                {t.authRegisterNow}
               </Link>
             </p>
           </div>

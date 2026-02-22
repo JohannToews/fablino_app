@@ -7,6 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Mail, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
+import { useTranslations, Language } from "@/lib/translations";
+import { LANGUAGES } from "@/lib/languages";
+
+function detectLanguage(): Language {
+  const browserLang = navigator.language?.slice(0, 2)?.toLowerCase();
+  const supported = LANGUAGES.filter(l => l.uiSupported).map(l => l.code);
+  return (supported.includes(browserLang) ? browserLang : 'de') as Language;
+}
 
 const ResetPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +22,7 @@ const ResetPasswordPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTranslations(detectLanguage());
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +31,8 @@ const ResetPasswordPage = () => {
     
     if (!trimmedEmail) {
       toast({
-        title: "Fehler",
-        description: "Bitte E-Mail-Adresse eingeben.",
+        title: t.authError,
+        description: t.authResetEnterEmail,
         variant: "destructive",
       });
       return;
@@ -31,8 +40,8 @@ const ResetPasswordPage = () => {
 
     if (!trimmedEmail.includes('@')) {
       toast({
-        title: "Fehler",
-        description: "Bitte eine gültige E-Mail-Adresse eingeben.",
+        title: t.authError,
+        description: t.authInvalidEmail,
         variant: "destructive",
       });
       return;
@@ -49,8 +58,8 @@ const ResetPasswordPage = () => {
         console.error('Reset password error:', error);
         // Don't reveal if email exists or not for security
         toast({
-          title: "Fehler",
-          description: "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
+          title: t.authError,
+          description: t.authGenericError,
           variant: "destructive",
         });
         return;
@@ -61,8 +70,8 @@ const ResetPasswordPage = () => {
     } catch (error) {
       console.error('Reset password error:', error);
       toast({
-        title: "Fehler",
-        description: "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
+        title: t.authError,
+        description: t.authGenericError,
         variant: "destructive",
       });
     } finally {
@@ -90,22 +99,22 @@ const ResetPasswordPage = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-green-600">
-              E-Mail gesendet
+              {t.authResetSentTitle}
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
-              Falls ein Konto mit <strong>{email}</strong> existiert, haben wir dir einen Link zum Zurücksetzen des Passworts gesendet.
+              {t.authResetSentDesc}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="bg-muted/50 rounded-lg p-4 text-center">
               <p className="text-sm text-muted-foreground">
-                Klicke auf den Link in der E-Mail, um dein neues Passwort festzulegen.
+                {t.authResetClickLink}
               </p>
             </div>
             
             <div className="text-center text-sm text-muted-foreground">
-              <p>Keine E-Mail erhalten?</p>
-              <p className="mt-1">Überprüfe deinen Spam-Ordner oder versuche es mit einer anderen E-Mail-Adresse.</p>
+              <p>{t.authResetNoEmail}</p>
+              <p className="mt-1">{t.authResetCheckSpam}</p>
             </div>
 
             <Button
@@ -114,7 +123,7 @@ const ResetPasswordPage = () => {
               className="w-full"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück zum Login
+              {t.authResetBackToLogin}
             </Button>
           </CardContent>
         </Card>
@@ -141,24 +150,24 @@ const ResetPasswordPage = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Passwort vergessen?
+            {t.authResetTitle}
           </CardTitle>
           <CardDescription className="text-base text-muted-foreground">
-            Kein Problem! Gib deine E-Mail-Adresse ein und wir senden dir einen Link zum Zurücksetzen.
+            {t.authResetDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleResetPassword} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-base font-medium text-foreground">
-                E-Mail-Adresse
+                {t.authResetEmailLabel}
               </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="deine@email.com"
+                placeholder={t.authEmailPlaceholder}
                 className="text-base h-11 border-2 border-primary/20 focus:border-primary"
                 autoComplete="email"
               />
@@ -175,7 +184,7 @@ const ResetPasswordPage = () => {
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" /> Link senden
+                  <Mail className="h-5 w-5" /> {t.authResetSend}
                 </span>
               )}
             </Button>
@@ -186,7 +195,7 @@ const ResetPasswordPage = () => {
                 className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Zurück zum Login
+                {t.authResetBackToLogin}
               </Link>
             </div>
           </form>

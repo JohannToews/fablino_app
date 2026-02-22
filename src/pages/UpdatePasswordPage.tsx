@@ -7,6 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Key, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { useTranslations, Language } from "@/lib/translations";
+import { LANGUAGES } from "@/lib/languages";
+
+function detectLanguage(): Language {
+  const browserLang = navigator.language?.slice(0, 2)?.toLowerCase();
+  const supported = LANGUAGES.filter(l => l.uiSupported).map(l => l.code);
+  return (supported.includes(browserLang) ? browserLang : 'de') as Language;
+}
 
 const UpdatePasswordPage = () => {
   const [password, setPassword] = useState("");
@@ -16,6 +24,7 @@ const UpdatePasswordPage = () => {
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTranslations(detectLanguage());
 
   useEffect(() => {
     // Check if we have a valid session from the reset link
@@ -34,8 +43,8 @@ const UpdatePasswordPage = () => {
     
     if (!trimmedPassword) {
       toast({
-        title: "Fehler",
-        description: "Bitte neues Passwort eingeben.",
+        title: t.authError,
+        description: t.authUpdateEnterPw,
         variant: "destructive",
       });
       return;
@@ -43,8 +52,8 @@ const UpdatePasswordPage = () => {
 
     if (trimmedPassword.length < 6) {
       toast({
-        title: "Fehler",
-        description: "Das Passwort muss mindestens 6 Zeichen lang sein.",
+        title: t.authError,
+        description: t.authPasswordMin6,
         variant: "destructive",
       });
       return;
@@ -52,8 +61,8 @@ const UpdatePasswordPage = () => {
 
     if (password !== confirmPassword) {
       toast({
-        title: "Fehler",
-        description: "Die Passwörter stimmen nicht überein.",
+        title: t.authError,
+        description: t.authPasswordsNoMatch,
         variant: "destructive",
       });
       return;
@@ -69,8 +78,8 @@ const UpdatePasswordPage = () => {
       if (error) {
         console.error('Update password error:', error);
         toast({
-          title: "Fehler",
-          description: "Passwort konnte nicht aktualisiert werden. Bitte erneut versuchen.",
+          title: t.authError,
+          description: t.authUpdateFailed,
           variant: "destructive",
         });
         return;
@@ -86,8 +95,8 @@ const UpdatePasswordPage = () => {
     } catch (error) {
       console.error('Update password error:', error);
       toast({
-        title: "Fehler",
-        description: "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
+        title: t.authError,
+        description: t.authGenericError,
         variant: "destructive",
       });
     } finally {
@@ -121,10 +130,10 @@ const UpdatePasswordPage = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-destructive">
-              Link ungültig
+              {t.authLinkInvalid}
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
-              Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen.
+              {t.authLinkExpired}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -132,14 +141,14 @@ const UpdatePasswordPage = () => {
               onClick={() => navigate("/reset-password")}
               className="w-full"
             >
-              Neuen Link anfordern
+              {t.authRequestNewLink}
             </Button>
             <Button
               onClick={() => navigate("/login")}
               variant="outline"
               className="w-full"
             >
-              Zurück zum Login
+              {t.authResetBackToLogin}
             </Button>
           </CardContent>
         </Card>
@@ -164,10 +173,10 @@ const UpdatePasswordPage = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-green-600">
-              Passwort aktualisiert!
+              {t.authUpdateSuccess}
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
-              Dein Passwort wurde erfolgreich geändert. Du wirst zum Login weitergeleitet...
+              {t.authUpdateSuccessDesc}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -198,24 +207,24 @@ const UpdatePasswordPage = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Neues Passwort festlegen
+            {t.authUpdateTitle}
           </CardTitle>
           <CardDescription className="text-base text-muted-foreground">
-            Wähle ein sicheres Passwort für dein Konto.
+            {t.authUpdateDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpdatePassword} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="password" className="text-base font-medium text-foreground">
-                Neues Passwort
+                {t.authUpdateNewPw}
               </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mindestens 6 Zeichen..."
+                placeholder={t.authPasswordPlaceholderNew}
                 className="text-base h-11 border-2 border-primary/20 focus:border-primary"
                 autoComplete="new-password"
               />
@@ -223,14 +232,14 @@ const UpdatePasswordPage = () => {
             
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-base font-medium text-foreground">
-                Passwort bestätigen
+                {t.authConfirmPasswordLabel}
               </Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Passwort wiederholen..."
+                placeholder={t.authRepeatPasswordPlaceholder}
                 className="text-base h-11 border-2 border-primary/20 focus:border-primary"
                 autoComplete="new-password"
               />
@@ -247,7 +256,7 @@ const UpdatePasswordPage = () => {
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Key className="h-5 w-5" /> Passwort speichern
+                  <Key className="h-5 w-5" /> {t.authUpdateSave}
                 </span>
               )}
             </Button>

@@ -6,6 +6,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus, Loader2, ArrowLeft, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { useTranslations, Language } from "@/lib/translations";
+import { LANGUAGES } from "@/lib/languages";
+
+function detectLanguage(): Language {
+  const browserLang = navigator.language?.slice(0, 2)?.toLowerCase();
+  const supported = LANGUAGES.filter(l => l.uiSupported).map(l => l.code);
+  return (supported.includes(browserLang) ? browserLang : 'en') as Language;
+}
 
 const RegisterPage = () => {
   const [email, setEmail] = useState("");
@@ -17,6 +25,7 @@ const RegisterPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTranslations(detectLanguage());
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,22 +35,22 @@ const RegisterPage = () => {
     const trimmedPassword = password.trim();
     
     if (!trimmedEmail || !trimmedPassword || !trimmedDisplayName) {
-      toast({ title: "Error", description: "Please fill in all fields.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authFillAllFields, variant: "destructive" });
       return;
     }
 
     if (!trimmedEmail.includes('@')) {
-      toast({ title: "Error", description: "Please enter a valid email address.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authInvalidEmail, variant: "destructive" });
       return;
     }
 
     if (trimmedPassword.length < 6) {
-      toast({ title: "Error", description: "Password must be at least 6 characters.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authPasswordMin6, variant: "destructive" });
       return;
     }
 
     if (password !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authPasswordsNoMatch, variant: "destructive" });
       return;
     }
 
@@ -59,15 +68,15 @@ const RegisterPage = () => {
 
       if (error) {
         console.error('Registration error:', error);
-        let errorMessage = "Registration failed.";
+        let errorMessage = t.authRegFailed;
         if (error.message.includes("already registered")) {
-          errorMessage = "This email is already registered.";
+          errorMessage = t.authEmailAlreadyRegistered;
         } else if (error.message.includes("Invalid email")) {
-          errorMessage = "Invalid email address.";
+          errorMessage = t.authRegInvalidEmail;
         } else if (error.message.includes("Password")) {
-          errorMessage = "Password does not meet requirements.";
+          errorMessage = t.authRegPasswordReq;
         }
-        toast({ title: "Error", description: errorMessage, variant: "destructive" });
+        toast({ title: t.authError, description: errorMessage, variant: "destructive" });
         return;
       }
 
@@ -75,13 +84,13 @@ const RegisterPage = () => {
         if (data.session === null) {
           setIsSuccess(true);
         } else {
-          toast({ title: "Welcome!", description: "Registration successful." });
+          toast({ title: t.authRegWelcome, description: t.authRegSuccess });
           navigate("/", { replace: true });
         }
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast({ title: "Error", description: "An error occurred. Please try again.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -97,12 +106,12 @@ const RegisterPage = () => {
               <CheckCircle className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-green-600 mb-2">Confirm your email</h2>
+          <h2 className="text-2xl font-bold text-green-600 mb-2">{t.authConfirmEmailTitle}</h2>
           <p className="text-sm mb-6" style={{ color: 'rgba(45, 24, 16, 0.6)' }}>
-            We've sent an email to <strong>{email}</strong>. Click the confirmation link to activate your account.
+            {t.authConfirmEmailSent} <strong>{email}</strong>. {t.authConfirmEmailClick}
           </p>
           <div className="bg-muted/50 rounded-xl p-4 mb-6">
-            <p className="text-sm text-muted-foreground">Didn't receive the email? Check your spam folder.</p>
+            <p className="text-sm text-muted-foreground">{t.authConfirmEmailSpam}</p>
           </div>
           <Button
             onClick={() => navigate("/login")}
@@ -110,7 +119,7 @@ const RegisterPage = () => {
             className="w-full h-12 rounded-2xl text-base"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Sign In
+            {t.authBackToSignIn}
           </Button>
         </div>
       </div>
@@ -140,21 +149,21 @@ const RegisterPage = () => {
           Fablino
         </h1>
         <p className="text-center text-sm mb-8" style={{ color: 'rgba(45, 24, 16, 0.6)' }}>
-          Create your account ✨
+          {t.authRegisterSubtitle}
         </p>
 
         {/* Form */}
         <form onSubmit={handleRegister} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName" className="text-base font-medium text-foreground">
-              Name
+              {t.authNameLabel}
             </Label>
             <Input
               id="displayName"
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your name..."
+              placeholder={t.authNamePlaceholder}
               className="text-base h-12 rounded-xl border-2 focus:ring-2"
               style={inputStyle}
               autoComplete="name"
@@ -163,14 +172,14 @@ const RegisterPage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="email" className="text-base font-medium text-foreground">
-              Email
+              {t.authEmailLabel}
             </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder={t.authEmailPlaceholder}
               className="text-base h-12 rounded-xl border-2 focus:ring-2"
               style={inputStyle}
               autoComplete="email"
@@ -179,7 +188,7 @@ const RegisterPage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="password" className="text-base font-medium text-foreground">
-              Password
+              {t.authPasswordLabel}
             </Label>
             <div className="relative">
               <Input
@@ -187,7 +196,7 @@ const RegisterPage = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters..."
+                placeholder={t.authPasswordPlaceholderNew}
                 className="text-base h-12 rounded-xl border-2 pr-12 focus:ring-2"
                 style={inputStyle}
                 autoComplete="new-password"
@@ -205,14 +214,14 @@ const RegisterPage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="text-base font-medium text-foreground">
-              Confirm Password
+              {t.authConfirmPasswordLabel}
             </Label>
             <Input
               id="confirmPassword"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat password..."
+              placeholder={t.authRepeatPasswordPlaceholder}
               className="text-base h-12 rounded-xl border-2 focus:ring-2"
               style={inputStyle}
               autoComplete="new-password"
@@ -231,16 +240,16 @@ const RegisterPage = () => {
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <span className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" /> Create Account
+                <UserPlus className="h-5 w-5" /> {t.authRegCreateButton}
               </span>
             )}
           </Button>
 
           <div className="text-center pt-2 border-t border-border mt-4">
             <p className="text-sm text-muted-foreground pt-4">
-              Already have an account?{" "}
+              {t.authRegAlreadyHaveAccount}{" "}
               <Link to="/login" className="font-medium hover:underline" style={{ color: '#E8863A' }}>
-                Sign In
+                {t.authTabLogin}
               </Link>
             </p>
           </div>

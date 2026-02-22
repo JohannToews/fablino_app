@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, BookOpen, RefreshCw } from "lucide-react";
 import FablinoMascot from "@/components/FablinoMascot";
 import SpeechBubble from "@/components/SpeechBubble";
+import { useTranslations, Language } from "@/lib/translations";
+import { LANGUAGES } from "@/lib/languages";
 import confetti from "canvas-confetti";
 
 // No local subtype logic — server-side selectStorySubtype() handles variation via round-robin
@@ -18,13 +20,6 @@ const getDefaultImageStyle = (age: number): string => {
   if (age <= 10) return "adventure_cartoon";
   return "graphic_novel";
 };
-
-const PROGRESS_TEXTS = [
-  "Fablino denkt sich eine Geschichte aus... 🦊",
-  "Die Charaktere werden lebendig... 🌟",
-  "Fablino malt die Bilder... 🎨",
-  "Fast fertig! 🎉",
-];
 
 const MASCOT_CYCLE = [
   "/mascot/3_wating_story_generated.png",
@@ -72,6 +67,16 @@ const OnboardingStoryPage = () => {
   const [progressTextIdx, setProgressTextIdx] = useState(0);
   const [dots, setDots] = useState(".");
   const hasStarted = useRef(false);
+
+  const storyLang = (storyLangParam || 'de') as Language;
+  const t = useTranslations(storyLang);
+  
+  const PROGRESS_TEXTS = [
+    t.onboardingProgress1,
+    t.onboardingProgress2,
+    t.onboardingProgress3,
+    t.onboardingProgress4,
+  ];
 
   // Fun facts from DB (same as StoryGenerationProgress)
   const [facts, setFacts] = useState<string[]>([]);
@@ -374,7 +379,7 @@ const OnboardingStoryPage = () => {
           <div className="flex-1 h-2 rounded-full" style={{ background: "#E8863A" }} />
           <div className="flex-1 h-2 rounded-full" style={{ background: status === "done" ? "#E8863A" : "rgba(232,134,58,0.2)" }} />
         </div>
-        <p className="text-xs text-center" style={{ color: "rgba(45,24,16,0.5)" }}>Schritt 2 von 2</p>
+        <p className="text-xs text-center" style={{ color: "rgba(45,24,16,0.5)" }}>{t.onboardingStep2of2}</p>
       </div>
 
       <div className="w-full max-w-md flex flex-col items-center">
@@ -412,10 +417,10 @@ const OnboardingStoryPage = () => {
         {/* Headline */}
         <h1 className="text-xl font-bold text-center mb-1" style={{ color: "#E8863A" }}>
           {status === "done"
-            ? `Die Geschichte ist fertig! 🎉`
+            ? t.onboardingStoryDone
             : kidName
-            ? `Fablino erstellt eine Geschichte für ${kidName}! ✨`
-            : "Fablino erstellt eine Geschichte... ✨"}
+            ? t.onboardingStoryCreatingFor.replace('{name}', kidName)
+            : t.onboardingStoryCreating}
         </h1>
 
         {/* Status content */}
@@ -444,7 +449,7 @@ const OnboardingStoryPage = () => {
         {status === "done" && (
           <div className="w-full mt-5 flex flex-col items-center gap-4">
             <p className="text-sm text-center" style={{ color: "rgba(45,24,16,0.65)" }}>
-              Bereit zum Lesen! Viel Spaß beim Abtauchen in die Geschichte.
+              {t.onboardingStoryReady}
             </p>
             <Button
               onClick={handleReadStory}
@@ -452,7 +457,7 @@ const OnboardingStoryPage = () => {
               style={{ backgroundColor: "#E8863A", height: "56px", fontSize: "1.1rem", animation: "fadeSlideIn 0.5s ease-out" }}
             >
               <BookOpen className="h-5 w-5 mr-2" />
-              Geschichte lesen! 📖
+              {t.onboardingStoryRead}
             </Button>
           </div>
         )}
@@ -461,9 +466,9 @@ const OnboardingStoryPage = () => {
           <div className="w-full mt-5 flex flex-col items-center gap-4">
             <div className="bg-red-50 border border-red-100 rounded-2xl px-5 py-4 w-full text-center">
               <p className="text-sm font-medium text-red-700">
-                Es gab ein Problem beim Erstellen der Geschichte. 😕
+                {t.onboardingStoryError}
               </p>
-              <p className="text-xs text-red-500 mt-1">Bitte versuche es nochmal.</p>
+              <p className="text-xs text-red-500 mt-1">{t.onboardingStoryTryAgain}</p>
             </div>
             <Button
               onClick={handleRetry}
@@ -471,7 +476,7 @@ const OnboardingStoryPage = () => {
               style={{ backgroundColor: "#E8863A", height: "52px" }}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Nochmal versuchen
+              {t.onboardingStoryRetry}
             </Button>
           </div>
         )}

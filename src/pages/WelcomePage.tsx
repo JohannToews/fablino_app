@@ -7,8 +7,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslations, Language } from "@/lib/translations";
+import { LANGUAGES } from "@/lib/languages";
 
 import { Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
+
+function detectLanguage(): Language {
+  const browserLang = navigator.language?.slice(0, 2)?.toLowerCase();
+  const supported = LANGUAGES.filter(l => l.uiSupported).map(l => l.code);
+  return (supported.includes(browserLang) ? browserLang : 'de') as Language;
+}
 
 type Mode = "login" | "register";
 
@@ -23,6 +31,7 @@ const WelcomePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const t = useTranslations(detectLanguage());
 
   // If already logged in → check for kid profiles and redirect
   useEffect(() => {
@@ -76,15 +85,15 @@ const WelcomePage = () => {
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
-      toast({ title: "Fehler", description: "Bitte alle Felder ausfüllen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authFillAllFields, variant: "destructive" });
       return;
     }
     if (!trimmedEmail.includes("@")) {
-      toast({ title: "Fehler", description: "Bitte eine gültige E-Mail-Adresse eingeben.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authInvalidEmail, variant: "destructive" });
       return;
     }
     if (trimmedPassword.length < 6) {
-      toast({ title: "Fehler", description: "Passwort muss mindestens 6 Zeichen lang sein.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authPasswordMin6, variant: "destructive" });
       return;
     }
 
@@ -99,9 +108,9 @@ const WelcomePage = () => {
       });
 
       if (error) {
-        let msg = "Registrierung fehlgeschlagen.";
-        if (error.message.includes("already registered")) msg = "Diese E-Mail ist bereits registriert.";
-        toast({ title: "Fehler", description: msg, variant: "destructive" });
+        let msg = t.authRegFailed;
+        if (error.message.includes("already registered")) msg = t.authEmailAlreadyRegistered;
+        toast({ title: t.authError, description: msg, variant: "destructive" });
         return;
       }
 
@@ -116,8 +125,8 @@ const WelcomePage = () => {
           // User already exists - switch to login mode with clear hint
           setMode("login");
           toast({
-            title: "E-Mail bereits registriert",
-            description: "Melde dich einfach mit deinem Passwort an.",
+            title: t.authEmailAlreadyRegisteredTitle,
+            description: t.authEmailAlreadyRegisteredHint,
           });
         } else {
           // New user - email confirmation required
@@ -125,7 +134,7 @@ const WelcomePage = () => {
         }
       }
     } catch {
-      toast({ title: "Fehler", description: "Ein Fehler ist aufgetreten.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +146,7 @@ const WelcomePage = () => {
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
-      toast({ title: "Fehler", description: "Bitte alle Felder ausfüllen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authFillAllFields, variant: "destructive" });
       return;
     }
 
@@ -149,7 +158,7 @@ const WelcomePage = () => {
       });
 
       if (error) {
-        toast({ title: "Fehler", description: "E-Mail oder Passwort falsch.", variant: "destructive" });
+        toast({ title: t.authError, description: t.authWrongCredentials, variant: "destructive" });
         return;
       }
 
@@ -157,7 +166,7 @@ const WelcomePage = () => {
         await handleAuthRedirect();
       }
     } catch {
-      toast({ title: "Fehler", description: "Ein Fehler ist aufgetreten.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -177,15 +186,15 @@ const WelcomePage = () => {
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold mb-3" style={{ color: "#E8863A" }}>E-Mail bestätigen</h2>
+          <h2 className="text-3xl font-bold mb-3" style={{ color: "#E8863A" }}>{t.authConfirmEmailTitle}</h2>
           <p className="text-base mb-3 leading-relaxed" style={{ color: "rgba(45, 24, 16, 0.65)" }}>
-            Wir haben eine Bestätigungs-E-Mail an
+            {t.authConfirmEmailSent}
           </p>
           <p className="text-base font-bold mb-4" style={{ color: "rgba(45, 24, 16, 0.85)" }}>{email}</p>
           <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(45, 24, 16, 0.6)" }}>
-            Klicke auf den Link in der E-Mail, um dein Konto zu aktivieren. Du wirst danach automatisch eingeloggt. ✨
+            {t.authConfirmEmailClick}
           </p>
-          <p className="text-xs" style={{ color: "rgba(45, 24, 16, 0.4)" }}>Keine E-Mail erhalten? Prüfe deinen Spam-Ordner.</p>
+          <p className="text-xs" style={{ color: "rgba(45, 24, 16, 0.4)" }}>{t.authConfirmEmailSpam}</p>
         </div>
         <style>{`@keyframes gentleBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }`}</style>
       </div>
@@ -213,7 +222,7 @@ const WelcomePage = () => {
           />
           <h1 className="text-3xl font-bold mt-1" style={{ color: "#E8863A" }}>Fablino</h1>
           <p className="text-xs mt-0.5" style={{ color: "rgba(45, 24, 16, 0.6)" }}>
-            Magische Geschichten für junge Leser ✨
+            {t.authWelcomeSubtitle}
           </p>
         </div>
 
@@ -229,7 +238,7 @@ const WelcomePage = () => {
                 color: mode === "register" ? "white" : "rgba(45,24,16,0.5)",
               }}
             >
-              Registrieren
+              {t.authTabRegister}
             </button>
             <button
               onClick={() => setMode("login")}
@@ -239,20 +248,20 @@ const WelcomePage = () => {
                 color: mode === "login" ? "white" : "rgba(45,24,16,0.5)",
               }}
             >
-              Anmelden
+              {t.authTabLogin}
             </button>
           </div>
 
           {/* Form */}
           <form onSubmit={mode === "register" ? handleRegister : handleLogin} className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="email" className="text-sm font-medium">E-Mail</Label>
+              <Label htmlFor="email" className="text-sm font-medium">{t.authEmailLabel}</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="deine@email.com"
+                placeholder={t.authEmailPlaceholder}
                 className="h-11 rounded-xl border-2 text-base"
                 style={inputStyle}
                 autoComplete="email"
@@ -260,14 +269,14 @@ const WelcomePage = () => {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="password" className="text-sm font-medium">Passwort</Label>
+              <Label htmlFor="password" className="text-sm font-medium">{t.authPasswordLabel}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "register" ? "Mindestens 6 Zeichen..." : "Dein Passwort..."}
+                  placeholder={mode === "register" ? t.authPasswordPlaceholderNew : t.authPasswordPlaceholderExisting}
                   className="h-11 rounded-xl border-2 pr-12 text-base"
                   style={inputStyle}
                   autoComplete={mode === "register" ? "new-password" : "current-password"}
@@ -290,14 +299,14 @@ const WelcomePage = () => {
                   onCheckedChange={(v) => setRememberMe(v === true)}
                   className="border-[rgba(232,134,58,0.4)] data-[state=checked]:bg-[#E8863A] data-[state=checked]:border-[#E8863A]"
                 />
-                <span className="text-sm" style={{ color: "rgba(45,24,16,0.6)" }}>Angemeldet bleiben</span>
+                <span className="text-sm" style={{ color: "rgba(45,24,16,0.6)" }}>{t.authRememberMe}</span>
               </label>
               <a
                 href="/reset-password"
                 className="text-sm underline"
                 style={{ color: "#E8863A" }}
               >
-                Passwort vergessen?
+                {t.authForgotPassword}
               </a>
             </div>
 
@@ -310,18 +319,18 @@ const WelcomePage = () => {
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : mode === "register" ? (
-                "Konto erstellen 🚀"
+                t.authCreateAccount
               ) : (
-                "Anmelden →"
+                t.authSignInButton
               )}
             </Button>
 
             {mode === "register" && (
               <p className="text-xs text-center" style={{ color: "rgba(45,24,16,0.45)" }}>
-                Mit der Anmeldung akzeptierst du unsere{" "}
-                <a href="https://fablino.eu/datenschutz" target="_blank" rel="noopener" className="underline">Datenschutzerklärung</a>
-                {" "}und{" "}
-                <a href="https://fablino.eu/agb" target="_blank" rel="noopener" className="underline">AGB</a>.
+                {t.authLegalPrefix}{" "}
+                <a href="https://fablino.eu/datenschutz" target="_blank" rel="noopener" className="underline">{t.authPrivacyPolicy}</a>
+                {" "}{t.authAnd}{" "}
+                <a href="https://fablino.eu/agb" target="_blank" rel="noopener" className="underline">{t.authTerms}</a>.
               </p>
             )}
           </form>

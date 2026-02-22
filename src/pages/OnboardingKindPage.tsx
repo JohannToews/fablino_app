@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronDown, Check, Mic, MicOff } from "lucide-react";
 import { LANGUAGES } from "@/lib/languages";
+import { useTranslations, Language } from "@/lib/translations";
 
 // All supported languages alphabetically sorted by native name
 const ALL_LANGUAGES = [...LANGUAGES]
@@ -81,12 +82,6 @@ const STORY_CATEGORIES = [
 ];
 
 const AGES = [5, 6, 7, 8, 9, 10, 11, 12];
-
-const GENDERS = [
-  { value: "girl", label: "Mädchen", emoji: "👧" },
-  { value: "boy", label: "Junge", emoji: "👦" },
-  { value: "other", label: "Divers", emoji: "🧒" },
-];
 
 // UI-supported languages for admin language selection
 const UI_LANGUAGES = LANGUAGES.filter((l) => l.uiSupported).sort((a, b) => a.nameNative.localeCompare(b.nameNative));
@@ -255,6 +250,14 @@ const OnboardingKindPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const uiLang = (adminLang || navigator.language?.slice(0, 2)?.toLowerCase() || 'de') as Language;
+  const t = useTranslations(uiLang);
+
+  const GENDERS_TRANSLATED = [
+    { value: "girl", label: t.onboardingGenderGirl, emoji: "👧" },
+    { value: "boy", label: t.onboardingGenderBoy, emoji: "👦" },
+    { value: "other", label: t.onboardingGenderOther, emoji: "🧒" },
+  ];
 
   // Guard: not logged in → /welcome
   useEffect(() => {
@@ -282,7 +285,7 @@ const OnboardingKindPage = () => {
   const initRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast({ title: "Nicht unterstützt", description: "Spracheingabe wird von diesem Browser nicht unterstützt.", variant: "destructive" });
+      toast({ title: t.onboardingNotSupported, description: t.onboardingSpeechNotSupported, variant: "destructive" });
       return null;
     }
     const recognition = new SpeechRecognition();
@@ -298,7 +301,7 @@ const OnboardingKindPage = () => {
     };
     recognition.onerror = (event: any) => {
       if (event.error === "not-allowed") {
-        toast({ title: "Kein Zugriff", description: "Mikrofon-Berechtigung verweigert.", variant: "destructive" });
+        toast({ title: t.onboardingNoMicAccess, description: t.onboardingMicDenied, variant: "destructive" });
         isListeningRef.current = false;
         setIsListening(false);
       }
@@ -338,7 +341,7 @@ const OnboardingKindPage = () => {
 
   const handleAdminLangNext = () => {
     if (!adminLang) {
-      toast({ title: "Fehler", description: "Bitte eine Sprache auswählen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.onboardingSelectLangFirst, variant: "destructive" });
       return;
     }
     setStep("profile");
@@ -347,19 +350,19 @@ const OnboardingKindPage = () => {
 
   const handleProfileNext = () => {
     if (!name.trim()) {
-      toast({ title: "Fehler", description: "Bitte einen Namen eingeben.", variant: "destructive" });
+      toast({ title: t.authError, description: t.onboardingSelectName, variant: "destructive" });
       return;
     }
     if (!selectedAge) {
-      toast({ title: "Fehler", description: "Bitte ein Alter auswählen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.onboardingSelectAge, variant: "destructive" });
       return;
     }
     if (!gender) {
-      toast({ title: "Fehler", description: "Bitte ein Geschlecht auswählen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.onboardingSelectGender, variant: "destructive" });
       return;
     }
     if (!schoolLang) {
-      toast({ title: "Fehler", description: "Bitte eine Schulsprache auswählen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.onboardingSelectSchoolLang, variant: "destructive" });
       return;
     }
     setStep("storyType");
@@ -368,7 +371,7 @@ const OnboardingKindPage = () => {
 
   const handleSubmit = async () => {
     if (!selectedSubtype) {
-      toast({ title: "Fehler", description: "Bitte eine Geschichte wählen.", variant: "destructive" });
+      toast({ title: t.authError, description: t.onboardingSelectStory, variant: "destructive" });
       return;
     }
     if (!user) return;
@@ -410,7 +413,7 @@ const OnboardingKindPage = () => {
 
       if (error || !savedProfile) {
         console.error("Kid profile save error:", error);
-        toast({ title: "Fehler", description: "Profil konnte nicht gespeichert werden.", variant: "destructive" });
+        toast({ title: t.authError, description: t.onboardingProfileSaveError, variant: "destructive" });
         return;
       }
 
@@ -419,7 +422,7 @@ const OnboardingKindPage = () => {
       navigate(`/onboarding/story?kid=${savedProfile.id}&storyType=${selectedCategory!}&subtype=${selectedSubtype}&lang=${storyLang}${detailParam}`, { replace: true });
     } catch (err) {
       console.error(err);
-      toast({ title: "Fehler", description: "Ein Fehler ist aufgetreten.", variant: "destructive" });
+      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -444,10 +447,10 @@ const OnboardingKindPage = () => {
           style={{ animation: "gentleBounce 2.5s ease-in-out infinite" }}
         />
         <h1 className="text-2xl font-bold mt-3 text-center" style={{ color: "#E8863A" }}>
-          {step === "adminLang" ? "Willkommen bei Fablino! 🦊" : step === "profile" ? "Wer liest mit Fablino? 🦊" : "Was für eine Geschichte? 📖"}
+          {step === "adminLang" ? t.onboardingWelcomeTitle : step === "profile" ? t.onboardingProfileTitle : t.onboardingStoryTypeTitle}
         </h1>
         <p className="text-sm mt-1 text-center" style={{ color: "rgba(45,24,16,0.6)" }}>
-          {step === "adminLang" ? "In welcher Sprache möchtest du Fablino verwalten?" : step === "profile" ? "Erstelle ein Profil für dein Kind" : `Eine Geschichte für ${name} ✨`}
+          {step === "adminLang" ? t.onboardingAdminLangSub : step === "profile" ? t.onboardingProfileSub : `Eine Geschichte für ${name} ✨`}
         </p>
       </div>
 
@@ -455,15 +458,15 @@ const OnboardingKindPage = () => {
       {step === "adminLang" && (
         <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
           <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">🌐 Sprache für App-Administration</Label>
+            <Label className="text-sm font-semibold">{t.onboardingAdminLangLabel}</Label>
             <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              In dieser Sprache siehst du Menüs, Einstellungen und Benachrichtigungen
+              {t.onboardingAdminLangHint}
             </p>
           <SingleSelect
               options={UI_LANGUAGES.map((l) => ({ code: l.code, label: l.nameNative, flag: l.flag }))}
               value={adminLang}
               onChange={setAdminLang}
-              placeholder="Sprache auswählen..."
+              placeholder={t.onboardingSelectLang}
             />
           </div>
 
@@ -473,7 +476,7 @@ const OnboardingKindPage = () => {
             className="w-full font-semibold rounded-2xl text-white shadow-md"
             style={{ backgroundColor: "#E8863A", height: "52px", fontSize: "1rem" }}
           >
-            Weiter →
+            {t.onboardingNext}
           </Button>
         </div>
       )}
@@ -483,12 +486,12 @@ const OnboardingKindPage = () => {
         <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">Name des Kindes</Label>
+            <Label className="text-sm font-semibold">{t.onboardingChildName}</Label>
             <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value.slice(0, 30))}
-              placeholder="Vorname..."
+              placeholder={t.onboardingChildNamePlaceholder}
               className="h-12 rounded-xl border-2 text-base"
               style={{ borderColor: "rgba(232,134,58,0.3)" }}
               autoComplete="off"
@@ -498,7 +501,7 @@ const OnboardingKindPage = () => {
 
           {/* Alter */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Alter</Label>
+            <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
             <div className="flex flex-wrap gap-2">
               {AGES.map((age) => (
                 <button
@@ -520,9 +523,9 @@ const OnboardingKindPage = () => {
 
           {/* Geschlecht */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Geschlecht</Label>
+            <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
             <div className="flex gap-2">
-              {GENDERS.map((g) => (
+              {GENDERS_TRANSLATED.map((g) => (
                 <button
                   key={g.value}
                   type="button"
@@ -543,29 +546,29 @@ const OnboardingKindPage = () => {
 
           {/* Schulsprache (single dropdown) */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">Schulsprache 📚</Label>
+            <Label className="text-sm font-semibold">{t.onboardingSchoolLang}</Label>
             <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              Die Hauptsprache, in der dein Kind liest
+              {t.onboardingSchoolLangHint}
             </p>
             <SingleSelect
               options={langOptions}
               value={schoolLang}
               onChange={setSchoolLang}
-              placeholder="Sprache auswählen..."
+              placeholder={t.onboardingSelectLang}
             />
           </div>
 
           {/* Weitere Lesesprachen (multi dropdown) */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">Weitere Lesesprachen <span className="font-normal text-xs">(optional)</span></Label>
+            <Label className="text-sm font-semibold">{t.onboardingExtraLangs} <span className="font-normal text-xs">{t.onboardingExtraLangsOptional}</span></Label>
             <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              Mehrere Sprachen möglich
+              {t.onboardingExtraLangsHint}
             </p>
             <MultiSelect
               options={langOptions}
               values={extraLangs}
               onChange={setExtraLangs}
-              placeholder="Weitere Sprachen..."
+              placeholder={t.onboardingExtraLangsPlaceholder}
               excludeCode={schoolLang}
             />
           </div>
@@ -576,7 +579,7 @@ const OnboardingKindPage = () => {
             className="w-full font-semibold rounded-2xl text-white shadow-md"
             style={{ backgroundColor: "#E8863A", height: "52px", fontSize: "1rem" }}
           >
-            Weiter →
+            {t.onboardingNext}
           </Button>
         </div>
       )}
@@ -592,7 +595,7 @@ const OnboardingKindPage = () => {
             return (
               <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border" style={{ borderColor: "rgba(232,134,58,0.15)" }}>
                 <p className="text-xs font-semibold mb-2.5" style={{ color: "rgba(45,24,16,0.5)" }}>
-                  📚 Sprache der Geschichte
+                  {t.onboardingStoryLang}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {allLangs.map((code) => {
@@ -617,7 +620,7 @@ const OnboardingKindPage = () => {
                   })}
                 </div>
                 <p className="text-xs mt-2" style={{ color: "rgba(45,24,16,0.4)" }}>
-                  In welcher Sprache soll die erste Geschichte sein?
+                  {t.onboardingStoryLangHint}
                 </p>
               </div>
             );
@@ -699,7 +702,7 @@ const OnboardingKindPage = () => {
                       background: isListening ? "#E8863A" : "rgba(232,134,58,0.1)",
                       color: isListening ? "white" : "#E8863A",
                     }}
-                    title={isListening ? "Aufnahme stoppen" : "Spracheingabe starten"}
+                    title={isListening ? t.onboardingStopRecording : t.onboardingStartRecording}
                   >
                     {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                   </button>
@@ -707,7 +710,7 @@ const OnboardingKindPage = () => {
                 {isListening && (
                   <p className="text-xs mt-1.5 flex items-center gap-1.5" style={{ color: "#E8863A" }}>
                     <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: "#E8863A" }} />
-                    Zuhören…
+                    {t.onboardingListening}
                   </p>
                 )}
                 <p className="text-xs mt-1 text-right" style={{ color: "rgba(45,24,16,0.35)" }}>
@@ -731,7 +734,7 @@ const OnboardingKindPage = () => {
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              "Los geht's! 🦊"
+              t.onboardingLetsGo
             )}
           </Button>
 
@@ -741,7 +744,7 @@ const OnboardingKindPage = () => {
             className="w-full text-sm text-center mt-1 py-2"
             style={{ color: "rgba(45,24,16,0.4)" }}
           >
-            ← Zurück
+            {t.onboardingBack}
           </button>
         </div>
       )}
