@@ -271,7 +271,7 @@ export const useCollection = () => {
         category: 'star',
         item_name: starName,
         item_emoji: starEmoji,
-        item_description: getTranslations((navigator.language?.slice(0, 2)?.toLowerCase() || 'de') as Language).hookCollectionPerfectQuiz,
+        item_description: getTranslations((navigator.language?.slice(0, 2)?.toLowerCase() || 'de') as Language).hookPerfectQuiz,
         rarity
       })
       .select()

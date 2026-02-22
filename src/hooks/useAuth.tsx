@@ -3,11 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { getTranslations, Language } from "@/lib/translations";
 
-function detectLang(): Language {
-  const b = navigator.language?.slice(0, 2)?.toLowerCase();
-  return (['de','en','fr','es','nl','it','bs'].includes(b) ? b : 'de') as Language;
-}
-
 export type UserRole = 'admin' | 'standard';
 export type AuthMode = 'supabase' | 'legacy' | null;
 
@@ -59,6 +54,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Check if legacy user needs migration (no email set)
   const needsMigration = authMode === 'legacy' && user !== null && !user.email;
+
+  const t = () => {
+    const lang = (user?.adminLanguage || navigator.language?.slice(0, 2) || 'de') as Language;
+    return getTranslations(lang);
+  };
 
   // Fetch user profile from user_profiles table (for Supabase Auth users)
   const fetchUserProfile = async (authUser: User): Promise<UserSettings | null> => {
@@ -258,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profile = await fetchUserProfile(data.user);
         if (!profile) {
           await supabase.auth.signOut();
-          return { success: false, error: getTranslations(detectLang()).hookAuthProfileNotFound };
+          return { success: false, error: t().hookProfileNotFound };
         }
         setSession(data.session);
         setUser(profile);
@@ -268,10 +268,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       }
 
-      return { success: false, error: getTranslations(detectLang()).hookAuthLoginFailed };
+      return { success: false, error: t().hookLoginFailed };
     } catch (error) {
       console.error('Email login error:', error);
-      return { success: false, error: getTranslations(detectLang()).hookAuthGenericError };
+      return { success: false, error: t().authGenericError };
     }
   };
 
@@ -284,13 +284,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Username login error:', error);
-        return { success: false, error: getTranslations(detectLang()).hookAuthLoginFailed };
+        return { success: false, error: t().hookLoginFailed };
       }
 
       // If user is migrated, block legacy login and show hint
       if (data?.migrated) {
         const emailHint = data.email ? ` (${data.email})` : '';
-        return { success: false, error: `${getTranslations(detectLang()).hookAuthMigrated}${emailHint}` };
+        return { success: false, error: `${t().hookAccountMigrated}${emailHint}` };
       }
 
       if (data?.success && data?.user) {
@@ -346,10 +346,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       }
 
-      return { success: false, error: data?.error || getTranslations(detectLang()).hookAuthInvalidCredentials };
+      return { success: false, error: data?.error || t().hookInvalidCredentials };
     } catch (error) {
       console.error('Username login error:', error);
-      return { success: false, error: getTranslations(detectLang()).hookAuthGenericError };
+      return { success: false, error: t().authGenericError };
     }
   };
 

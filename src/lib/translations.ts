@@ -355,7 +355,14 @@ export interface Translations {
   noInvoices: string;
   betaUpgradeToast: string;
 
-  // Auth & Onboarding
+  // Hooks
+  hookLoginFailed: string;
+  hookProfileNotFound: string;
+  hookInvalidCredentials: string;
+  hookAccountMigrated: string;
+  hookPerfectQuiz: string;
+
+    // Auth & Onboarding
   authError: string;
   authFillAllFields: string;
   authInvalidEmail: string;
@@ -801,7 +808,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Noch keine Rechnungen vorhanden',
     betaUpgradeToast: 'Kommt bald! In der Beta ist alles kostenlos 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login fehlgeschlagen',
+    hookProfileNotFound: 'Benutzerprofil nicht gefunden',
+    hookInvalidCredentials: 'Ungültige Anmeldedaten',
+    hookAccountMigrated: 'Dieses Konto wurde migriert. Bitte melde dich mit deiner E-Mail-Adresse an.',
+    hookPerfectQuiz: 'Für ein perfektes Quiz!',
+
+        // Auth & Onboarding
     authError: 'Fehler',
     authFillAllFields: 'Bitte alle Felder ausfüllen.',
     authInvalidEmail: 'Bitte eine gültige E-Mail-Adresse eingeben.',
@@ -1244,7 +1258,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -1687,7 +1708,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Aucune facture pour le moment',
     betaUpgradeToast: 'Bientôt disponible ! Tout est gratuit pendant la Bêta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Connexion échouée',
+    hookProfileNotFound: 'Profil utilisateur introuvable',
+    hookInvalidCredentials: 'Identifiants invalides',
+    hookAccountMigrated: 'Ce compte a été migré. Veuillez vous connecter avec votre adresse e-mail.',
+    hookPerfectQuiz: 'Pour un quiz parfait !',
+
+        // Auth & Onboarding
     authError: 'Erreur',
     authFillAllFields: 'Veuillez remplir tous les champs.',
     authInvalidEmail: 'Veuillez entrer une adresse e-mail valide.',
@@ -2130,7 +2158,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Sin facturas aún',
     betaUpgradeToast: '¡Próximamente! Todo es gratis durante la Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Inicio de sesión fallido',
+    hookProfileNotFound: 'Perfil de usuario no encontrado',
+    hookInvalidCredentials: 'Credenciales inválidas',
+    hookAccountMigrated: 'Esta cuenta ha sido migrada. Inicia sesión con tu correo electrónico.',
+    hookPerfectQuiz: '¡Por un quiz perfecto!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Por favor, rellena todos los campos.',
     authInvalidEmail: 'Introduce un correo electrónico válido.',
@@ -2573,7 +2608,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Nog geen facturen',
     betaUpgradeToast: 'Binnenkort! Alles is gratis tijdens de Bèta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Inloggen mislukt',
+    hookProfileNotFound: 'Gebruikersprofiel niet gevonden',
+    hookInvalidCredentials: 'Ongeldige inloggegevens',
+    hookAccountMigrated: 'Dit account is gemigreerd. Log in met je e-mailadres.',
+    hookPerfectQuiz: 'Voor een perfecte quiz!',
+
+        // Auth & Onboarding
     authError: 'Fout',
     authFillAllFields: 'Vul alle velden in.',
     authInvalidEmail: 'Voer een geldig e-mailadres in.',
@@ -3016,7 +3058,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Nessuna fattura ancora',
     betaUpgradeToast: 'In arrivo! Tutto è gratuito durante la Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Accesso fallito',
+    hookProfileNotFound: 'Profilo utente non trovato',
+    hookInvalidCredentials: 'Credenziali non valide',
+    hookAccountMigrated: 'Questo account è stato migrato. Accedi con il tuo indirizzo e-mail.',
+    hookPerfectQuiz: 'Per un quiz perfetto!',
+
+        // Auth & Onboarding
     authError: 'Errore',
     authFillAllFields: 'Compila tutti i campi.',
     authInvalidEmail: 'Inserisci un indirizzo e-mail valido.',
@@ -3459,7 +3508,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'Još nema faktura',
     betaUpgradeToast: 'Uskoro! Sve je besplatno tokom Bete 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Prijava neuspješna',
+    hookProfileNotFound: 'Korisnički profil nije pronađen',
+    hookInvalidCredentials: 'Neispravni podaci za prijavu',
+    hookAccountMigrated: 'Ovaj račun je migriran. Prijavite se sa svojom e-mail adresom.',
+    hookPerfectQuiz: 'Za savršen kviz!',
+
+        // Auth & Onboarding
     authError: 'Greška',
     authFillAllFields: 'Molimo popunite sva polja.',
     authInvalidEmail: 'Unesite važeću e-mail adresu.',
@@ -3901,7 +3957,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -4343,7 +4406,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -4785,7 +4855,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -5227,7 +5304,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -5669,7 +5753,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -6111,7 +6202,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -6553,7 +6651,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -6995,7 +7100,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -7437,7 +7549,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
@@ -7879,7 +7998,14 @@ const translations: Partial<Record<Language, Translations>> & Record<'de' | 'en'
     noInvoices: 'No invoices yet',
     betaUpgradeToast: 'Coming soon! Everything is free during Beta 🦊',
   
-    // Auth & Onboarding
+    // Hooks
+    hookLoginFailed: 'Login failed',
+    hookProfileNotFound: 'User profile not found',
+    hookInvalidCredentials: 'Invalid credentials',
+    hookAccountMigrated: 'This account has been migrated. Please sign in with your email address.',
+    hookPerfectQuiz: 'For a perfect quiz!',
+
+        // Auth & Onboarding
     authError: 'Error',
     authFillAllFields: 'Please fill in all fields.',
     authInvalidEmail: 'Please enter a valid email address.',
