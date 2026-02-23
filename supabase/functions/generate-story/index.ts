@@ -2641,6 +2641,11 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       // ═══ NEW PATH: Structured image_plan from LLM ═══
       console.log('[generate-story] Using NEW image path: structured image_plan');
 
+      if (emotionFlowResult?.protagonistSeed?.appearance_en && imagePlan) {
+        console.log('[EmotionFlow] Injecting character seed into imagePlan.character_anchor');
+        imagePlan.character_anchor = emotionFlowResult.protagonistSeed.appearance_en;
+      }
+
       console.log('[IMAGE-PIPELINE] Calling buildImagePrompts:', JSON.stringify({
         hasSeriesContext: !!seriesImageCtx,
         episodeNumber: seriesImageCtx?.episodeNumber ?? null,
@@ -2962,8 +2967,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         const comicPlan = parseComicStripPlan(imagePlan, comicLayout);
         if (!comicPlan) throw new Error('Comic strip plan parsing failed');
 
-        // Character Seed Injection placeholder — Task 6.2 will inject protagonist
-        // appearance here via: comicPlan.characterAnchor = <seed>.appearance_en;
+        if (emotionFlowResult?.protagonistSeed?.appearance_en && comicPlan) {
+          comicPlan.characterAnchor = emotionFlowResult.protagonistSeed.appearance_en;
+          console.log('[EmotionFlow] Injected character seed into comicPlan');
+        }
 
         let seriesStylePrefix: string | undefined;
         if (seriesImageCtx) {
@@ -2983,7 +2990,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           layout: comicLayout,
           stylePrompt: imageStyleData?.promptSnippet || '',
           ageModifier: imageStyleData?.ageModifier || '',
-          characterSeedAppearance: undefined, // Task 6.2 will inject protagonist seed
+          characterSeedAppearance: emotionFlowResult?.protagonistSeed?.appearance_en,
           seriesStylePrefix,
         });
 
