@@ -548,7 +548,7 @@ const SpecialEffectsScreen = ({
                   <ChevronDown className={cn("h-4 w-4 text-[#92400E] transition-transform", langDropdownOpen && "rotate-180")} />
                 </button>
                 {langDropdownOpen && (
-                  <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-lg border border-orange-100 py-1 max-h-48 overflow-y-auto">
+                  <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-lg border border-orange-100 py-1 max-h-48 overflow-y-auto">
                     {availableLanguages.map((lang) => (
                       <button
                         key={lang}
