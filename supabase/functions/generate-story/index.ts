@@ -2170,6 +2170,34 @@ Required JSON structure:
 Fields episode_summary, continuity_state, visual_style_sheet, branch_options are ONLY required for series episodes.`;
     }
 
+    // ── Emotion-Flow Prompt Injection (NEW path only) ──
+    if (usedNewPromptPath && emotionFlowResult) {
+      const emotionBlocks = [
+        emotionFlowResult.promptBlocks.arcBlock,
+        emotionFlowResult.promptBlocks.toneBlock,
+        emotionFlowResult.promptBlocks.characterBlock,
+        emotionFlowResult.promptBlocks.elementBlocks,
+        emotionFlowResult.promptBlocks.criticalRules,
+      ].filter(block => block && block.trim().length > 0);
+
+      if (emotionBlocks.length > 0) {
+        const emotionSection =
+          '\n\n--- EMOTION FLOW ENGINE ---\n\n' +
+          emotionBlocks.join('\n\n') +
+          '\n\n--- END EMOTION FLOW ---\n\n';
+
+        if (userPrompt.includes('## IMAGE PLAN INSTRUCTIONS')) {
+          userPrompt = userPrompt.replace(
+            '## IMAGE PLAN INSTRUCTIONS',
+            emotionSection + '## IMAGE PLAN INSTRUCTIONS'
+          );
+        } else {
+          userPrompt += emotionSection;
+        }
+        console.log('[EmotionFlow] Injected prompt blocks:', emotionBlocks.length, 'blocks');
+      }
+    }
+
     // ── Comic-Strip: Replace IMAGE PLAN INSTRUCTIONS with panel instructions ──
     if (useComicStrip && comicLayout && comicLayout.layoutKey !== 'layout_0_single') {
       const comicInstructions = buildComicStripInstructions(comicLayout);
