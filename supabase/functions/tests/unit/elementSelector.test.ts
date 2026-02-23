@@ -73,25 +73,21 @@ function createElementMockSupabase(overrides: {
       }
       if (table === 'story_element_usage') {
         const p = Promise.resolve(historyRes);
+        const chain = () => ({ order: () => ({ limit: () => p }), limit: () => p, in: () => ({ limit: () => p }) });
         return {
           select: () => ({
-            eq: () => ({
-              order: () => ({ limit: () => p }),
-              limit: () => p,
-              in: () => ({ limit: () => p }),
-            }),
+            eq: () => chain(),
+            ...chain(),
           }),
         };
       }
       if (table === 'story_elements') {
         const p = Promise.resolve(elementsRes);
+        const chain = () => ({ order: () => ({ limit: () => p }), limit: () => p, in: () => ({ limit: () => p }) });
         return {
           select: () => ({
-            eq: () => ({
-              order: () => ({ limit: () => p }),
-              limit: () => p,
-              in: () => ({ limit: () => p }),
-            }),
+            eq: () => chain(),
+            ...chain(),
           }),
         };
       }

@@ -30,9 +30,19 @@
    es: { share: "Compartir", generating: "Creando enlace...", error: "Error al crear el enlace" },
    nl: { share: "Delen", generating: "Link maken...", error: "Fout bij maken van link" },
    it: { share: "Condividi", generating: "Creazione link...", error: "Errore nella creazione del link" },
-   bs: { share: "Podijeli", generating: "Kreiranje linka...", error: "Greška pri kreiranju linka" },
+  bs: { share: "Podijeli", generating: "Kreiranje linka...", error: "Greška pri kreiranju linka" },
+  pt: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  sk: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  bg: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  ca: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  hu: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  lt: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  pl: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  ro: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  sl: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  tr: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
  };
- 
+
  export default function ShareStoryButton({ storyId, language }: ShareStoryButtonProps) {
    const { user } = useAuth();
    const [isLoading, setIsLoading] = useState(false);

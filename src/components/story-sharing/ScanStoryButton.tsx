@@ -23,8 +23,18 @@
    nl: { scan: "Verhaal scannen" },
    it: { scan: "Scansiona storia" },
    bs: { scan: "Skeniraj priču" },
+   pt: { scan: "Scan Story" },
+   sk: { scan: "Scan Story" },
+   bg: { scan: "Scan Story" },
+   ca: { scan: "Scan Story" },
+   hu: { scan: "Scan Story" },
+   lt: { scan: "Scan Story" },
+   pl: { scan: "Scan Story" },
+   ro: { scan: "Scan Story" },
+   sl: { scan: "Scan Story" },
+   tr: { scan: "Scan Story" },
  };
- 
+
  export default function ScanStoryButton({ language, onImportSuccess }: ScanStoryButtonProps) {
    const [showScanner, setShowScanner] = useState(false);
    const t = translations[language] || translations.de;
