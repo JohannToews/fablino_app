@@ -2567,6 +2567,16 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     try {
       if ((story as any).image_plan) {
         imagePlan = (story as any).image_plan;
+        // Fix 2: Log raw image_plan keys BEFORE any parsing
+        console.log('[COMIC] Raw image_plan keys:', Object.keys(imagePlan));
+        console.log('[COMIC] Raw image_plan format:', JSON.stringify({
+          has_grid_1: !!imagePlan.grid_1,
+          has_grid_2: !!imagePlan.grid_2,
+          has_scenes: !!imagePlan.scenes,
+          has_panels: !!imagePlan.panels,
+          has_character_anchor: !!imagePlan.character_anchor,
+          keys: Object.keys(imagePlan),
+        }));
         console.log('[generate-story] image_plan extracted:',
           `character_anchor: ${imagePlan.character_anchor?.substring(0, 50)}...`,
           `world_anchor: ${imagePlan.world_anchor?.substring(0, 50)}...`,
@@ -2979,6 +2989,35 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     };
 
+    // Helper: Build a synthetic comic_grid_plan from old-format comicPlan (scenes/panels)
+    function buildSyntheticGridPlan(comicPlan: any, panelCount: number): ComicImagePlan {
+      const scenes = comicPlan?.scenes || comicPlan?.panels || [];
+      const defaultPanel = (i: number, role?: string) => ({
+        panel: `Panel ${i + 1}`,
+        camera: 'medium',
+        scene_en: scenes[i]?.description || scenes[i]?.scene_en || `Scene ${i + 1}`,
+        ...(role ? { role } : {}),
+      });
+      const grid_1 = [
+        defaultPanel(0, 'cover'),
+        defaultPanel(1),
+        defaultPanel(2),
+        defaultPanel(3),
+      ];
+      const grid_2 = panelCount >= 8 ? [
+        defaultPanel(4),
+        defaultPanel(5),
+        defaultPanel(6),
+        defaultPanel(7, 'ending'),
+      ] : undefined;
+      return {
+        character_anchor: comicPlan?.characterAnchor || '',
+        world_anchor: comicPlan?.worldAnchor || '',
+        grid_1,
+        ...(grid_2 ? { grid_2 } : {}),
+      } as ComicImagePlan;
+    }
+
     // ── Hoisted output variables (used by both pipelines) ──
     let coverImageUrl: string | null = null;
     let storyImageUrls: string[] = [];
@@ -3169,7 +3208,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
             comicLayoutKeyResult = comicLayout.layoutKey;
             comicPanelCountResult = 8;
-            console.log(`[ComicStrip] 8-panel grid images uploaded, metadata set`);
+            // Fix 1: Build synthetic comic_grid_plan from scenes/panels for fallback path
+            comicGridPlanResult = buildSyntheticGridPlan(comicPlan, 8);
+            console.log(`[ComicStrip] 8-panel grid images uploaded, metadata set (synthetic grid_plan created)`);
             imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
             comicStripHandled = true;
             console.log(`[ComicStrip] 8-panel pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
@@ -3205,7 +3246,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           storyImageUrls = [];
           comicLayoutKeyResult = comicLayout.layoutKey;
           comicPanelCountResult = comicLayout.panelCount;
-          console.log(`[ComicStrip] Single grid image uploaded, metadata set: panels=${comicPanelCountResult}`);
+          // Fix 1: Build synthetic comic_grid_plan for single grid too
+          comicGridPlanResult = buildSyntheticGridPlan(comicPlan, comicLayout.panelCount);
+          console.log(`[ComicStrip] Single grid image uploaded, metadata set (synthetic grid_plan created): panels=${comicPanelCountResult}`);
           imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
           comicStripHandled = true;
           console.log(`[ComicStrip] Pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
