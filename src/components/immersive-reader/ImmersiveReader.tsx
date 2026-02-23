@@ -47,7 +47,10 @@ interface Story {
   difficulty?: string;
   image_plan?: unknown;
   comic_full_image?: string | null;
+  comic_full_image_2?: string | null;
   comic_layout_key?: string | null;
+  comic_panel_count?: number | null;
+  comic_grid_plan?: any | null;
 }
 
 interface KidProfile {
@@ -141,10 +144,31 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   // ── Images ────────────────────────────────────────────────
   const [comicPanels, setComicPanels] = useState<string[] | null>(null);
 
-  // Frontend comic-strip cropping: if comic_full_image exists, crop into panels
+  // Frontend comic-strip cropping: supports dual-grid (8 panels) and single-grid (4 panels)
   useEffect(() => {
-    if (story.comic_full_image && story.comic_layout_key) {
-      let cancelled = false;
+    if (!story.comic_full_image) {
+      setComicPanels(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    // New path: comic_grid_plan exists → use cropComicGrids for 8-panel support
+    if (story.comic_grid_plan) {
+      import('@/utils/cropComicPanels').then(({ cropComicGrids }) =>
+        cropComicGrids(
+          story.comic_full_image!,
+          story.comic_full_image_2 || null,
+          story.comic_grid_plan,
+        )
+      ).then(panels => {
+        if (!cancelled) setComicPanels(panels.map(p => p.dataUrl));
+      }).catch(err => {
+        console.error('[ImmersiveReader] Comic grid cropping failed, using fallback', err);
+        if (!cancelled) setComicPanels(null);
+      });
+    } else if (story.comic_layout_key) {
+      // Legacy path: single grid without plan metadata
       import('@/utils/cropComicPanels').then(({ cropComicPanels }) =>
         cropComicPanels(story.comic_full_image!, story.comic_layout_key!)
       ).then(panels => {
@@ -153,11 +177,12 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
         console.error('[ImmersiveReader] Comic cropping failed, using fallback', err);
         if (!cancelled) setComicPanels(null);
       });
-      return () => { cancelled = true; };
     } else {
       setComicPanels(null);
     }
-  }, [story.comic_full_image, story.comic_layout_key]);
+
+    return () => { cancelled = true; };
+  }, [story.comic_full_image, story.comic_full_image_2, story.comic_layout_key, story.comic_grid_plan]);
 
   const allImages = useMemo(
     () => comicPanels && comicPanels.length > 0
