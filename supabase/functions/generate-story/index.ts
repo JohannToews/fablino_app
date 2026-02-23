@@ -869,7 +869,7 @@ async function callVertexImageAPI(
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
       // Imagen 3 endpoint (europe-west4)
-      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/imagen-3.0-generate-002:predict`;
+      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/imagen-3.0-fast-generate-001:predict`;
       
       console.log(`[VERTEX-IMAGE] Calling Imagen 3 (attempt ${attempt + 1}/${maxRetries})`);
       
