@@ -1287,8 +1287,11 @@ export type Database = {
       }
       stories: {
         Row: {
+          antagonist_seed_key: string | null
           branch_chosen: string | null
           claimed_at: string | null
+          comic_full_image: string | null
+          comic_layout_key: string | null
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
@@ -1333,12 +1336,16 @@ export type Database = {
           text_type: string | null
           title: string
           updated_at: string
+          used_emotion_flow: boolean | null
           user_id: string | null
           visual_style_sheet: Json | null
         }
         Insert: {
+          antagonist_seed_key?: string | null
           branch_chosen?: string | null
           claimed_at?: string | null
+          comic_full_image?: string | null
+          comic_layout_key?: string | null
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
@@ -1383,12 +1390,16 @@ export type Database = {
           text_type?: string | null
           title: string
           updated_at?: string
+          used_emotion_flow?: boolean | null
           user_id?: string | null
           visual_style_sheet?: Json | null
         }
         Update: {
+          antagonist_seed_key?: string | null
           branch_chosen?: string | null
           claimed_at?: string | null
+          comic_full_image?: string | null
+          comic_layout_key?: string | null
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
@@ -1433,10 +1444,18 @@ export type Database = {
           text_type?: string | null
           title?: string
           updated_at?: string
+          used_emotion_flow?: boolean | null
           user_id?: string | null
           visual_style_sheet?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stories_antagonist_seed_key_fkey"
+            columns: ["antagonist_seed_key"]
+            isOneToOne: false
+            referencedRelation: "character_seeds"
+            referencedColumns: ["seed_key"]
+          },
           {
             foreignKeyName: "stories_kid_profile_id_fkey"
             columns: ["kid_profile_id"]
@@ -2121,8 +2140,11 @@ export type Database = {
       get_my_stories: {
         Args: { p_limit?: number; p_offset?: number; p_profile_id?: string }
         Returns: {
+          antagonist_seed_key: string | null
           branch_chosen: string | null
           claimed_at: string | null
+          comic_full_image: string | null
+          comic_layout_key: string | null
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
@@ -2167,6 +2189,7 @@ export type Database = {
           text_type: string | null
           title: string
           updated_at: string
+          used_emotion_flow: boolean | null
           user_id: string | null
           visual_style_sheet: Json | null
         }[]
