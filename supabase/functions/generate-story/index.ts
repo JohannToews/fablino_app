@@ -909,7 +909,8 @@ async function callVertexImageAPI(
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('[VERTEX-IMAGE] JSON parse failed. Response starts with:', responseText.substring(0, 200));
+        console.error('[VERTEX-IMAGE] JSON parse failed. Raw response (first 500 chars):', responseText.substring(0, 500));
+        console.error('[VERTEX-IMAGE] Response status:', response.status, 'Content-Type:', response.headers.get('content-type'));
         return null;
       }
       
