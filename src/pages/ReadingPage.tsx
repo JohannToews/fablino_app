@@ -205,6 +205,8 @@ interface Story {
   series_mode?: 'normal' | 'interactive' | null;
   kid_profile_id?: string | null;
   completed?: boolean | null;
+  comic_full_image?: string | null;
+  comic_layout_key?: string | null;
 }
 
 interface BranchOption {
@@ -236,6 +238,7 @@ const ReadingPage = () => {
 
   const [story, setStory] = useState<Story | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [comicCroppedPanels, setComicCroppedPanels] = useState<string[] | null>(null);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
@@ -502,6 +505,24 @@ const ReadingPage = () => {
     setIsLoading(false);
   };
 
+  // ── Comic-Strip Frontend Cropping ──
+  useEffect(() => {
+    if (story?.comic_full_image && story?.comic_layout_key) {
+      let cancelled = false;
+      import('@/utils/cropComicPanels').then(({ cropComicPanels }) =>
+        cropComicPanels(story.comic_full_image!, story.comic_layout_key!)
+      ).then(panels => {
+        if (!cancelled) setComicCroppedPanels(panels);
+      }).catch(err => {
+        console.error('[ReadingPage] Comic cropping failed, using fallback', err);
+        if (!cancelled) setComicCroppedPanels(null);
+      });
+      return () => { cancelled = true; };
+    } else {
+      setComicCroppedPanels(null);
+    }
+  }, [story?.comic_full_image, story?.comic_layout_key]);
+
   // Handle series continuation
   const handleContinueSeries = async () => {
     if (!user?.id) {
@@ -671,8 +692,10 @@ const ReadingPage = () => {
           generation_time_ms: data.performance?.total_ms ?? null,
           story_generation_ms: data.performance?.story_generation_ms ?? null,
           image_generation_ms: data.performance?.image_generation_ms ?? null,
-          consistency_check_ms: data.performance?.consistency_check_ms ?? null,
-        })
+           consistency_check_ms: data.performance?.consistency_check_ms ?? null,
+            comic_layout_key: data.comic_layout_key ?? null,
+            comic_full_image: data.comic_full_image ?? null,
+          })
         .select()
         .single();
 
@@ -999,6 +1022,8 @@ const ReadingPage = () => {
             story_generation_ms: genData.performance?.story_generation_ms ?? null,
             image_generation_ms: genData.performance?.image_generation_ms ?? null,
             consistency_check_ms: genData.performance?.consistency_check_ms ?? null,
+            comic_layout_key: genData.comic_layout_key ?? null,
+            comic_full_image: genData.comic_full_image ?? null,
           })
           .select()
           .single();
@@ -1353,7 +1378,9 @@ const ReadingPage = () => {
       .replace(/\\n\\n/g, '\n\n')
       .replace(/\\n/g, '\n');
     const paragraphs = normalizedContent.split(/\n\n+/).filter(p => p.trim());
-    const storyImages = story.story_images || [];
+    const storyImages = comicCroppedPanels && comicCroppedPanels.length > 0
+      ? comicCroppedPanels
+      : (story.story_images || []);
 
     // Build insertion map: paragraphIndex → imageIndex
     const imageInsertionMap = getImageInsertionMap(paragraphs.length, storyImages.length);
