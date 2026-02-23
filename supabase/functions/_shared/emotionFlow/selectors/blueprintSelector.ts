@@ -13,32 +13,13 @@ import type {
   EmotionFlowSupabase,
   IntensityLevel,
 } from '../types.ts';
+import { getRecentKeys } from '../historyTracker.ts';
 import { weightedRandom } from '../utils.ts';
 
 const INTENSITY_RANK: Record<IntensityLevel, number> = { light: 0, medium: 1, deep: 2 };
 
 function intensityAllowed(min: IntensityLevel, chosen: IntensityLevel): boolean {
   return INTENSITY_RANK[min] <= INTENSITY_RANK[chosen];
-}
-
-async function getLastBlueprintKeys(
-  supabase: EmotionFlowSupabase,
-  kidProfileId: string,
-  limit: number
-): Promise<string[]> {
-  try {
-    const res = await supabase
-      .from('emotion_blueprint_history')
-      .select('blueprint_key')
-      .eq('kid_profile_id', kidProfileId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    if (res.error || !res.data) return [];
-    const data = res.data as { blueprint_key: string }[];
-    return Array.isArray(data) ? data.map((r) => r.blueprint_key) : [];
-  } catch {
-    return [];
-  }
 }
 
 export async function selectBlueprint(
@@ -91,11 +72,14 @@ export async function selectBlueprint(
 
   console.log('[EmotionFlow] Blueprint filter:', { totalRows: allRows.length, candidates: candidates.length, theme, ageGroup, intensity });
 
-  let excludeKeys = await getLastBlueprintKeys(supabase, kidProfileId, 5);
+  let excludeKeys = await getRecentKeys(supabase, kidProfileId, 'blueprint', 5);
+  if (excludeKeys.length > 0) {
+    console.log('[EmotionFlow] History exclude (blueprint): [' + excludeKeys.join(', ') + ']');
+  }
   let filtered = candidates.filter((b) => !excludeKeys.includes(b.blueprint_key ?? ''));
 
   if (filtered.length === 0) {
-    excludeKeys = await getLastBlueprintKeys(supabase, kidProfileId, 3);
+    excludeKeys = await getRecentKeys(supabase, kidProfileId, 'blueprint', 3);
     filtered = candidates.filter((b) => !excludeKeys.includes(b.blueprint_key ?? ''));
   }
   if (filtered.length === 0) {

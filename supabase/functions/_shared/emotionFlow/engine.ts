@@ -35,6 +35,7 @@ import {
   buildElementBlocks,
 } from './promptBuilder/blocks/index.ts';
 import { getCriticalRules } from './promptBuilder/criticalRules.ts';
+import { recordStorySelections } from './historyTracker.ts';
 
 /** Params for runEmotionFlowEngine: EngineParams + supabase (required at runtime). */
 export type EngineParamsWithSupabase = EngineParams & {
@@ -245,6 +246,25 @@ export async function runEmotionFlowEngine(
     promptBlocks,
     metadata,
   };
+
+  try {
+    const selections = [
+      { selectorType: 'blueprint', selectedKey: blueprint?.blueprint_key },
+      { selectorType: 'protagonist', selectedKey: characters.protagonist?.seed_key },
+      { selectorType: 'sidekick', selectedKey: characters.sidekick?.seed_key },
+      { selectorType: 'antagonist', selectedKey: characters.antagonist?.seed_key },
+      { selectorType: 'opening', selectedKey: elements.opening?.element_key },
+      { selectorType: 'perspective', selectedKey: elements.perspective?.element_key },
+      { selectorType: 'closing', selectedKey: elements.closing?.element_key },
+      { selectorType: 'macguffin', selectedKey: elements.macguffin?.element_key },
+      { selectorType: 'setting_detail', selectedKey: elements.settingDetail?.element_key },
+      { selectorType: 'humor_technique', selectedKey: elements.humorTechnique?.element_key },
+      { selectorType: 'tension_technique', selectedKey: elements.tensionTechnique?.element_key },
+    ].filter((s) => s.selectedKey != null && String(s.selectedKey).trim() !== '');
+    await recordStorySelections(supabase as any, kidProfileId, selections);
+  } catch (err) {
+    console.error('[EmotionFlow] History record failed (non-blocking):', err);
+  }
 
   return result;
 }

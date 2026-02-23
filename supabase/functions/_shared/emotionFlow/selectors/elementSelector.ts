@@ -18,7 +18,19 @@ import type {
   BlueprintCategory,
   AgeGroup,
 } from '../types.ts';
+import { getRecentKeysBatch } from '../historyTracker.ts';
 import { weightedRandom } from '../utils.ts';
+
+/** Map element_type (DB/code) to selector_type in emotion_flow_history. */
+const ELEMENT_TYPE_TO_SELECTOR: Record<ElementType, string> = {
+  opening_style: 'opening',
+  narrative_perspective: 'perspective',
+  closing_style: 'closing',
+  macguffin: 'macguffin',
+  setting_detail: 'setting_detail',
+  humor_technique: 'humor_technique',
+  tension_technique: 'tension_technique',
+};
 
 const ELEMENT_TYPES: ElementType[] = [
   'opening_style',
@@ -112,49 +124,6 @@ export const FALLBACK_CLOSING: StoryElement = {
   is_active: true,
   created_at: '',
 };
-
-// ─── History: one query, then group by element_type (last 3 per type) ─
-
-interface UsageRow {
-  element_key: string;
-  element_type: string;
-  created_at: string;
-}
-
-async function getElementUsageHistory(
-  supabase: EmotionFlowSupabase,
-  kidProfileId: string,
-  limit: number
-): Promise<UsageRow[]> {
-  try {
-    const res = await supabase
-      .from('story_element_usage')
-      .select('element_key, element_type, created_at')
-      .eq('kid_profile_id', kidProfileId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    if (res.error || !res.data) return [];
-    const data = res.data as UsageRow[];
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-function getRecentKeysByType(
-  history: UsageRow[],
-  elementType: ElementType,
-  count: number
-): string[] {
-  const keys: string[] = [];
-  for (const row of history) {
-    if (row.element_type === elementType && !keys.includes(row.element_key)) {
-      keys.push(row.element_key);
-      if (keys.length >= count) break;
-    }
-  }
-  return keys;
-}
 
 // ─── Single-element selection (filter, exclude history, weighted random) ─
 
@@ -263,10 +232,12 @@ export async function selectStoryElements(
   const { kidProfileId, ageGroup, theme, intensity, tone, blueprintCategory } =
     params;
 
+  const selectorTypes = ['opening', 'perspective', 'closing', 'macguffin', 'setting_detail', 'humor_technique', 'tension_technique'] as const;
+
   try {
-    const [allElements, history] = await Promise.all([
+    const [allElements, recentKeysBySelector] = await Promise.all([
       fetchAllStoryElements(supabase),
-      getElementUsageHistory(supabase, kidProfileId, 30),
+      getRecentKeysBatch(supabase, kidProfileId, [...selectorTypes], 3),
     ]);
 
     const byType = new Map<ElementType, StoryElement[]>();
@@ -284,7 +255,11 @@ export async function selectStoryElements(
       fallback: StoryElement | null
     ): StoryElement | null => {
       const list = byType.get(elementType) ?? [];
-      const recentKeys = getRecentKeysByType(history, elementType, 3);
+      const selectorType = ELEMENT_TYPE_TO_SELECTOR[elementType];
+      const recentKeys = recentKeysBySelector[selectorType] ?? [];
+      if (recentKeys.length > 0) {
+        console.log('[EmotionFlow] History exclude (' + selectorType + '): [' + recentKeys.join(', ') + ']');
+      }
       const chosen = selectOneElement(list, recentKeys, theme, blueprintCategory);
       if (chosen) return chosen;
       return required ? fallback : null;

@@ -1,58 +1,138 @@
 /**
- * History Tracker — Phase 4
+ * Emotion Flow History Tracker — Phase 6.3
  *
- * Reads and writes the per-kid selection history to prevent
- * repetitive story elements. Used by all selectors.
- *
- * Tracks per kid_profile_id:
- *   - last N blueprint_keys used
- *   - last N tone_modes used
- *   - last N intensity_levels used
- *   - last N character seed_keys used (per type)
- *   - last N element_keys used (per element_type)
- *   - last N cultural_backgrounds used
- *
- * Storage: Reads from stories table metadata columns
- *   (emotion_blueprint_key, tone_mode, intensity_level, etc.)
+ * Central history for all selectors: blueprint, protagonist, sidekick, antagonist,
+ * opening, perspective, closing, macguffin, setting_detail, humor_technique, tension_technique.
+ * Used to exclude recently used keys so consecutive stories vary.
  */
 
-import type { IntensityLevel, ToneMode } from './types.ts';
+import type { EmotionFlowSupabase } from './types.ts';
 
-export interface SelectionHistory {
-  recentBlueprints: string[];
-  recentTones: ToneMode[];
-  recentIntensities: IntensityLevel[];
-  recentProtagonistSeeds: string[];
-  recentSidekickSeeds: string[];
-  recentAntagonistSeeds: string[];
-  recentElements: Record<string, string[]>;
-  recentCulturalBackgrounds: string[];
-}
+/** Client that supports insert (runtime Supabase client). */
+type SupabaseWithInsert = EmotionFlowSupabase & {
+  from(table: string): EmotionFlowSupabase['from'] & {
+    insert(
+      rows: Record<string, unknown> | Record<string, unknown>[]
+    ): Promise<{ data: unknown; error: unknown }>;
+  };
+};
 
-// TODO: Implement in Phase 4
-export async function getSelectionHistory(
-  _kidProfileId: string,
-  _supabase: any,
-  _limit: number = 10
-): Promise<SelectionHistory> {
-  throw new Error('[EmotionFlow] getSelectionHistory() not yet implemented — Phase 4');
+/**
+ * Returns the last N selected keys for a selector type (most recent first).
+ * On error returns [] so selection is never blocked.
+ */
+export async function getRecentKeys(
+  supabase: EmotionFlowSupabase,
+  kidProfileId: string,
+  selectorType: string,
+  limit: number = 5
+): Promise<string[]> {
+  try {
+    const res = await supabase
+      .from('emotion_flow_history')
+      .select('selected_key')
+      .eq('kid_profile_id', kidProfileId)
+      .eq('selector_type', selectorType)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    const data = res.data;
+    if (res.error || !data) return [];
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map((r: { selected_key?: string }) => r.selected_key ?? '').filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 /**
- * Filters out recently used keys from a candidate pool.
- * Returns only candidates whose key is NOT in the recent list.
- * If all candidates would be filtered, returns the full pool (reset).
+ * Fetches recent keys for multiple selector types in one query.
+ * Returns a map selectorType -> string[] (last N keys per type).
+ * Use when you need history for many types with a single DB round-trip.
  */
-export function excludeRecent<T extends { [key: string]: any }>(
-  candidates: T[],
-  keyField: keyof T,
-  recentKeys: string[],
-): T[] {
-  if (candidates.length === 0) return candidates;
+export async function getRecentKeysBatch(
+  supabase: EmotionFlowSupabase,
+  kidProfileId: string,
+  selectorTypes: string[],
+  limitPerType: number = 3
+): Promise<Record<string, string[]>> {
+  const out: Record<string, string[]> = {};
+  for (const st of selectorTypes) out[st] = [];
+  if (selectorTypes.length === 0) return out;
+  try {
+    const res = await supabase
+      .from('emotion_flow_history')
+      .select('selector_type, selected_key, created_at')
+      .eq('kid_profile_id', kidProfileId)
+      .in('selector_type', selectorTypes)
+      .limit(selectorTypes.length * limitPerType * 4);
+    const data = res.data;
+    if (res.error || !Array.isArray(data)) return out;
+    const rows = data as { selector_type?: string; selected_key?: string; created_at?: string }[];
+    const sorted = [...rows].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+    const seen: Record<string, Set<string>> = {};
+    for (const st of selectorTypes) seen[st] = new Set<string>();
+    for (const r of sorted) {
+      const st = r.selector_type ?? '';
+      const key = (r.selected_key ?? '').trim();
+      if (!st || !key || !selectorTypes.includes(st)) continue;
+      if (seen[st].has(key)) continue;
+      seen[st].add(key);
+      if (out[st].length < limitPerType) out[st].push(key);
+    }
+    return out;
+  } catch {
+    return out;
+  }
+}
 
-  const filtered = candidates.filter(
-    c => !recentKeys.includes(String(c[keyField]))
-  );
+/**
+ * Records one selection. Prefer recordStorySelections for batch.
+ */
+export async function recordSelection(
+  supabase: SupabaseWithInsert,
+  kidProfileId: string,
+  selectorType: string,
+  selectedKey: string
+): Promise<void> {
+  try {
+    await (supabase as any)
+      .from('emotion_flow_history')
+      .insert({
+        kid_profile_id: kidProfileId,
+        selector_type: selectorType,
+        selected_key: selectedKey,
+      });
+  } catch (err) {
+    console.error('[EmotionFlow] History recordSelection failed:', err);
+  }
+}
 
-  return filtered.length > 0 ? filtered : candidates;
+/**
+ * Records all selections for one story in a single batch.
+ * Filters out null/undefined keys. Errors are logged only; story generation is not blocked.
+ */
+export async function recordStorySelections(
+  supabase: SupabaseWithInsert,
+  kidProfileId: string,
+  selections: { selectorType: string; selectedKey: string | null | undefined }[]
+): Promise<void> {
+  const rows = selections
+    .filter((s) => s.selectedKey != null && String(s.selectedKey).trim() !== '')
+    .map((s) => ({
+      kid_profile_id: kidProfileId,
+      selector_type: s.selectorType,
+      selected_key: s.selectedKey!.trim(),
+    }));
+  if (rows.length === 0) return;
+  try {
+    const client = supabase as any;
+    const res = await client.from('emotion_flow_history').insert(rows);
+    if (res.error) {
+      console.error('[EmotionFlow] History recordStorySelections error:', res.error);
+      return;
+    }
+    console.log('[EmotionFlow] History recorded:', rows.length, 'entries for kid=' + kidProfileId);
+  } catch (err) {
+    console.error('[EmotionFlow] History recordStorySelections failed:', err);
+  }
 }

@@ -14,8 +14,8 @@ import type {
   SelectedCharacters,
   CharacterSelectorParams,
   EmotionFlowSupabase,
-  SeedType,
 } from '../types.ts';
+import { getRecentKeys } from '../historyTracker.ts';
 import { weightedRandom } from '../utils.ts';
 
 // ─── Creature-Type Matrix (ageGroup → theme → % mythical) ─────────────
@@ -72,74 +72,7 @@ export const FALLBACK_SIDEKICK: CharacterSeed = {
   updated_at: '',
 };
 
-// ─── History: one query, then filter by seed_type in code ─────────────
-
-interface HistoryRow {
-  seed_key: string;
-  seed_type: string;
-  created_at: string;
-}
-
-async function getCharacterSeedHistory(
-  supabase: EmotionFlowSupabase,
-  kidProfileId: string,
-  limit: number
-): Promise<HistoryRow[]> {
-  try {
-    const res = await supabase
-      .from('character_seed_history')
-      .select('seed_key, seed_type, created_at')
-      .eq('kid_profile_id', kidProfileId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    if (res.error || !res.data) return [];
-    const data = res.data as HistoryRow[];
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-function getLastSeedKeysByType(history: HistoryRow[], seedType: SeedType, count: number): string[] {
-  const keys: string[] = [];
-  const typeMap: Record<SeedType, string> = {
-    protagonist_appearance: 'protagonist_appearance',
-    sidekick_archetype: 'sidekick_archetype',
-    antagonist_archetype: 'antagonist_archetype',
-  };
-  const want = typeMap[seedType];
-  for (const row of history) {
-    if (row.seed_type === want && !keys.includes(row.seed_key)) {
-      keys.push(row.seed_key);
-      if (keys.length >= count) break;
-    }
-  }
-  return keys;
-}
-
-/** Last N keys in order (with duplicates) — for diversity check we need "last 5 entries". */
-function getLastNKeysByTypeOrdered(
-  history: HistoryRow[],
-  seedType: SeedType,
-  count: number
-): string[] {
-  const keys: string[] = [];
-  const typeMap: Record<SeedType, string> = {
-    protagonist_appearance: 'protagonist_appearance',
-    sidekick_archetype: 'sidekick_archetype',
-    antagonist_archetype: 'antagonist_archetype',
-  };
-  const want = typeMap[seedType];
-  for (const row of history) {
-    if (row.seed_type === want) {
-      keys.push(row.seed_key);
-      if (keys.length >= count) break;
-    }
-  }
-  return keys;
-}
-
-// History only has seed_key; we need cultural_background from the seed list.
+// History via emotion_flow_history (getRecentKeys). Diversity uses last 5 protagonist keys.
 // If the last 5 protagonist seeds (by key) all have the same cultural_background, return it.
 function getDominantCulturalBackground(
   allProtagonistSeeds: CharacterSeed[],
@@ -245,10 +178,21 @@ export async function selectCharacterSeeds(
 ): Promise<SelectedCharacters> {
   const { kidProfileId, ageGroup, theme, characterMode, blueprintCategory } = params;
 
-  const history = await getCharacterSeedHistory(supabase, kidProfileId, 15);
-  const lastProtagonistKeys = getLastSeedKeysByType(history, 'protagonist_appearance', 3);
-  const lastSidekickKeys = getLastSeedKeysByType(history, 'sidekick_archetype', 3);
-  const lastAntagonistKeys = getLastSeedKeysByType(history, 'antagonist_archetype', 2);
+  const [recentProtagonistKeys, recentSidekickKeys, recentAntagonistKeys] = await Promise.all([
+    getRecentKeys(supabase, kidProfileId, 'protagonist', 5),
+    getRecentKeys(supabase, kidProfileId, 'sidekick', 3),
+    getRecentKeys(supabase, kidProfileId, 'antagonist', 3),
+  ]);
+  const lastProtagonistKeys = recentProtagonistKeys.slice(0, 3);
+  if (lastProtagonistKeys.length > 0) {
+    console.log('[EmotionFlow] History exclude (protagonist): [' + lastProtagonistKeys.join(', ') + ']');
+  }
+  if (recentSidekickKeys.length > 0) {
+    console.log('[EmotionFlow] History exclude (sidekick): [' + recentSidekickKeys.join(', ') + ']');
+  }
+  if (recentAntagonistKeys.length > 0) {
+    console.log('[EmotionFlow] History exclude (antagonist): [' + recentAntagonistKeys.join(', ') + ']');
+  }
 
   let protagonist: CharacterSeed | null = null;
   let sidekick: CharacterSeed = FALLBACK_SIDEKICK;
@@ -269,8 +213,7 @@ export async function selectCharacterSeeds(
       candidates = allForCreature.filter(ageFilter);
     }
     if (candidates.length > 0 && creatureType === 'human') {
-      const lastFiveKeys = getLastNKeysByTypeOrdered(history, 'protagonist_appearance', 5);
-      const dominantBg = getDominantCulturalBackground(allForCreature, lastFiveKeys);
+      const dominantBg = getDominantCulturalBackground(allForCreature, recentProtagonistKeys);
       if (dominantBg) {
         const filtered = candidates.filter((s) => (s.cultural_background ?? '') !== dominantBg);
         if (filtered.length > 0) candidates = filtered;
@@ -283,7 +226,7 @@ export async function selectCharacterSeeds(
   }
 
   const { sidekicks, antagonists } = await fetchSidekickAndAntagonistSeeds(supabase);
-  let sidekickCandidates = sidekicks.filter((s) => !lastSidekickKeys.includes(s.seed_key));
+  let sidekickCandidates = sidekicks.filter((s) => !recentSidekickKeys.includes(s.seed_key));
   if (sidekickCandidates.length === 0) sidekickCandidates = sidekicks;
   if (sidekickCandidates.length > 0) {
     const weights = sidekickCandidates.map((s) => s.weight);
@@ -291,7 +234,7 @@ export async function selectCharacterSeeds(
   }
 
   if (blueprintCategory === 'social' || blueprintCategory === 'courage') {
-    let antCandidates = antagonists.filter((s) => !lastAntagonistKeys.includes(s.seed_key));
+    let antCandidates = antagonists.filter((s) => !recentAntagonistKeys.includes(s.seed_key));
     if (antCandidates.length === 0) antCandidates = antagonists;
     if (antCandidates.length > 0) {
       const weights = antCandidates.map((s) => s.weight);

@@ -61,14 +61,54 @@ function createCharacterMockSupabase(overrides: {
   const protagonistSeeds = overrides.protagonistSeeds ?? [];
   const sidekickSeeds = overrides.sidekickSeeds ?? [];
   const antagonistSeeds = overrides.antagonistSeeds ?? [];
-  const mockDataMap: Record<string, any[]> = {
-    character_seed_history: history,
-    character_seeds: [...protagonistSeeds, ...sidekickSeeds, ...antagonistSeeds],
+  const allSeeds = [...protagonistSeeds, ...sidekickSeeds, ...antagonistSeeds];
+
+  const emotionFlowHistoryBySelector = (selectorType: string): { selected_key: string }[] => {
+    const typeMap: Record<string, string> = {
+      protagonist: 'protagonist_appearance',
+      sidekick: 'sidekick_archetype',
+      antagonist: 'antagonist_archetype',
+    };
+    const want = typeMap[selectorType];
+    if (!want) return [];
+    return history
+      .filter((r) => r.seed_type === want)
+      .map((r) => ({ selected_key: r.seed_key }));
   };
+
   return {
-    from: (table: string) => ({
-      select: () => createFullChain(mockDataMap[table] ?? []),
-    }),
+    from: (table: string) => {
+      if (table === 'emotion_flow_history') {
+        let selectorType = '';
+        const chainSelf = {
+          eq: (col: string, val: unknown) => {
+            if (col === 'selector_type') selectorType = String(val);
+            return chainSelf;
+          },
+          order: () => ({ limit: () => Promise.resolve({ data: emotionFlowHistoryBySelector(selectorType), error: null }) }),
+        };
+        return { select: () => chainSelf };
+      }
+      if (table === 'character_seeds') {
+        const filters: Record<string, unknown> = {};
+        const chainSelf = {
+          eq: (col: string, val: unknown) => {
+            filters[col] = val;
+            return chainSelf;
+          },
+          in: () => ({ limit: () => Promise.resolve({ data: allSeeds, error: null }) }),
+          order: () => chainSelf,
+          limit: () => {
+            let d = allSeeds;
+            if (filters['seed_type'] != null) d = d.filter((s) => s.seed_type === filters['seed_type']);
+            if (filters['creature_type'] != null) d = d.filter((s) => s.creature_type === filters['creature_type']);
+            return Promise.resolve({ data: d, error: null });
+          },
+        };
+        return { select: () => chainSelf };
+      }
+      return { select: () => createFullChain([]) };
+    },
   };
 }
 

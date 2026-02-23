@@ -46,6 +46,16 @@ function createFullChain(data: any[] = []): any {
   return chain;
 }
 
+const ELEMENT_TYPE_TO_SELECTOR: Record<string, string> = {
+  opening_style: 'opening',
+  narrative_perspective: 'perspective',
+  closing_style: 'closing',
+  macguffin: 'macguffin',
+  setting_detail: 'setting_detail',
+  humor_technique: 'humor_technique',
+  tension_technique: 'tension_technique',
+};
+
 function createElementMockSupabase(overrides: {
   elements?: StoryElement[];
   usageHistory?: { element_key: string; element_type: string; created_at: string }[];
@@ -55,13 +65,28 @@ function createElementMockSupabase(overrides: {
   const elements = overrides.elements ?? [];
   const history = overrides.usageHistory ?? [];
   const counter = overrides.fromCallCounter;
-  const mockDataMap: Record<string, any[]> = {
-    story_element_usage: history,
-    story_elements: elements.map((e) => ({ ...e })),
-  };
+  const emotionFlowHistoryRows = history.map((r) => ({
+    selector_type: ELEMENT_TYPE_TO_SELECTOR[r.element_type] ?? r.element_type,
+    selected_key: r.element_key,
+    created_at: r.created_at,
+  }));
   return {
     from: (table: string) => {
       if (counter) counter.count += 1;
+      if (table === 'emotion_flow_history') {
+        return {
+          select: () => ({
+            eq: () => ({
+              in: () => ({
+                limit: () => Promise.resolve({ data: emotionFlowHistoryRows, error: null }),
+              }),
+            }),
+          }),
+        };
+      }
+      const mockDataMap: Record<string, any[]> = {
+        story_elements: elements.map((e) => ({ ...e })),
+      };
       return {
         select: () => createFullChain(mockDataMap[table] ?? []),
       };
