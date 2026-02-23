@@ -2587,13 +2587,19 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         grid_1: imagePlan.grid_1,
         grid_2: imagePlan.grid_2,
       };
+      const allPanels = [
+        ...comicImagePlan.grid_1.map((p: any, i: number) => ({ grid: 1, panel: p.panel, role: p.role || null, camera: p.camera, scene_en: p.scene_en })),
+        ...comicImagePlan.grid_2.map((p: any, i: number) => ({ grid: 2, panel: p.panel, role: p.role || null, camera: p.camera, scene_en: p.scene_en })),
+      ];
       console.log('[COMIC] Image plan:', JSON.stringify({
         grids: 2,
         panels: comicImagePlan.grid_1.length + comicImagePlan.grid_2.length,
-        cameras: [...comicImagePlan.grid_1, ...comicImagePlan.grid_2].map((p: { camera: string }) => p.camera),
+        cameras: allPanels.map(p => p.camera),
         hasCharacterAnchor: !!comicImagePlan.character_anchor,
         hasSeedOverride: !!emotionFlowResult?.protagonistSeed?.appearance_en,
       }));
+      // Log full panel details for debugging
+      console.log('[COMIC] Panel details: ' + JSON.stringify(allPanels));
     }
 
     // ================== Block 2.4: LOAD IMAGE RULES FROM DB ==================
@@ -3042,6 +3048,12 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             imageStylePrefix,
           );
 
+          // Log final Vertex prompts for debugging
+          console.log(`[COMIC] Vertex prompt grid_1 (first 2000 chars): ${prompt1.substring(0, 2000)}`);
+          console.log(`[COMIC] Vertex prompt grid_2 (first 2000 chars): ${prompt2.substring(0, 2000)}`);
+          const anchor1 = prompt1.includes(`Characters: ${characterAnchor}`);
+          const anchor2 = prompt2.includes(`Characters: ${characterAnchor}`);
+          console.log(`[COMIC] Character anchor identical in both grids: ${anchor1 && anchor2} (grid_1: ${anchor1}, grid_2: ${anchor2})`);
           console.log('[COMIC] Generating 2 grid images in parallel...');
           const [consistencySettled, result1, result2] = await Promise.allSettled([
             (async () => {
