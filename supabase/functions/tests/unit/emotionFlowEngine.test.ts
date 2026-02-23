@@ -3,10 +3,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { EmotionFlowMetadata } from '../../_shared/emotionFlow/types';
-import type { CharacterSeed } from '../../_shared/emotionFlow/types';
-import type { StoryElement } from '../../_shared/emotionFlow/types';
-import type { SelectedElements } from '../../_shared/emotionFlow/types';
+import type { EmotionFlowMetadata } from '../../_shared/emotionFlow/types.ts';
+import type { CharacterSeed } from '../../_shared/emotionFlow/types.ts';
+import type { StoryElement } from '../../_shared/emotionFlow/types.ts';
+import type { SelectedElements } from '../../_shared/emotionFlow/types.ts';
 
 // Shared mock fns (configured per test)
 const mockSelectIntensity = vi.fn();

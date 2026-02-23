@@ -13,9 +13,9 @@ import {
   selectTone,
   TONE_WEIGHTS,
   weightedRandom,
-} from '../../_shared/emotionFlow/selectors/index';
+} from '../../_shared/emotionFlow/selectors/index.ts';
 
-type EmotionFlowSupabase = import('../../_shared/emotionFlow/types').EmotionFlowSupabase;
+type EmotionFlowSupabase = import('../../_shared/emotionFlow/types.ts').EmotionFlowSupabase;
 
 function createMockSupabase(overrides: {
   historyIntensity?: { intensity_level: string }[];
@@ -43,8 +43,8 @@ function createMockSupabase(overrides: {
           };
         }
         const intensityData = overrides.historyIntensity ?? [];
-        const keysData = (overrides.historyBlueprintKeys ?? []).map((k) => ({ blueprint_key: k }));
-        const toneData = (overrides.historyToneModes ?? []).map((t) => ({ tone_mode: t }));
+        const keysData = (overrides.historyBlueprintKeys ?? []).map((k: string) => ({ blueprint_key: k }));
+        const toneData = (overrides.historyToneModes ?? []).map((t: string | null) => ({ tone_mode: t }));
         return {
           select(columns?: string) {
             const res =

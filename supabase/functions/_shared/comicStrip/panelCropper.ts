@@ -7,6 +7,7 @@
  * Node/tests: cropComicStrip uses jimp when available (npm install jimp).
  */
 
+import { Buffer } from 'node:buffer';
 import type { ComicLayout } from './types.ts';
 import type { CropRegion } from './types.ts';
 

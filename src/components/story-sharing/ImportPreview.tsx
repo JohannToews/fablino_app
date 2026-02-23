@@ -37,8 +37,18 @@
    en: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
    es: { addToLibrary: "Añadir a mi biblioteca", adding: "Añadiendo...", cancel: "Cancelar", preview: "Vista previa" },
    nl: { addToLibrary: "Toevoegen aan bibliotheek", adding: "Toevoegen...", cancel: "Annuleren", preview: "Voorbeeld" },
-   it: { addToLibrary: "Aggiungi alla mia libreria", adding: "Aggiunta...", cancel: "Annulla", preview: "Anteprima" },
-   bs: { addToLibrary: "Dodaj u moju biblioteku", adding: "Dodavanje...", cancel: "Otkaži", preview: "Pregled" },
+  it: { addToLibrary: "Aggiungi alla mia libreria", adding: "Aggiunta...", cancel: "Annulla", preview: "Anteprima" },
+  bs: { addToLibrary: "Dodaj u moju biblioteku", adding: "Dodavanje...", cancel: "Otkaži", preview: "Pregled" },
+  pt: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  sk: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  bg: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  ca: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  hu: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  lt: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  pl: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  ro: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  sl: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  tr: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
  };
  
  export default function ImportPreview({

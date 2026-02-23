@@ -191,21 +191,21 @@ export interface EngineParams {
 
 // Minimal Supabase client shape used by selectors (no import from @supabase).
 // Real createClient() return value satisfies this interface.
+// Chainable .eq() so select().eq().eq().eq().limit() type-checks.
+export interface EmotionFlowQueryChain {
+  eq(column: string, value: unknown): EmotionFlowQueryChain;
+  order(column: string, options?: { ascending?: boolean }): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
+  limit(n: number): Promise<{ data: unknown; error: unknown }>;
+  in(column: string, values: unknown[]): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
+}
+
 export interface EmotionFlowSupabase {
   from(table: string): {
     select(columns?: string): {
-      eq(column: string, value: unknown): {
-        order(column: string, options?: { ascending?: boolean }): {
-          limit(n: number): Promise<{ data: unknown; error: unknown }>;
-        };
-        limit(n: number): Promise<{ data: unknown; error: unknown }>;
-        eq(column: string, value: unknown): {
-          limit(n: number): Promise<{ data: unknown; error: unknown }>;
-        };
-        in(column: string, values: unknown[]): {
-          limit(n: number): Promise<{ data: unknown; error: unknown }>;
-        };
-      };
+      eq(column: string, value: unknown): EmotionFlowQueryChain;
+      order(column: string, options?: { ascending?: boolean }): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
+      limit(n: number): Promise<{ data: unknown; error: unknown }>;
+      in(column: string, values: unknown[]): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
     };
   };
 }

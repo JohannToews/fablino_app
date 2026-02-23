@@ -10,9 +10,9 @@ import {
   CREATURE_TYPE_MYTHICAL_PERCENT,
   selectCreatureType,
   FALLBACK_SIDEKICK,
-} from '../../_shared/emotionFlow/selectors/index';
-import type { CharacterSeed } from '../../_shared/emotionFlow/types';
-import type { EmotionFlowSupabase } from '../../_shared/emotionFlow/types';
+} from '../../_shared/emotionFlow/selectors/index.ts';
+import type { CharacterSeed } from '../../_shared/emotionFlow/types.ts';
+import type { EmotionFlowSupabase } from '../../_shared/emotionFlow/types.ts';
 
 function makeSeed(overrides: Partial<CharacterSeed> & { seed_key: string; seed_type: CharacterSeed['seed_type'] }): CharacterSeed {
   return {

@@ -1929,7 +1929,7 @@ Deno.serve(async (req) => {
                 description: c.description,
               })),
               learningTheme: learningThemeApplied || undefined,
-              supabase,
+              supabase: supabase as any,
             });
             console.log('[EmotionFlow] Engine succeeded:', emotionFlowResult.metadata);
           } catch (efError: any) {

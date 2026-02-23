@@ -3,11 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { COMIC_LAYOUTS, selectLayout } from '../../_shared/comicStrip/layouts';
+import { COMIC_LAYOUTS, selectLayout } from '../../_shared/comicStrip/layouts.ts';
+import type { PanelPosition } from '../../_shared/comicStrip/types.ts';
 import {
   isComicStripEnabled,
   resetComicStripFeatureFlagCache,
-} from '../../_shared/comicStrip/featureFlag';
+} from '../../_shared/comicStrip/featureFlag.ts';
 
 function mockSupabase(value: string | null, error: unknown = null) {
   return {
@@ -43,7 +44,7 @@ describe('Layout cropRegions', () => {
   it('alle Layouts haben valide cropRegions (Fläche deckt 100% ab)', () => {
     for (const [key, layout] of Object.entries(COMIC_LAYOUTS)) {
       const totalArea = layout.panels.reduce(
-        (sum, p) => sum + p.cropRegion.width * p.cropRegion.height,
+        (sum: number, p: PanelPosition) => sum + p.cropRegion.width * p.cropRegion.height,
         0
       );
       expect(totalArea).toBeCloseTo(1.0, 3);

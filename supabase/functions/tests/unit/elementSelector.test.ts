@@ -11,9 +11,9 @@ import {
   FALLBACK_OPENING,
   FALLBACK_PERSPECTIVE,
   FALLBACK_CLOSING,
-} from '../../_shared/emotionFlow/selectors/index';
-import type { StoryElement } from '../../_shared/emotionFlow/types';
-import type { EmotionFlowSupabase } from '../../_shared/emotionFlow/types';
+} from '../../_shared/emotionFlow/selectors/index.ts';
+import type { StoryElement } from '../../_shared/emotionFlow/types.ts';
+import type { EmotionFlowSupabase } from '../../_shared/emotionFlow/types.ts';
 
 function makeElement(
   overrides: Partial<StoryElement> & { element_key: string; element_type: StoryElement['element_type'] }

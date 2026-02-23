@@ -7,9 +7,9 @@ import {
   buildComicStripInstructions,
   buildComicStripImagePrompt,
   parseComicStripPlan,
-} from '../../_shared/comicStrip/comicStripPromptBuilder';
-import { COMIC_LAYOUTS } from '../../_shared/comicStrip/layouts';
-import type { ComicStripPlan } from '../../_shared/comicStrip/types';
+} from '../../_shared/comicStrip/comicStripPromptBuilder.ts';
+import { COMIC_LAYOUTS } from '../../_shared/comicStrip/layouts.ts';
+import type { ComicStripPlan } from '../../_shared/comicStrip/types.ts';
 
 const LAYOUT_2X2 = COMIC_LAYOUTS['layout_1_2x2'];
 

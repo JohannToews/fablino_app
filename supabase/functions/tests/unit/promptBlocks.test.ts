@@ -11,12 +11,12 @@ import {
   buildToneBlock,
   buildCharacterBlock,
   buildElementBlocks,
-} from '../../_shared/emotionFlow/promptBuilder/blocks/index';
+} from '../../_shared/emotionFlow/promptBuilder/blocks/index.ts';
 import {
   getCriticalRules,
   CRITICAL_RULES_TEXT,
-} from '../../_shared/emotionFlow/promptBuilder/criticalRules';
-import type { CharacterSeed, EmotionBlueprint, SelectedElements, StoryElement } from '../../_shared/emotionFlow/types';
+} from '../../_shared/emotionFlow/promptBuilder/criticalRules.ts';
+import type { CharacterSeed, EmotionBlueprint, SelectedElements, StoryElement } from '../../_shared/emotionFlow/types.ts';
 
 function makeSeed(overrides: Partial<CharacterSeed> & { seed_key: string; seed_type: CharacterSeed['seed_type'] }): CharacterSeed {
   return {

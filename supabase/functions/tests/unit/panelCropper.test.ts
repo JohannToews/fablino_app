@@ -7,8 +7,10 @@ import {
   cropComicStrip,
   getComicStripCropData,
   computePanelPixelRects,
-} from '../../_shared/comicStrip/panelCropper';
-import { COMIC_LAYOUTS } from '../../_shared/comicStrip/layouts';
+  type PanelPixelRect,
+  type CroppedPanel,
+} from '../../_shared/comicStrip/panelCropper.ts';
+import { COMIC_LAYOUTS } from '../../_shared/comicStrip/layouts.ts';
 
 const LAYOUT_2X2 = COMIC_LAYOUTS['layout_1_2x2'];
 
@@ -44,7 +46,7 @@ describe('computePanelPixelRects', () => {
     expect(rects).toHaveLength(4);
     expect(rects[0].width).toBe(500);
     expect(rects[0].height).toBe(500);
-    const totalArea = rects.reduce((s, r) => s + r.width * r.height, 0);
+    const totalArea = rects.reduce((s: number, r: PanelPixelRect) => s + r.width * r.height, 0);
     expect(totalArea).toBe(1000 * 1000);
   });
 
@@ -74,7 +76,7 @@ describe('cropComicStrip', () => {
     const imageBase64 = await createTestImageBase64(1024, 1024);
     const panels = await cropComicStrip({ imageBase64, layout: LAYOUT_2X2 });
     expect(panels).toHaveLength(4);
-    expect(panels.every((p) => p.width === 512 && p.height === 512)).toBe(true);
+    expect(panels.every((p: CroppedPanel) => p.width === 512 && p.height === 512)).toBe(true);
   });
 
   it('Panel-Labels und position korrekt', async () => {

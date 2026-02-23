@@ -172,7 +172,7 @@ function selectOneElement(
       (blueprintCategory == null ||
         e.compatible_categories == null ||
         e.compatible_categories.length === 0 ||
-        e.compatible_categories.includes(blueprintCategory)) &&
+        e.compatible_categories.includes(blueprintCategory as BlueprintCategory)) &&
       !recentKeys.includes(e.element_key)
   );
   if (candidates.length === 0) {
@@ -184,7 +184,7 @@ function selectOneElement(
         (blueprintCategory == null ||
           e.compatible_categories == null ||
           e.compatible_categories.length === 0 ||
-          e.compatible_categories.includes(blueprintCategory))
+          e.compatible_categories.includes(blueprintCategory as BlueprintCategory))
     );
   }
   if (candidates.length === 0) return null;
