@@ -548,6 +548,38 @@ export type Database = {
         }
         Relationships: []
       }
+      emotion_flow_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          kid_profile_id: string
+          selected_key: string
+          selector_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          kid_profile_id: string
+          selected_key: string
+          selector_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          kid_profile_id?: string
+          selected_key?: string
+          selector_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emotion_flow_history_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emotion_rules: {
         Row: {
           character_development: string
