@@ -4,6 +4,11 @@ import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
 import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, getStyleForAge, ImagePromptResult, SeriesImageContext } from '../_shared/imagePromptBuilder.ts';
 import { mergeSeriesContinuityState } from '../_shared/seriesContinuityMerge.ts';
 import { selectStorySubtype, recordSubtypeUsage, SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
+import { isComicStripEnabled } from '../_shared/comicStrip/featureFlag.ts';
+import { selectLayout } from '../_shared/comicStrip/layouts.ts';
+import { buildComicStripInstructions, buildComicStripImagePrompt, parseComicStripPlan } from '../_shared/comicStrip/comicStripPromptBuilder.ts';
+import { cropComicStrip } from '../_shared/comicStrip/panelCropper.ts';
+import type { ComicLayout } from '../_shared/comicStrip/types.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1410,6 +1415,21 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ── Comic-Strip Feature Flag Check ──
+    let useComicStrip = false;
+    let comicLayout: ComicLayout | null = null;
+    if (userId) {
+      try {
+        useComicStrip = await isComicStripEnabled(userId, supabase);
+        if (useComicStrip) {
+          comicLayout = selectLayout();
+          console.log(`[ComicStrip] Enabled for user ${userId}, layout: ${comicLayout.layoutKey}`);
+        }
+      } catch (flagErr: any) {
+        console.warn('[ComicStrip] Feature flag check failed:', flagErr?.message);
+      }
+    }
+
     // ── Load image generation config from DB (with fallback) ──
     let imageGenConfig: {
       coverModel: string;
@@ -2110,6 +2130,19 @@ Required JSON structure:
 Fields episode_summary, continuity_state, visual_style_sheet, branch_options are ONLY required for series episodes.`;
     }
 
+    // ── Comic-Strip: Replace IMAGE PLAN INSTRUCTIONS with panel instructions ──
+    if (useComicStrip && comicLayout && comicLayout.layoutKey !== 'layout_0_single') {
+      const comicInstructions = buildComicStripInstructions(comicLayout);
+      const imagePlanRegex = /## IMAGE PLAN INSTRUCTIONS[\s\S]*?All descriptions in ENGLISH\. No text, signs, or readable writing in any scene\./;
+      if (imagePlanRegex.test(userPrompt)) {
+        userPrompt = userPrompt.replace(imagePlanRegex, comicInstructions);
+        console.log('[ComicStrip] Replaced IMAGE PLAN INSTRUCTIONS with comic panel instructions');
+      } else {
+        userPrompt += '\n\n' + comicInstructions + '\n\nIMPORTANT: Use the COMIC PANEL INSTRUCTIONS above instead of any earlier scene-based instructions. Output "panels" array in image_plan, not "scenes".';
+        console.log('[ComicStrip] Appended comic panel instructions (old prompt path)');
+      }
+    }
+
     console.log('[GENERATE] Prompt path:', usedNewPromptPath ? 'CORE_SLIM_v2' : 'FALLBACK_OLD');
     console.log("Generating story with Lovable AI Gateway:", {
       usedNewPromptPath,
@@ -2782,13 +2815,183 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       });
     };
 
+    // ── Upload helper (shared by both pipelines) ──
+    const uploadImageToStorage = async (
+      base64DataUrl: string,
+      bucket: string,
+      prefix: string,
+    ): Promise<string | null> => {
+      try {
+        let mimeType = 'image/png';
+        let rawBase64 = base64DataUrl;
+        if (base64DataUrl.startsWith('data:')) {
+          const match = base64DataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            mimeType = match[1];
+            rawBase64 = match[2];
+          } else {
+            rawBase64 = base64DataUrl.split(',')[1] || base64DataUrl;
+          }
+        }
+
+        const binaryStr = atob(rawBase64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+
+        const ext = mimeType.includes('webp') ? 'webp' : mimeType.includes('jpeg') ? 'jpg' : 'png';
+        const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(fileName, bytes, { contentType: mimeType, upsert: false });
+
+        if (uploadError) {
+          console.error(`[IMAGE-UPLOAD] Upload error (${bucket}/${fileName}):`, uploadError.message);
+          return null;
+        }
+
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+        console.log(`[IMAGE-UPLOAD] Uploaded ${prefix} → ${urlData.publicUrl.substring(0, 80)}...`);
+        return urlData.publicUrl;
+      } catch (err) {
+        console.error(`[IMAGE-UPLOAD] Exception uploading ${prefix}:`, err);
+        return null;
+      }
+    };
+
+    // ── Hoisted output variables (used by both pipelines) ──
+    let coverImageUrl: string | null = null;
+    let storyImageUrls: string[] = [];
+    let imageWarning: string | null = null;
+    let consistencyCheckMs = 0;
+    let imageGenerationMs = 0;
+    let comicStripHandled = false;
+    let comicLayoutKeyResult: string | null = null;
+    let comicFullImageUrl: string | null = null;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // COMIC-STRIP IMAGE PIPELINE (Feature Flag: comic_strip_enabled_users)
+    // ═══════════════════════════════════════════════════════════════════
+    if (useComicStrip && comicLayout && comicLayout.layoutKey !== 'layout_0_single' && imagePlan) {
+      const comicPipelineStart = Date.now();
+      try {
+        const comicPlan = parseComicStripPlan(imagePlan, comicLayout);
+        if (!comicPlan) throw new Error('Comic strip plan parsing failed');
+
+        // Character Seed Injection placeholder — Task 6.2 will inject protagonist
+        // appearance here via: comicPlan.characterAnchor = <seed>.appearance_en;
+
+        let seriesStylePrefix: string | undefined;
+        if (seriesImageCtx) {
+          const vss = seriesImageCtx.visualStyleSheet;
+          const prefixLines: string[] = [`SERIES VISUAL CONSISTENCY (Episode ${seriesImageCtx.episodeNumber}):`];
+          if (vss.characters && Object.keys(vss.characters).length > 0) {
+            const charDescs = Object.entries(vss.characters).map(([n, d]) => `${n}: ${d}`).join('. ');
+            prefixLines.push(`Characters: ${charDescs}`);
+          }
+          if (vss.world_style) prefixLines.push(`World style: ${vss.world_style}`);
+          if (vss.recurring_visual) prefixLines.push(`Recurring element: ${vss.recurring_visual}`);
+          seriesStylePrefix = prefixLines.join('\n');
+        }
+
+        const { prompt: comicPrompt } = buildComicStripImagePrompt({
+          plan: comicPlan,
+          layout: comicLayout,
+          stylePrompt: imageStyleData?.promptSnippet || '',
+          ageModifier: imageStyleData?.ageModifier || '',
+          characterSeedAppearance: undefined, // Task 6.2 will inject protagonist seed
+          seriesStylePrefix,
+        });
+
+        console.log('[ComicStrip] Generating single comic strip image...');
+
+        // ── Parallel: Consistency Check + Comic Image Generation ──
+        const comicImageTask = async (): Promise<string> => {
+          let comicBase64: string | null = null;
+          if (GEMINI_API_KEY) {
+            try {
+              comicBase64 = await callVertexImageAPI(GEMINI_API_KEY, comicPrompt);
+            } catch (vErr) {
+              console.warn('[ComicStrip] Vertex failed, trying Lovable:', vErr);
+            }
+          }
+          if (!comicBase64 && LOVABLE_API_KEY) {
+            try {
+              comicBase64 = await callLovableImageGenerate(LOVABLE_API_KEY, comicPrompt);
+            } catch (lErr) {
+              console.error('[ComicStrip] Lovable also failed:', lErr);
+            }
+          }
+          if (!comicBase64) throw new Error('Comic strip image generation failed');
+          return comicBase64;
+        };
+
+        const [consistencySettled, comicImageSettled] = await Promise.allSettled([
+          (async () => {
+            const t0 = Date.now();
+            await consistencyCheckTask();
+            consistencyCheckMs = Date.now() - t0;
+          })(),
+          comicImageTask(),
+        ]);
+
+        if (comicImageSettled.status === 'rejected') {
+          throw comicImageSettled.reason;
+        }
+        const comicStripBase64 = comicImageSettled.value;
+        imageGenerationMs = Date.now() - comicPipelineStart;
+
+        console.log(`[ComicStrip] Image generated in ${imageGenerationMs}ms`);
+
+        // Upload full comic image (for debug + future comic-view)
+        comicFullImageUrl = await uploadImageToStorage(comicStripBase64, 'covers', 'comic-full');
+
+        // Crop into individual panels
+        const panelUrls: string[] = [];
+        try {
+          const panels = await cropComicStrip({ imageBase64: comicStripBase64, layout: comicLayout });
+          for (let i = 0; i < panels.length; i++) {
+            const panelDataUrl = `data:image/png;base64,${panels[i].base64}`;
+            const url = await uploadImageToStorage(panelDataUrl, 'covers', `comic-panel-${i}`);
+            if (url) {
+              panelUrls.push(url);
+            } else {
+              panelUrls.push(panelDataUrl);
+            }
+          }
+          console.log(`[ComicStrip] ${panelUrls.length} panels cropped and uploaded`);
+        } catch (cropErr: any) {
+          console.warn('[ComicStrip] Server-side cropping failed, using full image:', cropErr.message);
+          if (comicFullImageUrl) {
+            panelUrls.push(comicFullImageUrl);
+          }
+        }
+
+        coverImageUrl = panelUrls[0] || comicFullImageUrl;
+        storyImageUrls = panelUrls.slice(1);
+        comicLayoutKeyResult = comicLayout.layoutKey;
+        imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
+        comicStripHandled = true;
+
+        console.log(`[ComicStrip] Pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
+      } catch (comicError: any) {
+        console.error('[ComicStrip] Pipeline failed, falling back to individual images:', comicError.message);
+        comicStripHandled = false;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // EXISTING IMAGE PIPELINE (unchanged when feature flag is off)
+    // ═══════════════════════════════════════════════════════════════════
+    if (!comicStripHandled) {
+
     // ── Execute consistency check + ALL images PARALLEL with timeout ──
     const PARALLEL_TIMEOUT_MS = 180000; // 180 seconds for consistency + ALL images together
     const parallelStart = Date.now();
 
     let allImageResults: Array<{ label: string; url: string | null; cached: boolean }> = [];
-    let consistencyCheckMs = 0;
-    let imageGenerationMs = 0;
 
     // Wrap tasks to capture individual timings
     const timedConsistencyCheck = async () => {
@@ -2851,57 +3054,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     console.log(`[generate-story] Final images (pre-upload): cover=${!!coverImageBase64}, scenes=${storyImages.length}`);
 
-    // ── Upload base64 images to Supabase Storage → return public URLs ──
-    const uploadImageToStorage = async (
-      base64DataUrl: string,
-      bucket: string,
-      prefix: string,
-    ): Promise<string | null> => {
-      try {
-        // Parse data URL: "data:image/png;base64,AAAA..."
-        let mimeType = 'image/png';
-        let rawBase64 = base64DataUrl;
-        if (base64DataUrl.startsWith('data:')) {
-          const match = base64DataUrl.match(/^data:([^;]+);base64,(.+)$/);
-          if (match) {
-            mimeType = match[1];
-            rawBase64 = match[2];
-          } else {
-            // Strip prefix without regex match
-            rawBase64 = base64DataUrl.split(',')[1] || base64DataUrl;
-          }
-        }
-
-        // Decode base64 to binary
-        const binaryStr = atob(rawBase64);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-
-        const ext = mimeType.includes('webp') ? 'webp' : mimeType.includes('jpeg') ? 'jpg' : 'png';
-        const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.${ext}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(fileName, bytes, { contentType: mimeType, upsert: false });
-
-        if (uploadError) {
-          console.error(`[IMAGE-UPLOAD] Upload error (${bucket}/${fileName}):`, uploadError.message);
-          return null;
-        }
-
-        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-        console.log(`[IMAGE-UPLOAD] Uploaded ${prefix} → ${urlData.publicUrl.substring(0, 80)}...`);
-        return urlData.publicUrl;
-      } catch (err) {
-        console.error(`[IMAGE-UPLOAD] Exception uploading ${prefix}:`, err);
-        return null;
-      }
-    };
-
     // Upload cover image
-    let coverImageUrl: string | null = null;
+    coverImageUrl = null;
     if (coverImageBase64) {
       coverImageUrl = await uploadImageToStorage(coverImageBase64, 'covers', 'cover');
       if (!coverImageUrl) {
@@ -2911,7 +3065,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     }
 
     // Upload scene images
-    const storyImageUrls: string[] = [];
+    storyImageUrls = [];
     for (let i = 0; i < storyImages.length; i++) {
       const url = await uploadImageToStorage(storyImages[i], 'covers', `scene-${i}`);
       if (url) {
@@ -2925,18 +3079,20 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     // ================== END PARALLEL EXECUTION ==================
 
+    imageWarning = !coverImageUrl
+      ? "cover_generation_failed"
+      : (imagePrompts.length > 1 && storyImageUrls.length < (imagePrompts.length - 1))
+        ? "some_scene_images_failed"
+        : null;
+
+    } // ── END if (!comicStripHandled) ──
+
     const totalTime = Date.now() - startTime;
     console.log(`[PERF] TOTAL generation time: ${totalTime}ms (story: ${storyGenerationTime}ms, parallel: ${totalTime - storyGenerationTime}ms)`);
 
     // Final word count log
     const finalWordCount = countWords(story.content);
     console.log(`Final story delivered with ${finalWordCount} words (min: ${minWordCount})`);
-
-    const imageWarning = !coverImageUrl
-      ? "cover_generation_failed"
-      : (imagePrompts.length > 1 && storyImageUrls.length < (imagePrompts.length - 1))
-        ? "some_scene_images_failed"
-        : null;
 
     console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
     console.log(`Structure classification: beginning=${structureBeginning}, middle=${structureMiddle}, ending=${structureEnding}`);
@@ -3015,6 +3171,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       } : null,
       // Image style key (Phase 1) — for frontend to store on story row
       image_style_key: imageStyleData?.styleKey || null,
+      // Comic-Strip metadata (Phase 5b.4)
+      comic_layout_key: comicLayoutKeyResult || null,
+      comic_full_image: comicFullImageUrl || null,
       // Chapter story model — variable episode count
       series_episode_count: seriesEpisodeCount || null,
       // Prompt builder warnings (for debugging — stored in stories table)
