@@ -330,6 +330,9 @@ const CreateStoryPage = () => {
             story_generation_ms: data.performance?.story_generation_ms ?? null,
             image_generation_ms: data.performance?.image_generation_ms ?? null,
             consistency_check_ms: data.performance?.consistency_check_ms ?? null,
+            // Comic-Strip fields
+            comic_layout_key: data.comic_layout_key ?? null,
+            comic_full_image: data.comic_full_image ?? null,
           })
           .select()
           .single();
@@ -748,6 +751,9 @@ const CreateStoryPage = () => {
             story_generation_ms: data.performance?.story_generation_ms ?? null,
             image_generation_ms: data.performance?.image_generation_ms ?? null,
             consistency_check_ms: data.performance?.consistency_check_ms ?? null,
+            // Comic-Strip fields
+            comic_layout_key: data.comic_layout_key ?? null,
+            comic_full_image: data.comic_full_image ?? null,
           })
           .select()
           .single();

@@ -46,6 +46,8 @@ interface Story {
   kid_profile_id?: string | null;
   difficulty?: string;
   image_plan?: unknown;
+  comic_full_image?: string | null;
+  comic_layout_key?: string | null;
 }
 
 interface KidProfile {
@@ -137,9 +139,31 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
   const effectiveSyllableActive = syllableActive && syllablesReady;
 
   // ── Images ────────────────────────────────────────────────
+  const [comicPanels, setComicPanels] = useState<string[] | null>(null);
+
+  // Frontend comic-strip cropping: if comic_full_image exists, crop into panels
+  useEffect(() => {
+    if (story.comic_full_image && story.comic_layout_key) {
+      let cancelled = false;
+      import('@/utils/cropComicPanels').then(({ cropComicPanels }) =>
+        cropComicPanels(story.comic_full_image!, story.comic_layout_key!)
+      ).then(panels => {
+        if (!cancelled) setComicPanels(panels);
+      }).catch(err => {
+        console.error('[ImmersiveReader] Comic cropping failed, using fallback', err);
+        if (!cancelled) setComicPanels(null);
+      });
+      return () => { cancelled = true; };
+    } else {
+      setComicPanels(null);
+    }
+  }, [story.comic_full_image, story.comic_layout_key]);
+
   const allImages = useMemo(
-    () => buildImageArray(story.cover_image_url, story.story_images),
-    [story.cover_image_url, story.story_images]
+    () => comicPanels && comicPanels.length > 0
+      ? comicPanels
+      : buildImageArray(story.cover_image_url, story.story_images),
+    [story.cover_image_url, story.story_images, comicPanels]
   );
   const visibleImages = useMemo(
     () => getVisibleImages(allImages, accountTier),
