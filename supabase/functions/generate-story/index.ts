@@ -2988,23 +2988,34 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     // ═══════════════════════════════════════════════════════════════════
     if (useComicStrip && comicLayout && comicLayout.layoutKey !== 'layout_0_single' && (imagePlan || comicImagePlan)) {
       const comicPipelineStart = Date.now();
-      const comicImageTask = async (prompt: string): Promise<string> => {
+      const comicImageTask = async (prompt: string, gridLabel: string): Promise<string> => {
         let comicBase64: string | null = null;
         if (GEMINI_API_KEY) {
           try {
             comicBase64 = await callVertexImageAPI(GEMINI_API_KEY, prompt);
-          } catch (vErr) {
-            console.warn('[ComicStrip] Vertex failed, trying Lovable:', vErr);
+            if (comicBase64) {
+              console.log(`[ComicStrip] Vertex succeeded for ${gridLabel}`);
+            } else {
+              console.warn(`[ComicStrip] Vertex returned null for ${gridLabel} (check [VERTEX-IMAGE] logs above for details: auth/quota/billing issue)`);
+            }
+          } catch (vErr: any) {
+            console.warn(`[ComicStrip] Vertex threw for ${gridLabel}:`, vErr?.message || vErr);
           }
+        } else {
+          console.log(`[ComicStrip] No GEMINI_API_KEY, skipping Vertex for ${gridLabel}`);
         }
         if (!comicBase64 && LOVABLE_API_KEY) {
+          console.log(`[ComicStrip] Trying Lovable AI Gateway fallback for ${gridLabel}...`);
           try {
             comicBase64 = await callLovableImageGenerate(LOVABLE_API_KEY, prompt);
-          } catch (lErr) {
-            console.error('[ComicStrip] Lovable also failed:', lErr);
+            if (comicBase64) {
+              console.log(`[ComicStrip] Lovable fallback succeeded for ${gridLabel}`);
+            }
+          } catch (lErr: any) {
+            console.error(`[ComicStrip] Lovable also failed for ${gridLabel}:`, lErr?.message || lErr);
           }
         }
-        if (!comicBase64) throw new Error('Comic strip image generation failed');
+        if (!comicBase64) throw new Error(`Comic strip image generation failed for ${gridLabel}`);
         return comicBase64;
       };
 
@@ -3038,8 +3049,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
               await consistencyCheckTask();
               consistencyCheckMs = Date.now() - t0;
             })(),
-            comicImageTask(prompt1),
-            comicImageTask(prompt2),
+            comicImageTask(prompt1, 'grid_1'),
+            comicImageTask(prompt2, 'grid_2'),
           ]);
 
           let comicImage1: string | null = null;
@@ -3148,8 +3159,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
                 await consistencyCheckTask();
                 consistencyCheckMs = Date.now() - t0;
               })(),
-              comicImageTask(comicPrompts[0]),
-              comicImageTask(comicPrompts[1]),
+              comicImageTask(comicPrompts[0], 'panel_1'),
+              comicImageTask(comicPrompts[1], 'panel_2'),
             ]);
 
             if (result1.status === 'rejected') throw result1.reason;
@@ -3205,7 +3216,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
               await consistencyCheckTask();
               consistencyCheckMs = Date.now() - t0;
             })(),
-            comicImageTask(comicPrompt),
+            comicImageTask(comicPrompt, 'single_panel'),
           ]);
 
           if (comicImageSettled.status === 'rejected') throw comicImageSettled.reason;
