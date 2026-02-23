@@ -141,7 +141,7 @@ export const CAMERA_DIRECTIONS: Record<number, string> = {
 // ─── buildComicGridPrompt (LLM grid_1 / grid_2 format) ─────────────────────
 
 const GRID_LAYOUT_RULES =
-  'CRITICAL LAYOUT RULES:\n- NO panel borders, NO black lines, NO frames between scenes.\n- Separate panels ONLY with a 2-pixel thin white gap.\n- Each panel fills exactly 1/4 of the image with NO padding or margins.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
+  'CRITICAL LAYOUT RULES:\n- NO panel borders, NO frames, NO black lines, NO comic-style dividers between scenes.\n- Separate scenes ONLY with a 2-pixel thin white gap on white background.\n- Each panel fills exactly 1/4 of the image with NO padding or margins.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
 
 /**
  * Builds a single Vertex prompt for one 2x2 grid (4 panels) from the LLM-generated grid format.
