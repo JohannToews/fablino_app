@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from "react";
+import { useState, useEffect, useRef, createContext, useContext, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -76,6 +76,8 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
     return sessionStorage.getItem('selected_kid_profile_id');
   });
   const [isLoading, setIsLoading] = useState(true);
+  // Track whether we've done the initial load to avoid re-showing loading spinner
+  const hasLoadedOnce = useRef(false);
 
   const loadKidProfiles = useCallback(async () => {
     if (!user) {
@@ -85,9 +87,12 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Always set loading=true at the start so ProtectedRoute
-    // doesn't flash the onboarding screen while profiles are fetched
-    setIsLoading(true);
+    // Only show loading spinner on INITIAL load.
+    // Background refreshes (e.g. auth token refresh) must NOT set loading=true
+    // because ProtectedRoute would unmount children (losing wizard state).
+    if (!hasLoadedOnce.current) {
+      setIsLoading(true);
+    }
 
     const { data } = await supabase
       .from("kid_profiles")
@@ -132,7 +137,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       setSelectedProfileId(null);
       sessionStorage.removeItem('selected_kid_profile_id');
     }
-    
+    hasLoadedOnce.current = true;
     setIsLoading(false);
   }, [user]);
 
