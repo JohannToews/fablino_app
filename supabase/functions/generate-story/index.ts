@@ -869,9 +869,9 @@ async function callVertexImageAPI(
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
       // Imagen 3 endpoint (europe-west4)
-      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/imagen-4.0-generate-001:predict`;
+      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/imagen-3.0-generate-002:predict`;
       
-      console.log(`[VERTEX-IMAGE] Calling Imagen 4 (attempt ${attempt + 1}/${maxRetries})`);
+      console.log(`[VERTEX-IMAGE] Calling Imagen 3 (attempt ${attempt + 1}/${maxRetries})`);
       
       const response = await fetch(vertexUrl, {
         method: "POST",
@@ -1445,8 +1445,8 @@ Deno.serve(async (req) => {
       maxStoriesPerDayFree: number;
       maxStoriesPerDayPremium: number;
     } = {
-      coverModel: 'imagen-4.0-generate-001',
-      sceneModel: 'imagen-4.0-fast-generate-001',
+      coverModel: 'imagen-3.0-generate-002',
+      sceneModel: 'imagen-3.0-fast-generate-001',
       maxImagesPerStory: 4,
       maxStoriesPerDayFree: 2,
       maxStoriesPerDayPremium: 10,
