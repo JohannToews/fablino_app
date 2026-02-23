@@ -71,15 +71,23 @@ export async function selectBlueprint(
     compatible_learning_themes?: string[] | null;
     weight?: number;
   };
-  let candidates = allRows as Row[];
-  candidates = candidates.filter(
-    (r) =>
-      Array.isArray(r.ideal_age_groups) &&
-      r.ideal_age_groups.includes(ageGroup) &&
-      (r.compatible_themes == null || !theme || theme === 'none' || theme === 'surprise' || (Array.isArray(r.compatible_themes) && r.compatible_themes.includes(theme))) &&
-      r.min_intensity != null &&
-      intensityAllowed(r.min_intensity as IntensityLevel, intensity)
-  );
+  const baseFilter = (r: Row) =>
+    Array.isArray(r.ideal_age_groups) &&
+    r.ideal_age_groups.includes(ageGroup) &&
+    r.min_intensity != null &&
+    intensityAllowed(r.min_intensity as IntensityLevel, intensity);
+
+  const themeFilter = (r: Row) =>
+    r.compatible_themes == null ||
+    !theme || theme === 'none' || theme === 'surprise' ||
+    (Array.isArray(r.compatible_themes) && r.compatible_themes.includes(theme));
+
+  let candidates = (allRows as Row[]).filter((r) => baseFilter(r) && themeFilter(r));
+
+  if (candidates.length === 0) {
+    candidates = (allRows as Row[]).filter(baseFilter);
+    console.log('[EmotionFlow] Blueprint theme soft-fallback: theme', theme, 'had 0 matches, using all', candidates.length, 'age/intensity matches');
+  }
 
   console.log('[EmotionFlow] Blueprint filter:', { totalRows: allRows.length, candidates: candidates.length, theme, ageGroup, intensity });
 

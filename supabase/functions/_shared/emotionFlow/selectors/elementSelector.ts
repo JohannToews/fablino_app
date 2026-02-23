@@ -164,30 +164,33 @@ function selectOneElement(
   theme: string,
   blueprintCategory?: string
 ): StoryElement | null {
+  const themeMatch = (e: StoryElement) =>
+    e.compatible_themes == null ||
+    e.compatible_themes.length === 0 ||
+    !theme || theme === 'none' || theme === 'surprise' ||
+    e.compatible_themes.includes(theme);
+
+  const categoryMatch = (e: StoryElement) =>
+    blueprintCategory == null ||
+    e.compatible_categories == null ||
+    e.compatible_categories.length === 0 ||
+    e.compatible_categories.includes(blueprintCategory as BlueprintCategory);
+
   let candidates = allElements.filter(
-    (e) =>
-      (e.compatible_themes == null ||
-        e.compatible_themes.length === 0 ||
-        !theme || theme === 'none' || theme === 'surprise' ||
-        e.compatible_themes.includes(theme)) &&
-      (blueprintCategory == null ||
-        e.compatible_categories == null ||
-        e.compatible_categories.length === 0 ||
-        e.compatible_categories.includes(blueprintCategory as BlueprintCategory)) &&
-      !recentKeys.includes(e.element_key)
+    (e) => themeMatch(e) && categoryMatch(e) && !recentKeys.includes(e.element_key)
   );
   if (candidates.length === 0) {
     candidates = allElements.filter(
-      (e) =>
-        (e.compatible_themes == null ||
-          e.compatible_themes.length === 0 ||
-          !theme || theme === 'none' || theme === 'surprise' ||
-          e.compatible_themes.includes(theme)) &&
-        (blueprintCategory == null ||
-          e.compatible_categories == null ||
-          e.compatible_categories.length === 0 ||
-          e.compatible_categories.includes(blueprintCategory as BlueprintCategory))
+      (e) => themeMatch(e) && categoryMatch(e)
     );
+  }
+  if (candidates.length === 0) {
+    candidates = allElements.filter(
+      (e) => categoryMatch(e) && !recentKeys.includes(e.element_key)
+    );
+  }
+  if (candidates.length === 0) {
+    candidates = allElements.filter(categoryMatch);
   }
   if (candidates.length === 0) return null;
   const weights = candidates.map((e) => e.weight);
