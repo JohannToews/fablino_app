@@ -44,7 +44,7 @@ async function cropSingleGrid(imageUrl: string): Promise<string[]> {
       const panelW = Math.floor(img.width / 2);
       const panelH = Math.floor(img.height / 2);
       // Inset: 3px per side to remove the 2px white gap + safety margin
-      const inset = 3;
+      const inset = 5;
       const results: string[] = [];
 
       const positions = [
