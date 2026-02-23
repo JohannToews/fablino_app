@@ -206,7 +206,10 @@ interface Story {
   kid_profile_id?: string | null;
   completed?: boolean | null;
   comic_full_image?: string | null;
+  comic_full_image_2?: string | null;
   comic_layout_key?: string | null;
+  comic_panel_count?: number | null;
+  comic_grid_plan?: any | null;
 }
 
 interface BranchOption {
@@ -239,6 +242,7 @@ const ReadingPage = () => {
   const [story, setStory] = useState<Story | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [comicCroppedPanels, setComicCroppedPanels] = useState<string[] | null>(null);
+  const [comicCroppedPanelsWithMeta, setComicCroppedPanelsWithMeta] = useState<import('@/utils/cropComicPanels').CroppedPanel[] | null>(null);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
@@ -505,23 +509,59 @@ const ReadingPage = () => {
     setIsLoading(false);
   };
 
-  // ── Comic-Strip Frontend Cropping ──
+  // ── Comic-Strip Frontend Cropping (supports 8-panel dual-grid) ──
   useEffect(() => {
-    if (story?.comic_full_image && story?.comic_layout_key) {
-      let cancelled = false;
+    if (!story?.comic_full_image) {
+      setComicCroppedPanels(null);
+      setComicCroppedPanelsWithMeta(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    // New path: comic_grid_plan exists → use cropComicGrids for 8-panel support
+    if (story.comic_grid_plan) {
+      import('@/utils/cropComicPanels').then(({ cropComicGrids }) =>
+        cropComicGrids(
+          story.comic_full_image!,
+          story.comic_full_image_2 || null,
+          story.comic_grid_plan,
+        )
+      ).then(panels => {
+        if (!cancelled) {
+          setComicCroppedPanelsWithMeta(panels);
+          setComicCroppedPanels(panels.map(p => p.dataUrl));
+        }
+      }).catch(err => {
+        console.error('[ReadingPage] Comic grid cropping failed, using fallback', err);
+        if (!cancelled) {
+          setComicCroppedPanels(null);
+          setComicCroppedPanelsWithMeta(null);
+        }
+      });
+    } else if (story.comic_layout_key) {
+      // Legacy path: single grid without plan metadata
       import('@/utils/cropComicPanels').then(({ cropComicPanels }) =>
         cropComicPanels(story.comic_full_image!, story.comic_layout_key!)
       ).then(panels => {
-        if (!cancelled) setComicCroppedPanels(panels);
+        if (!cancelled) {
+          setComicCroppedPanels(panels);
+          setComicCroppedPanelsWithMeta(null);
+        }
       }).catch(err => {
         console.error('[ReadingPage] Comic cropping failed, using fallback', err);
-        if (!cancelled) setComicCroppedPanels(null);
+        if (!cancelled) {
+          setComicCroppedPanels(null);
+          setComicCroppedPanelsWithMeta(null);
+        }
       });
-      return () => { cancelled = true; };
     } else {
       setComicCroppedPanels(null);
+      setComicCroppedPanelsWithMeta(null);
     }
-  }, [story?.comic_full_image, story?.comic_layout_key]);
+
+    return () => { cancelled = true; };
+  }, [story?.comic_full_image, story?.comic_full_image_2, story?.comic_layout_key, story?.comic_grid_plan]);
 
   // Handle series continuation
   const handleContinueSeries = async () => {
@@ -695,6 +735,9 @@ const ReadingPage = () => {
            consistency_check_ms: data.performance?.consistency_check_ms ?? null,
             comic_layout_key: data.comic_layout_key ?? null,
             comic_full_image: data.comic_full_image ?? null,
+            comic_full_image_2: data.comic_full_image_2 ?? null,
+            comic_panel_count: data.comic_panel_count ?? null,
+            comic_grid_plan: data.comic_grid_plan ?? null,
           })
         .select()
         .single();
@@ -1024,6 +1067,9 @@ const ReadingPage = () => {
             consistency_check_ms: genData.performance?.consistency_check_ms ?? null,
             comic_layout_key: genData.comic_layout_key ?? null,
             comic_full_image: genData.comic_full_image ?? null,
+            comic_full_image_2: genData.comic_full_image_2 ?? null,
+            comic_panel_count: genData.comic_panel_count ?? null,
+            comic_grid_plan: genData.comic_grid_plan ?? null,
           })
           .select()
           .single();
@@ -1378,6 +1424,13 @@ const ReadingPage = () => {
       .replace(/\\n\\n/g, '\n\n')
       .replace(/\\n/g, '\n');
     const paragraphs = normalizedContent.split(/\n\n+/).filter(p => p.trim());
+
+    // ── Comic 8-panel distribution (with metadata) ──
+    if (comicCroppedPanelsWithMeta && comicCroppedPanelsWithMeta.length > 0) {
+      return renderTextWithComicPanels(paragraphs);
+    }
+
+    // ── Fallback: legacy comic panels or story_images ──
     const storyImages = comicCroppedPanels && comicCroppedPanels.length > 0
       ? comicCroppedPanels
       : (story.story_images || []);
@@ -1480,6 +1533,140 @@ const ReadingPage = () => {
         );
       }
     });
+
+    return elements;
+  };
+
+  /**
+   * Render text with 8 comic panels distributed according to role (cover, inner, ending).
+   * Cover panel → before all text, Ending panel → after all text,
+   * Inner panels → evenly distributed between paragraphs.
+   */
+  const renderTextWithComicPanels = (paragraphs: string[]) => {
+    const panels = comicCroppedPanelsWithMeta!;
+    const elements: React.ReactNode[] = [];
+
+    // Cover panel (role: 'cover') → displayed before text
+    const coverPanel = panels.find(p => p.role === 'cover');
+    if (coverPanel) {
+      elements.push(
+        <div key="comic-cover" className="my-4 flex justify-center comic-panel comic-panel-cover">
+          <img
+            src={coverPanel.dataUrl}
+            alt="Story cover"
+            className="rounded-lg shadow-md w-full max-h-80 md:max-h-[28rem] object-contain"
+            loading="lazy"
+          />
+        </div>
+      );
+    }
+
+    // Inner panels (not cover or ending)
+    const innerPanels = panels.filter(p => p.role !== 'cover' && p.role !== 'ending');
+    const total = paragraphs.length;
+    const step = total / (innerPanels.length + 1);
+
+    let nextPanelIndex = 0;
+    let globalColorOffset = 0;
+
+    paragraphs.forEach((paragraph, pIndex) => {
+      const sentences = paragraph.split(/(?<=[.!?])\s+/);
+
+      elements.push(
+        <p key={`p-${pIndex}`} className="mb-4 leading-relaxed">
+          {sentences.map((sentence, sIndex) => {
+            const shouldBold = sIndex === 0 && pIndex === 0;
+            const shouldItalic = sentence.includes("«") || sentence.includes("»");
+            const words = sentence.split(/(\s+)/);
+
+            return (
+              <span
+                key={sIndex}
+                className={`${shouldBold ? "font-bold" : ""} ${shouldItalic ? "italic" : ""}`}
+              >
+                {words.map((word, wIndex) => {
+                  const positionKey = `${pIndex}-${sIndex}-${wIndex}`;
+                  const isSingleWordMarked = singleWordPositions.has(positionKey);
+                  const isPhraseMarked = phrasePositions.has(positionKey);
+                  const isSpace = /^\s+$/.test(word);
+
+                  if (isSpace) {
+                    const prevKey = `${pIndex}-${sIndex}-${wIndex - 1}`;
+                    const nextKey = `${pIndex}-${sIndex}-${wIndex + 1}`;
+                    const isInPhrase = phrasePositions.has(prevKey) && phrasePositions.has(nextKey);
+                    return <span key={wIndex} className={isInPhrase ? "phrase-marked" : ""}>{word}</span>;
+                  }
+
+                  const markingClass = isSingleWordMarked ? "word-marked" : (isPhraseMarked ? "phrase-marked" : "");
+
+                  if (effectiveSyllableMode) {
+                    const currentOffset = globalColorOffset;
+                    globalColorOffset += countSyllables(word, textLang);
+                    return (
+                      <SyllableText
+                        key={`syl-${wIndex}-${currentOffset}`}
+                        text={word}
+                        colorOffset={currentOffset}
+                        dataPosition={positionKey}
+                        onClick={(e) => handleWordClick(word, e)}
+                        className={`word-highlight ${markingClass}`.trim()}
+                        language={textLang}
+                      />
+                    );
+                  }
+
+                  return (
+                    <span
+                      key={wIndex}
+                      data-position={positionKey}
+                      data-word-clickable
+                      onClick={(e) => handleWordClick(word, e)}
+                      className={`word-highlight ${markingClass}`}
+                    >
+                      {word}
+                    </span>
+                  );
+                })}
+              </span>
+            );
+          })}
+        </p>
+      );
+
+      // Insert inner panel after this paragraph if it's the right position
+      if (nextPanelIndex < innerPanels.length) {
+        const targetPosition = Math.round(step * (nextPanelIndex + 1));
+        if (pIndex + 1 >= targetPosition) {
+          const panel = innerPanels[nextPanelIndex];
+          elements.push(
+            <div key={`comic-inner-${panel.position}`} className="my-6 flex justify-center comic-panel comic-panel-inner">
+              <img
+                src={panel.dataUrl}
+                alt={`Story illustration ${panel.position}`}
+                className="rounded-lg shadow-md w-[80%] max-h-72 md:max-h-96 object-contain"
+                loading="lazy"
+              />
+            </div>
+          );
+          nextPanelIndex++;
+        }
+      }
+    });
+
+    // Ending panel (role: 'ending') → displayed after all text
+    const endingPanel = panels.find(p => p.role === 'ending');
+    if (endingPanel) {
+      elements.push(
+        <div key="comic-ending" className="my-4 flex justify-center comic-panel comic-panel-ending">
+          <img
+            src={endingPanel.dataUrl}
+            alt="Story ending"
+            className="rounded-lg shadow-md w-full max-h-80 md:max-h-[28rem] object-contain"
+            loading="lazy"
+          />
+        </div>
+      );
+    }
 
     return elements;
   };

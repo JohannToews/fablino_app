@@ -333,6 +333,9 @@ const CreateStoryPage = () => {
             // Comic-Strip fields
             comic_layout_key: data.comic_layout_key ?? null,
             comic_full_image: data.comic_full_image ?? null,
+            comic_full_image_2: data.comic_full_image_2 ?? null,
+            comic_panel_count: data.comic_panel_count ?? null,
+            comic_grid_plan: data.comic_grid_plan ?? null,
           })
           .select()
           .single();
@@ -754,6 +757,9 @@ const CreateStoryPage = () => {
             // Comic-Strip fields
             comic_layout_key: data.comic_layout_key ?? null,
             comic_full_image: data.comic_full_image ?? null,
+            comic_full_image_2: data.comic_full_image_2 ?? null,
+            comic_panel_count: data.comic_panel_count ?? null,
+            comic_grid_plan: data.comic_grid_plan ?? null,
           })
           .select()
           .single();
