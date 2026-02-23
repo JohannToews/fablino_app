@@ -2024,8 +2024,8 @@ Deno.serve(async (req) => {
 
     const baseSystemPrompt = fullSystemPromptFinal;
 
-    // Get API keys - prefer VERTEX_API_KEY_NEW (Service Account JSON) for Vertex AI
-    const GEMINI_API_KEY = Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
+    // Get API keys - prefer VERTEX_SERVICE_ACCOUNT_JSON (proper SA JSON) for Vertex AI
+    const GEMINI_API_KEY = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
