@@ -540,10 +540,24 @@ const ReadingPage = () => {
         }
       });
     } else if (story.comic_layout_key) {
-      // Legacy path: single grid without plan metadata
-      import('@/utils/cropComicPanels').then(({ cropComicPanels }) =>
-        cropComicPanels(story.comic_full_image!, story.comic_layout_key!)
-      ).then(panels => {
+      // Legacy path: crop without plan metadata, but support dual grids
+      console.log('CROP DEBUG', {
+        comic_full_image: story.comic_full_image,
+        comic_full_image_2: story.comic_full_image_2,
+        comic_grid_plan: story.comic_grid_plan,
+        comic_layout_key: story.comic_layout_key,
+        comic_panel_count: (story as any).comic_panel_count,
+      });
+      import('@/utils/cropComicPanels').then(async ({ cropComicPanels }) => {
+        // Crop grid 1
+        const panels1 = await cropComicPanels(story.comic_full_image!, story.comic_layout_key!);
+        // Fix 3: If comic_full_image_2 exists, crop it too for 8 panels
+        if (story.comic_full_image_2) {
+          const panels2 = await cropComicPanels(story.comic_full_image_2, story.comic_layout_key!);
+          return [...panels1, ...panels2];
+        }
+        return panels1;
+      }).then(panels => {
         if (!cancelled) {
           setComicCroppedPanels(panels);
           setComicCroppedPanelsWithMeta(null);
