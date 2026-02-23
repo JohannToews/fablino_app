@@ -37,15 +37,17 @@ function makeSeed(overrides: Partial<CharacterSeed> & { seed_key: string; seed_t
   };
 }
 
-function createFullChain(data: unknown, err: unknown = null) {
-  const result = Promise.resolve({ data, error: err ?? null });
-  return {
-    eq: () => createFullChain(data, err),
-    in: () => ({ limit: () => result }),
-    order: () => ({ limit: () => result }),
-    limit: () => result,
-    select: () => createFullChain(data, err),
+function createFullChain(data: any[] = []): any {
+  const chain: any = {
+    eq: () => chain,
+    neq: () => chain,
+    in: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    then: (resolve: any) => resolve({ data, error: null }),
   };
+  return chain;
 }
 
 function createCharacterMockSupabase(overrides: {
@@ -59,70 +61,14 @@ function createCharacterMockSupabase(overrides: {
   const protagonistSeeds = overrides.protagonistSeeds ?? [];
   const sidekickSeeds = overrides.sidekickSeeds ?? [];
   const antagonistSeeds = overrides.antagonistSeeds ?? [];
-
-  const historyRes = { data: history, error: null };
-  const seedRes = (rows: CharacterSeed[]) => ({ data: rows.map((s) => ({ ...s })), error: null });
-
+  const mockDataMap: Record<string, any[]> = {
+    character_seed_history: history,
+    character_seeds: [...protagonistSeeds, ...sidekickSeeds, ...antagonistSeeds],
+  };
   return {
-    from(table: string) {
-      if (overrides.throwAll) {
-        return {
-          select: () => createFullChain(null, new Error('DB error')),
-        };
-      }
-      if (table === 'character_seed_history') {
-        const chain = () => ({ eq: () => chain(), order: () => ({ limit: () => Promise.resolve(historyRes) }), limit: () => Promise.resolve(historyRes), in: () => ({ limit: () => Promise.resolve(historyRes) }) });
-        return {
-          select: () => chain(),
-        };
-      }
-      if (table === 'character_seeds') {
-        const pEmptyDefault = Promise.resolve(seedRes([]));
-        const emptyChain = () => ({ limit: () => pEmptyDefault, order: () => ({ limit: () => pEmptyDefault }), in: () => ({ limit: () => pEmptyDefault }) });
-        return {
-          select: () => ({
-            eq: (col: string, val: unknown) => {
-              if (col === 'is_active') {
-                const pEmpty = Promise.resolve(seedRes([]));
-                const chainWithEq = (col2: string, val2: unknown) => {
-                  if (col2 === 'seed_type' && val2 === 'protagonist_appearance') {
-                    return {
-                      eq: (_col3: string, creatureType: unknown) => {
-                        const filtered = protagonistSeeds.filter((s) => s.creature_type === creatureType);
-                        const p = Promise.resolve(seedRes(filtered));
-                        return { limit: () => p, order: () => ({ limit: () => p }), in: () => ({ limit: () => p }) };
-                      },
-                      limit: () => Promise.resolve(seedRes(protagonistSeeds)),
-                      order: () => ({ limit: () => Promise.resolve(seedRes(protagonistSeeds)) }),
-                      in: () => ({ limit: () => Promise.resolve(seedRes(protagonistSeeds)) }),
-                    };
-                  }
-                  const p0 = Promise.resolve(seedRes([]));
-                  return { limit: () => p0, order: () => ({ limit: () => p0 }), in: () => ({ limit: () => p0 }) };
-                };
-                return {
-                  limit: () => pEmpty,
-                  order: () => ({ limit: () => pEmpty }),
-                  in: (col2?: string, _vals?: unknown[]) => {
-                    if (col2 === 'seed_type' && _vals) {
-                      const p = Promise.resolve(seedRes([...sidekickSeeds, ...antagonistSeeds]));
-                      return { limit: () => p, order: () => ({ limit: () => p }), in: () => ({ limit: () => p }) };
-                    }
-                    return { limit: () => pEmpty, order: () => ({ limit: () => pEmpty }), in: () => ({ limit: () => pEmpty }) };
-                  },
-                  eq: chainWithEq,
-                };
-              }
-              return { limit: () => pEmptyDefault, order: () => ({ limit: () => pEmptyDefault }), in: () => ({ limit: () => pEmptyDefault }), eq: () => emptyChain() };
-            },
-            order: () => ({ limit: () => pEmptyDefault }),
-            limit: () => pEmptyDefault,
-            in: () => ({ limit: () => pEmptyDefault }),
-          }),
-        };
-      }
-      return { select: () => createFullChain([]) };
-    },
+    from: (table: string) => ({
+      select: () => createFullChain(mockDataMap[table] ?? []),
+    }),
   };
 }
 

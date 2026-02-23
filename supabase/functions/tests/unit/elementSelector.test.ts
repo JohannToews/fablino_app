@@ -33,15 +33,17 @@ function makeElement(
   };
 }
 
-function createFullChain(data: unknown, err: unknown = null) {
-  const result = Promise.resolve({ data, error: err ?? null });
-  return {
-    eq: () => createFullChain(data, err),
-    in: () => ({ limit: () => result }),
-    order: () => ({ limit: () => result }),
-    limit: () => result,
-    select: () => createFullChain(data, err),
+function createFullChain(data: any[] = []): any {
+  const chain: any = {
+    eq: () => chain,
+    neq: () => chain,
+    in: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    select: () => chain,
+    then: (resolve: any) => resolve({ data, error: null }),
   };
+  return chain;
 }
 
 function createElementMockSupabase(overrides: {
@@ -53,46 +55,15 @@ function createElementMockSupabase(overrides: {
   const elements = overrides.elements ?? [];
   const history = overrides.usageHistory ?? [];
   const counter = overrides.fromCallCounter;
-
-  const historyRes = { data: history, error: null };
-  const elementsRes = { data: elements.map((e) => ({ ...e })), error: null };
-
+  const mockDataMap: Record<string, any[]> = {
+    story_element_usage: history,
+    story_elements: elements.map((e) => ({ ...e })),
+  };
   return {
-    from(table: string) {
+    from: (table: string) => {
       if (counter) counter.count += 1;
-      if (overrides.throwAll) {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({ limit: () => Promise.reject(new Error('DB error')) }),
-              limit: () => Promise.reject(new Error('DB error')),
-              in: () => ({ limit: () => Promise.reject(new Error('DB error')) }),
-            }),
-          }),
-        };
-      }
-      if (table === 'story_element_usage') {
-        const p = Promise.resolve(historyRes);
-        const chain = () => ({ order: () => ({ limit: () => p }), limit: () => p, in: () => ({ limit: () => p }) });
-        return {
-          select: () => ({
-            eq: () => chain(),
-            ...chain(),
-          }),
-        };
-      }
-      if (table === 'story_elements') {
-        const p = Promise.resolve(elementsRes);
-        const chain = () => ({ order: () => ({ limit: () => p }), limit: () => p, in: () => ({ limit: () => p }) });
-        return {
-          select: () => ({
-            eq: () => chain(),
-            ...chain(),
-          }),
-        };
-      }
       return {
-        select: () => createFullChain([]),
+        select: () => createFullChain(mockDataMap[table] ?? []),
       };
     },
   };
