@@ -122,11 +122,24 @@ const CreateStoryPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
 
-  // AbortController for story generation — prevents orphaned requests on unmount
+  // AbortController for story generation
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isGeneratingRef = useRef(false);
   useEffect(() => {
-    return () => { abortControllerRef.current?.abort(); };
+    return () => {
+      // Only abort if NOT currently generating — prevents killing in-flight requests
+      // during React re-mounts or auth token refreshes
+      if (!isGeneratingRef.current) {
+        abortControllerRef.current?.abort();
+      }
+    };
   }, []);
+
+  // Helper to stop generating state consistently
+  const stopGenerating = () => {
+    setIsGenerating(false);
+    isGeneratingRef.current = false;
+  };
 
   // Translations
   const t = useTranslations(kidAppLanguage);
@@ -157,6 +170,7 @@ const CreateStoryPage = () => {
     }
 
     setIsGenerating(true);
+    isGeneratingRef.current = true;
     setCurrentScreen("generating");
 
     const description = getEducationalDescription(topic, customTopicText, kidAppLanguage);
@@ -172,10 +186,10 @@ const CreateStoryPage = () => {
       const storyLength = storySettings?.length || "medium";
       const storyDifficulty = storySettings?.difficulty || difficulty;
 
-      // Abort any previous request + set 120s timeout
+      // Abort any previous request + set 150s timeout
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
-      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 120_000);
+      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 150_000);
 
       const { data, error } = await supabase.functions.invoke("generate-story", {
         body: {
@@ -204,14 +218,14 @@ const CreateStoryPage = () => {
       if (error) {
         console.error("Generation error:", error);
         toast.error(t.toastGenerationError);
-        setIsGenerating(false);
+        stopGenerating();
         setCurrentScreen("entry");
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
-        setIsGenerating(false);
+        stopGenerating();
         setCurrentScreen("entry");
         return;
       }
@@ -323,7 +337,7 @@ const CreateStoryPage = () => {
         if (saveError) {
           console.error("Save error:", saveError);
           toast.error(t.toastSaveError);
-          setIsGenerating(false);
+          stopGenerating();
           setCurrentScreen("entry");
           return;
         }
@@ -397,13 +411,13 @@ const CreateStoryPage = () => {
         }, delayMs);
       } else {
         toast.error(t.toastGenerationError);
-        setIsGenerating(false);
+        stopGenerating();
         setCurrentScreen("entry");
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
-      setIsGenerating(false);
+      stopGenerating();
       setCurrentScreen("entry");
     }
   };
@@ -509,6 +523,7 @@ const CreateStoryPage = () => {
     }
 
     setIsGenerating(true);
+    isGeneratingRef.current = true;
     setCurrentScreen("generating");
 
     // Build description from all wizard selections
@@ -617,7 +632,7 @@ const CreateStoryPage = () => {
         if (timeoutErr?.message === 'TIMEOUT') {
           console.error('[CreateStory] Generation timed out after', GENERATION_TIMEOUT_MS / 1000, 's');
           toast.error(t.createTimeoutError);
-          setIsGenerating(false);
+          stopGenerating();
           setCurrentScreen("entry");
           return;
         }
@@ -627,14 +642,14 @@ const CreateStoryPage = () => {
       if (error) {
         console.error("Generation error:", error);
         toast.error(t.toastGenerationError);
-        setIsGenerating(false);
+        stopGenerating();
         setCurrentScreen("entry");
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
-        setIsGenerating(false);
+        stopGenerating();
         setCurrentScreen("entry");
         return;
       }
@@ -740,7 +755,7 @@ const CreateStoryPage = () => {
         if (saveError) {
           console.error("Save error:", saveError);
           toast.error(t.toastSaveError);
-          setIsGenerating(false);
+          stopGenerating();
           setCurrentScreen("entry");
           return;
         }
@@ -811,13 +826,13 @@ const CreateStoryPage = () => {
         navigate(`/read/${savedStory.id}`);
       } else {
         toast.error(t.toastGenerationError);
-        setIsGenerating(false);
+        stopGenerating();
         setCurrentScreen("entry");
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
-      setIsGenerating(false);
+      stopGenerating();
       setCurrentScreen("entry");
     }
   };
