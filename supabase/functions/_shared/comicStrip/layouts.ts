@@ -174,6 +174,27 @@ export const COMIC_LAYOUTS: Record<string, ComicLayout> = {
     promptTemplate:
       'Manga-style vertical page, three horizontal panels stacked, thick black borders, {style}.',
   },
+
+  /** 2×(2x2): 8 panels in two 2x2 images. Panel 1 = cover, 2–8 = 7 story moments. */
+  layout_6_2x2x2: {
+    layoutKey: 'layout_6_2x2x2',
+    panelCount: 8,
+    aspectRatio: '1:1',
+    cropMode: 'grid',
+    isActive: true,
+    panels: [
+      { label: 'TOP-LEFT',   cropRegion: { x: 0, y: 0, width: 0.5, height: 0.5 }, promptLabel: 'TOP-LEFT:',   narrativeRole: 'Cover — establishing shot, full setting and character(s).' },
+      { label: 'TOP-RIGHT',  cropRegion: { x: 0.5, y: 0, width: 0.5, height: 0.5 }, promptLabel: 'TOP-RIGHT:',  narrativeRole: 'Scene 1 — beginning of the adventure.' },
+      { label: 'BOTTOM-LEFT', cropRegion: { x: 0, y: 0.5, width: 0.5, height: 0.5 }, promptLabel: 'BOTTOM-LEFT:', narrativeRole: 'Scene 2 — discovery or surprise.' },
+      { label: 'BOTTOM-RIGHT', cropRegion: { x: 0.5, y: 0.5, width: 0.5, height: 0.5 }, promptLabel: 'BOTTOM-RIGHT:', narrativeRole: 'Scene 3 — emotional close-up moment.' },
+      { label: 'TOP-LEFT-2',   cropRegion: { x: 0, y: 0, width: 0.5, height: 0.5 }, promptLabel: 'TOP-LEFT:',   narrativeRole: 'Scene 4 — action or challenge.' },
+      { label: 'TOP-RIGHT-2',  cropRegion: { x: 0.5, y: 0, width: 0.5, height: 0.5 }, promptLabel: 'TOP-RIGHT:',  narrativeRole: 'Scene 5 — connection between characters.' },
+      { label: 'BOTTOM-LEFT-2', cropRegion: { x: 0, y: 0.5, width: 0.5, height: 0.5 }, promptLabel: 'BOTTOM-LEFT:', narrativeRole: 'Scene 6 — key object or detail.' },
+      { label: 'BOTTOM-RIGHT-2', cropRegion: { x: 0.5, y: 0.5, width: 0.5, height: 0.5 }, promptLabel: 'BOTTOM-RIGHT:', narrativeRole: 'Scene 7 — resolution, peaceful ending.' },
+    ],
+    promptTemplate:
+      'Digital comic book page, 2x2 grid. Arrange as a 2x2 grid of 4 scenes. NO panel borders, NO black lines. Separate panels ONLY with a 2-pixel thin white gap. Each panel fills exactly 1/4 of the image. {style}.',
+  },
 };
 
 /**

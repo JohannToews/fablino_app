@@ -45,3 +45,19 @@ export interface ComicStripPlan {
   panels: ComicStripPlanPanel[];
   characterAnchor?: string;
 }
+
+/** LLM-generated panel for grid-based image_plan (grid_1 / grid_2). */
+export interface ComicPanel {
+  panel: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
+  role?: 'cover' | 'ending';
+  camera: string;
+  scene_en: string;
+}
+
+/** Image plan format when LLM returns grid_1 + grid_2 (8 panels in 2 grids). */
+export interface ComicImagePlan {
+  character_anchor: string;
+  world_anchor: string;
+  grid_1: ComicPanel[];
+  grid_2: ComicPanel[];
+}

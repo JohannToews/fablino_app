@@ -5,14 +5,81 @@
  */
 
 import type { ComicLayout, ComicStripPlan, ComicStripPlanPanel } from './types.ts';
+import type { ComicPanel } from './types.ts';
 
 // ─── Function 1: buildComicStripInstructions ───────────────────────
 
 /**
  * Builds the section for the STORY prompt that instructs the LLM to output
- * panel descriptions instead of scenes. Uses layout.panels for narrativeRole and promptLabel.
+ * either grid_1/grid_2 (8 panels) or panels/scenes. When useGridFormat is true
+ * or layout is 8-panel, returns the LLM grid-based image_plan instructions.
  */
-export function buildComicStripInstructions(layout: ComicLayout): string {
+export function buildComicStripInstructions(
+  layout: ComicLayout,
+  options?: { useGridFormat?: boolean }
+): string {
+  const useGridFormat = options?.useGridFormat ?? layout.panelCount === 8;
+
+  if (useGridFormat) {
+    return [
+      '## IMAGE PLAN — COMIC STRIP (2×2 GRIDS)',
+      '',
+      'You must generate an image_plan with EXACTLY this structure:',
+      '',
+      '{',
+      '  "character_anchor": "<Detailed visual description of the main character(s). Be VERY specific: hair color/style, skin tone, eye color, clothing with colors and details, distinguishing features. This EXACT description will be used for EVERY panel to ensure visual consistency.>",',
+      '  "world_anchor": "<Detailed visual description of the main setting/world. Lighting, atmosphere, color palette, key environmental details.>",',
+      '  "grid_1": [',
+      '    { "panel": "top_left", "role": "cover", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
+      '    { "panel": "top_right", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
+      '    { "panel": "bottom_left", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
+      '    { "panel": "bottom_right", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" }',
+      '  ],',
+      '  "grid_2": [',
+      '    { "panel": "top_left", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
+      '    { "panel": "top_right", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
+      '    { "panel": "bottom_left", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
+      '    { "panel": "bottom_right", "role": "ending", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" }',
+      '  ]',
+      '}',
+      '',
+      '### RULES FOR THE IMAGE PLAN:',
+      '',
+      '**Fixed positions:**',
+      '- grid_1.top_left MUST be the COVER image (establishing shot of world + characters).',
+      '- grid_2.bottom_right MUST be the ENDING image (resolution, peaceful, satisfying moment).',
+      '',
+      '**Camera values** — choose the best fit for each scene from:',
+      '- "wide_establishing" — full environment + character(s), used for opening/world-building',
+      '- "medium" — character(s) from waist up with environment visible',
+      '- "close_up" — face/upper body of 1-2 characters, showing emotion, soft blurred background',
+      '- "action_dynamic" — characters in motion, dramatic angle (low angle, bird\'s eye, tilted)',
+      '- "over_shoulder" — seen from behind one character, showing what they see',
+      '- "detail_macro" — close-up on a key object (a map, a glowing stone, food, a letter)',
+      '- "medium_wide" — 2+ characters interacting, showing body language and relationship',
+      '- "wide_peaceful" — calm wide shot, resolution mood, warm/soft lighting',
+      '',
+      '**Variety rules:**',
+      '- You MUST use at least 4 DIFFERENT camera values across the 8 panels.',
+      '- No two ADJACENT panels (in reading order) may have the same camera value.',
+      '- At least 1× close_up and 1× detail_macro across both grids.',
+      '- At least 1× wide shot (wide_establishing or wide_peaceful) per grid.',
+      '',
+      '**Scene content rules:**',
+      '- Each scene_en must START with the character_anchor text (copy it exactly).',
+      '- After the character_anchor, describe: the specific action, the environment details, the mood/lighting.',
+      '- Scenes must follow the story chronologically (panel 1 = start, panel 8 = end).',
+      '- Every scene_en must be in ENGLISH regardless of story language.',
+      '- No text, signs, numbers, or readable writing in any scene.',
+      '- Each scene_en should be 2-3 sentences, specific and visual.',
+      '',
+      '**Character consistency rules:**',
+      '- The character_anchor MUST appear word-for-word at the start of every scene_en.',
+      '- If there are multiple characters, describe ALL of them in the character_anchor.',
+      '- Characters must wear the SAME clothes in all panels (unless the story involves a costume change).',
+    ].join('\n');
+  }
+
   const lines: string[] = [
     '## COMIC PANEL INSTRUCTIONS',
     `Generate a comic strip image_plan with exactly ${layout.panelCount} panels.`,
@@ -53,7 +120,65 @@ const NEGATIVE_PROMPT =
 
 const NO_TEXT_RULE =
   'No text, speech bubbles, or readable writing in any panel.';
-const STYLE_CONSISTENCY = 'All panels share the same art style. Thick black borders between panels.';
+
+/** For 4-panel (legacy): thick borders. For 2x2 grid (refined): no borders, 2px white gap. */
+const COMIC_GRID_RULES_REFINED =
+  'CRITICAL LAYOUT RULES: NO panel borders, NO black lines, NO frames between scenes. Separate panels ONLY with a 2-pixel thin white gap. Each panel fills exactly 1/4 of the image with NO padding or margins. The 4 scenes should flow visually but be clearly distinct scenes.';
+const STYLE_CONSISTENCY_LEGACY = 'All panels share the same art style. Thick black borders between panels.';
+
+/** Camera direction per panel index (1–8) for 2×(2x2) variation. */
+export const CAMERA_DIRECTIONS: Record<number, string> = {
+  1: 'CAMERA: Wide establishing shot. Show the full setting and main character(s) in an inviting, atmospheric scene.',
+  2: 'CAMERA: Medium shot. Character(s) beginning their journey/action. Show body language and environment.',
+  3: 'CAMERA: Close-up. Focus on the protagonist\'s face — show emotion (curiosity, fear, determination). Blurred background.',
+  4: 'CAMERA: Dynamic action shot. Characters in motion, dramatic angle (low angle or bird\'s eye).',
+  5: 'CAMERA: Over-the-shoulder or POV shot. Show what the character sees — a discovery, a challenge, a new place.',
+  6: 'CAMERA: Medium wide shot. Two or more characters interacting — show relationship and body language.',
+  7: 'CAMERA: Close-up on a key object or detail (a map, a glowing stone, a letter). Macro perspective.',
+  8: 'CAMERA: Wide peaceful shot. Resolution moment — characters in a calm, satisfied, or reflective pose. Warm lighting.',
+};
+
+// ─── buildComicGridPrompt (LLM grid_1 / grid_2 format) ─────────────────────
+
+const GRID_LAYOUT_RULES =
+  'CRITICAL LAYOUT RULES:\n- NO panel borders, NO black lines, NO frames between scenes.\n- Separate panels ONLY with a 2-pixel thin white gap.\n- Each panel fills exactly 1/4 of the image with NO padding or margins.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
+
+/**
+ * Builds a single Vertex prompt for one 2x2 grid (4 panels) from the LLM-generated grid format.
+ */
+export function buildComicGridPrompt(
+  grid: ComicPanel[],
+  characterAnchor: string,
+  worldAnchor: string,
+  imageStylePrefix: string,
+): string {
+  const panelDescriptions = grid.map((panel) => {
+    const sceneWithAnchor =
+      panel.scene_en.trim().startsWith(characterAnchor.trim())
+        ? panel.scene_en.trim()
+        : `${characterAnchor.trim()}. ${panel.scene_en.trim()}`;
+    const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase(); // "TOP-LEFT" etc.
+    return `${panelLabel}: [${panel.camera}] ${sceneWithAnchor}`;
+  }).join('\n\n');
+
+  return `${imageStylePrefix}
+
+Characters: ${characterAnchor}
+Setting: ${worldAnchor}
+
+Create a 2x2 grid of 4 children's book illustrations.
+
+${GRID_LAYOUT_RULES}
+
+Panel layout (reading order: left-to-right, top-to-bottom):
+
+${panelDescriptions}
+
+IMPORTANT:
+- Same character(s) must look IDENTICAL in all panels — same hair, skin, clothes, features.
+- No text, signs, numbers, or readable writing in any panel.
+- Each panel has its own distinct background/setting as described.`;
+}
 
 export interface BuildComicStripImagePromptParams {
   plan: ComicStripPlan;
@@ -69,13 +194,31 @@ export interface ComicStripImagePromptResult {
   negativePrompt: string;
 }
 
+export interface ComicStripImagePromptsResult {
+  prompts: string[];
+  negativePrompt: string;
+}
+
 /**
- * Builds the single prompt for the image model (one call for the full comic strip).
- * Character seed overrides LLM character_anchor. Character anchor is repeated in every panel.
+ * Builds one prompt for 4-panel layout, or two prompts for 8-panel (2×(2x2)).
+ * Character seed overrides LLM character_anchor. Uses CAMERA_DIRECTIONS and refined grid rules (no borders, 2px gap).
  */
 export function buildComicStripImagePrompt(
   params: BuildComicStripImagePromptParams
 ): ComicStripImagePromptResult {
+  const result = buildComicStripImagePrompts(params);
+  return {
+    prompt: result.prompts[0] ?? '',
+    negativePrompt: result.negativePrompt,
+  };
+}
+
+/**
+ * Builds one or two prompts for the image model. For 8-panel layout returns two prompts (panels 1–4 and 5–8).
+ */
+export function buildComicStripImagePrompts(
+  params: BuildComicStripImagePromptParams
+): ComicStripImagePromptsResult {
   const {
     plan,
     layout,
@@ -98,34 +241,57 @@ export function buildComicStripImagePrompt(
   const styleBlock = layout.promptTemplate.replace('{style}', styleContent);
   styleBlockParts.push(styleBlock);
 
-  const panelBlocks: string[] = [];
+  const useRefinedGrid = true;
+  const gridRule = useRefinedGrid ? COMIC_GRID_RULES_REFINED : STYLE_CONSISTENCY_LEGACY;
 
-  for (const layoutPanel of layout.panels) {
-    const planPanel = findPanelByLabel(plan.panels, layoutPanel.label);
-    const promptLabel = layoutPanel.promptLabel || `${layoutPanel.label}:`;
-    const cameraAngle = planPanel?.camera_angle ?? 'medium shot';
-    const action = planPanel?.action ?? planPanel?.sceneDescription ?? 'key moment';
-    const charactersVisible = planPanel?.characters_visible ?? '';
-    const emotion = planPanel?.emotion ?? 'neutral';
+  const panelCount = layout.panels.length;
+  const is8Panel = panelCount === 8;
 
-    let block = `${promptLabel} ${cameraAngle} of ${action}.`;
-    if (charactersVisible) block += ` ${charactersVisible}.`;
-    block += ` Mood: ${emotion}.`;
-    if (characterAnchor) block += ` Character details: ${characterAnchor}.`;
+  const buildOnePrompt = (panelStart: number, panelEnd: number): string => {
+    const panelBlocks: string[] = [];
+    for (let i = panelStart; i < panelEnd; i++) {
+      const layoutPanel = layout.panels[i];
+      const planPanel = findPanelByLabel(plan.panels, layoutPanel.label);
+      const promptLabel = layoutPanel.promptLabel || `${layoutPanel.label}:`;
+      const cameraDir = CAMERA_DIRECTIONS[i + 1];
+      const action = planPanel?.action ?? planPanel?.sceneDescription ?? 'key moment';
+      const charactersVisible = planPanel?.characters_visible ?? '';
+      const emotion = planPanel?.emotion ?? 'neutral';
 
-    panelBlocks.push(block.trim());
+      let block = `${promptLabel} ${cameraDir ? cameraDir + ' ' : ''}${action}.`;
+      if (charactersVisible) block += ` ${charactersVisible}.`;
+      block += ` Mood: ${emotion}.`;
+      if (characterAnchor) block += ` Character details: ${characterAnchor}.`;
+
+      panelBlocks.push(block.trim());
+    }
+
+    return [
+      styleBlockParts.join('\n'),
+      'Create a 2x2 grid of 4 children\'s book illustrations.',
+      gridRule,
+      'Consistent character appearance across all 4 panels.',
+      '',
+      'Panel layout (left-to-right, top-to-bottom):',
+      ...panelBlocks,
+      '',
+      'IMPORTANT: Same character(s) must look identical in all panels. Vary the camera angle and framing as specified per panel.',
+      NO_TEXT_RULE,
+    ].join('\n');
+  };
+
+  if (is8Panel) {
+    return {
+      prompts: [
+        buildOnePrompt(0, 4),
+        buildOnePrompt(4, 8),
+      ],
+      negativePrompt: NEGATIVE_PROMPT,
+    };
   }
 
-  const promptParts = [
-    styleBlockParts.join('\n'),
-    ...panelBlocks,
-    STYLE_CONSISTENCY,
-    NO_TEXT_RULE,
-  ];
-  const prompt = promptParts.join('\n');
-
   return {
-    prompt,
+    prompts: [buildOnePrompt(0, panelCount)],
     negativePrompt: NEGATIVE_PROMPT,
   };
 }
@@ -185,6 +351,43 @@ export function parseComicStripPlan(
 
   if (imagePlan.scenes != null && Array.isArray(imagePlan.scenes)) {
     const layoutPanels = layout.panels;
+    const worldAnchor =
+      typeof imagePlan.world_anchor === 'string' ? imagePlan.world_anchor.trim() : '';
+
+    // 8-panel (2×(2x2)): Panel 1 = cover from anchors, Panels 2–8 = 7 scenes
+    if (layoutPanels.length === 8 && imagePlan.scenes.length >= 7) {
+      const panels: ComicStripPlanPanel[] = [];
+      const coverDesc = [worldAnchor, characterAnchor].filter(Boolean).join('. ') || 'Establishing shot of the setting and characters.';
+      panels.push({
+        label: layoutPanels[0].label,
+        sceneDescription: coverDesc,
+        narrativeRole: layoutPanels[0].narrativeRole,
+        camera_angle: 'wide shot',
+        action: coverDesc,
+        emotion: 'inviting',
+      });
+      for (let i = 1; i < 8; i++) {
+        const scene = imagePlan.scenes[i - 1];
+        const action =
+          scene != null && (scene.setting || scene.action)
+            ? [scene.setting, scene.action].filter(Boolean).join('. ')
+            : scene?.description ?? '';
+        const emotion = scene?.emotion ?? 'neutral';
+        const charactersVisible = scene?.characters_present ?? scene?.characters_visible ?? '';
+        panels.push({
+          label: layoutPanels[i].label,
+          sceneDescription: action || 'key moment',
+          narrativeRole: layoutPanels[i].narrativeRole,
+          camera_angle: fallbackCameraAngleForPanel(layoutPanels[i].label),
+          characters_visible: charactersVisible || undefined,
+          action: action || undefined,
+          emotion,
+          target_paragraph: typeof scene?.target_paragraph === 'number' ? scene.target_paragraph : undefined,
+        });
+      }
+      return { layoutKey: layout.layoutKey, panels, characterAnchor };
+    }
+
     const panels: ComicStripPlanPanel[] = layoutPanels.map((lp, index) => {
       const scene = imagePlan.scenes[index] ?? imagePlan.scenes.find((s: any) => s.scene_id === index + 1);
       const action =
