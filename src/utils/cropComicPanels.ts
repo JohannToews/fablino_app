@@ -2,6 +2,7 @@
  * Frontend Comic-Strip Panel Cropper
  * Crops full 2x2 comic-strip images into individual panels using Canvas API.
  * Supports both single-grid (4 panels) and dual-grid (8 panels) layouts.
+ * Uses fetch+blob fallback for CORS-safe cross-origin image loading.
  */
 
 export interface ComicGridPanelInfo {
@@ -25,56 +26,83 @@ export interface CroppedPanel {
   camera: string;
 }
 
-const GRID_CONFIGS: Record<string, { rows: number; cols: number }> = {
-  'layout_1_2x2': { rows: 2, cols: 2 },
-  'layout_2x2_equal': { rows: 2, cols: 2 },
-  'layout_2x_2x2': { rows: 2, cols: 2 },
-};
+/**
+ * Load an image in a CORS-safe way:
+ * 1. Try crossOrigin='anonymous' (fast, uses cache)
+ * 2. Fallback: fetch as blob → createObjectURL (bypasses tainted canvas)
+ */
+function loadImageSafe(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    // First try: standard crossOrigin
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      console.warn('[cropComicPanels] crossOrigin load failed, trying fetch+blob fallback...');
+      // Fallback: fetch as blob
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+          return res.blob();
+        })
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const img2 = new Image();
+          img2.onload = () => {
+            // Don't revoke yet — canvas needs the image data
+            resolve(img2);
+            // Revoke after a tick to allow canvas drawImage
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+          };
+          img2.onerror = () => {
+            URL.revokeObjectURL(blobUrl);
+            reject(new Error('Failed to load comic grid image (blob fallback)'));
+          };
+          img2.src = blobUrl;
+        })
+        .catch(reject);
+    };
+    img.src = url;
+  });
+}
 
 /**
  * Crop a single 2x2 grid image into 4 panel data URLs.
  * Panel order: top-left, top-right, bottom-left, bottom-right.
- * Applies an inset of 3px per side to remove the white gap between panels.
+ * Applies an inset of 15px per side to remove borders/gaps between panels.
  */
 async function cropSingleGrid(imageUrl: string): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const panelW = Math.floor(img.width / 2);
-      const panelH = Math.floor(img.height / 2);
-      // Inset: 3px per side to remove the 2px white gap + safety margin
-      const inset = 5;
-      const results: string[] = [];
+  const img = await loadImageSafe(imageUrl);
+  const panelW = Math.floor(img.width / 2);
+  const panelH = Math.floor(img.height / 2);
+  // Inset: 15px per side to remove thick Imagen borders + white gap
+  const inset = 15;
+  const results: string[] = [];
 
-      const positions = [
-        [0, 0],           // top-left
-        [panelW, 0],      // top-right
-        [0, panelH],      // bottom-left
-        [panelW, panelH], // bottom-right
-      ];
+  const positions = [
+    [0, 0],           // top-left
+    [panelW, 0],      // top-right
+    [0, panelH],      // bottom-left
+    [panelW, panelH], // bottom-right
+  ];
 
-      for (const [x, y] of positions) {
-        const canvas = document.createElement('canvas');
-        canvas.width = panelW - (inset * 2);
-        canvas.height = panelH - (inset * 2);
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(
-            img,
-            x + inset, y + inset,
-            panelW - (inset * 2), panelH - (inset * 2),
-            0, 0,
-            canvas.width, canvas.height,
-          );
-          results.push(canvas.toDataURL('image/webp', 0.9));
-        }
-      }
-      resolve(results);
-    };
-    img.onerror = () => reject(new Error('Failed to load comic grid image'));
-    img.src = imageUrl;
-  });
+  for (const [x, y] of positions) {
+    const canvas = document.createElement('canvas');
+    canvas.width = panelW - (inset * 2);
+    canvas.height = panelH - (inset * 2);
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(
+        img,
+        x + inset, y + inset,
+        panelW - (inset * 2), panelH - (inset * 2),
+        0, 0,
+        canvas.width, canvas.height,
+      );
+      results.push(canvas.toDataURL('image/webp', 0.9));
+    }
+  }
+  return results;
 }
 
 /**
@@ -126,6 +154,5 @@ export async function cropComicPanels(
   imageUrl: string,
   layoutKey: string,
 ): Promise<string[]> {
-  // Use the new cropSingleGrid internally
   return cropSingleGrid(imageUrl);
 }
