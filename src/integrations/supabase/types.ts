@@ -1323,7 +1323,10 @@ export type Database = {
           branch_chosen: string | null
           claimed_at: string | null
           comic_full_image: string | null
+          comic_full_image_2: string | null
+          comic_grid_plan: Json | null
           comic_layout_key: string | null
+          comic_panel_count: number | null
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
@@ -1377,7 +1380,10 @@ export type Database = {
           branch_chosen?: string | null
           claimed_at?: string | null
           comic_full_image?: string | null
+          comic_full_image_2?: string | null
+          comic_grid_plan?: Json | null
           comic_layout_key?: string | null
+          comic_panel_count?: number | null
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
@@ -1431,7 +1437,10 @@ export type Database = {
           branch_chosen?: string | null
           claimed_at?: string | null
           comic_full_image?: string | null
+          comic_full_image_2?: string | null
+          comic_grid_plan?: Json | null
           comic_layout_key?: string | null
+          comic_panel_count?: number | null
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
@@ -2176,7 +2185,10 @@ export type Database = {
           branch_chosen: string | null
           claimed_at: string | null
           comic_full_image: string | null
+          comic_full_image_2: string | null
+          comic_grid_plan: Json | null
           comic_layout_key: string | null
+          comic_panel_count: number | null
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
