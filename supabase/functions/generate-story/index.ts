@@ -858,7 +858,18 @@ async function callVertexImageAPI(
     }
     
     try {
-      const sa = JSON.parse(serviceAccountJson);
+      // Diagnostic: log key format to debug JSON parse failures
+      const keyPreview = serviceAccountJson ? serviceAccountJson.substring(0, 20) : '(empty)';
+      console.log(`[VERTEX-IMAGE] Key format check: starts with "${keyPreview}...", length=${serviceAccountJson?.length || 0}`);
+      
+      let sa: any;
+      try {
+        sa = JSON.parse(serviceAccountJson);
+      } catch (saParseErr) {
+        console.error(`[VERTEX-IMAGE] Service account JSON parse FAILED. First 100 chars: "${serviceAccountJson?.substring(0, 100)}"`);
+        console.error(`[VERTEX-IMAGE] This means GEMINI_API_KEY is not valid JSON. Expected a service account JSON object starting with {`);
+        return null;
+      }
       const projectId = sa.project_id || "fablino-prod";
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
