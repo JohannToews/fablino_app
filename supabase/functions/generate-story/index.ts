@@ -2171,6 +2171,15 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
     }
 
     // ── Emotion-Flow Prompt Injection (NEW path only) ──
+    if (emotionFlowResult) {
+      console.log('[EmotionFlow] Block lengths:', {
+        arcBlock: emotionFlowResult.promptBlocks.arcBlock?.length || 0,
+        toneBlock: emotionFlowResult.promptBlocks.toneBlock?.length || 0,
+        characterBlock: emotionFlowResult.promptBlocks.characterBlock?.length || 0,
+        elementBlocks: emotionFlowResult.promptBlocks.elementBlocks?.length || 0,
+        criticalRules: emotionFlowResult.promptBlocks.criticalRules?.length || 0,
+      });
+    }
     if (usedNewPromptPath && emotionFlowResult) {
       const emotionBlocks = [
         emotionFlowResult.promptBlocks.arcBlock,
