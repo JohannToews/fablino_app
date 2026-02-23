@@ -3402,6 +3402,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     }
 
+    // DEBUG: Log comic metadata values right before response
+    console.log(`[COMIC-DEBUG] Response values: comic_full_image=${comicFullImageUrl ? 'SET' : 'null'}, comic_full_image_2=${comicFullImageUrl2 ? 'SET' : 'null'}, comic_panel_count=${comicPanelCountResult}, comic_grid_plan=${comicGridPlanResult ? 'SET(' + Object.keys(comicGridPlanResult).join(',') + ')' : 'null'}, comic_layout_key=${comicLayoutKeyResult}`);
+
     return new Response(JSON.stringify({
       ...story,
       // Parsed classification fields (robust, already extracted above)

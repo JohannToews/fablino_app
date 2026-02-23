@@ -231,6 +231,14 @@ const CreateStoryPage = () => {
       }
 
       if (data?.title && data?.content) {
+        // DEBUG: Log comic metadata received from edge function
+        console.log('[CreateStory] COMIC-DEBUG received from edge fn:', {
+          comic_full_image: data.comic_full_image ? 'SET' : data.comic_full_image,
+          comic_full_image_2: data.comic_full_image_2 ? 'SET' : data.comic_full_image_2,
+          comic_panel_count: data.comic_panel_count,
+          comic_grid_plan: data.comic_grid_plan ? 'SET' : data.comic_grid_plan,
+          comic_layout_key: data.comic_layout_key,
+        });
         // Capture performance data for admin display
         if (data.performance) setPerformanceData(data.performance);
         // Use story settings from wizard if available
