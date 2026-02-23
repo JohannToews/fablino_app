@@ -168,6 +168,7 @@ function selectOneElement(
     (e) =>
       (e.compatible_themes == null ||
         e.compatible_themes.length === 0 ||
+        !theme || theme === 'none' || theme === 'surprise' ||
         e.compatible_themes.includes(theme)) &&
       (blueprintCategory == null ||
         e.compatible_categories == null ||
@@ -180,6 +181,7 @@ function selectOneElement(
       (e) =>
         (e.compatible_themes == null ||
           e.compatible_themes.length === 0 ||
+          !theme || theme === 'none' || theme === 'surprise' ||
           e.compatible_themes.includes(theme)) &&
         (blueprintCategory == null ||
           e.compatible_categories == null ||

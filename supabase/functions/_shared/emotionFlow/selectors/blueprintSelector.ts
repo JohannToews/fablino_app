@@ -74,7 +74,7 @@ export async function selectBlueprint(
     (r) =>
       Array.isArray(r.ideal_age_groups) &&
       r.ideal_age_groups.includes(ageGroup) &&
-      (r.compatible_themes == null || (Array.isArray(r.compatible_themes) && r.compatible_themes.includes(theme))) &&
+      (r.compatible_themes == null || !theme || theme === 'none' || theme === 'surprise' || (Array.isArray(r.compatible_themes) && r.compatible_themes.includes(theme))) &&
       r.min_intensity != null &&
       intensityAllowed(r.min_intensity as IntensityLevel, intensity)
   );
