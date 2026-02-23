@@ -37,6 +37,17 @@ function makeSeed(overrides: Partial<CharacterSeed> & { seed_key: string; seed_t
   };
 }
 
+function createFullChain(data: unknown, err: unknown = null) {
+  const result = Promise.resolve({ data, error: err ?? null });
+  return {
+    eq: () => createFullChain(data, err),
+    in: () => ({ limit: () => result }),
+    order: () => ({ limit: () => result }),
+    limit: () => result,
+    select: () => createFullChain(data, err),
+  };
+}
+
 function createCharacterMockSupabase(overrides: {
   characterSeedHistory?: { seed_key: string; seed_type: string; created_at: string }[];
   protagonistSeeds?: CharacterSeed[];
@@ -55,20 +66,14 @@ function createCharacterMockSupabase(overrides: {
   return {
     from(table: string) {
       if (overrides.throwAll) {
-        const reject = () => Promise.reject(new Error('DB error'));
         return {
-          select: () => ({
-            eq: () => ({ order: () => ({ limit: reject }), limit: reject, eq: () => ({ limit: reject }), in: () => ({ limit: reject }) }),
-          }),
+          select: () => createFullChain(null, new Error('DB error')),
         };
       }
       if (table === 'character_seed_history') {
+        const chain = () => ({ order: () => ({ limit: () => Promise.resolve(historyRes) }), limit: () => Promise.resolve(historyRes), in: () => ({ limit: () => Promise.resolve(historyRes) }) });
         return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({ limit: () => Promise.resolve(historyRes) }),
-            }),
-          }),
+          select: () => ({ eq: () => chain() }),
         };
       }
       if (table === 'character_seeds') {
@@ -76,34 +81,44 @@ function createCharacterMockSupabase(overrides: {
           select: () => ({
             eq: (col: string, val: unknown) => {
               if (col === 'is_active') {
+                const pEmpty = Promise.resolve(seedRes([]));
                 return {
-                  limit: () => Promise.resolve(seedRes([])),
+                  limit: () => pEmpty,
+                  order: () => ({ limit: () => pEmpty }),
+                  in: () => ({ limit: () => pEmpty }),
                   eq: (col2: string, val2: unknown) => {
                     if (col2 === 'seed_type' && val2 === 'protagonist_appearance') {
                       return {
                         eq: (_col3: string, creatureType: unknown) => {
                           const filtered = protagonistSeeds.filter((s) => s.creature_type === creatureType);
-                          return { limit: () => Promise.resolve(seedRes(filtered)) };
+                          const p = Promise.resolve(seedRes(filtered));
+                          return { limit: () => p, order: () => ({ limit: () => p }), in: () => ({ limit: () => p }) };
                         },
                         limit: () => Promise.resolve(seedRes(protagonistSeeds)),
+                        order: () => ({ limit: () => Promise.resolve(seedRes(protagonistSeeds)) }),
+                        in: () => ({ limit: () => Promise.resolve(seedRes(protagonistSeeds)) }),
                       };
                     }
-                    return { limit: () => Promise.resolve(seedRes([])) };
+                    const p0 = Promise.resolve(seedRes([]));
+                    return { limit: () => p0, order: () => ({ limit: () => p0 }), in: () => ({ limit: () => p0 }) };
                   },
                   in: (col2: string, _vals: unknown[]) => {
                     if (col2 === 'seed_type') {
-                      return { limit: () => Promise.resolve(seedRes([...sidekickSeeds, ...antagonistSeeds])) };
+                      const p = Promise.resolve(seedRes([...sidekickSeeds, ...antagonistSeeds]));
+                      return { limit: () => p, order: () => ({ limit: () => p }), in: () => ({ limit: () => p }) };
                     }
-                    return { limit: () => Promise.resolve(seedRes([])) };
+                    const p0 = Promise.resolve(seedRes([]));
+                    return { limit: () => p0, order: () => ({ limit: () => p0 }), in: () => ({ limit: () => p0 }) };
                   },
                 };
               }
-              return { limit: () => Promise.resolve(seedRes([])), eq: () => ({ limit: () => Promise.resolve(seedRes([])) }), in: () => ({ limit: () => Promise.resolve(seedRes([])) }) };
+              const p0 = Promise.resolve(seedRes([]));
+              return { limit: () => p0, order: () => ({ limit: () => p0 }), in: () => ({ limit: () => p0 }), eq: () => ({ limit: () => p0, order: () => ({ limit: () => p0 }), in: () => ({ limit: () => p0 }) }) };
             },
           }),
         };
       }
-      return { select: () => ({ eq: () => ({ order: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }), limit: () => Promise.resolve({ data: [], error: null }) }) }) };
+      return { select: () => createFullChain([]) };
     },
   };
 }

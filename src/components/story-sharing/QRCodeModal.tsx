@@ -69,12 +69,22 @@
      close: "Chiudi",
      scanInfo: "Scansiona questo codice QR per ricevere la storia",
    },
-   bs: {
-     title: "Podijeli priču",
-     validUntil: "Vrijedi do",
-     close: "Zatvori",
-     scanInfo: "Skeniraj ovaj QR kod da dobiješ priču",
-   },
+  bs: {
+    title: "Podijeli priču",
+    validUntil: "Vrijedi do",
+    close: "Zatvori",
+    scanInfo: "Skeniraj ovaj QR kod da dobiješ priču",
+  },
+  pt: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  sk: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  bg: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  ca: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  hu: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  lt: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  pl: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  ro: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  sl: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  tr: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
  };
  
  export default function QRCodeModal({

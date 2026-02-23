@@ -9,7 +9,7 @@ import {
   buildEmotionFlowPrompt,
   cleanPrompt,
   type EmotionFlowPromptParams,
-} from '../../_shared/emotionFlow/promptBuilder/emotionFlowPromptBuilder';
+} from '../../_shared/emotionFlow/promptBuilder/emotionFlowPromptBuilder.ts';
 
 function fullParams(overrides: Partial<EmotionFlowPromptParams> = {}): EmotionFlowPromptParams {
   return {

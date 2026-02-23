@@ -17,6 +17,17 @@ import {
 
 type EmotionFlowSupabase = import('../../_shared/emotionFlow/types.ts').EmotionFlowSupabase;
 
+function createFullChain(data: unknown, err: unknown = null) {
+  const result = Promise.resolve({ data, error: err ?? null });
+  return {
+    eq: () => createFullChain(data, err),
+    in: () => ({ limit: () => result }),
+    order: () => ({ limit: () => result }),
+    limit: () => result,
+    select: () => createFullChain(data, err),
+  };
+}
+
 function createMockSupabase(overrides: {
   historyIntensity?: { intensity_level: string }[];
   historyBlueprintKeys?: string[];
@@ -26,59 +37,34 @@ function createMockSupabase(overrides: {
   throwOnBlueprints?: boolean;
   historyError?: unknown;
 }): EmotionFlowSupabase {
-  const chain = (result: Promise<{ data: unknown; error: unknown }>) => ({
-    order: () => ({ limit: () => result }),
-    limit: () => result,
-  });
   return {
     from(table: string) {
       if (table === 'emotion_blueprint_history') {
         if (overrides.throwOnHistory) {
-          return {
-            select: () => ({
-              eq: () => ({
-                order: () => ({ limit: () => Promise.reject(new Error('DB error')) }),
-              }),
-            }),
-          };
+          return { select: () => createFullChain(null, new Error('DB error')) };
         }
         const intensityData = overrides.historyIntensity ?? [];
         const keysData = (overrides.historyBlueprintKeys ?? []).map((k: string) => ({ blueprint_key: k }));
         const toneData = (overrides.historyToneModes ?? []).map((t: string | null) => ({ tone_mode: t }));
         return {
           select(columns?: string) {
-            const res =
-              columns === 'intensity_level'
-                ? { data: intensityData, error: null }
-                : columns === 'blueprint_key'
-                  ? { data: keysData, error: null }
-                  : { data: toneData, error: overrides.historyError ?? null };
-            return {
-              eq: () => ({
-                order: () => ({ limit: () => Promise.resolve(res) }),
-              }),
-            };
+            const data =
+              columns === 'intensity_level' ? intensityData
+              : columns === 'blueprint_key' ? keysData
+              : toneData;
+            const err = columns !== 'intensity_level' && columns !== 'blueprint_key' ? (overrides.historyError ?? null) : null;
+            return createFullChain(data, err);
           },
         };
       }
       if (table === 'emotion_blueprints') {
         if (overrides.throwOnBlueprints) {
-          return {
-            select: () => ({
-              eq: () => ({ limit: () => Promise.reject(new Error('DB error')) }),
-            }),
-          };
+          return { select: () => createFullChain(null, new Error('DB error')) };
         }
         const data = overrides.blueprints ?? [];
-        return {
-          select: () => ({
-            eq: () => ({
-              limit: () => Promise.resolve({ data, error: null }),
-            }),
-          }),
-        };
+        return { select: () => createFullChain(data) };
       }
-      return { select: () => ({ eq: () => ({ order: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }) }) }) };
+      return { select: () => createFullChain([]) };
     },
   };
 }

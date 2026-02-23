@@ -33,6 +33,17 @@ function makeElement(
   };
 }
 
+function createFullChain(data: unknown, err: unknown = null) {
+  const result = Promise.resolve({ data, error: err ?? null });
+  return {
+    eq: () => createFullChain(data, err),
+    in: () => ({ limit: () => result }),
+    order: () => ({ limit: () => result }),
+    limit: () => result,
+    select: () => createFullChain(data, err),
+  };
+}
+
 function createElementMockSupabase(overrides: {
   elements?: StoryElement[];
   usageHistory?: { element_key: string; element_type: string; created_at: string }[];
@@ -61,32 +72,31 @@ function createElementMockSupabase(overrides: {
         };
       }
       if (table === 'story_element_usage') {
+        const p = Promise.resolve(historyRes);
         return {
           select: () => ({
             eq: () => ({
-              order: () => ({ limit: () => Promise.resolve(historyRes) }),
+              order: () => ({ limit: () => p }),
+              limit: () => p,
+              in: () => ({ limit: () => p }),
             }),
           }),
         };
       }
       if (table === 'story_elements') {
+        const p = Promise.resolve(elementsRes);
         return {
           select: () => ({
             eq: () => ({
-              in: () => ({ limit: () => Promise.resolve(elementsRes) }),
-              limit: () => Promise.resolve(elementsRes),
+              order: () => ({ limit: () => p }),
+              limit: () => p,
+              in: () => ({ limit: () => p }),
             }),
           }),
         };
       }
       return {
-        select: () => ({
-          eq: () => ({
-            order: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }),
-            limit: () => Promise.resolve({ data: [], error: null }),
-            in: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }),
-          }),
-        }),
+        select: () => createFullChain([]),
       };
     },
   };
