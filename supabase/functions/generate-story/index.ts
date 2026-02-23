@@ -9,6 +9,9 @@ import { selectLayout } from '../_shared/comicStrip/layouts.ts';
 import { buildComicStripInstructions, buildComicStripImagePrompt, parseComicStripPlan } from '../_shared/comicStrip/comicStripPromptBuilder.ts';
 import { cropComicStrip } from '../_shared/comicStrip/panelCropper.ts';
 import type { ComicLayout } from '../_shared/comicStrip/types.ts';
+import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
+import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
+import type { EmotionFlowResult } from '../_shared/emotionFlow/types.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1554,6 +1557,7 @@ Deno.serve(async (req) => {
     let userMessageFinal: string = "";
     let usedNewPromptPath = false;
     let learningThemeApplied: string | null = null;
+    let emotionFlowResult: EmotionFlowResult | null = null;
     let promptWarnings: string[] = [];
 
     // Resolve the effective story language (new param > textLanguage mapping > default)
@@ -1896,6 +1900,42 @@ Deno.serve(async (req) => {
             effectiveStoryLanguage,
             themeResult.storyGuidance
           );
+        }
+      }
+
+      // ── Emotion-Flow Engine ──
+      if (userId) {
+        const useEmotionFlow = await isEmotionFlowEnabled(userId, supabase);
+        if (useEmotionFlow) {
+          try {
+            const characterMode = surpriseCharactersParam
+              ? 'surprise' as const
+              : includeSelf
+                ? 'self' as const
+                : 'family' as const;
+
+            const ageGroupForEngine = resolvedAgeGroup
+              || (resolvedKidAge && resolvedKidAge <= 7 ? '6-7' : resolvedKidAge && resolvedKidAge <= 9 ? '8-9' : '10-11');
+
+            emotionFlowResult = await runEmotionFlowEngine({
+              kidProfileId: kidProfileId || 'unknown',
+              ageGroup: ageGroupForEngine as '6-7' | '8-9' | '10-11' | '12+',
+              theme: resolvedThemeKey,
+              characterMode,
+              kidProfile: { name: resolvedKidName || 'Child', age: resolvedKidAge || 8 },
+              selectedCharacters: (selectedCharacters || []).map((c: any) => ({
+                name: c.name,
+                relation: c.relation,
+                description: c.description,
+              })),
+              learningTheme: learningThemeApplied || undefined,
+              supabase,
+            });
+            console.log('[EmotionFlow] Engine succeeded:', emotionFlowResult.metadata);
+          } catch (efError: any) {
+            console.error('[EmotionFlow] Engine failed, falling back:', efError?.message || efError);
+            emotionFlowResult = null;
+          }
         }
       }
 
@@ -3174,6 +3214,20 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       // Comic-Strip metadata (Phase 5b.4)
       comic_layout_key: comicLayoutKeyResult || null,
       comic_full_image: comicFullImageUrl || null,
+      // Emotion-Flow metadata (Task 6.2)
+      ...(emotionFlowResult ? {
+        emotion_blueprint_key: emotionFlowResult.metadata.blueprintKey,
+        tone_mode: emotionFlowResult.metadata.toneMode,
+        intensity_level: emotionFlowResult.metadata.intensityLevel,
+        character_seed_key: emotionFlowResult.metadata.characterSeedKey,
+        sidekick_seed_key: emotionFlowResult.metadata.sidekickSeedKey,
+        antagonist_seed_key: emotionFlowResult.metadata.antagonistSeedKey,
+        opening_element_key: emotionFlowResult.metadata.openingElementKey,
+        perspective_element_key: emotionFlowResult.metadata.perspectiveElementKey,
+        used_emotion_flow: true,
+      } : {
+        used_emotion_flow: false,
+      }),
       // Chapter story model — variable episode count
       series_episode_count: seriesEpisodeCount || null,
       // Prompt builder warnings (for debugging — stored in stories table)
