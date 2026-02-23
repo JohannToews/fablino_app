@@ -55,9 +55,11 @@ export async function selectBlueprint(
       .select('*')
       .eq('is_active', true)
       .limit(2000);
+    console.log('[EmotionFlow] Blueprint query:', { error: res.error, rowCount: Array.isArray(res.data) ? res.data.length : 0 });
     if (res.error || !res.data) return null;
     allRows = Array.isArray(res.data) ? res.data : [];
-  } catch {
+  } catch (err) {
+    console.error('[EmotionFlow] Blueprint query exception:', err);
     return null;
   }
 
@@ -78,6 +80,8 @@ export async function selectBlueprint(
       r.min_intensity != null &&
       intensityAllowed(r.min_intensity as IntensityLevel, intensity)
   );
+
+  console.log('[EmotionFlow] Blueprint filter:', { totalRows: allRows.length, candidates: candidates.length, theme, ageGroup, intensity });
 
   let excludeKeys = await getLastBlueprintKeys(supabase, kidProfileId, 5);
   let filtered = candidates.filter((b) => !excludeKeys.includes(b.blueprint_key ?? ''));
