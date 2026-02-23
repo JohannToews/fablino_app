@@ -1931,7 +1931,21 @@ Deno.serve(async (req) => {
               learningTheme: learningThemeApplied || undefined,
               supabase: supabase as any,
             });
-            console.log('[EmotionFlow] Engine succeeded:', emotionFlowResult.metadata);
+            console.log('[EmotionFlow] Result:', JSON.stringify({
+              blueprint: emotionFlowResult.metadata.blueprintKey,
+              tone: emotionFlowResult.metadata.toneMode,
+              intensity: emotionFlowResult.metadata.intensityLevel,
+              protagonist: emotionFlowResult.metadata.characterSeedKey,
+              sidekick: emotionFlowResult.metadata.sidekickSeedKey,
+              antagonist: emotionFlowResult.metadata.antagonistSeedKey,
+              opening: emotionFlowResult.metadata.openingElementKey || null,
+              perspective: emotionFlowResult.metadata.perspectiveElementKey || null,
+              arcBlock: !!emotionFlowResult.promptBlocks.arcBlock,
+              toneBlock: !!emotionFlowResult.promptBlocks.toneBlock,
+              characterBlock: !!emotionFlowResult.promptBlocks.characterBlock,
+              elementBlocks: !!emotionFlowResult.promptBlocks.elementBlocks,
+              criticalRules: !!emotionFlowResult.promptBlocks.criticalRules,
+            }));
           } catch (efError: any) {
             console.error('[EmotionFlow] Engine failed, falling back:', efError?.message || efError);
             emotionFlowResult = null;
@@ -2171,15 +2185,6 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
     }
 
     // ── Emotion-Flow Prompt Injection (NEW path only) ──
-    if (emotionFlowResult) {
-      console.log('[EmotionFlow] Block lengths:', {
-        arcBlock: emotionFlowResult.promptBlocks.arcBlock?.length || 0,
-        toneBlock: emotionFlowResult.promptBlocks.toneBlock?.length || 0,
-        characterBlock: emotionFlowResult.promptBlocks.characterBlock?.length || 0,
-        elementBlocks: emotionFlowResult.promptBlocks.elementBlocks?.length || 0,
-        criticalRules: emotionFlowResult.promptBlocks.criticalRules?.length || 0,
-      });
-    }
     if (usedNewPromptPath && emotionFlowResult) {
       const emotionBlocks = [
         emotionFlowResult.promptBlocks.arcBlock,
