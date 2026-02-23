@@ -858,22 +858,20 @@ async function callVertexImageAPI(
     }
     
     try {
-      // Diagnostic: log key format to debug JSON parse failures
-      const keyPreview = serviceAccountJson ? serviceAccountJson.substring(0, 20) : '(empty)';
-      console.log(`[VERTEX-IMAGE] Key format check: starts with "${keyPreview}...", length=${serviceAccountJson?.length || 0}`);
-      
       let sa: any;
       try {
         sa = JSON.parse(serviceAccountJson);
       } catch (saParseErr) {
         console.error(`[VERTEX-IMAGE] Service account JSON parse FAILED. First 100 chars: "${serviceAccountJson?.substring(0, 100)}"`);
-        console.error(`[VERTEX-IMAGE] This means GEMINI_API_KEY is not valid JSON. Expected a service account JSON object starting with {`);
         return null;
       }
       const projectId = sa.project_id || "fablino-prod";
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
-      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
+      // Imagen 3 endpoint (europe-west4)
+      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/imagen-3.0-generate-002:predict`;
+      
+      console.log(`[VERTEX-IMAGE] Calling Imagen 3 (attempt ${attempt + 1}/${maxRetries})`);
       
       const response = await fetch(vertexUrl, {
         method: "POST",
@@ -882,14 +880,15 @@ async function callVertexImageAPI(
           "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
+          instances: [
+            { prompt: prompt }
           ],
-          generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "1:1",
+            outputOptions: {
+              mimeType: "image/png",
+            },
           },
         }),
       });
@@ -903,7 +902,6 @@ async function callVertexImageAPI(
       if (response.status === 403 || response.status === 401) {
         const errorText = await response.text();
         console.error(`[VERTEX-IMAGE] Auth error (${response.status}):`, errorText);
-        // Invalidate cached token on auth errors
         cachedAccessToken = null;
         return null;
       }
@@ -914,33 +912,25 @@ async function callVertexImageAPI(
         return null;
       }
 
-      // Safe JSON parsing for Vertex response
       const responseText = await response.text();
       let data: any;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('[VERTEX-IMAGE] JSON parse failed. Raw response (first 500 chars):', responseText.substring(0, 500));
-        console.error('[VERTEX-IMAGE] Response status:', response.status, 'Content-Type:', response.headers.get('content-type'));
         return null;
       }
       
-      // Look for inline_data with image in the response
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      for (const part of parts) {
-        if (part.inlineData?.mimeType?.startsWith("image/")) {
-          const base64Data = part.inlineData.data;
-          const mimeType = part.inlineData.mimeType;
-          if (!base64Data) {
-            console.error("[VERTEX-IMAGE] Image part found but data is empty");
-            return null;
-          }
-          console.log(`[VERTEX-IMAGE] Successfully generated image`);
-          return `data:${mimeType};base64,${base64Data}`;
-        }
+      // Imagen 3 response format: predictions[].bytesBase64Encoded
+      const predictions = data.predictions || [];
+      if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
+        const base64Data = predictions[0].bytesBase64Encoded;
+        const mimeType = predictions[0].mimeType || "image/png";
+        console.log(`[VERTEX-IMAGE] Successfully generated image via Imagen 3`);
+        return `data:${mimeType};base64,${base64Data}`;
       }
       
-      console.error("[VERTEX-IMAGE] No image found in response. Keys:", JSON.stringify(Object.keys(data)).substring(0, 200));
+      console.error("[VERTEX-IMAGE] No image in Imagen 3 response. Keys:", JSON.stringify(Object.keys(data)).substring(0, 300));
       return null;
     } catch (error) {
       console.error("[VERTEX-IMAGE] Request error:", error);
@@ -1061,7 +1051,9 @@ async function callVertexImageEditAPI(
       const projectId = sa.project_id || "fablino-prod";
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
-      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
+      // Imagen 3 doesn't support image editing via predict endpoint — fall back to Gemini for edits
+      // Use gemini-2.0-flash for edit tasks (reference image + prompt)
+      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/gemini-2.0-flash:generateContent`;
       
       const response = await fetch(vertexUrl, {
         method: "POST",
@@ -1108,7 +1100,6 @@ async function callVertexImageEditAPI(
         return null;
       }
 
-      // Safe JSON parsing for Vertex edit response
       const responseText = await response.text();
       let data: any;
       try {
