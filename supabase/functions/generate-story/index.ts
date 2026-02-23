@@ -8,7 +8,7 @@ import { isComicStripEnabled } from '../_shared/comicStrip/featureFlag.ts';
 import { selectLayout } from '../_shared/comicStrip/layouts.ts';
 import { buildComicStripInstructions, buildComicStripImagePrompt, buildComicStripImagePrompts, buildComicGridPrompt, parseComicStripPlan } from '../_shared/comicStrip/comicStripPromptBuilder.ts';
 import { COMIC_LAYOUTS } from '../_shared/comicStrip/layouts.ts';
-import { cropComicStrip } from '../_shared/comicStrip/panelCropper.ts';
+// panelCropper removed — frontend handles cropping via Canvas API
 import type { ComicLayout, ComicImagePlan } from '../_shared/comicStrip/types.ts';
 import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
 import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
@@ -3091,37 +3091,14 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
               comicFullImageUrl2 = await uploadImageToStorage(comicImage2, 'covers', 'comic-grid2');
             }
 
-            const cropLayout4 = COMIC_LAYOUTS['layout_1_2x2'];
-            const panelUrls: string[] = [];
-            try {
-              if (comicImage1) {
-                const panels1 = await cropComicStrip({ imageBase64: comicImage1, layout: cropLayout4 });
-                for (let i = 0; i < panels1.length; i++) {
-                  const panelDataUrl = `data:image/png;base64,${panels1[i].base64}`;
-                  const url = await uploadImageToStorage(panelDataUrl, 'covers', `comic-panel-${panelUrls.length}`);
-                  panelUrls.push(url || panelDataUrl);
-                }
-              }
-              if (comicImage2) {
-                const panels2 = await cropComicStrip({ imageBase64: comicImage2, layout: cropLayout4 });
-                for (let i = 0; i < panels2.length; i++) {
-                  const panelDataUrl = `data:image/png;base64,${panels2[i].base64}`;
-                  const url = await uploadImageToStorage(panelDataUrl, 'covers', `comic-panel-${panelUrls.length}`);
-                  panelUrls.push(url || panelDataUrl);
-                }
-              }
-              console.log(`[COMIC] ${panelUrls.length} panels cropped and uploaded`);
-            } catch (cropErr: any) {
-              console.warn('[COMIC] Server-side cropping failed:', cropErr.message);
-              if (comicFullImageUrl) panelUrls.push(comicFullImageUrl);
-              if (comicFullImageUrl2) panelUrls.push(comicFullImageUrl2);
-            }
-
-            coverImageUrl = panelUrls[0] || comicFullImageUrl;
-            storyImageUrls = panelUrls.slice(1);
+            // No server-side cropping — frontend handles via Canvas API
+            // Set comic metadata directly after successful upload
+            coverImageUrl = comicFullImageUrl || null;
+            storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
             comicLayoutKeyResult = 'layout_2x_2x2';
-            comicPanelCountResult = panelUrls.length;
+            comicPanelCountResult = (comicImage1 ? 4 : 0) + (comicImage2 ? 4 : 0);
             comicGridPlanResult = comicImagePlan;
+            console.log(`[COMIC] Grid images uploaded, metadata set: panels=${comicPanelCountResult}, layout=${comicLayoutKeyResult}`);
             imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
             comicStripHandled = true;
             console.log(`[COMIC] Generated ${comicPanelCountResult} panels in 2 grids`);
@@ -3187,29 +3164,12 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             comicFullImageUrl = await uploadImageToStorage(base64_1, 'covers', 'comic-full-1');
             comicFullImageUrl2 = await uploadImageToStorage(base64_2, 'covers', 'comic-full-2');
 
-            const cropLayout4 = COMIC_LAYOUTS['layout_1_2x2'];
-            const panelUrls: string[] = [];
-            try {
-              const panels1 = await cropComicStrip({ imageBase64: base64_1, layout: cropLayout4 });
-              const panels2 = await cropComicStrip({ imageBase64: base64_2, layout: cropLayout4 });
-              for (const panels of [panels1, panels2]) {
-                for (let i = 0; i < panels.length; i++) {
-                  const panelDataUrl = `data:image/png;base64,${panels[i].base64}`;
-                  const url = await uploadImageToStorage(panelDataUrl, 'covers', `comic-panel-${panelUrls.length}`);
-                  panelUrls.push(url || panelDataUrl);
-                }
-              }
-              console.log(`[ComicStrip] 8 panels cropped and uploaded`);
-            } catch (cropErr: any) {
-              console.warn('[ComicStrip] Server-side cropping failed, using full images:', cropErr.message);
-              if (comicFullImageUrl) panelUrls.push(comicFullImageUrl);
-              if (comicFullImageUrl2) panelUrls.push(comicFullImageUrl2);
-            }
-
-            coverImageUrl = panelUrls[0] || comicFullImageUrl;
-            storyImageUrls = panelUrls.slice(1);
+            // No server-side cropping — frontend handles via Canvas API
+            coverImageUrl = comicFullImageUrl || null;
+            storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
             comicLayoutKeyResult = comicLayout.layoutKey;
             comicPanelCountResult = 8;
+            console.log(`[ComicStrip] 8-panel grid images uploaded, metadata set`);
             imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
             comicStripHandled = true;
             console.log(`[ComicStrip] 8-panel pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
@@ -3240,24 +3200,12 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
           comicFullImageUrl = await uploadImageToStorage(comicStripBase64, 'covers', 'comic-full');
 
-          const panelUrls: string[] = [];
-          try {
-            const panels = await cropComicStrip({ imageBase64: comicStripBase64, layout: comicLayout });
-            for (let i = 0; i < panels.length; i++) {
-              const panelDataUrl = `data:image/png;base64,${panels[i].base64}`;
-              const url = await uploadImageToStorage(panelDataUrl, 'covers', `comic-panel-${i}`);
-              panelUrls.push(url || panelDataUrl);
-            }
-            console.log(`[ComicStrip] ${panelUrls.length} panels cropped and uploaded`);
-          } catch (cropErr: any) {
-            console.warn('[ComicStrip] Server-side cropping failed, using full image:', cropErr.message);
-            if (comicFullImageUrl) panelUrls.push(comicFullImageUrl);
-          }
-
-          coverImageUrl = panelUrls[0] || comicFullImageUrl;
-          storyImageUrls = panelUrls.slice(1);
+          // No server-side cropping — frontend handles via Canvas API
+          coverImageUrl = comicFullImageUrl || null;
+          storyImageUrls = [];
           comicLayoutKeyResult = comicLayout.layoutKey;
           comicPanelCountResult = comicLayout.panelCount;
+          console.log(`[ComicStrip] Single grid image uploaded, metadata set: panels=${comicPanelCountResult}`);
           imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
           comicStripHandled = true;
           console.log(`[ComicStrip] Pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
