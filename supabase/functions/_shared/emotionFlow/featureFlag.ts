@@ -11,18 +11,14 @@
  *
  * Fail-safe: returns false on any error.
  * Caches the result per request (module-level) to avoid repeated DB calls.
+ * IMPORTANT: Cache is reset at the start of each check to prevent stale results
+ * across warm Edge Function invocations.
  */
-
-let cachedResult: { userId: string; enabled: boolean } | null = null;
 
 export async function isEmotionFlowEnabled(
   userId: string,
   supabaseClient: any
 ): Promise<boolean> {
-  if (cachedResult && cachedResult.userId === userId) {
-    return cachedResult.enabled;
-  }
-
   try {
     const { data, error } = await supabaseClient
       .from('app_settings')
@@ -31,7 +27,7 @@ export async function isEmotionFlowEnabled(
       .single();
 
     if (error || !data?.value) {
-      cachedResult = { userId, enabled: false };
+      console.log('[EmotionFlow] Feature flag not found or error, disabled for user:', userId);
       return false;
     }
 
@@ -39,29 +35,28 @@ export async function isEmotionFlowEnabled(
     try {
       enabledUsers = JSON.parse(data.value);
     } catch {
-      console.warn('[EmotionFlow] Failed to parse emotion_flow_enabled_users value');
-      cachedResult = { userId, enabled: false };
+      console.warn('[EmotionFlow] Failed to parse emotion_flow_enabled_users value:', data.value);
       return false;
     }
 
     if (!Array.isArray(enabledUsers)) {
-      cachedResult = { userId, enabled: false };
+      console.warn('[EmotionFlow] emotion_flow_enabled_users is not an array');
       return false;
     }
 
     const enabled = enabledUsers.includes('*') || enabledUsers.includes(userId);
-    cachedResult = { userId, enabled };
+    console.log(`[EmotionFlow] Feature flag check: userId=${userId}, enabledUsers=${JSON.stringify(enabledUsers)}, result=${enabled}`);
     return enabled;
   } catch (err) {
     console.error('[EmotionFlow] Feature flag check failed:', err);
-    cachedResult = { userId, enabled: false };
     return false;
   }
 }
 
 /**
- * Reset the cached result. Useful for testing.
+ * Reset the cached result. Kept for API compatibility but is now a no-op
+ * since caching was removed to prevent stale results in warm Edge Functions.
  */
 export function resetFeatureFlagCache(): void {
-  cachedResult = null;
+  // no-op — caching removed
 }
