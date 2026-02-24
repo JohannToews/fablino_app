@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar } from "@/components/ui/calendar";
-import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3, CalendarIcon, Users } from "lucide-react";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3, CalendarIcon, Users, Globe } from "lucide-react";
 import { format, startOfDay, getDay } from "date-fns";
 import { de } from "date-fns/locale";
 import { Language } from "@/lib/translations";
@@ -649,8 +649,23 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
   const totalGenerated = weekdayStats.reduce((sum, d) => sum + d.generated, 0);
   const totalRead = weekdayStats.reduce((sum, d) => sum + d.read, 0);
 
+  // Language stats
+  const languageStats = useMemo(() => {
+    const filteredStories = usageStartDate
+      ? stories.filter(s => new Date(s.created_at) >= usageStartDate)
+      : stories;
+    const langMap = new Map<string, number>();
+    filteredStories.forEach(s => {
+      const lang = s.text_language || '-';
+      langMap.set(lang, (langMap.get(lang) || 0) + 1);
+    });
+    return Array.from(langMap.entries())
+      .map(([lang, count]) => ({ lang, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [stories, usageStartDate]);
+
   return (
-    <Accordion type="multiple" defaultValue={["user-kid", "weekday"]} className="space-y-4">
+    <Accordion type="multiple" defaultValue={[]} className="space-y-4">
       <AccordionItem value="user-kid" className="border rounded-lg bg-card shadow-sm">
         <AccordionTrigger className="px-4">
           <div className="flex items-center gap-2"><Users className="h-4 w-4" /><span className="font-semibold">User – Kind Übersicht</span></div>
@@ -695,6 +710,42 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
           </div>
         </AccordionContent>
       </AccordionItem>
+
+      <AccordionItem value="by-language" className="border rounded-lg bg-card shadow-sm">
+        <AccordionTrigger className="px-4">
+          <div className="flex items-center gap-2"><Globe className="h-4 w-4" /><span className="font-semibold">Stories pro Textsprache</span></div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sprache</TableHead>
+                  <TableHead className="text-right">Anzahl Stories</TableHead>
+                  <TableHead className="text-right">Anteil</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {languageStats.map((row) => (
+                  <TableRow key={row.lang}>
+                    <TableCell>
+                      <Badge variant="outline" className="uppercase">{row.lang}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{row.count}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">
+                      {stories.length > 0 ? `${Math.round((row.count / stories.length) * 100)}%` : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {languageStats.length === 0 && (
+                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Keine Daten</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
       <AccordionItem value="weekday" className="border rounded-lg bg-card shadow-sm">
         <AccordionTrigger className="px-4">
           <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /><span className="font-semibold">Stories pro Wochentag (kumuliert)</span></div>
