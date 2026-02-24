@@ -1435,9 +1435,12 @@ const ReadingPage = () => {
     }
 
     // ── Fallback: legacy comic panels or story_images ──
-    const storyImages = comicCroppedPanels && comicCroppedPanels.length > 0
-      ? comicCroppedPanels
-      : (story.story_images || []);
+    // Skip first panel (used as cover) when distributing comic panels in text
+    const storyImages = comicCroppedPanels && comicCroppedPanels.length > 1
+      ? comicCroppedPanels.slice(1)
+      : comicCroppedPanels && comicCroppedPanels.length > 0
+        ? comicCroppedPanels
+        : (story.story_images || []);
 
     // Build insertion map: paragraphIndex → imageIndex
     const imageInsertionMap = getImageInsertionMap(paragraphs.length, storyImages.length);
@@ -1913,12 +1916,12 @@ const ReadingPage = () => {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Reading Area - wider for tablets */}
           <div className="xl:col-span-3">
-            {/* Cover image — full width, responsive height */}
-            {story?.cover_image_url && (
+            {/* Cover image — use first cropped panel if available, otherwise full cover */}
+            {(comicCroppedPanels?.[0] || story?.cover_image_url) && (
               <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
                 <img 
-                  src={story.cover_image_url} 
-                  alt={story.title}
+                  src={comicCroppedPanels?.[0] || story!.cover_image_url!} 
+                  alt={story?.title || ''}
                   className="w-full max-h-[250px] md:max-h-[400px] object-cover"
                   onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
                 />
