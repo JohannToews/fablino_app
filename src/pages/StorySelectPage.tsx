@@ -30,6 +30,7 @@ interface Story {
   branch_chosen?: string | null;
   completed?: boolean | null;
   series_episode_count?: number | null;
+  has_comic_grid?: boolean | null;
 }
 
 // Difficulty, tab, and status labels are now in lib/translations.ts
@@ -459,10 +460,14 @@ const StoryCard = ({
       <div className="aspect-[3/2] sm:aspect-[4/3] mb-3 sm:mb-4 rounded-xl overflow-hidden bg-muted relative">
         {story.cover_image_url ? (
           <img
-            src={getThumbnailUrl(story.cover_image_url, 400, 60)}
+            src={getThumbnailUrl(story.cover_image_url, story.has_comic_grid ? 800 : 400, 60)}
             alt={story.title}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className={
+              story.has_comic_grid
+                ? 'w-[200%] h-[200%] max-w-none object-cover object-left-top group-hover:scale-105 transition-transform duration-300'
+                : 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
+            }
             onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
           />
         ) : (
