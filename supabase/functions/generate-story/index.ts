@@ -7,8 +7,6 @@ import { selectStorySubtype, recordSubtypeUsage, SelectedSubtype } from '../_sha
 import { isComicStripEnabled } from '../_shared/comicStrip/featureFlag.ts';
 import { selectLayout } from '../_shared/comicStrip/layouts.ts';
 import { buildComicStripInstructions, buildComicStripImagePrompt, buildComicStripImagePrompts, buildComicGridPrompt, parseComicStripPlan } from '../_shared/comicStrip/comicStripPromptBuilder.ts';
-import { COMIC_LAYOUTS } from '../_shared/comicStrip/layouts.ts';
-// panelCropper removed — frontend handles cropping via Canvas API
 import type { ComicLayout, ComicImagePlan } from '../_shared/comicStrip/types.ts';
 import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
 import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
@@ -3140,17 +3138,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
               comicFullImageUrl2 = await uploadImageToStorage(comicImage2, 'covers', 'comic-grid2');
             }
 
-            // No server-side cropping — frontend handles via Canvas API
-            // Set comic metadata directly after successful upload
-            coverImageUrl = comicFullImageUrl || null;
-            storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
+            // Client-side cropping: pass grid URLs + metadata; no server-side jimp
+            coverImageUrl = null;
+            storyImageUrls = [];
             comicLayoutKeyResult = 'layout_2x_2x2';
-            comicPanelCountResult = (comicImage1 ? 4 : 0) + (comicImage2 ? 4 : 0);
+            comicPanelCountResult = 8;
             comicGridPlanResult = comicImagePlan;
-            console.log(`[COMIC] Grid images uploaded, metadata set: panels=${comicPanelCountResult}, layout=${comicLayoutKeyResult}`);
-            imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
+            imageWarning = !comicFullImageUrl ? 'comic_strip_generation_failed' : null;
             comicStripHandled = true;
-            console.log(`[COMIC] Generated ${comicPanelCountResult} panels in 2 grids`);
+            console.log(`[COMIC] Generated 2 grids (8 panels), client-side cropping`);
           }
         } catch (gridErr: any) {
           console.error('[COMIC] Grid pipeline failed, falling back:', gridErr.message);
@@ -3213,17 +3209,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             comicFullImageUrl = await uploadImageToStorage(base64_1, 'covers', 'comic-full-1');
             comicFullImageUrl2 = await uploadImageToStorage(base64_2, 'covers', 'comic-full-2');
 
-            // No server-side cropping — frontend handles via Canvas API
-            coverImageUrl = comicFullImageUrl || null;
-            storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
+            // Client-side cropping: pass grid URLs + metadata; no server-side jimp
+            coverImageUrl = null;
+            storyImageUrls = [];
             comicLayoutKeyResult = comicLayout.layoutKey;
             comicPanelCountResult = 8;
-            // Fix 1: Build synthetic comic_grid_plan from scenes/panels for fallback path
             comicGridPlanResult = buildSyntheticGridPlan(comicPlan, 8);
-            console.log(`[ComicStrip] 8-panel grid images uploaded, metadata set (synthetic grid_plan created)`);
-            imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
+            imageWarning = !comicFullImageUrl ? 'comic_strip_generation_failed' : null;
             comicStripHandled = true;
-            console.log(`[ComicStrip] 8-panel pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
+            console.log(`[ComicStrip] 8-panel pipeline complete: 2 grids, client-side cropping, layout=${comicLayoutKeyResult}`);
           } else {
           // ── Single 2x2 (4 panels): one prompt, one call, one upload ──
           const { prompt: comicPrompt } = buildComicStripImagePrompt({
@@ -3251,17 +3245,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
           comicFullImageUrl = await uploadImageToStorage(comicStripBase64, 'covers', 'comic-full');
 
-          // No server-side cropping — frontend handles via Canvas API
-          coverImageUrl = comicFullImageUrl || null;
+          // Client-side cropping: pass grid URL + metadata; no server-side jimp
+          coverImageUrl = null;
           storyImageUrls = [];
           comicLayoutKeyResult = comicLayout.layoutKey;
           comicPanelCountResult = comicLayout.panelCount;
-          // Fix 1: Build synthetic comic_grid_plan for single grid too
           comicGridPlanResult = buildSyntheticGridPlan(comicPlan, comicLayout.panelCount);
-          console.log(`[ComicStrip] Single grid image uploaded, metadata set (synthetic grid_plan created): panels=${comicPanelCountResult}`);
-          imageWarning = !coverImageUrl ? 'comic_strip_generation_failed' : null;
+          imageWarning = !comicFullImageUrl ? 'comic_strip_generation_failed' : null;
           comicStripHandled = true;
-          console.log(`[ComicStrip] Pipeline complete: cover=${!!coverImageUrl}, panels=${storyImageUrls.length}, layout=${comicLayoutKeyResult}`);
+          console.log(`[ComicStrip] 4-panel pipeline complete: 1 grid, client-side cropping, layout=${comicLayoutKeyResult}`);
           }
         } catch (comicError: any) {
           console.error('[ComicStrip] Pipeline failed, falling back to individual images:', comicError.message);
@@ -3412,8 +3404,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     }
 
-    // DEBUG: Log comic metadata values right before response
-    console.log(`[COMIC-DEBUG] Response values: comic_full_image=${comicFullImageUrl ? 'SET' : 'null'}, comic_full_image_2=${comicFullImageUrl2 ? 'SET' : 'null'}, comic_panel_count=${comicPanelCountResult}, comic_grid_plan=${comicGridPlanResult ? 'SET(' + Object.keys(comicGridPlanResult).join(',') + ')' : 'null'}, comic_layout_key=${comicLayoutKeyResult}`);
+    if (comicStripHandled) {
+      console.log(`[COMIC] Pipeline complete. Grids: ${comicFullImageUrl ? '✅' : '❌'} / ${comicFullImageUrl2 ? '✅' : '❌'}, layout: ${comicLayoutKeyResult}, panels: ${comicPanelCountResult}`);
+      console.log('[COMIC] Server-side cropping: DISABLED (client-side cropping in frontend)');
+    }
 
     return new Response(JSON.stringify({
       ...story,

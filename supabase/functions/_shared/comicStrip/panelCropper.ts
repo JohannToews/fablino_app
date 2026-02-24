@@ -1,10 +1,17 @@
 /**
  * Comic-Strip Panel Cropper (Task 5b.3)
- * Crops a full comic-strip image into panels using layout.cropRegion (0–1).
- * Fallback: getComicStripCropData returns crop regions for frontend cropping.
  *
- * Edge Functions (Deno): Use getComicStripCropData if no image lib is available.
- * Node/tests: cropComicStrip uses jimp when available (npm install jimp).
+ * @deprecated Server-side cropping (cropComicStrip) is disabled in production:
+ * jimp does not run in Deno/Supabase Edge Functions. The generate-story Edge
+ * Function now passes grid URLs + metadata to the frontend; cropping is done
+ * client-side (e.g. src/utils/cropComicPanels.ts).
+ *
+ * This file is kept for:
+ * - getComicStripCropData, computePanelPixelRects (used by unit tests)
+ * - cropComicStrip (Node-only, used by unit tests; requires npm install jimp)
+ *
+ * Edge Functions (Deno): Do not import cropComicStrip; use client-side cropping.
+ * Node/tests: cropComicStrip and getComicStripCropData remain available for tests.
  */
 
 import { Buffer } from 'node:buffer';
