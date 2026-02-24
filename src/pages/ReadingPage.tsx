@@ -25,6 +25,7 @@ import BranchDecisionScreen from "@/components/story-creation/BranchDecisionScre
 import type { BranchOption as BranchOptionType } from "@/components/story-creation/BranchDecisionScreen";
 import ImmersiveReader from "@/components/immersive-reader/ImmersiveReader";
 import WordListPanel from "@/components/WordListPanel";
+import { cropComicGrids, cropComicPanels, type CroppedPanel } from "@/utils/cropComicPanels";
 
 // UI labels for word explanation popup in different languages
 const readingLabels: Record<string, {
@@ -242,7 +243,7 @@ const ReadingPage = () => {
   const [story, setStory] = useState<Story | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [comicCroppedPanels, setComicCroppedPanels] = useState<string[] | null>(null);
-  const [comicCroppedPanelsWithMeta, setComicCroppedPanelsWithMeta] = useState<import('@/utils/cropComicPanels').CroppedPanel[] | null>(null);
+  const [comicCroppedPanelsWithMeta, setComicCroppedPanelsWithMeta] = useState<CroppedPanel[] | null>(null);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
@@ -521,12 +522,10 @@ const ReadingPage = () => {
 
     // New path: comic_grid_plan exists → use cropComicGrids for 8-panel support
     if (story.comic_grid_plan) {
-      import('@/utils/cropComicPanels').then(({ cropComicGrids }) =>
-        cropComicGrids(
-          story.comic_full_image!,
-          story.comic_full_image_2 || null,
-          story.comic_grid_plan,
-        )
+      cropComicGrids(
+        story.comic_full_image!,
+        story.comic_full_image_2 || null,
+        story.comic_grid_plan,
       ).then(panels => {
         if (!cancelled) {
           setComicCroppedPanelsWithMeta(panels);
@@ -541,23 +540,14 @@ const ReadingPage = () => {
       });
     } else if (story.comic_layout_key) {
       // Legacy path: crop without plan metadata, but support dual grids
-      console.log('CROP DEBUG', {
-        comic_full_image: story.comic_full_image,
-        comic_full_image_2: story.comic_full_image_2,
-        comic_grid_plan: story.comic_grid_plan,
-        comic_layout_key: story.comic_layout_key,
-        comic_panel_count: (story as any).comic_panel_count,
-      });
-      import('@/utils/cropComicPanels').then(async ({ cropComicPanels }) => {
-        // Crop grid 1
+      (async () => {
         const panels1 = await cropComicPanels(story.comic_full_image!, story.comic_layout_key!);
-        // Fix 3: If comic_full_image_2 exists, crop it too for 8 panels
         if (story.comic_full_image_2) {
           const panels2 = await cropComicPanels(story.comic_full_image_2, story.comic_layout_key!);
           return [...panels1, ...panels2];
         }
         return panels1;
-      }).then(panels => {
+      })().then(panels => {
         if (!cancelled) {
           setComicCroppedPanels(panels);
           setComicCroppedPanelsWithMeta(null);

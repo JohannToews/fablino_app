@@ -13,6 +13,7 @@ import {
   Spread,
   buildSpreads,
 } from './constants';
+import { cropComicGrids, cropComicPanels } from '@/utils/cropComicPanels';
 import {
   getImagePositionsFromPlan,
   getVisibleImages,
@@ -155,12 +156,10 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
 
     // New path: comic_grid_plan exists → use cropComicGrids for 8-panel support
     if (story.comic_grid_plan) {
-      import('@/utils/cropComicPanels').then(({ cropComicGrids }) =>
-        cropComicGrids(
-          story.comic_full_image!,
-          story.comic_full_image_2 || null,
-          story.comic_grid_plan,
-        )
+      cropComicGrids(
+        story.comic_full_image!,
+        story.comic_full_image_2 || null,
+        story.comic_grid_plan,
       ).then(panels => {
         if (!cancelled) setComicPanels(panels.map(p => p.dataUrl));
       }).catch(err => {
@@ -169,9 +168,7 @@ const ImmersiveReader: React.FC<ImmersiveReaderProps> = ({
       });
     } else if (story.comic_layout_key) {
       // Legacy path: single grid without plan metadata
-      import('@/utils/cropComicPanels').then(({ cropComicPanels }) =>
-        cropComicPanels(story.comic_full_image!, story.comic_layout_key!)
-      ).then(panels => {
+      cropComicPanels(story.comic_full_image!, story.comic_layout_key!).then(panels => {
         if (!cancelled) setComicPanels(panels);
       }).catch(err => {
         console.error('[ImmersiveReader] Comic cropping failed, using fallback', err);
