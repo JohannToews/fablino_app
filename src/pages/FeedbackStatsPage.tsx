@@ -1499,8 +1499,9 @@ const FeedbackStatsPage = () => {
                   )}
                   {visibleFilters.has('user') && (
                     <Select value={filterUser} onValueChange={setFilterUser}>
-                      <SelectTrigger className="h-9 w-[110px]">
-                        <SelectValue placeholder="User" />
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">User:</span>
+                        <SelectValue placeholder="Alle" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t.all}</SelectItem>
@@ -1512,8 +1513,9 @@ const FeedbackStatsPage = () => {
                   )}
                   {visibleFilters.has('kid') && (
                     <Select value={filterKid} onValueChange={setFilterKid}>
-                      <SelectTrigger className="h-9 w-[110px]">
-                        <SelectValue placeholder="Kind" />
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">Kind:</span>
+                        <SelectValue placeholder="Alle" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t.all}</SelectItem>
@@ -1525,8 +1527,9 @@ const FeedbackStatsPage = () => {
                   )}
                   {visibleFilters.has('difficulty') && (
                     <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-                      <SelectTrigger className="h-9 w-[120px]">
-                        <SelectValue placeholder="Schwierigkeit" />
+                      <SelectTrigger className="h-9 w-[150px]">
+                        <span className="text-muted-foreground text-xs mr-1">Schwierigk.:</span>
+                        <SelectValue placeholder="Alle" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t.all}</SelectItem>
@@ -1538,8 +1541,9 @@ const FeedbackStatsPage = () => {
                   )}
                   {visibleFilters.has('status') && (
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="h-9 w-[110px]">
-                        <SelectValue placeholder="Status" />
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">Status:</span>
+                        <SelectValue placeholder="Alle" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t.all}</SelectItem>
@@ -1552,8 +1556,9 @@ const FeedbackStatsPage = () => {
                   )}
                   {visibleFilters.has('jaiFini') && (
                     <Select value={filterJaiFini} onValueChange={setFilterJaiFini}>
-                      <SelectTrigger className="h-9 w-[110px]">
-                        <SelectValue placeholder="J'ai fini" />
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">J'ai fini:</span>
+                        <SelectValue placeholder="Alle" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t.all}</SelectItem>
@@ -1564,8 +1569,9 @@ const FeedbackStatsPage = () => {
                   )}
                   {visibleFilters.has('quiz') && (
                     <Select value={filterQuizCompleted} onValueChange={setFilterQuizCompleted}>
-                      <SelectTrigger className="h-9 w-[100px]">
-                        <SelectValue placeholder="Quiz" />
+                      <SelectTrigger className="h-9 w-[120px]">
+                        <span className="text-muted-foreground text-xs mr-1">Quiz:</span>
+                        <SelectValue placeholder="Alle" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">{t.all}</SelectItem>
