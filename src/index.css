@@ -386,6 +386,24 @@
 
 /* ═══ Premium UI (only when feature flag premium_ui is on) ═══ */
 
+/* Premium indicator bar — visible proof that premium is active */
+body.premium-ui::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, hsl(25, 85%, 55%), hsl(35, 90%, 60%), hsl(25, 85%, 55%));
+  z-index: 9999;
+  animation: premiumShimmer 3s ease-in-out infinite;
+}
+
+@keyframes premiumShimmer {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 /* Premium background — warmer, richer gradient with subtle glow */
 body.premium-ui {
   background:

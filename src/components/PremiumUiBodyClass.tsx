@@ -9,16 +9,17 @@ const BODY_CLASS = "premium-ui";
  * premium styles (e.g. body.premium-ui .btn-kid { ... }).
  */
 export default function PremiumUiBodyClass() {
-  const { premiumUiEnabled } = usePremiumUi();
+  const { premiumUiEnabled, isLoading } = usePremiumUi();
 
   useEffect(() => {
+    console.log("[PremiumUI] enabled:", premiumUiEnabled, "loading:", isLoading);
     if (premiumUiEnabled) {
       document.body.classList.add(BODY_CLASS);
     } else {
       document.body.classList.remove(BODY_CLASS);
     }
     return () => document.body.classList.remove(BODY_CLASS);
-  }, [premiumUiEnabled]);
+  }, [premiumUiEnabled, isLoading]);
 
   return null;
 }
