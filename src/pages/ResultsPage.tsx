@@ -104,6 +104,171 @@ const resultsT: Record<string, Record<string, string>> = {
     almostThere: "Quasi, {name}! 🎉 Solo {n} stelle ancora!",
     keepGoing: "Bravo, {name}! Ancora {n} stelle per {level}. Continua a leggere! 🧡",
   },
+  bs: {
+    currentLevel: "Trenutni nivo",
+    highestLevel: "Najviši nivo",
+    starsRemaining: "Još {n} zvjezdica do {emoji} {name}",
+    highestReached: "🏆 Dostigao/la si najviši nivo!",
+    roadmapTitle: "🗺️ Tvoj put do vrha",
+    badgesTitle: "🏷️ Naljepnice i bedževi",
+    allCollected: "🎉 Sve naljepnice prikupljene!",
+    firstStory: "Pročitaj priču da zaradiš svoju prvu naljepnicu!",
+    welcome: "Dobrodošao/la, {name}! Pročitaj svoju prvu priču! 📖",
+    meister: "Wow, {name}! Ti si {level}! 👑",
+    streakMsg: "{streak} dana zaredom, {name}! 🔥 Još {n} zvjezdica do {level}!",
+    almostThere: "Skoro, {name}! 🎉 Još samo {n} zvjezdica!",
+    keepGoing: "Bravo, {name}! Još {n} zvjezdica do {level}. Nastavi čitati! 🧡",
+  },
+  tr: {
+    currentLevel: "Mevcut seviye",
+    highestLevel: "En yüksek seviye",
+    starsRemaining: "{emoji} {name} için {n} yıldız daha",
+    highestReached: "🏆 En yüksek seviyeye ulaştın!",
+    roadmapTitle: "🗺️ Zirveye giden yolun",
+    badgesTitle: "🏷️ Çıkartmalar ve Rozetler",
+    allCollected: "🎉 Tüm çıkartmalar toplandı!",
+    firstStory: "İlk çıkartmanı kazanmak için bir hikaye oku!",
+    welcome: "Hoş geldin, {name}! İlk hikayeni oku! 📖",
+    meister: "Vay, {name}! Sen {level} oldun! 👑",
+    streakMsg: "Üst üste {streak} gün, {name}! 🔥 {level} için {n} yıldız daha!",
+    almostThere: "Neredeyse, {name}! 🎉 Sadece {n} yıldız daha!",
+    keepGoing: "Harika, {name}! {level} için {n} yıldız daha. Okumaya devam! 🧡",
+  },
+  bg: {
+    currentLevel: "Текущо ниво",
+    highestLevel: "Най-високо ниво",
+    starsRemaining: "Още {n} звезди до {emoji} {name}",
+    highestReached: "🏆 Достигна най-високото ниво!",
+    roadmapTitle: "🗺️ Твоят път към върха",
+    badgesTitle: "🏷️ Стикери и значки",
+    allCollected: "🎉 Всички стикери събрани!",
+    firstStory: "Прочети история, за да спечелиш първия си стикер!",
+    welcome: "Добре дошъл, {name}! Прочети първата си история! 📖",
+    meister: "Уау, {name}! Ти си {level}! 👑",
+    streakMsg: "{streak} дни поред, {name}! 🔥 Още {n} звезди до {level}!",
+    almostThere: "Почти, {name}! 🎉 Само {n} звезди още!",
+    keepGoing: "Браво, {name}! Още {n} звезди до {level}. Продължавай! 🧡",
+  },
+  ro: {
+    currentLevel: "Nivel actual",
+    highestLevel: "Nivel maxim",
+    starsRemaining: "Încă {n} stele până la {emoji} {name}",
+    highestReached: "🏆 Ai atins nivelul maxim!",
+    roadmapTitle: "🗺️ Drumul tău spre vârf",
+    badgesTitle: "🏷️ Stickere și insigne",
+    allCollected: "🎉 Toate stickerele colectate!",
+    firstStory: "Citește o poveste pentru a câștiga primul tău sticker!",
+    welcome: "Bine ai venit, {name}! Citește prima ta poveste! 📖",
+    meister: "Wow, {name}! Ești {level}! 👑",
+    streakMsg: "{streak} zile la rând, {name}! 🔥 Încă {n} stele până la {level}!",
+    almostThere: "Aproape, {name}! 🎉 Doar {n} stele!",
+    keepGoing: "Bravo, {name}! Încă {n} stele până la {level}. Continuă! 🧡",
+  },
+  pl: {
+    currentLevel: "Aktualny poziom",
+    highestLevel: "Najwyższy poziom",
+    starsRemaining: "Jeszcze {n} gwiazdek do {emoji} {name}",
+    highestReached: "🏆 Osiągnąłeś najwyższy poziom!",
+    roadmapTitle: "🗺️ Twoja droga na szczyt",
+    badgesTitle: "🏷️ Naklejki i odznaki",
+    allCollected: "🎉 Wszystkie naklejki zebrane!",
+    firstStory: "Przeczytaj historię, aby zdobyć pierwszą naklejkę!",
+    welcome: "Witaj, {name}! Przeczytaj swoją pierwszą historię! 📖",
+    meister: "Wow, {name}! Jesteś {level}! 👑",
+    streakMsg: "{streak} dni z rzędu, {name}! 🔥 Jeszcze {n} gwiazdek do {level}!",
+    almostThere: "Prawie, {name}! 🎉 Tylko {n} gwiazdek!",
+    keepGoing: "Świetnie, {name}! Jeszcze {n} gwiazdek do {level}. Czytaj dalej! 🧡",
+  },
+  lt: {
+    currentLevel: "Dabartinis lygis",
+    highestLevel: "Aukščiausias lygis",
+    starsRemaining: "Dar {n} žvaigždučių iki {emoji} {name}",
+    highestReached: "🏆 Pasiekei aukščiausią lygį!",
+    roadmapTitle: "🗺️ Tavo kelias į viršūnę",
+    badgesTitle: "🏷️ Lipdukai ir ženkliukai",
+    allCollected: "🎉 Visi lipdukai surinkti!",
+    firstStory: "Perskaityk istoriją, kad gautum pirmą lipduką!",
+    welcome: "Sveiki, {name}! Perskaityk pirmą istoriją! 📖",
+    meister: "Oho, {name}! Tu esi {level}! 👑",
+    streakMsg: "{streak} dienos iš eilės, {name}! 🔥 Dar {n} žvaigždučių iki {level}!",
+    almostThere: "Beveik, {name}! 🎉 Tik {n} žvaigždučių!",
+    keepGoing: "Puiku, {name}! Dar {n} žvaigždučių iki {level}. Skaityk toliau! 🧡",
+  },
+  hu: {
+    currentLevel: "Jelenlegi szint",
+    highestLevel: "Legmagasabb szint",
+    starsRemaining: "Még {n} csillag a(z) {emoji} {name} eléréséhez",
+    highestReached: "🏆 Elérted a legmagasabb szintet!",
+    roadmapTitle: "🗺️ Utad a csúcsra",
+    badgesTitle: "🏷️ Matricák és jelvények",
+    allCollected: "🎉 Minden matrica összegyűjtve!",
+    firstStory: "Olvass egy mesét az első matricádért!",
+    welcome: "Üdv, {name}! Olvasd el az első mesédet! 📖",
+    meister: "Hűha, {name}! Te vagy {level}! 👑",
+    streakMsg: "{streak} nap egymás után, {name}! 🔥 Még {n} csillag a(z) {level} eléréséhez!",
+    almostThere: "Majdnem, {name}! 🎉 Már csak {n} csillag!",
+    keepGoing: "Szuper, {name}! Még {n} csillag a(z) {level} eléréséhez. Olvass tovább! 🧡",
+  },
+  ca: {
+    currentLevel: "Nivell actual",
+    highestLevel: "Nivell màxim",
+    starsRemaining: "Encara {n} estrelles per {emoji} {name}",
+    highestReached: "🏆 Has assolit el nivell màxim!",
+    roadmapTitle: "🗺️ El teu camí cap al cim",
+    badgesTitle: "🏷️ Adhesius i insígnies",
+    allCollected: "🎉 Tots els adhesius recollits!",
+    firstStory: "Llegeix una història per guanyar el teu primer adhesiu!",
+    welcome: "Benvingut, {name}! Llegeix la teva primera història! 📖",
+    meister: "Uau, {name}! Ets {level}! 👑",
+    streakMsg: "{streak} dies seguits, {name}! 🔥 Encara {n} estrelles per {level}!",
+    almostThere: "Gairebé, {name}! 🎉 Només {n} estrelles més!",
+    keepGoing: "Molt bé, {name}! Encara {n} estrelles per {level}. Segueix llegint! 🧡",
+  },
+  sl: {
+    currentLevel: "Trenutna raven",
+    highestLevel: "Najvišja raven",
+    starsRemaining: "Še {n} zvezdic do {emoji} {name}",
+    highestReached: "🏆 Dosegel/a si najvišjo raven!",
+    roadmapTitle: "🗺️ Tvoja pot do vrha",
+    badgesTitle: "🏷️ Nalepke in značke",
+    allCollected: "🎉 Vse nalepke zbrane!",
+    firstStory: "Preberi zgodbo, da zaslužiš prvo nalepko!",
+    welcome: "Dobrodošel/a, {name}! Preberi svojo prvo zgodbo! 📖",
+    meister: "Vau, {name}! Ti si {level}! 👑",
+    streakMsg: "{streak} dni zapored, {name}! 🔥 Še {n} zvezdic do {level}!",
+    almostThere: "Skoraj, {name}! 🎉 Le še {n} zvezdic!",
+    keepGoing: "Odlično, {name}! Še {n} zvezdic do {level}. Beri naprej! 🧡",
+  },
+  pt: {
+    currentLevel: "Nível atual",
+    highestLevel: "Nível máximo",
+    starsRemaining: "Mais {n} estrelas para {emoji} {name}",
+    highestReached: "🏆 Atingiste o nível máximo!",
+    roadmapTitle: "🗺️ O teu caminho até ao topo",
+    badgesTitle: "🏷️ Autocolantes e crachás",
+    allCollected: "🎉 Todos os autocolantes colecionados!",
+    firstStory: "Lê uma história para ganhar o teu primeiro autocolante!",
+    welcome: "Bem-vindo, {name}! Lê a tua primeira história! 📖",
+    meister: "Uau, {name}! Tu és {level}! 👑",
+    streakMsg: "{streak} dias seguidos, {name}! 🔥 Mais {n} estrelas para {level}!",
+    almostThere: "Quase, {name}! 🎉 Só mais {n} estrelas!",
+    keepGoing: "Muito bem, {name}! Mais {n} estrelas para {level}. Continua a ler! 🧡",
+  },
+  sk: {
+    currentLevel: "Aktuálna úroveň",
+    highestLevel: "Najvyššia úroveň",
+    starsRemaining: "Ešte {n} hviezdičiek do {emoji} {name}",
+    highestReached: "🏆 Dosiahol/a si najvyššiu úroveň!",
+    roadmapTitle: "🗺️ Tvoja cesta na vrchol",
+    badgesTitle: "🏷️ Nálepky a odznaky",
+    allCollected: "🎉 Všetky nálepky zozbierané!",
+    firstStory: "Prečítaj príbeh a získaj svoju prvú nálepku!",
+    welcome: "Vitaj, {name}! Prečítaj si svoj prvý príbeh! 📖",
+    meister: "Wow, {name}! Si {level}! 👑",
+    streakMsg: "{streak} dní v rade, {name}! 🔥 Ešte {n} hviezdičiek do {level}!",
+    almostThere: "Skoro, {name}! 🎉 Len {n} hviezdičiek!",
+    keepGoing: "Výborne, {name}! Ešte {n} hviezdičiek do {level}. Čítaj ďalej! 🧡",
+  },
 };
 
 function getT(lang: Lang) {
@@ -187,10 +352,10 @@ const SkeletonCard = ({ className = "" }: { className?: string }) => (
 
 const FablinoSection = ({ message, delay }: { message: string; delay: number }) => (
   <div
-    className="flex items-center gap-4 px-1"
+    className="flex items-center gap-3 px-1"
     style={{ animation: `fadeSlideUp 0.5s ease-out ${delay}s both` }}
   >
-    <FablinoMascot src="/mascot/6_Onboarding.png" size="md" />
+    <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" />
     <div className="flex-1 min-w-0">
       <SpeechBubble>{message}</SpeechBubble>
     </div>
@@ -452,6 +617,127 @@ const hintTemplates: Record<string, Record<string, string>> = {
     languages_read: "Leggi storie in {value} lingue",
     generic: "Continua così!",
   },
+  bs: {
+    total_stars: "Sakupi {value} zvjezdica",
+    weekly_stories: "Pročitaj {value} priča u jednoj sedmici",
+    streak_days: "Čitaj {value} dana zaredom",
+    total_stories_read: "Pročitaj {value} priča",
+    consecutive_perfect_quiz: "Ostvari {value} savršenih kvizova zaredom",
+    total_perfect_quiz: "Ostvari {value} savršenih kvizova",
+    series_completed: "Završi seriju",
+    languages_read: "Čitaj priče na {value} jezika",
+    generic: "Nastavi tako!",
+  },
+  tr: {
+    total_stars: "{value} yıldız topla",
+    weekly_stories: "Bir haftada {value} hikaye oku",
+    streak_days: "Üst üste {value} gün oku",
+    total_stories_read: "{value} hikaye oku",
+    consecutive_perfect_quiz: "Üst üste {value} mükemmel quiz yap",
+    total_perfect_quiz: "{value} mükemmel quiz yap",
+    series_completed: "Bir seriyi tamamla",
+    languages_read: "{value} dilde hikaye oku",
+    generic: "Böyle devam!",
+  },
+  bg: {
+    total_stars: "Събери {value} звезди",
+    weekly_stories: "Прочети {value} истории за седмица",
+    streak_days: "Чети {value} дни поред",
+    total_stories_read: "Прочети {value} истории",
+    consecutive_perfect_quiz: "Направи {value} перфектни куиза поред",
+    total_perfect_quiz: "Направи {value} перфектни куиза",
+    series_completed: "Завърши серия",
+    languages_read: "Чети истории на {value} езика",
+    generic: "Продължавай така!",
+  },
+  ro: {
+    total_stars: "Colectează {value} stele",
+    weekly_stories: "Citește {value} povești într-o săptămână",
+    streak_days: "Citește {value} zile la rând",
+    total_stories_read: "Citește {value} povești",
+    consecutive_perfect_quiz: "Obține {value} quizuri perfecte la rând",
+    total_perfect_quiz: "Obține {value} quizuri perfecte",
+    series_completed: "Finalizează o serie",
+    languages_read: "Citește povești în {value} limbi",
+    generic: "Continuă!",
+  },
+  pl: {
+    total_stars: "Zbierz {value} gwiazdek",
+    weekly_stories: "Przeczytaj {value} historii w jednym tygodniu",
+    streak_days: "Czytaj {value} dni z rzędu",
+    total_stories_read: "Przeczytaj {value} historii",
+    consecutive_perfect_quiz: "Zdobądź {value} perfekcyjnych quizów z rzędu",
+    total_perfect_quiz: "Zdobądź {value} perfekcyjnych quizów",
+    series_completed: "Ukończ serię",
+    languages_read: "Czytaj historie w {value} językach",
+    generic: "Tak trzymaj!",
+  },
+  lt: {
+    total_stars: "Surink {value} žvaigždučių",
+    weekly_stories: "Perskaityk {value} istorijų per savaitę",
+    streak_days: "Skaityk {value} dienas iš eilės",
+    total_stories_read: "Perskaityk {value} istorijų",
+    consecutive_perfect_quiz: "Atlik {value} tobulų viktorinų iš eilės",
+    total_perfect_quiz: "Atlik {value} tobulų viktorinų",
+    series_completed: "Užbaik seriją",
+    languages_read: "Skaityk istorijas {value} kalbomis",
+    generic: "Taip ir toliau!",
+  },
+  hu: {
+    total_stars: "Gyűjts {value} csillagot",
+    weekly_stories: "Olvass {value} mesét egy héten belül",
+    streak_days: "Olvass {value} napig egymás után",
+    total_stories_read: "Olvass el {value} mesét",
+    consecutive_perfect_quiz: "Érj el {value} tökéletes kvízt egymás után",
+    total_perfect_quiz: "Érj el {value} tökéletes kvízt",
+    series_completed: "Fejezz be egy sorozatot",
+    languages_read: "Olvass meséket {value} nyelven",
+    generic: "Így tovább!",
+  },
+  ca: {
+    total_stars: "Recull {value} estrelles",
+    weekly_stories: "Llegeix {value} històries en una setmana",
+    streak_days: "Llegeix {value} dies seguits",
+    total_stories_read: "Llegeix {value} històries",
+    consecutive_perfect_quiz: "Aconsegueix {value} qüestionaris perfectes seguits",
+    total_perfect_quiz: "Aconsegueix {value} qüestionaris perfectes",
+    series_completed: "Completa una sèrie",
+    languages_read: "Llegeix històries en {value} idiomes",
+    generic: "Segueix així!",
+  },
+  sl: {
+    total_stars: "Zberi {value} zvezdic",
+    weekly_stories: "Preberi {value} zgodb v enem tednu",
+    streak_days: "Beri {value} dni zapored",
+    total_stories_read: "Preberi {value} zgodb",
+    consecutive_perfect_quiz: "Doseži {value} popolnih kvizov zapored",
+    total_perfect_quiz: "Doseži {value} popolnih kvizov",
+    series_completed: "Zaključi serijo",
+    languages_read: "Beri zgodbe v {value} jezikih",
+    generic: "Tako naprej!",
+  },
+  pt: {
+    total_stars: "Recolhe {value} estrelas",
+    weekly_stories: "Lê {value} histórias numa semana",
+    streak_days: "Lê {value} dias seguidos",
+    total_stories_read: "Lê {value} histórias",
+    consecutive_perfect_quiz: "Faz {value} quizzes perfeitos seguidos",
+    total_perfect_quiz: "Faz {value} quizzes perfeitos",
+    series_completed: "Completa uma série",
+    languages_read: "Lê histórias em {value} línguas",
+    generic: "Continua!",
+  },
+  sk: {
+    total_stars: "Zozbieraj {value} hviezdičiek",
+    weekly_stories: "Prečítaj {value} príbehov za týždeň",
+    streak_days: "Čítaj {value} dní v rade",
+    total_stories_read: "Prečítaj {value} príbehov",
+    consecutive_perfect_quiz: "Dosiahni {value} perfektných kvízov v rade",
+    total_perfect_quiz: "Dosiahni {value} perfektných kvízov",
+    series_completed: "Dokonči sériu",
+    languages_read: "Čítaj príbehy v {value} jazykoch",
+    generic: "Tak ďalej!",
+  },
 };
 
 function getConditionHint(conditionType: string, conditionValue: number, lang: string): string {
@@ -463,10 +749,10 @@ function getConditionHint(conditionType: string, conditionValue: number, lang: s
 // ── Category config ──
 
 const BADGE_CATEGORIES = [
-  { key: "milestone", emoji: "⭐", de: "Meilensteine", fr: "Étapes", en: "Milestones", es: "Hitos", nl: "Mijlpalen", it: "Traguardi" },
-  { key: "weekly",    emoji: "🔥", de: "Wochen-Badges", fr: "Badges semaine", en: "Weekly Badges", es: "Badges semanales", nl: "Week-badges", it: "Badge settimanali" },
-  { key: "streak",    emoji: "🔗", de: "Serien-Badges", fr: "Badges série", en: "Streak Badges", es: "Badges de racha", nl: "Reeks-badges", it: "Badge serie" },
-  { key: "special",   emoji: "🎯", de: "Spezial-Badges", fr: "Badges spéciaux", en: "Special Badges", es: "Badges especiales", nl: "Speciale badges", it: "Badge speciali" },
+  { key: "milestone", emoji: "⭐", de: "Meilensteine", fr: "Étapes", en: "Milestones", es: "Hitos", nl: "Mijlpalen", it: "Traguardi", bs: "Prekretnice", tr: "Kilometre Taşları", bg: "Етапи", ro: "Etape", pl: "Kamienie milowe", lt: "Etapai", hu: "Mérföldkövek", ca: "Fites", sl: "Mejniki", pt: "Marcos", sk: "Míľniky" },
+  { key: "weekly",    emoji: "🔥", de: "Wochen-Badges", fr: "Badges semaine", en: "Weekly Badges", es: "Badges semanales", nl: "Week-badges", it: "Badge settimanali", bs: "Sedmični bedževi", tr: "Haftalık Rozetler", bg: "Седмични значки", ro: "Insigne săptămânale", pl: "Tygodniowe odznaki", lt: "Savaitiniai ženkliukai", hu: "Heti jelvények", ca: "Insígnies setmanals", sl: "Tedenske značke", pt: "Crachás semanais", sk: "Týždenné odznaky" },
+  { key: "streak",    emoji: "🔗", de: "Serien-Badges", fr: "Badges série", en: "Streak Badges", es: "Badges de racha", nl: "Reeks-badges", it: "Badge serie", bs: "Bedževi serija", tr: "Seri Rozetleri", bg: "Серийни значки", ro: "Insigne serie", pl: "Odznaki serii", lt: "Serijos ženkliukai", hu: "Sorozat jelvények", ca: "Insígnies de sèrie", sl: "Serijske značke", pt: "Crachás de série", sk: "Odznaky série" },
+  { key: "special",   emoji: "🎯", de: "Spezial-Badges", fr: "Badges spéciaux", en: "Special Badges", es: "Badges especiales", nl: "Speciale badges", it: "Badge speciali", bs: "Posebni bedževi", tr: "Özel Rozetler", bg: "Специални значки", ro: "Insigne speciale", pl: "Specjalne odznaki", lt: "Specialūs ženkliukai", hu: "Különleges jelvények", ca: "Insígnies especials", sl: "Posebne značke", pt: "Crachás especiais", sk: "Špeciálne odznaky" },
 ];
 
 const BADGE_CATEGORY_STYLES: Record<string, { bg: string; border: string; headerBg: string }> = {
@@ -591,7 +877,7 @@ const BadgeDetailModal = ({
             )}
             {badge.times_earned > 1 && (
               <p className="text-[13px] font-bold" style={{ color: frameColor }}>
-                {badge.times_earned}x {lang === "de" ? "geschafft" : lang === "fr" ? "obtenu" : lang === "en" ? "earned" : lang === "es" ? "ganado" : lang === "nl" ? "behaald" : lang === "it" ? "ottenuto" : "geschafft"}!
+                {badge.times_earned}x {({ de: "geschafft", fr: "obtenu", en: "earned", es: "ganado", nl: "behaald", it: "ottenuto", bs: "ostvareno", tr: "kazanıldı", bg: "спечелено", ro: "obținut", pl: "zdobyto", lt: "pasiekta", hu: "elérve", ca: "aconseguit", sl: "doseženo", pt: "obtido", sk: "dosiahnuté" } as Record<string, string>)[lang] || "geschafft"}!
               </p>
             )}
             {badge.bonus_stars > 0 && (
@@ -741,7 +1027,7 @@ const BadgesSection = ({
                       {/* "Neu" badge */}
                       {isNew && (
                         <div className="absolute -top-2 -left-1 bg-yellow-400 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-full shadow-sm z-10">
-                          Neu
+                          {({ de: "Neu", fr: "Nouveau", en: "New", es: "Nuevo", nl: "Nieuw", it: "Nuovo", bs: "Novo", tr: "Yeni", bg: "Ново", ro: "Nou", pl: "Nowy", lt: "Nauja", hu: "Új", ca: "Nou", sl: "Novo", pt: "Novo", sk: "Nové" } as Record<string, string>)[lang] || "Neu"}
                         </div>
                       )}
                       {/* times_earned */}
@@ -860,13 +1146,11 @@ const ResultsPage = () => {
 
   if (loading || !data) {
     return (
-      <div
-        className="min-h-screen pb-safe"
-      >
-        <div className="px-4 pt-3 pb-0">
-          <BackButton to="/" />
-        </div>
-        <div className="max-w-lg mx-auto px-4 space-y-4 pt-2">
+      <div className="min-h-screen pb-safe">
+        <div className="max-w-lg mx-auto px-4 space-y-4 pt-3">
+          <div className="flex items-center gap-3 px-1">
+            <BackButton to="/" />
+          </div>
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard className="h-[120px]" />
@@ -883,12 +1167,18 @@ const ResultsPage = () => {
     <div
       className="min-h-screen pb-safe"
     >
-      <div className="px-4 pt-3 pb-0">
-        <BackButton to="/" />
-      </div>
-
-      <div className="max-w-lg mx-auto px-4 space-y-4 pt-1 pb-8">
-        <FablinoSection message={fablinoMsg} delay={0} />
+      <div className="max-w-lg mx-auto px-4 space-y-4 pt-3 pb-8">
+        {/* Nav + Fablino in one row */}
+        <div
+          className="flex items-center gap-3 px-1"
+          style={{ animation: `fadeSlideUp 0.5s ease-out 0s both` }}
+        >
+          <BackButton to="/" />
+          <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" />
+          <div className="flex-1 min-w-0">
+            <SpeechBubble>{fablinoMsg}</SpeechBubble>
+          </div>
+        </div>
         <LevelCard current={current} next={next} totalStars={data.total_stars} delay={0.1} t={t} />
         <LevelRoadmap levels={sorted} totalStars={data.total_stars} delay={0.2} t={t} />
         <BadgesSection
