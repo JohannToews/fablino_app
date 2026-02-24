@@ -81,7 +81,7 @@ const STORY_CATEGORIES = [
   },
 ];
 
-const AGES = [5, 6, 7, 8, 9, 10, 11, 12];
+const AGES = [6, 7, 8, 9, 10, 11, 12];
 
 // UI-supported languages for admin language selection
 const UI_LANGUAGES = LANGUAGES.filter((l) => l.uiSupported).sort((a, b) => a.nameNative.localeCompare(b.nameNative));
@@ -450,7 +450,7 @@ const OnboardingKindPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-8 overflow-y-auto" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
       {/* Header */}
-      <div className="flex flex-col items-center mb-6 w-full max-w-md">
+      <div className={`flex flex-col items-center mb-6 w-full ${step === "profile" ? "max-w-2xl" : "max-w-md"}`}>
         <img
           src="/mascot/6_Onboarding.png"
           alt="Fablino"
@@ -510,100 +510,104 @@ const OnboardingKindPage = () => {
 
       {/* === STEP 1: Profile === */}
       {step === "profile" && (
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
-          {/* Name */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">{t.onboardingChildName}</Label>
-            <Input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value.slice(0, 30))}
-              placeholder={t.onboardingChildNamePlaceholder}
-              className="h-12 rounded-xl border-2 text-base"
-              style={{ borderColor: "rgba(232,134,58,0.3)" }}
-              autoComplete="off"
-              autoFocus
-            />
-          </div>
-
-          {/* Alter */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
-            <div className="flex flex-wrap gap-2">
-              {AGES.map((age) => (
-                <button
-                  key={age}
-                  type="button"
-                  onClick={() => setSelectedAge(age)}
-                  className="h-12 w-12 rounded-xl text-base font-bold transition-all border-2 flex-shrink-0"
-                  style={{
-                    background: selectedAge === age ? "#E8863A" : "transparent",
-                    color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
-                    borderColor: selectedAge === age ? "#E8863A" : "rgba(232,134,58,0.25)",
-                  }}
-                >
-                  {age}
-                </button>
-              ))}
+        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-lg px-6 py-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            {/* Left Column */}
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">{t.onboardingChildName}</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value.slice(0, 30))}
+                placeholder={t.onboardingChildNamePlaceholder}
+                className="h-12 rounded-xl border-2 text-base"
+                style={{ borderColor: "rgba(232,134,58,0.3)" }}
+                autoComplete="off"
+                autoFocus
+              />
             </div>
-          </div>
 
-          {/* Geschlecht */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
-            <div className="flex gap-2">
-              {GENDERS_TRANSLATED.map((g) => (
-                <button
-                  key={g.value}
-                  type="button"
-                  onClick={() => setGender(g.value)}
-                  className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-all"
-                  style={{
-                    background: gender === g.value ? "#E8863A" : "transparent",
-                    color: gender === g.value ? "white" : "rgba(45,24,16,0.75)",
-                    borderColor: gender === g.value ? "#E8863A" : "rgba(232,134,58,0.25)",
-                  }}
-                >
-                  <span className="text-2xl">{g.emoji}</span>
-                  <span className="text-xs font-semibold">{g.label}</span>
-                </button>
-              ))}
+            {/* Geschlecht – compact pills */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
+              <div className="flex gap-2">
+                {GENDERS_TRANSLATED.map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setGender(g.value)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-150 active:scale-95"
+                    style={{
+                      background: gender === g.value ? "#E8863A" : "white",
+                      color: gender === g.value ? "white" : "#2D1810",
+                      borderColor: gender === g.value ? "#E8863A" : "rgba(209,213,219,1)",
+                      boxShadow: gender === g.value ? "0 2px 8px rgba(232,134,58,0.3)" : "none",
+                    }}
+                  >
+                    <span>{g.emoji}</span>
+                    <span>{g.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Schulsprache (single dropdown) */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">{t.onboardingSchoolLang}</Label>
-            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              {t.onboardingSchoolLangHint}
-            </p>
-            <SingleSelect
-              options={langOptions}
-              value={schoolLang}
-              onChange={setSchoolLang}
-              placeholder={t.onboardingSelectLang}
-            />
-          </div>
+            {/* Alter */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
+              <div className="flex gap-2">
+                {AGES.map((age) => (
+                  <button
+                    key={age}
+                    type="button"
+                    onClick={() => setSelectedAge(age)}
+                    className="min-w-[44px] min-h-[44px] h-11 w-11 rounded-xl text-base font-bold transition-all duration-150 active:scale-95 border-2 flex-shrink-0 flex items-center justify-center"
+                    style={{
+                      background: selectedAge === age ? "#E8863A" : "transparent",
+                      color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
+                      borderColor: selectedAge === age ? "#E8863A" : "rgba(232,134,58,0.25)",
+                    }}
+                  >
+                    {age}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Weitere Lesesprachen (multi dropdown) */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">{t.onboardingExtraLangs} <span className="font-normal text-xs">{t.onboardingExtraLangsOptional}</span></Label>
-            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              {t.onboardingExtraLangsHint}
-            </p>
-            <MultiSelect
-              options={langOptions}
-              values={extraLangs}
-              onChange={setExtraLangs}
-              placeholder={t.onboardingExtraLangsPlaceholder}
-              excludeCode={schoolLang}
-            />
+            {/* Schulsprache (single dropdown) */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">{t.onboardingSchoolLang}</Label>
+              <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+                {t.onboardingSchoolLangHint}
+              </p>
+              <SingleSelect
+                options={langOptions}
+                value={schoolLang}
+                onChange={setSchoolLang}
+                placeholder={t.onboardingSelectLang}
+              />
+            </div>
+
+            {/* Weitere Lesesprachen (multi dropdown) – spans full width on md */}
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-sm font-semibold">{t.onboardingExtraLangs} <span className="font-normal text-xs">{t.onboardingExtraLangsOptional}</span></Label>
+              <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+                {t.onboardingExtraLangsHint}
+              </p>
+              <MultiSelect
+                options={langOptions}
+                values={extraLangs}
+                onChange={setExtraLangs}
+                placeholder={t.onboardingExtraLangsPlaceholder}
+                excludeCode={schoolLang}
+              />
+            </div>
           </div>
 
           <Button
             type="button"
             onClick={handleProfileNext}
-            className="w-full font-semibold rounded-2xl text-white shadow-md"
+            className="w-full font-semibold rounded-2xl text-white shadow-md mt-6"
             style={{ backgroundColor: "#E8863A", height: "52px", fontSize: "1rem" }}
           >
             {t.onboardingNext}
