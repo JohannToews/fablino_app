@@ -1,27 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerClose,
-} from '@/components/ui/drawer';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import FablinoMascot from '@/components/FablinoMascot';
-import { Loader2, X, BookmarkPlus, Check } from 'lucide-react';
-import { useImmersiveLayout } from './useImmersiveLayout';
+import { Loader2, BookmarkPlus, Check } from 'lucide-react';
 
 interface ImmersiveWordSheetProps {
   word: string | null;
@@ -151,8 +140,6 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
   }, [word, storyLanguage, explanationLanguage]);
 
   const isOpen = word !== null;
-  const layoutMode = useImmersiveLayout();
-  const isTablet = layoutMode === 'small-tablet';
 
   // Shared inner content
   const wordLabel = word ? word.replace(/[.,!?;:'"«»\-–—()[\]{}]/g, '') : '';
@@ -204,67 +191,33 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
     </>
   );
 
-  // ── Tablet: Dialog Popup ─────────────────────────────────
-  if (isTablet) {
-    return (
-      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-xs sm:max-w-sm rounded-2xl shadow-xl backdrop-blur-sm bg-background/95 border border-border/50">
-          <DialogHeader>
-            <div className="flex flex-row items-start gap-3">
-              <FablinoMascot
-                src="/mascot/fablino-happy.webp"
-                size="sm"
-                bounce={false}
-                className="flex-shrink-0 mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-lg font-bold text-left">
-                  {wordLabel}
-                </DialogTitle>
-                <DialogDescription className="text-left mt-1">
-                  {contentBody}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <DialogFooter className="flex-row gap-2 justify-start">
-            {footerButtons}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // ── Phone: Bottom Sheet Drawer ───────────────────────────
+  // ── Centered Dialog for all layouts ─────────────────────
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DrawerContent className="immersive-word-sheet max-h-[50vh]">
-        <DrawerHeader className="flex flex-row items-start gap-3 pb-2">
-          <FablinoMascot
-            src="/mascot/fablino-happy.webp"
-            size="sm"
-            bounce={false}
-            className="flex-shrink-0 mt-1"
-          />
-          <div className="flex-1 min-w-0">
-            <DrawerTitle className="text-lg font-bold text-left">
-              {wordLabel}
-            </DrawerTitle>
-            <DrawerDescription className="text-left mt-1">
-              {contentBody}
-            </DrawerDescription>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-xs sm:max-w-sm rounded-2xl shadow-xl backdrop-blur-sm bg-background/95 border border-border/50 [&>button]:hidden">
+        <DialogHeader>
+          <div className="flex flex-row items-start gap-3">
+            <FablinoMascot
+              src="/mascot/fablino-happy.webp"
+              size="sm"
+              bounce={false}
+              className="flex-shrink-0 mt-1"
+            />
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg font-bold text-left">
+                {wordLabel}
+              </DialogTitle>
+              <DialogDescription className="text-left mt-1">
+                {contentBody}
+              </DialogDescription>
+            </div>
           </div>
-          <DrawerClose asChild>
-            <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8">
-              <X className="h-4 w-4" />
-            </Button>
-          </DrawerClose>
-        </DrawerHeader>
-        <DrawerFooter className="flex-row gap-2 pt-0">
+        </DialogHeader>
+        <DialogFooter className="flex-row gap-2 justify-start">
           {footerButtons}
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
