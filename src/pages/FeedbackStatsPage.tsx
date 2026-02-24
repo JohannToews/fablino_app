@@ -764,6 +764,19 @@ const FeedbackStatsPage = () => {
   const [filterJaiFini, setFilterJaiFini] = useState<string>("all");
   const [filterQuizCompleted, setFilterQuizCompleted] = useState<string>("all");
 
+  // Which filters are visible
+  type StoryFilterKey = 'title' | 'user' | 'kid' | 'difficulty' | 'status' | 'jaiFini' | 'quiz';
+  const [visibleFilters, setVisibleFilters] = useState<Set<StoryFilterKey>>(new Set([
+    'title', 'user', 'kid', 'difficulty', 'status'
+  ]));
+  const toggleFilter = (key: StoryFilterKey) => {
+    setVisibleFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) { next.delete(key); } else { next.add(key); }
+      return next;
+    });
+  };
+
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<Set<StoryColumnKey>>(new Set([
     'date', 'user', 'child', 'title', 'textLanguage', 'difficulty', 'jaiFini', 'quizCompleted', 'status'
@@ -1415,82 +1428,121 @@ const FeedbackStatsPage = () => {
             {/* Filters */}
             <Card className="mb-4">
               <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Filter</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filter</span>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                        <Columns3 className="h-3 w-3" /> Filter ein/aus
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2" align="end">
+                      {([
+                        ['title', 'Titel'],
+                        ['user', 'User'],
+                        ['kid', 'Kind'],
+                        ['difficulty', 'Schwierigkeit'],
+                        ['status', 'Status'],
+                        ['jaiFini', "J'ai fini"],
+                        ['quiz', 'Quiz'],
+                      ] as [StoryFilterKey, string][]).map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 py-1 px-1 text-sm cursor-pointer hover:bg-muted/50 rounded">
+                          <Checkbox checked={visibleFilters.has(key)} onCheckedChange={() => toggleFilter(key)} />
+                          {label}
+                        </label>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Input
-                    placeholder={t.storyTitle}
-                    value={filterTitle}
-                    onChange={(e) => setFilterTitle(e.target.value)}
-                    className="h-9"
-                  />
-                  <Select value={filterUser} onValueChange={setFilterUser}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.user} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      {uniqueUsers.map(u => (
-                        <SelectItem key={u} value={u!}>{u}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterKid} onValueChange={setFilterKid}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.child} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      {uniqueKids.map(k => (
-                        <SelectItem key={k} value={k!}>{k}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.difficulty} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="easy">{t.easy}</SelectItem>
-                      <SelectItem value="medium">{t.medium}</SelectItem>
-                      <SelectItem value="difficult">{t.hard}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.status} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="read">{t.read}</SelectItem>
-                      <SelectItem value="unread">{t.unread}</SelectItem>
-                      <SelectItem value="active">{t.active}</SelectItem>
-                      <SelectItem value="deleted">{t.deleted}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterJaiFini} onValueChange={setFilterJaiFini}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.jaiFini} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="yes">{t.yes}</SelectItem>
-                      <SelectItem value="no">{t.no}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterQuizCompleted} onValueChange={setFilterQuizCompleted}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Quiz" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="yes">{t.yes}</SelectItem>
-                      <SelectItem value="no">{t.no}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-wrap gap-2">
+                  {visibleFilters.has('title') && (
+                    <Input
+                      placeholder="Titel"
+                      value={filterTitle}
+                      onChange={(e) => setFilterTitle(e.target.value)}
+                      className="h-9 w-[130px]"
+                    />
+                  )}
+                  {visibleFilters.has('user') && (
+                    <Select value={filterUser} onValueChange={setFilterUser}>
+                      <SelectTrigger className="h-9 w-[110px]">
+                        <SelectValue placeholder="User" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        {uniqueUsers.map(u => (
+                          <SelectItem key={u} value={u!}>{u}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('kid') && (
+                    <Select value={filterKid} onValueChange={setFilterKid}>
+                      <SelectTrigger className="h-9 w-[110px]">
+                        <SelectValue placeholder="Kind" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        {uniqueKids.map(k => (
+                          <SelectItem key={k} value={k!}>{k}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('difficulty') && (
+                    <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+                      <SelectTrigger className="h-9 w-[120px]">
+                        <SelectValue placeholder="Schwierigkeit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="easy">{t.easy}</SelectItem>
+                        <SelectItem value="medium">{t.medium}</SelectItem>
+                        <SelectItem value="difficult">{t.hard}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('status') && (
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="h-9 w-[110px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="read">{t.read}</SelectItem>
+                        <SelectItem value="unread">{t.unread}</SelectItem>
+                        <SelectItem value="active">{t.active}</SelectItem>
+                        <SelectItem value="deleted">{t.deleted}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('jaiFini') && (
+                    <Select value={filterJaiFini} onValueChange={setFilterJaiFini}>
+                      <SelectTrigger className="h-9 w-[110px]">
+                        <SelectValue placeholder="J'ai fini" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="yes">{t.yes}</SelectItem>
+                        <SelectItem value="no">{t.no}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('quiz') && (
+                    <Select value={filterQuizCompleted} onValueChange={setFilterQuizCompleted}>
+                      <SelectTrigger className="h-9 w-[100px]">
+                        <SelectValue placeholder="Quiz" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="yes">{t.yes}</SelectItem>
+                        <SelectItem value="no">{t.no}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </CardContent>
             </Card>
