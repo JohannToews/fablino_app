@@ -43,13 +43,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <PremiumUiBodyClass />
         <KidProfileProvider>
           <Toaster />
         <Sonner />
         <OfflineBanner />
         <ErrorBoundary>
         <BrowserRouter>
+          <PremiumUiBodyClass />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
