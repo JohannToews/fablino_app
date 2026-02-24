@@ -163,6 +163,7 @@ export function buildComicGridPrompt(
   characterAnchor: string,
   worldAnchor: string,
   imageStylePrefix: string,
+  consistencySuffix?: string,
 ): string {
   const panelDescriptions = grid.map((panel) => {
     // Scene first, character anchor at the end — Imagen weights prompt start more heavily
@@ -170,6 +171,8 @@ export function buildComicGridPrompt(
     const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase();
     return `${panelLabel}: [${panel.camera}] ${sceneText} Character: ${characterAnchor.trim()}.`;
   }).join('\n\n');
+
+  const suffix = consistencySuffix || 'Consistent character design across all panels.';
 
   return `${imageStylePrefix}
 
@@ -184,7 +187,7 @@ ${panelDescriptions}
 
 Character reference: ${characterAnchor}
 No text, signs, numbers, or readable writing in any panel.
-Consistent character design across all panels.`;
+${suffix}`;
 }
 
 export interface BuildComicStripImagePromptParams {

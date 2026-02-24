@@ -134,6 +134,8 @@ export async function getStyleForAge(
   styleKey: string;
   promptSnippet: string;
   ageModifier: string;
+  negative_prompt?: string;
+  consistency_suffix?: string;
 }> {
   const ageGroup = age <= 7 ? '6-7' : age <= 9 ? '8-9' : '10-11';
 
@@ -153,6 +155,8 @@ export async function getStyleForAge(
           styleKey: preferred.style_key,
           promptSnippet: preferred.imagen_prompt_snippet,
           ageModifier: preferred.age_modifiers?.[ageGroup] || '',
+          negative_prompt: preferred.negative_prompt || undefined,
+          consistency_suffix: preferred.consistency_suffix || undefined,
         };
       }
     }
@@ -172,6 +176,8 @@ export async function getStyleForAge(
         styleKey: defaultStyle.style_key,
         promptSnippet: defaultStyle.imagen_prompt_snippet,
         ageModifier: defaultStyle.age_modifiers?.[ageGroup] || '',
+        negative_prompt: defaultStyle.negative_prompt || undefined,
+        consistency_suffix: defaultStyle.consistency_suffix || undefined,
       };
     }
   } catch (err) {
@@ -199,7 +205,7 @@ export function buildImagePrompts(
   themeImageRules: ThemeImageRules,
   childAge: number,
   seriesContext?: SeriesImageContext,
-  imageStyleOverride?: { promptSnippet: string; ageModifier: string },
+  imageStyleOverride?: { promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string },
 ): ImagePromptResult[] {
   const results: ImagePromptResult[] = [];
 
@@ -238,6 +244,7 @@ export function buildImagePrompts(
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
+    imageStyleOverride?.negative_prompt,                // Style-specific (from image_styles DB)
     themeImageRules.image_negative_prompt,              // Theme-specific negatives (null until Phase 1.3)
     ageStyleRules.negative_prompt,                      // DB: image_style_rules.negative_prompt
     'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
@@ -310,7 +317,7 @@ export function buildFallbackImagePrompt(
   themeImageRules: ThemeImageRules,
   childAge?: number,
   seriesContext?: SeriesImageContext,
-  imageStyleOverride?: { promptSnippet: string; ageModifier: string },
+  imageStyleOverride?: { promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string },
 ): ImagePromptResult {
   const ageModifier = imageStyleOverride
     ? `${imageStyleOverride.promptSnippet}. ${imageStyleOverride.ageModifier}`.replace(/\.\s*$/, '')
@@ -332,6 +339,7 @@ export function buildFallbackImagePrompt(
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
+    imageStyleOverride?.negative_prompt,
     themeImageRules.image_negative_prompt,
     ageStyleRules.negative_prompt,
     'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',

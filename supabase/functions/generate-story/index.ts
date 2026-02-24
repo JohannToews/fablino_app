@@ -2650,7 +2650,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     console.log(`[PERF] Image rules loaded in ${Date.now() - imageRulesStart}ms`);
 
     // ================== Image Style from DB (Phase 1) ==================
-    let imageStyleData: { styleKey: string; promptSnippet: string; ageModifier: string } | undefined;
+    let imageStyleData: { styleKey: string; promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string } | undefined;
     try {
       imageStyleData = await getStyleForAge(
         supabase,
@@ -2921,7 +2921,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
           if (GEMINI_API_KEY) {
             try {
-              imageUrl = await callVertexImageAPI(GEMINI_API_KEY, imgPrompt.prompt);
+              console.log(`[IMAGE] Style: ${imageStyleData?.styleKey || 'default'}, negativePrompt: ${imgPrompt.negative_prompt?.substring(0, 100) || 'NONE'}`);
+              imageUrl = await callVertexImageAPI(GEMINI_API_KEY, imgPrompt.prompt, 3, imgPrompt.negative_prompt || undefined);
             } catch (vertexError) {
               console.log(`[IMAGE-PIPELINE] Vertex AI failed for ${imgPrompt.label}, trying Lovable Gateway`);
             }
@@ -3091,31 +3092,25 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             imageStyleData?.ageModifier || '',
           ].filter(Boolean).join('\n');
 
-          // Style-specific negative prompt for Vertex
-          const styleKey = imageStyleData?.styleKey || 'default';
-          const STYLE_NEGATIVE_PROMPTS: Record<string, string> = {
-            graphic_novel: '3D render, 3D animation, Pixar style, CGI, smooth plastic skin, ray tracing, photorealistic, hyperrealistic, Unreal Engine, octane render',
-            storybook_soft: '3D render, CGI, harsh lighting, dark shadows, photorealistic',
-            manga_anime: 'photorealistic, western cartoon, 3D render',
-          };
-          const comicNegativePrompt = STYLE_NEGATIVE_PROMPTS[styleKey] || undefined;
+          // Style-specific negative prompt + consistency suffix from DB
+          const comicNegativePrompt = imageStyleData?.negative_prompt || undefined;
+          const consistencySuffix = imageStyleData?.consistency_suffix || 'Consistent character design across all panels.';
 
-          console.log(`[COMIC] Style key: "${styleKey}", prefix (first 120 chars): "${imageStylePrefix.substring(0, 120)}"`);
-          if (comicNegativePrompt) {
-            console.log(`[COMIC] Negative prompt: "${comicNegativePrompt}"`);
-          }
+          console.log(`[IMAGE] Style: ${imageStyleData?.styleKey || 'default'}, negativePrompt: ${comicNegativePrompt?.substring(0, 100) || 'NONE'}, suffix: ${consistencySuffix?.substring(0, 60)}`);
 
           const prompt1 = buildComicGridPrompt(
             comicImagePlan.grid_1,
             characterAnchor,
             comicImagePlan.world_anchor,
             imageStylePrefix,
+            consistencySuffix,
           );
           const prompt2 = buildComicGridPrompt(
             comicImagePlan.grid_2,
             characterAnchor,
             comicImagePlan.world_anchor,
             imageStylePrefix,
+            consistencySuffix,
           );
 
           // Log final Vertex prompts for debugging
