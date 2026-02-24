@@ -904,7 +904,7 @@ const FeedbackStatsPage = () => {
     const { data: resultsData } = await supabase
       .from("user_results")
       .select("reference_id")
-      .eq("activity_type", "story_completed");
+      .in("activity_type", ["story_completed", "story_read"]);
 
     const readStoryIds = new Set(resultsData?.map(r => r.reference_id) || []);
 
