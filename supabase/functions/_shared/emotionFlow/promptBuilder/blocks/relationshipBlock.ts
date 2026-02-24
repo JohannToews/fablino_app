@@ -91,19 +91,28 @@ export function buildRelationshipBlock(params: RelationshipBlockParams): string 
         selectedCharacters: [],
       });
     }
-    const coStars = selectedCharacters
-      .map((c) => `${c.name} (${c.relationship})`)
-      .join(', ');
+    const coStarLines = selectedCharacters
+      .map((c) => `- ${c.name} (${c.relationship})`)
+      .join('\n');
     const lines = [
       '## CHARACTERS',
       `PROTAGONIST: ${kidProfile.name}, ${kidProfile.age} years old.`,
       '',
-      `CO-STARS: ${coStars}`,
-      "These are REAL people in the child's life — their dynamic should feel authentic.",
+      `CO-STARS (ALL must appear as active characters in the story):`,
+      coStarLines,
+      '',
+      'CRITICAL RULES:',
+      '- Every co-star listed above MUST appear in the story with dialogue and actions.',
+      '- Do NOT invent new main or secondary human characters. Only the characters listed above may appear as named characters.',
+      '- You may add unnamed background characters (e.g. "a shopkeeper", "passers-by") but NO new named characters.',
+      "- These are REAL people in the child's life — their dynamic should feel authentic.",
+      '',
+      `SIDEKICK PERSONALITY: Apply this personality trait to whichever co-star fits best: "${sidekickSeed.personality_trait_en ?? ''}".`,
+      sidekickSeed.weakness_en ? `Give that co-star this flaw: ${sidekickSeed.weakness_en}.` : '',
+      sidekickSeed.strength_en ? `Give that co-star this strength: ${sidekickSeed.strength_en}.` : '',
+      'Do NOT create a new character for the sidekick role — assign it to one of the real co-stars above.',
       '',
       'RELATIONSHIP DYNAMIC: Apply the emotional arc to the relationships between these characters. If the blueprint is about conflict resolution, the conflict should involve the protagonist and one of the co-stars. If it\'s about courage, the protagonist might find courage through or for one of the co-stars.',
-      '',
-      `SIDEKICK ROLE: One of the co-stars takes on the sidekick role: ${sidekickSeed.personality_trait_en ?? ''}. Assign this personality trait to whichever co-star fits best.`,
     ].filter(Boolean);
     return lines.join('\n');
   }
