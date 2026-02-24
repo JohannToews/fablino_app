@@ -198,6 +198,8 @@ const GRID_LAYOUT_RULES =
 
 /**
  * Builds a single Vertex prompt for one 2x2 grid (4 panels) from the LLM-generated grid format.
+ * Structure: Style → Grid Rules → SCENE DESCRIPTIONS (weighted heavily) → Character reference (once at end)
+ * This ensures Imagen focuses on the SCENE DIFFERENCES rather than repeating the character.
  */
 export function buildComicGridPrompt(
   grid: ComicPanel[],
@@ -206,27 +208,40 @@ export function buildComicGridPrompt(
   imageStylePrefix: string,
   consistencySuffix?: string,
 ): string {
+  // Strip character anchor from scene_en if LLM embedded it (we add it once at the end)
+  const anchorPattern = new RegExp(
+    `\\s*${characterAnchor.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`,
+    'gi'
+  );
+
   const panelDescriptions = grid.map((panel) => {
-    // Scene first, character anchor at the end — Imagen weights prompt start more heavily
-    const sceneText = panel.scene_en.trim().replace(new RegExp(`^${characterAnchor.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`, 'i'), '');
+    // Remove character anchor from scene text — it will be added ONCE at the end
+    let sceneText = panel.scene_en.trim().replace(anchorPattern, ' ').trim();
+    // Also remove generic trailing "Character:" references
+    sceneText = sceneText.replace(/\s*Character:.*$/i, '').trim();
     const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase();
-    return `${panelLabel}: [${panel.camera}] ${sceneText} Character: ${characterAnchor.trim()}.`;
+    // SCENE-FIRST: camera + scene description only — NO character anchor per panel
+    return `${panelLabel}: [${panel.camera}] ${sceneText}`;
   }).join('\n\n');
 
   const suffix = consistencySuffix || 'Consistent character design across all panels.';
 
+  // KEY CHANGE: Character anchor appears ONCE at the very end, not per panel.
+  // This gives Imagen more "attention budget" for the scene differences.
   return `${imageStylePrefix}
 
-Create a 2x2 grid of 4 children's book illustrations.
+Create a 2x2 grid of 4 children's book illustrations. Each panel MUST look visually DISTINCT — different framing, different part of the scene, different mood.
 Setting: ${worldAnchor}
 
 ${GRID_LAYOUT_RULES}
+
+CRITICAL: Each of the 4 panels must show a CLEARLY DIFFERENT visual composition. Vary the camera distance, angle, lighting, and which part of the setting is visible. The viewer must immediately see 4 unique images, not 4 variations of the same shot.
 
 Panel layout (reading order: left-to-right, top-to-bottom):
 
 ${panelDescriptions}
 
-Character reference: ${characterAnchor}
+Character reference (same character(s) in all 4 panels): ${characterAnchor}
 No text, signs, numbers, or readable writing in any panel.
 ${suffix}`;
 }
