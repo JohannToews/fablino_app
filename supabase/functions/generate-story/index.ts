@@ -868,10 +868,11 @@ async function callVertexImageAPI(
       const projectId = sa.project_id || "fablino-prod";
       const accessToken = await getVertexAccessToken(serviceAccountJson);
       
-      // Imagen 3 endpoint (europe-west4)
-      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/imagen-3.0-fast-generate-001:predict`;
+      // Imagen 4 endpoint (europe-west4)
+      const vertexModel = "imagen-4.0-generate-001";
+      const vertexUrl = `https://europe-west4-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west4/publishers/google/models/${vertexModel}:predict`;
       
-      console.log(`[VERTEX-IMAGE] Calling Imagen 3 (attempt ${attempt + 1}/${maxRetries})`);
+      console.log(`[VERTEX-IMAGE] Calling ${vertexModel} (attempt ${attempt + 1}/${maxRetries}), personGeneration=allow_all, safetySetting=block_only_high`);
       
       const response = await fetch(vertexUrl, {
         method: "POST",
@@ -886,6 +887,8 @@ async function callVertexImageAPI(
           parameters: {
             sampleCount: 1,
             aspectRatio: "1:1",
+            personGeneration: "allow_all",
+            safetySetting: "block_only_high",
             outputOptions: {
               mimeType: "image/png",
             },
@@ -921,16 +924,23 @@ async function callVertexImageAPI(
         return null;
       }
       
-      // Imagen 3 response format: predictions[].bytesBase64Encoded
+      // Imagen 4 response format: predictions[].bytesBase64Encoded
       const predictions = data.predictions || [];
+      
+      // Check for RAI filter
+      if (predictions.length > 0 && predictions[0].raiFilteredReason) {
+        console.error(`[VERTEX-IMAGE] RAI filter triggered: ${predictions[0].raiFilteredReason}`);
+        return null;
+      }
+      
       if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
         const base64Data = predictions[0].bytesBase64Encoded;
         const mimeType = predictions[0].mimeType || "image/png";
-        console.log(`[VERTEX-IMAGE] Successfully generated image via Imagen 3`);
+        console.log(`[VERTEX-IMAGE] Successfully generated image via Imagen 4`);
         return `data:${mimeType};base64,${base64Data}`;
       }
       
-      console.error("[VERTEX-IMAGE] No image in Imagen 3 response. Keys:", JSON.stringify(Object.keys(data)).substring(0, 300));
+      console.error(`[VERTEX-IMAGE] No image in Imagen 4 response. Keys: ${JSON.stringify(Object.keys(data))}. Full response (first 500 chars): ${JSON.stringify(data).substring(0, 500)}`);
       return null;
     } catch (error) {
       console.error("[VERTEX-IMAGE] Request error:", error);
