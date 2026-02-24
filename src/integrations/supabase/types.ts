@@ -791,6 +791,7 @@ export type Database = {
         Row: {
           age_groups: string[]
           age_modifiers: Json | null
+          consistency_suffix: string | null
           created_at: string | null
           default_for_ages: string[] | null
           description: Json
@@ -798,6 +799,7 @@ export type Database = {
           imagen_prompt_snippet: string
           is_active: boolean | null
           labels: Json
+          negative_prompt: string | null
           preview_image_url: string | null
           sort_order: number | null
           style_key: string
@@ -806,6 +808,7 @@ export type Database = {
         Insert: {
           age_groups: string[]
           age_modifiers?: Json | null
+          consistency_suffix?: string | null
           created_at?: string | null
           default_for_ages?: string[] | null
           description: Json
@@ -813,6 +816,7 @@ export type Database = {
           imagen_prompt_snippet: string
           is_active?: boolean | null
           labels: Json
+          negative_prompt?: string | null
           preview_image_url?: string | null
           sort_order?: number | null
           style_key: string
@@ -821,6 +825,7 @@ export type Database = {
         Update: {
           age_groups?: string[]
           age_modifiers?: Json | null
+          consistency_suffix?: string | null
           created_at?: string | null
           default_for_ages?: string[] | null
           description?: Json
@@ -828,6 +833,7 @@ export type Database = {
           imagen_prompt_snippet?: string
           is_active?: boolean | null
           labels?: Json
+          negative_prompt?: string | null
           preview_image_url?: string | null
           sort_order?: number | null
           style_key?: string
