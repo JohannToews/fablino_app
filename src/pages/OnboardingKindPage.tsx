@@ -528,49 +528,94 @@ const OnboardingKindPage = () => {
               />
             </div>
 
-            {/* Geschlecht – compact pills */}
+            {/* Geschlecht – dropdown */}
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
-              <div className="flex gap-2">
-                {GENDERS_TRANSLATED.map((g) => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    onClick={() => setGender(g.value)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-150 active:scale-95"
-                    style={{
-                      background: gender === g.value ? "#E8863A" : "white",
-                      color: gender === g.value ? "white" : "#2D1810",
-                      borderColor: gender === g.value ? "#E8863A" : "rgba(209,213,219,1)",
-                      boxShadow: gender === g.value ? "0 2px 8px rgba(232,134,58,0.3)" : "none",
-                    }}
-                  >
-                    <span>{g.emoji}</span>
-                    <span>{g.label}</span>
-                  </button>
-                ))}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('gender-dropdown');
+                    if (el) el.classList.toggle('hidden');
+                  }}
+                  className="w-full flex items-center justify-between h-12 rounded-xl border-2 px-4 text-sm bg-white"
+                  style={{
+                    borderColor: gender ? "#E8863A" : "rgba(232,134,58,0.3)",
+                    color: gender ? "rgba(45,24,16,0.9)" : "rgba(45,24,16,0.45)",
+                  }}
+                >
+                  <span>
+                    {gender
+                      ? `${GENDERS_TRANSLATED.find(g => g.value === gender)?.emoji} ${GENDERS_TRANSLATED.find(g => g.value === gender)?.label}`
+                      : t.onboardingGender}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </button>
+                <div
+                  id="gender-dropdown"
+                  className="hidden absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
+                  style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
+                >
+                  {GENDERS_TRANSLATED.map((g) => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      onClick={() => {
+                        setGender(g.value);
+                        document.getElementById('gender-dropdown')?.classList.add('hidden');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
+                      style={{ color: "rgba(45,24,16,0.85)" }}
+                    >
+                      <span className="text-lg">{g.emoji}</span>
+                      <span>{g.label}</span>
+                      {g.value === gender && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Alter */}
-            <div className="space-y-2">
+            {/* Alter – dropdown */}
+            <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
-              <div className="flex gap-2">
-                {AGES.map((age) => (
-                  <button
-                    key={age}
-                    type="button"
-                    onClick={() => setSelectedAge(age)}
-                    className="min-w-[44px] min-h-[44px] h-11 w-11 rounded-xl text-base font-bold transition-all duration-150 active:scale-95 border-2 flex-shrink-0 flex items-center justify-center"
-                    style={{
-                      background: selectedAge === age ? "#E8863A" : "transparent",
-                      color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
-                      borderColor: selectedAge === age ? "#E8863A" : "rgba(232,134,58,0.25)",
-                    }}
-                  >
-                    {age}
-                  </button>
-                ))}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('age-dropdown');
+                    if (el) el.classList.toggle('hidden');
+                  }}
+                  className="w-full flex items-center justify-between h-12 rounded-xl border-2 px-4 text-sm bg-white"
+                  style={{
+                    borderColor: selectedAge ? "#E8863A" : "rgba(232,134,58,0.3)",
+                    color: selectedAge ? "rgba(45,24,16,0.9)" : "rgba(45,24,16,0.45)",
+                  }}
+                >
+                  <span>{selectedAge ? `${selectedAge} Jahre` : t.onboardingAge}</span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </button>
+                <div
+                  id="age-dropdown"
+                  className="hidden absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
+                  style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
+                >
+                  {AGES.map((age) => (
+                    <button
+                      key={age}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAge(age);
+                        document.getElementById('age-dropdown')?.classList.add('hidden');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
+                      style={{ color: "rgba(45,24,16,0.85)" }}
+                    >
+                      <span className="font-medium">{age} Jahre</span>
+                      {age === selectedAge && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -692,55 +737,6 @@ const OnboardingKindPage = () => {
             })}
           </div>
 
-          {/* Voice / text detail input – appears after a subtype is picked */}
-          {selectedSubtype && (() => {
-            const cat = STORY_CATEGORIES.find(c => c.key === selectedCategory);
-            const sub = cat?.subtypes.find(s => s.key === selectedSubtype);
-            if (!sub) return null;
-            return (
-              <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border animate-fade-in" style={{ borderColor: "rgba(232,134,58,0.2)" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: "rgba(45,24,16,0.75)" }}>
-                  {sub.voicePrompt}
-                </p>
-                <div className="relative">
-                  <textarea
-                    value={customDetail}
-                    onChange={(e) => setCustomDetail(e.target.value)}
-                    placeholder={sub.placeholder}
-                    maxLength={200}
-                    rows={3}
-                    className="w-full rounded-xl border-2 px-4 py-3 pr-14 text-sm resize-none outline-none transition-colors"
-                    style={{
-                      borderColor: isListening ? "#E8863A" : customDetail ? "#E8863A" : "rgba(232,134,58,0.25)",
-                      color: "rgba(45,24,16,0.85)",
-                      background: isListening ? "rgba(232,134,58,0.04)" : "transparent",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={isListening ? handleStopListening : handleStartListening}
-                    className="absolute right-3 top-3 p-2 rounded-xl transition-all"
-                    style={{
-                      background: isListening ? "#E8863A" : "rgba(232,134,58,0.1)",
-                      color: isListening ? "white" : "#E8863A",
-                    }}
-                    title={isListening ? t.onboardingStopRecording : t.onboardingStartRecording}
-                  >
-                    {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                  </button>
-                </div>
-                {isListening && (
-                  <p className="text-xs mt-1.5 flex items-center gap-1.5" style={{ color: "#E8863A" }}>
-                    <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: "#E8863A" }} />
-                    {t.onboardingListening}
-                  </p>
-                )}
-                <p className="text-xs mt-1 text-right" style={{ color: "rgba(45,24,16,0.35)" }}>
-                  {customDetail.length}/200
-                </p>
-              </div>
-            );
-          })()}
 
           <Button
             type="button"
