@@ -135,7 +135,7 @@ const NO_TEXT_RULE =
 
 /** For 4-panel (legacy): thick borders. For 2x2 grid (refined): no borders, 2px white gap. */
 const COMIC_GRID_RULES_REFINED =
-  'CRITICAL LAYOUT RULES: NO panel borders, NO black lines, NO frames between scenes. Separate panels ONLY with a 2-pixel thin white gap. Each panel fills exactly 1/4 of the image with NO padding or margins. The 4 scenes should flow visually but be clearly distinct scenes.';
+  'STRICT GRID RULES:\n- Exactly 4 equal-sized panels in a 2x2 grid (2 rows, 2 columns).\n- Each panel MUST be exactly 50% width and 50% height of the total image. No variation in panel dimensions.\n- Panels are separated by a thin 2-4px white gap ONLY. No black borders, no thick lines.\n- The image MUST be edge-to-edge: NO decorative border, NO frame, NO margin, NO vignette, NO rounded corners around the outer edges.\n- The panels MUST extend to the very edge of the image.\n- Every panel must be the same aspect ratio (square if the total image is square).\n- NO panel borders, NO outlines, NO dark edges, NO comic-style dividers.\n- The 4 scenes should flow visually but each be a clearly distinct scene.';
 const STYLE_CONSISTENCY_LEGACY = 'All panels share the same art style. Thick black borders between panels.';
 
 /** Camera direction per panel index (1–8) for 2×(2x2) variation. */
@@ -153,7 +153,7 @@ export const CAMERA_DIRECTIONS: Record<number, string> = {
 // ─── buildComicGridPrompt (LLM grid_1 / grid_2 format) ─────────────────────
 
 const GRID_LAYOUT_RULES =
-  'ABSOLUTE CRITICAL LAYOUT RULES (MUST FOLLOW):\n- ABSOLUTELY NO panel borders, NO frames, NO outlines, NO black lines, NO dark edges, NO comic-style dividers, NO rounded corners on panels.\n- The image must look like 4 photos laid side by side on a white table with only a 2-pixel thin white gap between them.\n- NO decorative elements between or around panels. The edge of each scene goes right to the edge of its quadrant.\n- Each panel fills exactly 1/4 of the image (2x2 grid) with NO padding, NO margins, NO borders.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
+  'STRICT GRID RULES (ABSOLUTE — MUST FOLLOW):\n- Exactly 4 equal-sized panels in a 2x2 grid (2 rows, 2 columns).\n- Each panel MUST be exactly 50% width and 50% height of the total image. No variation in panel dimensions whatsoever.\n- Panels are separated by a thin 2-4px white gap ONLY. No black borders, no thick lines, no outlines.\n- The image MUST be edge-to-edge: NO decorative border, NO frame, NO margin, NO vignette, NO rounded corners around the outer edges of the image.\n- The panels MUST extend to the very edge of the image. The outermost pixels of each corner panel must be scene content, not border/frame.\n- Every panel must be the same aspect ratio (square, since the total image is square).\n- NO panel borders, NO outlines, NO dark edges, NO comic-style dividers, NO stamp edges, NO film strip borders, NO photo frames.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
 
 /**
  * Builds a single Vertex prompt for one 2x2 grid (4 panels) from the LLM-generated grid format.
