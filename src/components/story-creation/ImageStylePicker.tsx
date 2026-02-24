@@ -12,8 +12,6 @@ import previewAdventureCartoon from "@/assets/style-previews/adventure_cartoon.j
 import previewGraphicNovel from "@/assets/style-previews/graphic_novel.jpg";
 import previewSemiRealistic from "@/assets/style-previews/semi_realistic.jpg";
 import preview3dAdventure from "@/assets/style-previews/3d_adventure.jpg";
-import previewPixelArt from "@/assets/style-previews/pixel_art.jpg";
-import previewBrickBlock from "@/assets/style-previews/brick_block.jpg";
 import previewVintageRetro from "@/assets/style-previews/vintage_retro.jpg";
 
 const LOCAL_STYLE_PREVIEWS: Record<string, string> = {
@@ -24,8 +22,6 @@ const LOCAL_STYLE_PREVIEWS: Record<string, string> = {
   graphic_novel: previewGraphicNovel,
   semi_realistic: previewSemiRealistic,
   "3d_adventure": preview3dAdventure,
-  pixel_art: previewPixelArt,
-  brick_block: previewBrickBlock,
   vintage_retro: previewVintageRetro,
 };
 
