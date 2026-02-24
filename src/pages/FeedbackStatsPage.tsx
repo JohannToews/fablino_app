@@ -19,15 +19,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 interface StoryRating {
   id: string;
+  story_id: string | null;
   story_title: string;
   story_prompt: string | null;
   kid_name: string | null;
   kid_school_class: string | null;
   kid_school_system: string | null;
+  user_id: string | null;
   quality_rating: number;
   weakest_part: string | null;
   weakness_reason: string | null;
   created_at: string;
+  username?: string;
+  text_language?: string;
 }
 
 interface StoryClassification {
@@ -610,9 +614,8 @@ const FeedbackStatsPage = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (ratingsData) {
-      setRatings(ratingsData);
-    }
+    // Ratings will be enriched after stories/users are loaded
+    const rawRatings = ratingsData || [];
 
     // Get story IDs that have feedback (J'ai fini clicked)
     const feedbackStoryIds = new Set(ratingsData?.map(r => r.story_id).filter(Boolean) || []);
@@ -713,6 +716,22 @@ const FeedbackStatsPage = () => {
         usersMap.set(u.id, u.username);
       });
     }
+
+    // Build a map of story_id -> text_language from storiesData
+    const storyLangMap = new Map<string, string>();
+    if (storiesData) {
+      storiesData.forEach((s: any) => {
+        storyLangMap.set(s.id, s.text_language || '-');
+      });
+    }
+
+    // Enrich ratings with username and text_language
+    const enrichedRatings: StoryRating[] = rawRatings.map((r: any) => ({
+      ...r,
+      username: r.user_id ? usersMap.get(r.user_id) : undefined,
+      text_language: r.story_id ? storyLangMap.get(r.story_id) : undefined,
+    }));
+    setRatings(enrichedRatings);
 
     if (storiesData) {
       const mappedStories: StoryStats[] = storiesData.map((story: any) => {
@@ -1441,9 +1460,10 @@ const FeedbackStatsPage = () => {
                             />
                           </TableHead>
                           <TableHead>{t.date}</TableHead>
+                          <TableHead>{t.user}</TableHead>
                           <TableHead>{t.child}</TableHead>
                           <TableHead>{t.storyTitle}</TableHead>
-                          <TableHead>{t.prompt}</TableHead>
+                          <TableHead>{t.language}</TableHead>
                           <TableHead>{t.rating}</TableHead>
                           <TableHead></TableHead>
                         </TableRow>
@@ -1460,6 +1480,7 @@ const FeedbackStatsPage = () => {
                             <TableCell className="whitespace-nowrap">
                               {format(new Date(rating.created_at), "dd.MM.yyyy HH:mm")}
                             </TableCell>
+                            <TableCell>{rating.username || "-"}</TableCell>
                             <TableCell>
                               <div className="flex flex-col">
                                 <span className="font-medium">{rating.kid_name || "-"}</span>
@@ -1473,8 +1494,8 @@ const FeedbackStatsPage = () => {
                             <TableCell className="max-w-[200px] truncate" title={rating.story_title}>
                               {rating.story_title}
                             </TableCell>
-                            <TableCell className="max-w-[150px] truncate" title={rating.story_prompt || ""}>
-                              {rating.story_prompt || "-"}
+                            <TableCell>
+                              <Badge variant="outline">{rating.text_language?.toUpperCase() || "-"}</Badge>
                             </TableCell>
                             <TableCell>{renderStars(rating.quality_rating)}</TableCell>
                             <TableCell>
