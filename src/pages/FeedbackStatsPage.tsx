@@ -914,13 +914,10 @@ const FeedbackStatsPage = () => {
       .select("reference_id, total_questions, correct_answers")
       .in("activity_type", ["quiz_complete", "quiz_completed"]);
 
-    const comprehensionPerStory = new Map<string, { answered: number; total: number }>();
+    const quizCompletedStoryIds = new Set<string>();
     comprehensionResults?.forEach(r => {
-      if (r.reference_id && r.total_questions) {
-        comprehensionPerStory.set(r.reference_id, {
-          answered: r.total_questions, // All questions answered if quiz completed
-          total: r.total_questions,
-        });
+      if (r.reference_id) {
+        quizCompletedStoryIds.add(r.reference_id);
       }
     });
 
@@ -980,8 +977,6 @@ const FeedbackStatsPage = () => {
 
     if (storiesData) {
       const mappedStories: StoryStats[] = storiesData.map((story: any) => {
-        const comprehensionStats = comprehensionPerStory.get(story.id);
-        
         return {
           id: story.id,
           title: story.title,
@@ -997,7 +992,7 @@ const FeedbackStatsPage = () => {
           username: story.user_id ? usersMap.get(story.user_id) : undefined,
           is_read: readStoryIds.has(story.id),
           has_feedback: feedbackStoryIds.has(story.id),
-          quiz_completed: (comprehensionStats?.answered || 0) > 0,
+          quiz_completed: quizCompletedStoryIds.has(story.id),
           concrete_theme: story.concrete_theme,
           emotional_coloring: story.emotional_coloring,
         };
