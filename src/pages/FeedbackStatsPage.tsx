@@ -789,6 +789,28 @@ const FeedbackStatsPage = () => {
   // Detail dialog state
   const [selectedRating, setSelectedRating] = useState<StoryRating | null>(null);
   
+  // Story preview dialog
+  const [previewStory, setPreviewStory] = useState<{ title: string; content: string; cover_image_url: string | null; story_images: string[] | null } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const openStoryPreview = async (storyId: string) => {
+    setPreviewLoading(true);
+    setPreviewStory(null);
+    const { data } = await supabase
+      .from("stories")
+      .select("title, content, cover_image_url, story_images")
+      .eq("id", storyId)
+      .single();
+    if (data) {
+      setPreviewStory({
+        title: data.title,
+        content: data.content,
+        cover_image_url: data.cover_image_url,
+        story_images: data.story_images,
+      });
+    }
+    setPreviewLoading(false);
+  };
   // Selection states for deletion
   const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<string>>(new Set());
   const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
@@ -1876,14 +1898,12 @@ const FeedbackStatsPage = () => {
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate" title={rating.story_title}>
                               {rating.story_id ? (
-                                <a
-                                  href={`/reading/${rating.story_id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline cursor-pointer"
+                                <button
+                                  onClick={() => openStoryPreview(rating.story_id!)}
+                                  className="text-primary hover:underline cursor-pointer text-left"
                                 >
                                   {rating.story_title}
-                                </a>
+                                </button>
                               ) : (
                                 rating.story_title
                               )}
@@ -2216,6 +2236,48 @@ const FeedbackStatsPage = () => {
                 {selectedRating && format(new Date(selectedRating.created_at), "dd.MM.yyyy HH:mm")}
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Story Preview Dialog */}
+        <Dialog open={!!previewStory || previewLoading} onOpenChange={(open) => { if (!open) { setPreviewStory(null); setPreviewLoading(false); } }}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{previewStory?.title || "Laden..."}</DialogTitle>
+            </DialogHeader>
+            {previewLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : previewStory ? (
+              <div className="space-y-4">
+                {previewStory.cover_image_url && (
+                  <img
+                    src={previewStory.cover_image_url}
+                    alt="Cover"
+                    className="rounded-md mx-auto block"
+                    style={{ maxWidth: 400 }}
+                  />
+                )}
+                <div className="prose prose-sm max-w-none whitespace-pre-line text-foreground">
+                  {previewStory.content}
+                </div>
+                {previewStory.story_images && previewStory.story_images.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <h4 className="text-sm font-medium text-muted-foreground">Bilder</h4>
+                    {previewStory.story_images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt={`Scene ${i + 1}`}
+                        className="rounded-md mx-auto block"
+                        style={{ maxWidth: 400 }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
           </DialogContent>
         </Dialog>
       </div>
