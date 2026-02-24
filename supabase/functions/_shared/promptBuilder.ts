@@ -1448,7 +1448,7 @@ export async function buildStoryPrompt(
       lang
     );
     if (charactersSection) {
-      const hasCoStars = protagonists.include_self && protagonists.characters.length > 0;
+      const hasCoStars = request.protagonists.include_self && request.protagonists.characters.length > 0;
       if (hasCoStars) {
         // Family/friends mode: restrict invention of new named characters
         const restrictedHint: Record<string, string> = {
