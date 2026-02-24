@@ -2627,6 +2627,32 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }));
       // Log full panel details for debugging
       console.log('[COMIC] Panel details: ' + JSON.stringify(allPanels));
+
+      // ── Scene Variance Validation ──
+      function checkGridVariance(gridPanels: any[], gridNum: number) {
+        const cameras = gridPanels.map((p: any) => p.camera);
+        const scenes = gridPanels.map((p: any) => (p.scene_en || '').substring(0, 50).toLowerCase());
+
+        // Check camera repetition within grid
+        const uniqueCameras = new Set(cameras).size;
+        if (uniqueCameras < 3) {
+          console.warn(`[COMIC][VARIANCE] Grid ${gridNum}: LOW camera variety — only ${uniqueCameras} unique cameras: [${cameras.join(', ')}]`);
+        }
+        for (let i = 0; i < cameras.length - 1; i++) {
+          if (cameras[i] === cameras[i + 1]) {
+            console.warn(`[COMIC][VARIANCE] Grid ${gridNum}: REPEATED camera — panels ${i + 1}-${i + 2} both use "${cameras[i]}"`);
+          }
+        }
+
+        // Check scene description similarity (first 50 chars)
+        for (let i = 0; i < scenes.length - 1; i++) {
+          if (scenes[i] && scenes[i + 1] && scenes[i] === scenes[i + 1]) {
+            console.warn(`[COMIC][VARIANCE] Grid ${gridNum}: IDENTICAL scene descriptions — panels ${i + 1}-${i + 2}: "${scenes[i]}"`);
+          }
+        }
+      }
+      checkGridVariance(comicImagePlan.grid_1, 1);
+      checkGridVariance(comicImagePlan.grid_2, 2);
     }
 
     // ================== Block 2.4: LOAD IMAGE RULES FROM DB ==================
