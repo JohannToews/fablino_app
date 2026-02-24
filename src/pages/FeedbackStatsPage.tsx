@@ -593,6 +593,24 @@ interface UsageStatsProps {
 }
 
 const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsageStartDate }: UsageStatsProps) => {
+  // Sort state for user-kid table
+  type UserKidSortCol = 'username' | 'kidName' | 'generated' | 'read' | 'stars';
+  const [ukSortCol, setUkSortCol] = useState<UserKidSortCol>('generated');
+  const [ukSortDir, setUkSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleUkSort = (col: UserKidSortCol) => {
+    if (ukSortCol === col) setUkSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setUkSortCol(col); setUkSortDir('desc'); }
+  };
+
+  const UkSortIcon = ({ column }: { column: UserKidSortCol }) => {
+    if (ukSortCol !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />;
+    return ukSortDir === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
+
+  // Pending date for weekday stats — only applied on button click
+  const [pendingDate, setPendingDate] = useState<Date>(usageStartDate);
+
   const userKidStats = useMemo(() => {
     const map = new Map<string, { username: string; kidName: string; kidProfileId: string | null; generated: number; read: number; stars: number }>();
     stories.forEach(s => {
@@ -605,8 +623,15 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
       entry.generated++;
       if (s.is_read) entry.read++;
     });
-    return [...map.values()].sort((a, b) => b.generated - a.generated);
-  }, [stories, userProgressData]);
+    const arr = [...map.values()];
+    arr.sort((a, b) => {
+      const aVal = a[ukSortCol];
+      const bVal = b[ukSortCol];
+      if (typeof aVal === 'string') return ukSortDir === 'asc' ? (aVal as string).localeCompare(bVal as string) : (bVal as string).localeCompare(aVal as string);
+      return ukSortDir === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+    return arr;
+  }, [stories, userProgressData, ukSortCol, ukSortDir]);
 
   const weekdayStats = useMemo(() => {
     const startDay = startOfDay(usageStartDate);
@@ -626,7 +651,7 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
 
   return (
     <Accordion type="multiple" defaultValue={["user-kid", "weekday"]} className="space-y-4">
-      <AccordionItem value="user-kid" className="border rounded-lg">
+      <AccordionItem value="user-kid" className="border rounded-lg bg-card shadow-sm">
         <AccordionTrigger className="px-4">
           <div className="flex items-center gap-2"><Users className="h-4 w-4" /><span className="font-semibold">User – Kind Übersicht</span></div>
         </AccordionTrigger>
@@ -635,11 +660,21 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Kind</TableHead>
-                  <TableHead className="text-right">Stories generiert</TableHead>
-                  <TableHead className="text-right">Stories gelesen</TableHead>
-                  <TableHead className="text-right">⭐ Sterne</TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleUkSort('username')}>
+                    <div className="flex items-center">User<UkSortIcon column="username" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleUkSort('kidName')}>
+                    <div className="flex items-center">Kind<UkSortIcon column="kidName" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('generated')}>
+                    <div className="flex items-center justify-end">Stories generiert<UkSortIcon column="generated" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('read')}>
+                    <div className="flex items-center justify-end">Stories gelesen<UkSortIcon column="read" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('stars')}>
+                    <div className="flex items-center justify-end">⭐ Sterne<UkSortIcon column="stars" /></div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -660,7 +695,7 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
           </div>
         </AccordionContent>
       </AccordionItem>
-      <AccordionItem value="weekday" className="border rounded-lg">
+      <AccordionItem value="weekday" className="border rounded-lg bg-card shadow-sm">
         <AccordionTrigger className="px-4">
           <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /><span className="font-semibold">Stories pro Wochentag (kumuliert)</span></div>
         </AccordionTrigger>
@@ -671,13 +706,16 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-[200px] justify-start text-left font-normal")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(usageStartDate, "dd.MM.yyyy")}
+                  {format(pendingDate, "dd.MM.yyyy")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={usageStartDate} onSelect={(d) => d && setUsageStartDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                <Calendar mode="single" selected={pendingDate} onSelect={(d) => d && setPendingDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
               </PopoverContent>
             </Popover>
+            <Button size="sm" onClick={() => setUsageStartDate(pendingDate)}>
+              Neu berechnen
+            </Button>
           </div>
           <div className="overflow-x-auto">
             <Table>
