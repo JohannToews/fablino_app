@@ -18,12 +18,12 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: ["icons/icon-192x192.png", "icons/icon-512x512.png", "icons/apple-touch-icon.png"],
       manifest: {
-        name: "Kinder Wort Trainer",
-        short_name: "WortTrainer",
-        description: "Personalisierte Geschichten und Leseübungen für Kinder",
-        theme_color: "#3b82f6",
+        name: "Fablino",
+        short_name: "Fablino",
+        description: "Personalisierte Leseabenteuer für Kinder",
+        theme_color: "#E8863A",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "any",
@@ -31,20 +31,20 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         icons: [
           {
-            src: "pwa-192x192.png",
+            src: "/icons/icon-192x192.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "/icons/icon-512x512.png",
             sizes: "512x512",
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "/icons/icon-512x512-maskable.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable",
+            purpose: "maskable",
           },
         ],
       },
