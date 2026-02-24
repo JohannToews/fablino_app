@@ -1290,6 +1290,16 @@ const FeedbackStatsPage = () => {
   };
 
   const storiesRead = stories.filter(s => s.is_read).length;
+  const activeKids = useMemo(() => {
+    const kidCounts = new Map<string, number>();
+    stories.forEach(s => {
+      if (s.kid_profile_id) {
+        kidCounts.set(s.kid_profile_id, (kidCounts.get(s.kid_profile_id) || 0) + 1);
+      }
+    });
+    return [...kidCounts.values()].filter(count => count > 1).length;
+  }, [stories]);
+  const quizzesCompleted = stories.filter(s => s.quiz_completed).length;
 
   if (isLoading) {
     return (
@@ -1306,11 +1316,25 @@ const FeedbackStatsPage = () => {
         <p className="text-muted-foreground mb-6">{t.subtitle}</p>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.totalStories}
+                Aktive Kinder
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="text-2xl font-bold">{activeKids}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Bücher generiert
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1324,7 +1348,7 @@ const FeedbackStatsPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.storiesRead}
+                Bücher gelesen
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1338,13 +1362,13 @@ const FeedbackStatsPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.wordsRequested}
+                Quizzes beendet
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-sky-500" />
-                <span className="text-2xl font-bold">{totalWordsRequested}</span>
+                <ShieldCheck className="h-5 w-5 text-mint" />
+                <span className="text-2xl font-bold">{quizzesCompleted}</span>
               </div>
             </CardContent>
           </Card>
@@ -1352,43 +1376,13 @@ const FeedbackStatsPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.wordsSaved}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <BookMarked className="h-5 w-5 text-violet-500" />
-                <span className="text-2xl font-bold">{totalWordsSaved}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.avgRating}
+                Ø Rating
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5 fill-sunshine text-sunshine" />
                 <span className="text-2xl font-bold">{avgRating}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.mostCommonIssue}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-cotton-candy" />
-                <span className="text-sm font-medium truncate">
-                  {mostCommonIssue ? translateReason(mostCommonIssue) : "-"}
-                </span>
               </div>
             </CardContent>
           </Card>
