@@ -56,7 +56,7 @@ describe('buildComicStripImagePrompt', () => {
     expect(prompt).not.toContain('LLM description');
   });
 
-  it('Character Anchor einmal am Ende (nicht pro Panel)', () => {
+  it('Character Anchor einmal am Ende + in scene_en (nicht gestripped)', () => {
     const anchor = 'dark brown skin, yellow raincoat';
     const plan = makePlan({
       panels: fourPanels,
@@ -69,7 +69,7 @@ describe('buildComicStripImagePrompt', () => {
       ageModifier: 'bright',
       characterSeedAppearance: anchor,
     });
-    // Character reference should appear exactly ONCE (at the end), not per panel
+    // Character reference appears at least once at the end
     const count = (prompt.match(/Character reference/g) ?? []).length;
     expect(count).toBe(1);
     expect(prompt).toContain(anchor);
