@@ -817,6 +817,7 @@ const FeedbackStatsPage = () => {
     total_stars: number | null;
     total_stories_read: number | null;
   }>>([]);
+  const [totalKidProfiles, setTotalKidProfiles] = useState(0);
   
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
@@ -1027,6 +1028,12 @@ const FeedbackStatsPage = () => {
       .from("user_progress")
       .select("kid_profile_id, total_stars, total_stories_read");
     setUserProgressData(progressData || []);
+
+    // Count total kid profiles
+    const { count: kidCount } = await supabase
+      .from("kid_profiles")
+      .select("id", { count: "exact", head: true });
+    setTotalKidProfiles(kidCount || 0);
 
     setIsLoading(false);
   };
@@ -1298,15 +1305,6 @@ const FeedbackStatsPage = () => {
   }, [stories, kpiStartDate]);
 
   const storiesRead = kpiStories.filter(s => s.is_read).length;
-  const activeKids = useMemo(() => {
-    const kidCounts = new Map<string, number>();
-    kpiStories.forEach(s => {
-      if (s.kid_profile_id) {
-        kidCounts.set(s.kid_profile_id, (kidCounts.get(s.kid_profile_id) || 0) + 1);
-      }
-    });
-    return [...kidCounts.values()].filter(count => count > 1).length;
-  }, [kpiStories]);
   const quizzesCompleted = kpiStories.filter(s => s.quiz_completed).length;
 
   if (isLoading) {
@@ -1363,7 +1361,7 @@ const FeedbackStatsPage = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold">{activeKids}</span>
+                <span className="text-2xl font-bold">{totalKidProfiles}</span>
               </div>
             </CardContent>
           </Card>
