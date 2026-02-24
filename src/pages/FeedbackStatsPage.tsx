@@ -54,7 +54,10 @@ interface PerformanceEntry {
   text_language: string;
   text_type: string | null;
   series_id: string | null;
+  series_mode: string | null;
   episode_number: number | null;
+  story_length: string | null;
+  kid_age: number | null;
   generation_time_ms: number | null;
   story_generation_ms: number | null;
   image_generation_ms: number | null;
@@ -599,6 +602,9 @@ const FeedbackStatsPage = () => {
   const [performanceData, setPerformanceData] = useState<PerformanceEntry[]>([]);
   const [perfSortKey, setPerfSortKey] = useState<keyof PerformanceEntry>("created_at");
   const [perfSortDir, setPerfSortDir] = useState<"asc" | "desc">("desc");
+  const [perfFilterTextart, setPerfFilterTextart] = useState<string>("all");
+  const [perfFilterAge, setPerfFilterAge] = useState<string>("all");
+  const [perfFilterLength, setPerfFilterLength] = useState<string>("all");
   
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
@@ -639,7 +645,9 @@ const FeedbackStatsPage = () => {
         structure_ending,
         emotional_coloring,
         series_id,
+        series_mode,
         episode_number,
+        story_length,
         generation_time_ms,
         story_generation_ms,
         image_generation_ms,
@@ -650,7 +658,8 @@ const FeedbackStatsPage = () => {
         kid_profiles (
           name,
           school_class,
-          school_system
+          school_system,
+          age
         )
       `)
       .order("created_at", { ascending: false });
@@ -789,7 +798,10 @@ const FeedbackStatsPage = () => {
         text_language: story.text_language || '-',
         text_type: story.text_type,
         series_id: story.series_id,
+        series_mode: story.series_mode,
         episode_number: story.episode_number,
+        story_length: story.story_length,
+        kid_age: story.kid_profiles?.age ?? null,
         generation_time_ms: story.generation_time_ms,
         story_generation_ms: story.story_generation_ms,
         image_generation_ms: story.image_generation_ms,
@@ -862,9 +874,41 @@ const FeedbackStatsPage = () => {
     });
   }, [classifications, classificationSortKey, classificationSortDir]);
 
-  // Sorted performance data
+  // Helper: textart label
+  const getTextartCode = (item: PerformanceEntry) => {
+    if (!item.series_id) return 'N';
+    if (item.series_mode === 'interactive') return 'SX';
+    return 'S';
+  };
+
+  // Helper: length label
+  const getLengthCode = (len: string | null) => {
+    if (!len) return '-';
+    switch (len) {
+      case 'short': return 'S';
+      case 'medium': return 'M';
+      case 'long': return 'L';
+      case 'extra_long': return 'XL';
+      default: return len.charAt(0).toUpperCase();
+    }
+  };
+
+  // Unique perf filter values
+  const uniquePerfAges = useMemo(() => 
+    [...new Set(performanceData.map(p => p.kid_age).filter((a): a is number => a !== null))].sort((a, b) => a - b), 
+    [performanceData]
+  );
+
+  // Sorted & filtered performance data
   const sortedPerformance = useMemo(() => {
-    return [...performanceData].sort((a, b) => {
+    return [...performanceData]
+      .filter(item => {
+        if (perfFilterTextart !== 'all' && getTextartCode(item) !== perfFilterTextart) return false;
+        if (perfFilterAge !== 'all' && String(item.kid_age) !== perfFilterAge) return false;
+        if (perfFilterLength !== 'all' && getLengthCode(item.story_length) !== perfFilterLength) return false;
+        return true;
+      })
+      .sort((a, b) => {
       const aVal = a[perfSortKey];
       const bVal = b[perfSortKey];
       if (aVal === null || aVal === undefined) return 1;
@@ -877,7 +921,7 @@ const FeedbackStatsPage = () => {
       }
       return 0;
     });
-  }, [performanceData, perfSortKey, perfSortDir]);
+  }, [performanceData, perfSortKey, perfSortDir, perfFilterTextart, perfFilterAge, perfFilterLength]);
 
   const handleClassificationSort = (key: keyof StoryClassification) => {
     if (classificationSortKey === key) {
@@ -1678,6 +1722,43 @@ const FeedbackStatsPage = () => {
                 <CardTitle className="text-lg">{t.performanceTab}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <Select value={perfFilterTextart} onValueChange={setPerfFilterTextart}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue placeholder={t.textType} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="N">N (Normal)</SelectItem>
+                      <SelectItem value="S">S (Serie)</SelectItem>
+                      <SelectItem value="SX">SX (Mitgestalten)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={perfFilterAge} onValueChange={setPerfFilterAge}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Alter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      {uniquePerfAges.map(age => (
+                        <SelectItem key={age} value={String(age)}>{age} J.</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={perfFilterLength} onValueChange={setPerfFilterLength}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder={t.length} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="S">S</SelectItem>
+                      <SelectItem value="M">M</SelectItem>
+                      <SelectItem value="L">L</SelectItem>
+                      <SelectItem value="XL">XL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -1690,6 +1771,8 @@ const FeedbackStatsPage = () => {
                         </TableHead>
                         <TableHead>{t.language}</TableHead>
                         <TableHead>{t.textType}</TableHead>
+                        <TableHead>Alter</TableHead>
+                        <TableHead>{t.length}</TableHead>
                         <TableHead>Episode</TableHead>
                         <TableHead className="text-center">✓ Text</TableHead>
                         <TableHead className="text-center">✓ Bilder</TableHead>
@@ -1716,7 +1799,11 @@ const FeedbackStatsPage = () => {
                           <TableCell className="text-xs">{item.username || '-'}</TableCell>
                           <TableCell className="text-xs uppercase">{item.text_language}</TableCell>
                           <TableCell className="text-xs">
-                            {item.series_id ? 'Serie' : 'Story'}
+                            <Badge variant="outline" className="text-xs">{getTextartCode(item)}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">{item.kid_age ?? '-'}</TableCell>
+                          <TableCell className="text-xs">
+                            <Badge variant="outline" className="text-xs">{getLengthCode(item.story_length)}</Badge>
                           </TableCell>
                           <TableCell className="text-xs">
                             {item.episode_number ?? '-'}
