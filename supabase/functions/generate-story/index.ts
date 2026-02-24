@@ -844,7 +844,8 @@ async function getVertexAccessToken(serviceAccountJson: string): Promise<string>
 async function callVertexImageAPI(
   serviceAccountJson: string,
   prompt: string,
-  maxRetries: number = 3
+  maxRetries: number = 3,
+  negativePrompt?: string,
 ): Promise<string | null> {
   let lastError: Error | null = null;
   
@@ -887,6 +888,7 @@ async function callVertexImageAPI(
             aspectRatio: "1:1",
             personGeneration: "allow_all",
             safetySetting: "block_only_high",
+            ...(negativePrompt ? { negativePrompt } : {}),
             outputOptions: {
               mimeType: "image/png",
             },
@@ -3048,11 +3050,11 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     // ═══════════════════════════════════════════════════════════════════
     if (useComicStrip && comicLayout && comicLayout.layoutKey !== 'layout_0_single' && (imagePlan || comicImagePlan)) {
       const comicPipelineStart = Date.now();
-      const comicImageTask = async (prompt: string, gridLabel: string): Promise<string> => {
+      const comicImageTask = async (prompt: string, gridLabel: string, negPrompt?: string): Promise<string> => {
         let comicBase64: string | null = null;
         if (GEMINI_API_KEY) {
           try {
-            comicBase64 = await callVertexImageAPI(GEMINI_API_KEY, prompt);
+            comicBase64 = await callVertexImageAPI(GEMINI_API_KEY, prompt, 3, negPrompt);
             if (comicBase64) {
               console.log(`[ComicStrip] Vertex succeeded for ${gridLabel}`);
             } else {
@@ -3089,6 +3091,20 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             imageStyleData?.ageModifier || '',
           ].filter(Boolean).join('\n');
 
+          // Style-specific negative prompt for Vertex
+          const styleKey = imageStyleData?.styleKey || 'default';
+          const STYLE_NEGATIVE_PROMPTS: Record<string, string> = {
+            graphic_novel: '3D render, photorealistic, Pixar, CGI, smooth plastic skin, ray tracing, subsurface scattering, hyperrealistic',
+            storybook_soft: '3D render, CGI, harsh lighting, dark shadows, photorealistic',
+            manga_anime: 'photorealistic, western cartoon, 3D render',
+          };
+          const comicNegativePrompt = STYLE_NEGATIVE_PROMPTS[styleKey] || undefined;
+
+          console.log(`[COMIC] Style key: "${styleKey}", prefix (first 120 chars): "${imageStylePrefix.substring(0, 120)}"`);
+          if (comicNegativePrompt) {
+            console.log(`[COMIC] Negative prompt: "${comicNegativePrompt}"`);
+          }
+
           const prompt1 = buildComicGridPrompt(
             comicImagePlan.grid_1,
             characterAnchor,
@@ -3115,8 +3131,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
               await consistencyCheckTask();
               consistencyCheckMs = Date.now() - t0;
             })(),
-            comicImageTask(prompt1, 'grid_1'),
-            comicImageTask(prompt2, 'grid_2'),
+            comicImageTask(prompt1, 'grid_1', comicNegativePrompt),
+            comicImageTask(prompt2, 'grid_2', comicNegativePrompt),
           ]);
 
           let comicImage1: string | null = null;
