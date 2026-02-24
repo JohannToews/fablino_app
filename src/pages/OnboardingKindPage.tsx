@@ -737,55 +737,6 @@ const OnboardingKindPage = () => {
             })}
           </div>
 
-          {/* Voice / text detail input – appears after a subtype is picked */}
-          {selectedSubtype && (() => {
-            const cat = STORY_CATEGORIES.find(c => c.key === selectedCategory);
-            const sub = cat?.subtypes.find(s => s.key === selectedSubtype);
-            if (!sub) return null;
-            return (
-              <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border animate-fade-in" style={{ borderColor: "rgba(232,134,58,0.2)" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: "rgba(45,24,16,0.75)" }}>
-                  {sub.voicePrompt}
-                </p>
-                <div className="relative">
-                  <textarea
-                    value={customDetail}
-                    onChange={(e) => setCustomDetail(e.target.value)}
-                    placeholder={sub.placeholder}
-                    maxLength={200}
-                    rows={3}
-                    className="w-full rounded-xl border-2 px-4 py-3 pr-14 text-sm resize-none outline-none transition-colors"
-                    style={{
-                      borderColor: isListening ? "#E8863A" : customDetail ? "#E8863A" : "rgba(232,134,58,0.25)",
-                      color: "rgba(45,24,16,0.85)",
-                      background: isListening ? "rgba(232,134,58,0.04)" : "transparent",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={isListening ? handleStopListening : handleStartListening}
-                    className="absolute right-3 top-3 p-2 rounded-xl transition-all"
-                    style={{
-                      background: isListening ? "#E8863A" : "rgba(232,134,58,0.1)",
-                      color: isListening ? "white" : "#E8863A",
-                    }}
-                    title={isListening ? t.onboardingStopRecording : t.onboardingStartRecording}
-                  >
-                    {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                  </button>
-                </div>
-                {isListening && (
-                  <p className="text-xs mt-1.5 flex items-center gap-1.5" style={{ color: "#E8863A" }}>
-                    <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: "#E8863A" }} />
-                    {t.onboardingListening}
-                  </p>
-                )}
-                <p className="text-xs mt-1 text-right" style={{ color: "rgba(45,24,16,0.35)" }}>
-                  {customDetail.length}/200
-                </p>
-              </div>
-            );
-          })()}
 
           <Button
             type="button"
