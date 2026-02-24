@@ -413,12 +413,12 @@ body.premium-ui [data-premium-button="secondary"]:active {
 
 body.premium-ui .card-story,
 body.premium-ui [data-premium-card] {
-  box-shadow: 0 2px 12px -4px rgba(45, 24, 16, 0.1);
+  box-shadow: 0 2px 12px -4px rgba(45, 24, 16, 0.1) !important;
   transition: all 250ms ease;
 }
 body.premium-ui .card-story:hover,
 body.premium-ui [data-premium-card]:hover {
-  box-shadow: 0 8px 24px -8px rgba(45, 24, 16, 0.15);
+  box-shadow: 0 8px 24px -8px rgba(45, 24, 16, 0.15) !important;
   transform: translateY(-2px);
 }
 

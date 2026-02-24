@@ -259,6 +259,7 @@ const HomeFablino = () => {
           {/* Primary Button - New Story */}
           <button
             onClick={() => navigate("/create-story")}
+            data-premium-button="primary"
             className={FABLINO_STYLES.primaryButton}
           >
             {ui.newStory}
@@ -267,6 +268,7 @@ const HomeFablino = () => {
           {/* Secondary Button - My Stories */}
           <button
             onClick={() => navigate("/stories")}
+            data-premium-button="secondary"
             className={FABLINO_STYLES.secondaryButton}
           >
             {ui.myStories}
@@ -275,6 +277,7 @@ const HomeFablino = () => {
 
         {/* ═══ 3. WEEKLY TRACKER CARD (Redesigned) ═══ */}
         <div 
+          data-premium-card
           className="rounded-[20px] p-4 sm:p-5 mb-4"
           style={{
             background: "white",
