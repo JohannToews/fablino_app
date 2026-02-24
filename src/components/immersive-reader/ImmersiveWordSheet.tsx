@@ -167,6 +167,9 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
 
   const footerButtons = (
     <>
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Dismiss
+      </Button>
       {error && !isLoading && (
         <Button variant="outline" size="sm" onClick={handleRetry}>
           Retry
