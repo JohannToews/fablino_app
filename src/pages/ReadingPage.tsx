@@ -1565,7 +1565,24 @@ const ReadingPage = () => {
     const endingPanel = panels.find(p => p.role === 'ending');
     const innerPanels = panels.slice(1).filter(p => p !== endingPanel);
     const total = paragraphs.length;
-    const step = total / (innerPanels.length + 1);
+
+    // Pre-compute target paragraph indices for even distribution
+    // Ensures minimum 1 paragraph gap between images and no back-to-back panels
+    const panelPositions: number[] = [];
+    if (innerPanels.length > 0) {
+      const step = total / (innerPanels.length + 1);
+      for (let i = 0; i < innerPanels.length; i++) {
+        let pos = Math.round(step * (i + 1)) - 1; // 0-indexed paragraph AFTER which to insert
+        // Ensure minimum gap of 1 from previous panel position
+        if (panelPositions.length > 0) {
+          const prevPos = panelPositions[panelPositions.length - 1];
+          if (pos <= prevPos) pos = prevPos + 1;
+        }
+        // Clamp to valid range
+        if (pos >= total) pos = total - 1;
+        panelPositions.push(pos);
+      }
+    }
 
     let nextPanelIndex = 0;
     let globalColorOffset = 0;
@@ -1635,23 +1652,35 @@ const ReadingPage = () => {
       );
 
       // Insert inner panel after this paragraph if it's the right position
-      if (nextPanelIndex < innerPanels.length) {
-        const targetPosition = Math.round(step * (nextPanelIndex + 1));
-        if (pIndex + 1 >= targetPosition) {
-          const panel = innerPanels[nextPanelIndex];
-          elements.push(
-            <img
-              key={`comic-inner-${panel.position}`}
-              src={panel.dataUrl}
-              alt={`Story illustration ${panel.position}`}
-              className="block mx-auto my-4 w-full max-w-[500px] rounded-md"
-              loading="lazy"
-            />
-          );
-          nextPanelIndex++;
-        }
+      if (nextPanelIndex < innerPanels.length && panelPositions[nextPanelIndex] === pIndex) {
+        const panel = innerPanels[nextPanelIndex];
+        elements.push(
+          <img
+            key={`comic-inner-${panel.position}`}
+            src={panel.dataUrl}
+            alt={`Story illustration ${panel.position}`}
+            className="block mx-auto my-4 w-full max-w-[500px] rounded-md"
+            loading="lazy"
+          />
+        );
+        nextPanelIndex++;
       }
     });
+
+    // Any remaining inner panels that couldn't be placed (more panels than paragraphs)
+    while (nextPanelIndex < innerPanels.length) {
+      const panel = innerPanels[nextPanelIndex];
+      elements.push(
+        <img
+          key={`comic-inner-${panel.position}`}
+          src={panel.dataUrl}
+          alt={`Story illustration ${panel.position}`}
+          className="block mx-auto my-4 w-full max-w-[500px] rounded-md"
+          loading="lazy"
+        />
+      );
+      nextPanelIndex++;
+    }
 
     // Ending panel → displayed after all text
     if (endingPanel) {
