@@ -35,6 +35,7 @@ const readingLabels: Record<string, {
   save: string;
   saved: string;
   explain: string;
+  dismiss: string;
   touchWord: string;
   finishedReading: string;
   alreadyRead: string;
@@ -55,6 +56,7 @@ const readingLabels: Record<string, {
     save: "Speichern",
     saved: "Gespeichert!",
     explain: "Erklären",
+    dismiss: "Verwerfen",
     touchWord: "Tippe auf ein Wort, um seine Bedeutung zu erfahren",
     finishedReading: "Fertig gelesen",
     alreadyRead: "Bereits gelesen ✓",
@@ -75,6 +77,7 @@ const readingLabels: Record<string, {
     save: "Sauvegarder",
     saved: "Sauvegardé!",
     explain: "Expliquer",
+    dismiss: "Fermer",
     touchWord: "Touche un mot pour découvrir sa signification",
     finishedReading: "J'ai fini de lire",
     alreadyRead: "Déjà lu ✓",
@@ -95,6 +98,7 @@ const readingLabels: Record<string, {
     save: "Save",
     saved: "Saved!",
     explain: "Explain",
+    dismiss: "Dismiss",
     touchWord: "Tap a word to discover its meaning",
     finishedReading: "I finished reading",
     alreadyRead: "Already read ✓",
@@ -115,6 +119,7 @@ const readingLabels: Record<string, {
     save: "Guardar",
     saved: "¡Guardado!",
     explain: "Explicar",
+    dismiss: "Descartar",
     touchWord: "Toca una palabra para descubrir su significado",
     finishedReading: "Terminé de leer",
     alreadyRead: "Ya leído ✓",
@@ -135,6 +140,7 @@ const readingLabels: Record<string, {
     save: "Opslaan",
     saved: "Opgeslagen!",
     explain: "Uitleggen",
+    dismiss: "Sluiten",
     touchWord: "Tik op een woord om de betekenis te ontdekken",
     finishedReading: "Ik ben klaar met lezen",
     alreadyRead: "Al gelezen ✓",
@@ -155,6 +161,7 @@ const readingLabels: Record<string, {
     save: "Salva",
     saved: "Salvato!",
     explain: "Spiega",
+    dismiss: "Chiudi",
     touchWord: "Tocca una parola per scoprire il suo significato",
     finishedReading: "Ho finito di leggere",
     alreadyRead: "Già letto ✓",
@@ -175,6 +182,7 @@ const readingLabels: Record<string, {
     save: "Sačuvaj",
     saved: "Sačuvano!",
     explain: "Objasni",
+    dismiss: "Odbaci",
     touchWord: "Dodirni riječ da saznaš njeno značenje",
     finishedReading: "Završio/la sam čitanje",
     alreadyRead: "Već pročitano ✓",
@@ -195,6 +203,7 @@ const readingLabels: Record<string, {
     save: "Guardar",
     saved: "Guardado!",
     explain: "Explicar",
+    dismiss: "Descartar",
     touchWord: "Toca numa palavra para descobrir o seu significado",
     finishedReading: "Acabei de ler",
     alreadyRead: "Já lido ✓",
@@ -215,6 +224,7 @@ const readingLabels: Record<string, {
     save: "Uložiť",
     saved: "Uložené!",
     explain: "Vysvetliť",
+    dismiss: "Zavrieť",
     touchWord: "Ťukni na slovo a zisti jeho význam",
     finishedReading: "Dočítal/a som",
     alreadyRead: "Už prečítané ✓",
@@ -235,6 +245,7 @@ const readingLabels: Record<string, {
     save: "Kaydet",
     saved: "Kaydedildi!",
     explain: "Açıkla",
+    dismiss: "Kapat",
     touchWord: "Anlamını öğrenmek için bir kelimeye dokun",
     finishedReading: "Okumayı bitirdim",
     alreadyRead: "Zaten okundu ✓",
@@ -255,6 +266,7 @@ const readingLabels: Record<string, {
     save: "Запази",
     saved: "Запазено!",
     explain: "Обясни",
+    dismiss: "Затвори",
     touchWord: "Докосни дума, за да разбереш значението ѝ",
     finishedReading: "Приключих с четенето",
     alreadyRead: "Вече прочетено ✓",
@@ -275,6 +287,7 @@ const readingLabels: Record<string, {
     save: "Salvează",
     saved: "Salvat!",
     explain: "Explică",
+    dismiss: "Închide",
     touchWord: "Atinge un cuvânt pentru a-i descoperi sensul",
     finishedReading: "Am terminat de citit",
     alreadyRead: "Deja citit ✓",
@@ -295,6 +308,7 @@ const readingLabels: Record<string, {
     save: "Zapisz",
     saved: "Zapisano!",
     explain: "Wyjaśnij",
+    dismiss: "Odrzuć",
     touchWord: "Dotknij słowa, aby poznać jego znaczenie",
     finishedReading: "Skończyłem/am czytać",
     alreadyRead: "Już przeczytane ✓",
@@ -315,6 +329,7 @@ const readingLabels: Record<string, {
     save: "Išsaugoti",
     saved: "Išsaugota!",
     explain: "Paaiškinti",
+    dismiss: "Atmesti",
     touchWord: "Palieskite žodį, kad sužinotumėte jo reikšmę",
     finishedReading: "Baigiau skaityti",
     alreadyRead: "Jau perskaityta ✓",
@@ -335,6 +350,7 @@ const readingLabels: Record<string, {
     save: "Mentés",
     saved: "Mentve!",
     explain: "Magyarázd el",
+    dismiss: "Elvetés",
     touchWord: "Érintsd meg a szót, hogy megtudd a jelentését",
     finishedReading: "Befejeztem az olvasást",
     alreadyRead: "Már olvasva ✓",
@@ -355,6 +371,7 @@ const readingLabels: Record<string, {
     save: "Desa",
     saved: "Desat!",
     explain: "Explica",
+    dismiss: "Descarta",
     touchWord: "Toca una paraula per descobrir el seu significat",
     finishedReading: "He acabat de llegir",
     alreadyRead: "Ja llegit ✓",
@@ -375,6 +392,7 @@ const readingLabels: Record<string, {
     save: "Shrani",
     saved: "Shranjeno!",
     explain: "Razloži",
+    dismiss: "Opusti",
     touchWord: "Dotakni se besede, da izveš njen pomen",
     finishedReading: "Končal/a sem z branjem",
     alreadyRead: "Že prebrano ✓",
@@ -2238,7 +2256,7 @@ const ReadingPage = () => {
               {/* Mobile/Tablet Popup backdrop - click to close */}
               {selectedWord && mobilePopupY !== null && (
                 <div 
-                  className="xl:hidden fixed inset-0 z-40"
+                  className="xl:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
                   onClick={(e) => {
                     e.stopPropagation();
                     closeExplanation();
@@ -2246,30 +2264,17 @@ const ReadingPage = () => {
                 />
               )}
 
-              {/* Mobile/Tablet Popup for word explanation */}
+              {/* Mobile/Tablet Popup for word explanation — centered */}
               {selectedWord && mobilePopupY !== null && (
                 <div 
                   data-mobile-popup
-                  className="xl:hidden fixed left-4 right-4 z-50 animate-in fade-in zoom-in-95 duration-200"
-                  style={{
-                    top: `${Math.min(Math.max(mobilePopupY - 80, 100), window.innerHeight - 250)}px`,
-                  }}
+                  className="xl:hidden fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-[#F0E8E0]">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-baloo text-xl font-bold break-words max-w-[200px]">
-                        {selectedWord}
-                      </h3>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={closeExplanation}
-                        className="rounded-full -mt-1 -mr-1 flex-shrink-0"
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-                    </div>
+                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-border/50 max-w-sm w-full pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+                    <h3 className="font-baloo text-xl font-bold break-words mb-3">
+                      {selectedWord}
+                    </h3>
                     
                     {isExplaining ? (
                       <div className="flex items-center gap-3 text-muted-foreground">
@@ -2293,23 +2298,32 @@ const ReadingPage = () => {
                       <div className="space-y-3">
                         <p className="text-lg leading-relaxed">{explanation}</p>
                         
-                        {!isSaved && explanation && (
+                        <div className="flex gap-2">
                           <Button
-                            onClick={handleSaveExplanation}
+                            onClick={closeExplanation}
+                            variant="outline"
                             size="sm"
-                            className="w-full btn-secondary-kid flex items-center gap-2"
+                            className="flex-1"
                           >
-                            <Save className="h-4 w-4" />
-                            {readingLabels[textLang]?.save || readingLabels.fr.save}
+                            {readingLabels[textLang]?.dismiss || readingLabels.fr.dismiss}
                           </Button>
-                        )}
-                        
-                        {isSaved && (
-                          <div className="flex items-center gap-2 text-secondary font-medium text-sm">
-                            <CheckCircle2 className="h-4 w-4" />
-                            {readingLabels[textLang]?.saved || readingLabels.fr.saved}
-                          </div>
-                        )}
+                          {!isSaved && explanation && (
+                            <Button
+                              onClick={handleSaveExplanation}
+                              size="sm"
+                              className="flex-1 btn-secondary-kid flex items-center justify-center gap-2"
+                            >
+                              <Save className="h-4 w-4" />
+                              {readingLabels[textLang]?.save || readingLabels.fr.save}
+                            </Button>
+                          )}
+                          {isSaved && (
+                            <div className="flex-1 flex items-center justify-center gap-2 text-secondary font-medium text-sm">
+                              <CheckCircle2 className="h-4 w-4" />
+                              {readingLabels[textLang]?.saved || readingLabels.fr.saved}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2675,12 +2689,12 @@ const ReadingPage = () => {
                       {selectedWord}
                     </h3>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={closeExplanation}
-                      className="rounded-full -mt-1 -mr-1 flex-shrink-0"
+                      className="flex-shrink-0"
                     >
-                      <X className="h-5 w-5" />
+                      {readingLabels[textLang]?.dismiss || readingLabels.fr.dismiss}
                     </Button>
                   </div>
                   
