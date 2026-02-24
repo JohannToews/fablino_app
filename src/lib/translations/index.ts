@@ -446,6 +446,9 @@ export interface Translations {
   onboardingAdminLangLabel: string;
   onboardingAdminLangHint: string;
   onboardingSelectLang: string;
+  onboardingDisplayName: string;
+  onboardingDisplayNameHint: string;
+  onboardingDisplayNamePlaceholder: string;
   onboardingNext: string;
   onboardingBack: string;
   onboardingChildName: string;

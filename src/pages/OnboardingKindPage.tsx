@@ -251,7 +251,7 @@ const OnboardingKindPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
-  const uiLang = (adminLang || navigator.language?.slice(0, 2)?.toLowerCase() || 'de') as Language;
+  const uiLang = (adminLang || 'en') as Language;
   const t = useTranslations(uiLang);
 
   const GENDERS_TRANSLATED = [
@@ -461,7 +461,7 @@ const OnboardingKindPage = () => {
           {step === "adminLang" ? t.onboardingWelcomeTitle : step === "profile" ? t.onboardingProfileTitle : t.onboardingStoryTypeTitle}
         </h1>
         <p className="text-sm mt-1 text-center" style={{ color: "rgba(45,24,16,0.6)" }}>
-          {step === "adminLang" ? t.onboardingAdminLangSub : step === "profile" ? t.onboardingProfileSub : `Eine Geschichte für ${name} ✨`}
+          {step === "adminLang" ? t.onboardingAdminLangSub : step === "profile" ? t.onboardingProfileSub : `${t.onboardingStoryTypeTitle} – ${name} ✨`}
         </p>
       </div>
 
@@ -470,14 +470,14 @@ const OnboardingKindPage = () => {
         <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
           {/* Display Name */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">Anzeige Name</Label>
+            <Label className="text-sm font-semibold">{t.onboardingDisplayName}</Label>
             <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              Dein Name, wie er in der App angezeigt wird.
+              {t.onboardingDisplayNameHint}
             </p>
             <Input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value.slice(0, 40))}
-              placeholder="z.B. Mama, Papa, Lisa…"
+              placeholder={t.onboardingDisplayNamePlaceholder}
               className="h-12 rounded-xl border-2 px-4 text-sm bg-white"
               style={{ borderColor: displayName ? "#E8863A" : "rgba(232,134,58,0.3)" }}
             />
