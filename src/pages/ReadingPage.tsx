@@ -1917,20 +1917,18 @@ const ReadingPage = () => {
                 if (!croppedCover) {
                   // Cropping still in progress — show skeleton
                   return (
-                    <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8] animate-pulse">
-                      <div className="w-full h-[200px] md:h-[300px] bg-muted" />
+                    <div className="mb-6 animate-pulse">
+                      <div className="w-full max-w-[500px] mx-auto h-[200px] md:h-[300px] bg-muted rounded-md" />
                     </div>
                   );
                 }
                 return (
-                  <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
-                    <img 
-                      src={croppedCover} 
-                      alt={story?.title || ''}
-                      className="w-full max-h-[250px] md:max-h-[400px] object-cover"
-                      onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
-                    />
-                  </div>
+                  <img 
+                    src={croppedCover} 
+                    alt={story?.title || ''}
+                    className="block mx-auto mb-6 w-full max-w-[500px] rounded-md"
+                    onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+                  />
                 );
               }
               
