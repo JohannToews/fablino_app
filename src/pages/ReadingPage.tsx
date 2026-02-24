@@ -522,11 +522,17 @@ const ReadingPage = () => {
 
     // New path: comic_grid_plan exists → use cropComicGrids for 8-panel support
     if (story.comic_grid_plan) {
+      console.log('[ReadingPage] Starting cropComicGrids with grid_plan', {
+        grid1: story.comic_full_image?.substring(0, 60),
+        grid2: story.comic_full_image_2?.substring(0, 60),
+        planKeys: Object.keys(story.comic_grid_plan),
+      });
       cropComicGrids(
         story.comic_full_image!,
         story.comic_full_image_2 || null,
         story.comic_grid_plan,
       ).then(panels => {
+        console.log('[ReadingPage] cropComicGrids SUCCESS:', panels.length, 'panels');
         if (!cancelled) {
           setComicCroppedPanelsWithMeta(panels);
           setComicCroppedPanels(panels.map(p => p.dataUrl));
@@ -1909,6 +1915,14 @@ const ReadingPage = () => {
               const coverSrc = comicCroppedPanelsWithMeta?.[0]?.dataUrl
                 || comicCroppedPanels?.[0]
                 || story?.cover_image_url;
+              console.log('[ReadingPage] COVER render:', {
+                hasMetaPanels: !!comicCroppedPanelsWithMeta,
+                metaCount: comicCroppedPanelsWithMeta?.length,
+                hasCroppedPanels: !!comicCroppedPanels,
+                croppedCount: comicCroppedPanels?.length,
+                coverSrcStart: coverSrc?.substring(0, 40),
+                rawCoverStart: story?.cover_image_url?.substring(0, 40),
+              });
               if (!coverSrc) return null;
               return (
                 <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
