@@ -26,6 +26,7 @@ interface Story {
   episode_number: number | null;
   ending_type: string | null;
   story_length?: string | null;
+  text_language?: string | null;
   series_mode?: string | null;
   branch_chosen?: string | null;
   completed?: boolean | null;
@@ -181,7 +182,7 @@ const StorySelectPage = () => {
           length: "medium",
           difficulty: lastEpisode.difficulty || "medium",
           description: fullSeriesContext, // All episodes as context
-          textLanguage: appLang.toUpperCase(),
+          textLanguage: (lastEpisode.text_language || appLang).toUpperCase(),
           schoolLevel: selectedProfile.school_class,
           textType: lastEpisode.text_type || "fiction",
           endingType,
@@ -197,7 +198,7 @@ const StorySelectPage = () => {
           kidHobbies: selectedProfile.hobbies,
           // Phase 2: Pass kid profile ID + language for new prompt path & series context
           kidProfileId: selectedProfile.id,
-          storyLanguage: appLang,
+          storyLanguage: lastEpisode.text_language || appLang,
         },
       });
       clearTimeout(timeoutId);
@@ -271,7 +272,7 @@ const StorySelectPage = () => {
           story_images_status: storyImageUrls.length > 0 ? 'complete' : 'pending',
           difficulty: lastEpisode.difficulty || "medium",
           text_type: lastEpisode.text_type || "fiction",
-          text_language: appLang,
+          text_language: lastEpisode.text_language || appLang,
           ending_type: endingType,
           episode_number: nextEpisodeNumber,
           story_length: lastEpisode.story_length || 'medium',
