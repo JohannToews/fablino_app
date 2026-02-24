@@ -1545,31 +1545,19 @@ const ReadingPage = () => {
   };
 
   /**
-   * Render text with 8 comic panels distributed according to role (cover, inner, ending).
-   * Cover panel → before all text, Ending panel → after all text,
-   * Inner panels → evenly distributed between paragraphs.
+   * Render text with comic panels distributed:
+   * Panel 1 → cover (shown above text area, not here).
+   * Last panel with role 'ending' → shown after all text.
+   * Remaining panels → evenly distributed between paragraphs.
    */
   const renderTextWithComicPanels = (paragraphs: string[]) => {
     const panels = comicCroppedPanelsWithMeta!;
     const elements: React.ReactNode[] = [];
 
-    // Cover panel (role: 'cover') → displayed before text
-    const coverPanel = panels.find(p => p.role === 'cover');
-    if (coverPanel) {
-      elements.push(
-        <div key="comic-cover" className="my-4 flex justify-center comic-panel comic-panel-cover">
-          <img
-            src={coverPanel.dataUrl}
-            alt="Story cover"
-            className="rounded-lg shadow-md w-full max-h-80 md:max-h-[28rem] object-contain"
-            loading="lazy"
-          />
-        </div>
-      );
-    }
-
-    // Inner panels (not cover or ending)
-    const innerPanels = panels.filter(p => p.role !== 'cover' && p.role !== 'ending');
+    // First panel is used as cover image (displayed above text area), skip it here.
+    // Ending panel (if any) is shown after all text, also skip from inner distribution.
+    const endingPanel = panels.find(p => p.role === 'ending');
+    const innerPanels = panels.slice(1).filter(p => p !== endingPanel);
     const total = paragraphs.length;
     const step = total / (innerPanels.length + 1);
 
@@ -1660,8 +1648,7 @@ const ReadingPage = () => {
       }
     });
 
-    // Ending panel (role: 'ending') → displayed after all text
-    const endingPanel = panels.find(p => p.role === 'ending');
+    // Ending panel → displayed after all text
     if (endingPanel) {
       elements.push(
         <div key="comic-ending" className="my-4 flex justify-center comic-panel comic-panel-ending">
@@ -1917,16 +1904,23 @@ const ReadingPage = () => {
           {/* Reading Area - wider for tablets */}
           <div className="xl:col-span-3">
             {/* Cover image — use first cropped panel if available, otherwise full cover */}
-            {(comicCroppedPanels?.[0] || story?.cover_image_url) && (
-              <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
-                <img 
-                  src={comicCroppedPanels?.[0] || story!.cover_image_url!} 
-                  alt={story?.title || ''}
-                  className="w-full max-h-[250px] md:max-h-[400px] object-cover"
-                  onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
-                />
-              </div>
-            )}
+            {(() => {
+              // Determine best cover source: cropped panel > raw cover URL
+              const coverSrc = comicCroppedPanelsWithMeta?.[0]?.dataUrl
+                || comicCroppedPanels?.[0]
+                || story?.cover_image_url;
+              if (!coverSrc) return null;
+              return (
+                <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
+                  <img 
+                    src={coverSrc} 
+                    alt={story?.title || ''}
+                    className="w-full max-h-[250px] md:max-h-[400px] object-cover"
+                    onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+                  />
+                </div>
+              );
+            })()}
             
             {/* Audio Player disabled for now
             {story && user?.username === 'papa' && (
