@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown } from "lucide-react";
+import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown, Flag } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, type PlanKey } from "@/config/plans";
@@ -811,6 +811,20 @@ const AdminPage = () => {
                         language={adminLang}
                         currentUserId={user.id}
                       />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Feature Flags */}
+                  <AccordionItem value="feature-flags" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Flag className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">Feature Flags</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <p className="text-xs text-muted-foreground mb-3">Features wie Emotion-Flow und Comic-Strip pro User oder global aktivieren.</p>
+                      <Button size="sm" variant="outline" onClick={() => navigate('/admin/feature-flags')}>Feature Flags öffnen</Button>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
