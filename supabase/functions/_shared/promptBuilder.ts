@@ -1448,17 +1448,32 @@ export async function buildStoryPrompt(
       lang
     );
     if (charactersSection) {
-      // Add enrichment hint: LLM may add secondary fictional characters
-      const enrichmentHint: Record<string, string> = {
-        fr: "Tu peux enrichir l'histoire avec des personnages secondaires inventés (animaux, créatures, etc.) en plus des personnages listés ci-dessus.",
-        de: 'Du darfst die Geschichte mit erfundenen Nebenfiguren (Tiere, Fabelwesen, etc.) anreichern, zusätzlich zu den oben genannten Figuren.',
-        en: 'You may enrich the story with invented secondary characters (animals, creatures, etc.) in addition to the characters listed above.',
-        es: 'Puedes enriquecer la historia con personajes secundarios inventados (animales, criaturas, etc.) además de los personajes listados arriba.',
-        it: 'Puoi arricchire la storia con personaggi secondari inventati (animali, creature, ecc.) oltre ai personaggi elencati sopra.',
-        bs: 'Možeš obogatiti priču izmišljenim sporednim likovima (životinje, bića, itd.) uz likove navedene iznad.',
-        nl: 'Je mag het verhaal verrijken met verzonnen bijfiguren (dieren, wezens, enz.) naast de hierboven genoemde personages.',
-      };
-      sections.push(`${charactersSection}\n${enrichmentHint[lang] || enrichmentHint.en}`);
+      const hasCoStars = request.protagonists.include_self && request.protagonists.characters.length > 0;
+      if (hasCoStars) {
+        // Family/friends mode: restrict invention of new named characters
+        const restrictedHint: Record<string, string> = {
+          fr: "IMPORTANT : Tous les personnages listés ci-dessus DOIVENT apparaître activement dans l'histoire. NE PAS inventer de nouveaux personnages nommés. Tu peux ajouter des figurants anonymes (un commerçant, des passants) mais aucun nouveau personnage avec un prénom.",
+          de: 'WICHTIG: Alle oben genannten Figuren MÜSSEN aktiv in der Geschichte vorkommen. KEINE neuen benannten Figuren erfinden. Du darfst anonyme Nebenfiguren (ein Verkäufer, Passanten) hinzufügen, aber keine neuen Figuren mit Namen.',
+          en: 'IMPORTANT: All characters listed above MUST appear actively in the story. Do NOT invent new named characters. You may add unnamed background characters (a shopkeeper, passers-by) but no new characters with names.',
+          es: 'IMPORTANTE: Todos los personajes listados arriba DEBEN aparecer activamente en la historia. NO inventes nuevos personajes con nombre. Puedes añadir figurantes anónimos (un tendero, transeúntes) pero ningún personaje nuevo con nombre.',
+          it: 'IMPORTANTE: Tutti i personaggi elencati sopra DEVONO apparire attivamente nella storia. NON inventare nuovi personaggi con nome. Puoi aggiungere comparse anonime (un negoziante, passanti) ma nessun nuovo personaggio con nome.',
+          bs: 'VAŽNO: Svi likovi navedeni iznad MORAJU se aktivno pojaviti u priči. NE izmišljaj nove imenovane likove. Možeš dodati anonimne sporedne likove (prodavač, prolaznici) ali nijedan novi lik s imenom.',
+          nl: 'BELANGRIJK: Alle hierboven genoemde personages MOETEN actief in het verhaal voorkomen. Verzin GEEN nieuwe personages met namen. Je mag anonieme bijfiguren toevoegen (een winkelier, voorbijgangers) maar geen nieuwe personages met namen.',
+        };
+        sections.push(`${charactersSection}\n${restrictedHint[lang] || restrictedHint.en}`);
+      } else {
+        // Solo/surprise mode: allow secondary fictional characters
+        const enrichmentHint: Record<string, string> = {
+          fr: "Tu peux enrichir l'histoire avec des personnages secondaires inventés (animaux, créatures, etc.) en plus des personnages listés ci-dessus.",
+          de: 'Du darfst die Geschichte mit erfundenen Nebenfiguren (Tiere, Fabelwesen, etc.) anreichern, zusätzlich zu den oben genannten Figuren.',
+          en: 'You may enrich the story with invented secondary characters (animals, creatures, etc.) in addition to the characters listed above.',
+          es: 'Puedes enriquecer la historia con personajes secundarios inventados (animales, criaturas, etc.) además de los personajes listados arriba.',
+          it: 'Puoi arricchire la storia con personaggi secondari inventati (animali, creature, ecc.) oltre ai personaggi elencati sopra.',
+          bs: 'Možeš obogatiti priču izmišljenim sporednim likovima (životinje, bića, itd.) uz likove navedene iznad.',
+          nl: 'Je mag het verhaal verrijken met verzonnen bijfiguren (dieren, wezens, enz.) naast de hierboven genoemde personages.',
+        };
+        sections.push(`${charactersSection}\n${enrichmentHint[lang] || enrichmentHint.en}`);
+      }
     }
   }
 

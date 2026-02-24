@@ -11,23 +11,32 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer } from "lucide-react";
-import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Calendar } from "@/components/ui/calendar";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3, CalendarIcon, Users, Globe } from "lucide-react";
+import { format, startOfDay, getDay } from "date-fns";
+import { de } from "date-fns/locale";
 import { Language } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 interface StoryRating {
   id: string;
+  story_id: string | null;
   story_title: string;
   story_prompt: string | null;
   kid_name: string | null;
   kid_school_class: string | null;
   kid_school_system: string | null;
+  user_id: string | null;
   quality_rating: number;
   weakest_part: string | null;
   weakness_reason: string | null;
   created_at: string;
+  username?: string;
+  text_language?: string;
 }
 
 interface StoryClassification {
@@ -50,7 +59,10 @@ interface PerformanceEntry {
   text_language: string;
   text_type: string | null;
   series_id: string | null;
+  series_mode: string | null;
   episode_number: number | null;
+  story_length: string | null;
+  kid_age: number | null;
   generation_time_ms: number | null;
   story_generation_ms: number | null;
   image_generation_ms: number | null;
@@ -63,9 +75,8 @@ interface PerformanceEntry {
 interface StoryStats {
   id: string;
   title: string;
-  prompt: string | null;
   difficulty: string | null;
-  text_type: string | null;
+  text_language: string;
   is_deleted: boolean;
   created_at: string;
   user_id: string | null;
@@ -75,11 +86,20 @@ interface StoryStats {
   kid_school_system?: string;
   username?: string;
   is_read: boolean;
-  words_requested: number;
-  words_saved: number;
   has_feedback: boolean;
-  questions_answered: number;
-  questions_total: number;
+  quiz_completed: boolean;
+  concrete_theme: string | null;
+  emotional_coloring: string | null;
+}
+
+// Column definitions for the stories table
+type StoryColumnKey = 'date' | 'user' | 'child' | 'title' | 'textLanguage' | 'difficulty' | 'jaiFini' | 'quizCompleted' | 'status' | 'theme' | 'emotionBlueprint';
+
+interface StoryColumnDef {
+  key: StoryColumnKey;
+  label: string;
+  defaultVisible: boolean;
+  optional: boolean; // true = can be toggled
 }
 
 const translations: Record<Language, {
@@ -558,6 +578,227 @@ const translations: Record<Language, {
   tr: { title: "Story Statistics", subtitle: "Overview of all stories and ratings", storiesTab: "Stories", feedbackTab: "Feedback", totalStories: "Total Stories", storiesRead: "Read", avgRating: "Average", mostCommonIssue: "Most Common Issue", wordsRequested: "Words Requested", wordsSaved: "Words Saved", storyTitle: "Title", child: "Child", user: "User", rating: "Rating", weakestPart: "Weakest Part", reason: "Reason", date: "Date", noData: "No data", beginning: "Beginning", development: "Development", ending: "Ending", tooShort: "Too short", tooShallow: "Too shallow", tooRepetitive: "Too repetitive", prompt: "Prompt", difficulty: "Difficulty", textType: "Text Type", status: "Status", fiction: "Fiction", nonFiction: "Non-Fiction", easy: "Easy", medium: "Medium", hard: "Hard", read: "Read", unread: "Unread", active: "Active", deleted: "Deleted", language: "Language", length: "Length", words: "Words", filterPlaceholder: "Filter...", all: "All", jaiFini: "J'ai fini", questionsAnswered: "Questions", yes: "Yes", no: "No", answered: "Answered", notAnswered: "Not answered", noQuestions: "No questions", consistencyTab: "Quality Check", classificationTab: "Classification", structureBeginning: "Beginning", structureMiddle: "Middle", structureEnding: "Ending", emotionalColoring: "Emotional Coloring", performanceTab: "Performance" },
 };
 
+const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+const toMonBasedDay = (d: Date) => {
+  const day = d.getDay();
+  return day === 0 ? 6 : day - 1;
+};
+
+interface UsageStatsProps {
+  stories: StoryStats[];
+  userProgressData: Array<{ kid_profile_id: string; total_stars: number | null; total_stories_read: number | null }>;
+  usageStartDate: Date;
+  setUsageStartDate: (d: Date) => void;
+}
+
+const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsageStartDate }: UsageStatsProps) => {
+  // Sort state for user-kid table
+  type UserKidSortCol = 'username' | 'kidName' | 'generated' | 'read' | 'stars';
+  const [ukSortCol, setUkSortCol] = useState<UserKidSortCol>('generated');
+  const [ukSortDir, setUkSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleUkSort = (col: UserKidSortCol) => {
+    if (ukSortCol === col) setUkSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setUkSortCol(col); setUkSortDir('desc'); }
+  };
+
+  const UkSortIcon = ({ column }: { column: UserKidSortCol }) => {
+    if (ukSortCol !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />;
+    return ukSortDir === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
+
+  // Pending date for weekday stats — only applied on button click
+  const [pendingDate, setPendingDate] = useState<Date>(usageStartDate);
+
+  const userKidStats = useMemo(() => {
+    const map = new Map<string, { username: string; kidName: string; kidProfileId: string | null; generated: number; read: number; stars: number }>();
+    stories.forEach(s => {
+      const key = `${s.username || '-'}__${s.kid_name || '-'}`;
+      if (!map.has(key)) {
+        const progress = userProgressData.find(p => p.kid_profile_id === s.kid_profile_id);
+        map.set(key, { username: s.username || '-', kidName: s.kid_name || '-', kidProfileId: s.kid_profile_id, generated: 0, read: 0, stars: progress?.total_stars || 0 });
+      }
+      const entry = map.get(key)!;
+      entry.generated++;
+      if (s.is_read) entry.read++;
+    });
+    const arr = [...map.values()];
+    arr.sort((a, b) => {
+      const aVal = a[ukSortCol];
+      const bVal = b[ukSortCol];
+      if (typeof aVal === 'string') return ukSortDir === 'asc' ? (aVal as string).localeCompare(bVal as string) : (bVal as string).localeCompare(aVal as string);
+      return ukSortDir === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+    return arr;
+  }, [stories, userProgressData, ukSortCol, ukSortDir]);
+
+  const weekdayStats = useMemo(() => {
+    const startDay = startOfDay(usageStartDate);
+    const filteredStories = stories.filter(s => new Date(s.created_at) >= startDay);
+    const generated = new Array(7).fill(0);
+    const read = new Array(7).fill(0);
+    filteredStories.forEach(s => {
+      const dayIdx = toMonBasedDay(new Date(s.created_at));
+      generated[dayIdx]++;
+      if (s.is_read) read[dayIdx]++;
+    });
+    return WEEKDAY_LABELS.map((label, i) => ({ label, generated: generated[i], read: read[i] }));
+  }, [stories, usageStartDate]);
+
+  const totalGenerated = weekdayStats.reduce((sum, d) => sum + d.generated, 0);
+  const totalRead = weekdayStats.reduce((sum, d) => sum + d.read, 0);
+
+  // Language stats
+  const languageStats = useMemo(() => {
+    const filteredStories = usageStartDate
+      ? stories.filter(s => new Date(s.created_at) >= usageStartDate)
+      : stories;
+    const langMap = new Map<string, number>();
+    filteredStories.forEach(s => {
+      const lang = s.text_language || '-';
+      langMap.set(lang, (langMap.get(lang) || 0) + 1);
+    });
+    return Array.from(langMap.entries())
+      .map(([lang, count]) => ({ lang, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [stories, usageStartDate]);
+
+  return (
+    <Accordion type="multiple" defaultValue={[]} className="space-y-4">
+      <AccordionItem value="user-kid" className="border rounded-lg bg-card shadow-sm">
+        <AccordionTrigger className="px-4">
+          <div className="flex items-center gap-2"><Users className="h-4 w-4" /><span className="font-semibold">User – Kind Übersicht</span></div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleUkSort('username')}>
+                    <div className="flex items-center">User<UkSortIcon column="username" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleUkSort('kidName')}>
+                    <div className="flex items-center">Kind<UkSortIcon column="kidName" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('generated')}>
+                    <div className="flex items-center justify-end">Stories generiert<UkSortIcon column="generated" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('read')}>
+                    <div className="flex items-center justify-end">Stories gelesen<UkSortIcon column="read" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('stars')}>
+                    <div className="flex items-center justify-end">⭐ Sterne<UkSortIcon column="stars" /></div>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {userKidStats.map((row, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{row.username}</TableCell>
+                    <TableCell>{row.kidName}</TableCell>
+                    <TableCell className="text-right font-mono">{row.generated}</TableCell>
+                    <TableCell className="text-right font-mono">{row.read}</TableCell>
+                    <TableCell className="text-right font-mono">{row.stars}</TableCell>
+                  </TableRow>
+                ))}
+                {userKidStats.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Keine Daten</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="by-language" className="border rounded-lg bg-card shadow-sm">
+        <AccordionTrigger className="px-4">
+          <div className="flex items-center gap-2"><Globe className="h-4 w-4" /><span className="font-semibold">Stories pro Textsprache</span></div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sprache</TableHead>
+                  <TableHead className="text-right">Anzahl Stories</TableHead>
+                  <TableHead className="text-right">Anteil</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {languageStats.map((row) => (
+                  <TableRow key={row.lang}>
+                    <TableCell>
+                      <Badge variant="outline" className="uppercase">{row.lang}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{row.count}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">
+                      {stories.length > 0 ? `${Math.round((row.count / stories.length) * 100)}%` : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {languageStats.length === 0 && (
+                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Keine Daten</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="weekday" className="border rounded-lg bg-card shadow-sm">
+        <AccordionTrigger className="px-4">
+          <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /><span className="font-semibold">Stories pro Wochentag (kumuliert)</span></div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-muted-foreground">Ab:</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[200px] justify-start text-left font-normal")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(pendingDate, "dd.MM.yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={pendingDate} onSelect={(d) => d && setPendingDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+            <Button size="sm" onClick={() => setUsageStartDate(pendingDate)}>
+              Neu berechnen
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Wochentag</TableHead>
+                  <TableHead className="text-right">Stories generiert</TableHead>
+                  <TableHead className="text-right">Stories gelesen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {weekdayStats.map((day, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{day.label}</TableCell>
+                    <TableCell className="text-right font-mono">{day.generated}</TableCell>
+                    <TableCell className="text-right font-mono">{day.read}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-semibold border-t-2">
+                  <TableCell>Gesamt</TableCell>
+                  <TableCell className="text-right font-mono">{totalGenerated}</TableCell>
+                  <TableCell className="text-right font-mono">{totalRead}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+};
+
 const FeedbackStatsPage = () => {
   const { user } = useAuth();
   const [ratings, setRatings] = useState<StoryRating[]>([]);
@@ -568,12 +809,29 @@ const FeedbackStatsPage = () => {
   // Filter states for stories
   const [filterUser, setFilterUser] = useState<string>("all");
   const [filterKid, setFilterKid] = useState<string>("all");
-  const [filterTextType, setFilterTextType] = useState<string>("all");
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterTitle, setFilterTitle] = useState<string>("");
   const [filterJaiFini, setFilterJaiFini] = useState<string>("all");
-  const [filterQuestionsAnswered, setFilterQuestionsAnswered] = useState<string>("all");
+  const [filterQuizCompleted, setFilterQuizCompleted] = useState<string>("all");
+
+  // Which filters are visible
+  type StoryFilterKey = 'title' | 'user' | 'kid' | 'difficulty' | 'status' | 'jaiFini' | 'quiz';
+  const [visibleFilters, setVisibleFilters] = useState<Set<StoryFilterKey>>(new Set([
+    'title', 'user', 'kid', 'difficulty', 'status'
+  ]));
+  const toggleFilter = (key: StoryFilterKey) => {
+    setVisibleFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) { next.delete(key); } else { next.add(key); }
+      return next;
+    });
+  };
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<Set<StoryColumnKey>>(new Set([
+    'date', 'user', 'child', 'title', 'textLanguage', 'difficulty', 'jaiFini', 'quizCompleted', 'status'
+  ]));
 
   // Filter states for feedback
   const [filterFeedbackKid, setFilterFeedbackKid] = useState<string>("all");
@@ -582,6 +840,28 @@ const FeedbackStatsPage = () => {
   // Detail dialog state
   const [selectedRating, setSelectedRating] = useState<StoryRating | null>(null);
   
+  // Story preview dialog
+  const [previewStory, setPreviewStory] = useState<{ title: string; content: string; cover_image_url: string | null; story_images: string[] | null } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const openStoryPreview = async (storyId: string) => {
+    setPreviewLoading(true);
+    setPreviewStory(null);
+    const { data } = await supabase
+      .from("stories")
+      .select("title, content, cover_image_url, story_images")
+      .eq("id", storyId)
+      .single();
+    if (data) {
+      setPreviewStory({
+        title: data.title,
+        content: data.content,
+        cover_image_url: data.cover_image_url,
+        story_images: data.story_images,
+      });
+    }
+    setPreviewLoading(false);
+  };
   // Selection states for deletion
   const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<string>>(new Set());
   const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
@@ -595,6 +875,22 @@ const FeedbackStatsPage = () => {
   const [performanceData, setPerformanceData] = useState<PerformanceEntry[]>([]);
   const [perfSortKey, setPerfSortKey] = useState<keyof PerformanceEntry>("created_at");
   const [perfSortDir, setPerfSortDir] = useState<"asc" | "desc">("desc");
+  const [perfFilterTextart, setPerfFilterTextart] = useState<string>("all");
+  const [perfFilterAge, setPerfFilterAge] = useState<string>("all");
+  const [perfFilterLength, setPerfFilterLength] = useState<string>("all");
+
+  // Usage stats state
+  const [usageStartDate, setUsageStartDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d;
+  });
+  const [userProgressData, setUserProgressData] = useState<Array<{
+    kid_profile_id: string;
+    total_stars: number | null;
+    total_stories_read: number | null;
+  }>>([]);
+  const [totalKidProfiles, setTotalKidProfiles] = useState(0);
   
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
@@ -610,9 +906,8 @@ const FeedbackStatsPage = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (ratingsData) {
-      setRatings(ratingsData);
-    }
+    // Ratings will be enriched after stories/users are loaded
+    const rawRatings = ratingsData || [];
 
     // Get story IDs that have feedback (J'ai fini clicked)
     const feedbackStoryIds = new Set(ratingsData?.map(r => r.story_id).filter(Boolean) || []);
@@ -635,8 +930,11 @@ const FeedbackStatsPage = () => {
         structure_middle,
         structure_ending,
         emotional_coloring,
+        concrete_theme,
         series_id,
+        series_mode,
         episode_number,
+        story_length,
         generation_time_ms,
         story_generation_ms,
         image_generation_ms,
@@ -647,7 +945,8 @@ const FeedbackStatsPage = () => {
         kid_profiles (
           name,
           school_class,
-          school_system
+          school_system,
+          age
         )
       `)
       .order("created_at", { ascending: false });
@@ -656,7 +955,7 @@ const FeedbackStatsPage = () => {
     const { data: resultsData } = await supabase
       .from("user_results")
       .select("reference_id")
-      .eq("activity_type", "story_completed");
+      .in("activity_type", ["story_completed", "story_read"]);
 
     const readStoryIds = new Set(resultsData?.map(r => r.reference_id) || []);
 
@@ -664,15 +963,12 @@ const FeedbackStatsPage = () => {
     const { data: comprehensionResults } = await supabase
       .from("user_results")
       .select("reference_id, total_questions, correct_answers")
-      .eq("activity_type", "story_completed");
+      .in("activity_type", ["quiz_complete", "quiz_completed"]);
 
-    const comprehensionPerStory = new Map<string, { answered: number; total: number }>();
+    const quizCompletedStoryIds = new Set<string>();
     comprehensionResults?.forEach(r => {
-      if (r.reference_id && r.total_questions) {
-        comprehensionPerStory.set(r.reference_id, {
-          answered: r.total_questions, // All questions answered if quiz completed
-          total: r.total_questions,
-        });
+      if (r.reference_id) {
+        quizCompletedStoryIds.add(r.reference_id);
       }
     });
 
@@ -714,18 +1010,29 @@ const FeedbackStatsPage = () => {
       });
     }
 
+    // Build a map of story_id -> text_language from storiesData
+    const storyLangMap = new Map<string, string>();
+    if (storiesData) {
+      storiesData.forEach((s: any) => {
+        storyLangMap.set(s.id, s.text_language || '-');
+      });
+    }
+
+    // Enrich ratings with username and text_language
+    const enrichedRatings: StoryRating[] = rawRatings.map((r: any) => ({
+      ...r,
+      username: r.user_id ? usersMap.get(r.user_id) : undefined,
+      text_language: r.story_id ? storyLangMap.get(r.story_id) : undefined,
+    }));
+    setRatings(enrichedRatings);
+
     if (storiesData) {
       const mappedStories: StoryStats[] = storiesData.map((story: any) => {
-        const wordStats = wordsPerStory.get(story.id) || { requested: 0, saved: 0 };
-        const comprehensionStats = comprehensionPerStory.get(story.id);
-        const totalQuestions = questionsPerStory.get(story.id) || 0;
-        
         return {
           id: story.id,
           title: story.title,
-          prompt: story.prompt,
           difficulty: story.difficulty,
-          text_type: story.text_type,
+          text_language: story.text_language || '-',
           is_deleted: story.is_deleted || false,
           created_at: story.created_at,
           user_id: story.user_id,
@@ -735,11 +1042,10 @@ const FeedbackStatsPage = () => {
           kid_school_system: story.kid_profiles?.school_system,
           username: story.user_id ? usersMap.get(story.user_id) : undefined,
           is_read: readStoryIds.has(story.id),
-          words_requested: wordStats.requested,
-          words_saved: wordStats.saved,
           has_feedback: feedbackStoryIds.has(story.id),
-          questions_answered: comprehensionStats?.answered || 0,
-          questions_total: comprehensionStats?.total || totalQuestions,
+          quiz_completed: quizCompletedStoryIds.has(story.id),
+          concrete_theme: story.concrete_theme,
+          emotional_coloring: story.emotional_coloring,
         };
       });
       setStories(mappedStories);
@@ -770,7 +1076,10 @@ const FeedbackStatsPage = () => {
         text_language: story.text_language || '-',
         text_type: story.text_type,
         series_id: story.series_id,
+        series_mode: story.series_mode,
         episode_number: story.episode_number,
+        story_length: story.story_length,
+        kid_age: story.kid_profiles?.age ?? null,
         generation_time_ms: story.generation_time_ms,
         story_generation_ms: story.story_generation_ms,
         image_generation_ms: story.image_generation_ms,
@@ -781,6 +1090,18 @@ const FeedbackStatsPage = () => {
       }));
       setPerformanceData(perfData);
     }
+
+    // Load user_progress for stars
+    const { data: progressData } = await supabase
+      .from("user_progress")
+      .select("kid_profile_id, total_stars, total_stories_read");
+    setUserProgressData(progressData || []);
+
+    // Count total kid profiles
+    const { count: kidCount } = await supabase
+      .from("kid_profiles")
+      .select("id", { count: "exact", head: true });
+    setTotalKidProfiles(kidCount || 0);
 
     setIsLoading(false);
   };
@@ -795,7 +1116,6 @@ const FeedbackStatsPage = () => {
     return stories.filter(story => {
       if (filterUser !== "all" && story.username !== filterUser) return false;
       if (filterKid !== "all" && story.kid_name !== filterKid) return false;
-      if (filterTextType !== "all" && story.text_type !== filterTextType) return false;
       if (filterDifficulty !== "all" && story.difficulty !== filterDifficulty) return false;
       if (filterStatus === "read" && !story.is_read) return false;
       if (filterStatus === "unread" && story.is_read) return false;
@@ -804,12 +1124,11 @@ const FeedbackStatsPage = () => {
       if (filterTitle && !story.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
       if (filterJaiFini === "yes" && !story.has_feedback) return false;
       if (filterJaiFini === "no" && story.has_feedback) return false;
-      if (filterQuestionsAnswered === "answered" && story.questions_answered === 0) return false;
-      if (filterQuestionsAnswered === "not_answered" && (story.questions_answered > 0 || story.questions_total === 0)) return false;
-      if (filterQuestionsAnswered === "no_questions" && story.questions_total > 0) return false;
+      if (filterQuizCompleted === "yes" && !story.quiz_completed) return false;
+      if (filterQuizCompleted === "no" && story.quiz_completed) return false;
       return true;
     });
-  }, [stories, filterUser, filterKid, filterTextType, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuestionsAnswered]);
+  }, [stories, filterUser, filterKid, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuizCompleted]);
 
   // Filtered ratings
   const filteredRatings = useMemo(() => {
@@ -843,9 +1162,41 @@ const FeedbackStatsPage = () => {
     });
   }, [classifications, classificationSortKey, classificationSortDir]);
 
-  // Sorted performance data
+  // Helper: textart label
+  const getTextartCode = (item: PerformanceEntry) => {
+    if (!item.series_id) return 'N';
+    if (item.series_mode === 'interactive') return 'SX';
+    return 'S';
+  };
+
+  // Helper: length label
+  const getLengthCode = (len: string | null) => {
+    if (!len) return '-';
+    switch (len) {
+      case 'short': return 'S';
+      case 'medium': return 'M';
+      case 'long': return 'L';
+      case 'extra_long': return 'XL';
+      default: return len.charAt(0).toUpperCase();
+    }
+  };
+
+  // Unique perf filter values
+  const uniquePerfAges = useMemo(() => 
+    [...new Set(performanceData.map(p => p.kid_age).filter((a): a is number => a !== null))].sort((a, b) => a - b), 
+    [performanceData]
+  );
+
+  // Sorted & filtered performance data
   const sortedPerformance = useMemo(() => {
-    return [...performanceData].sort((a, b) => {
+    return [...performanceData]
+      .filter(item => {
+        if (perfFilterTextart !== 'all' && getTextartCode(item) !== perfFilterTextart) return false;
+        if (perfFilterAge !== 'all' && String(item.kid_age) !== perfFilterAge) return false;
+        if (perfFilterLength !== 'all' && getLengthCode(item.story_length) !== perfFilterLength) return false;
+        return true;
+      })
+      .sort((a, b) => {
       const aVal = a[perfSortKey];
       const bVal = b[perfSortKey];
       if (aVal === null || aVal === undefined) return 1;
@@ -858,7 +1209,7 @@ const FeedbackStatsPage = () => {
       }
       return 0;
     });
-  }, [performanceData, perfSortKey, perfSortDir]);
+  }, [performanceData, perfSortKey, perfSortDir, perfFilterTextart, perfFilterAge, perfFilterLength]);
 
   const handleClassificationSort = (key: keyof StoryClassification) => {
     if (classificationSortKey === key) {
@@ -902,8 +1253,8 @@ const FeedbackStatsPage = () => {
     ? (ratings.reduce((sum, r) => sum + r.quality_rating, 0) / ratings.length).toFixed(1)
     : "0";
 
-  const totalWordsRequested = stories.reduce((sum, s) => sum + s.words_requested, 0);
-  const totalWordsSaved = stories.reduce((sum, s) => sum + s.words_saved, 0);
+  const totalWordsRequested = 0;
+  const totalWordsSaved = 0;
 
   const getMostCommonIssue = () => {
     const issues: Record<string, number> = {};
@@ -1013,7 +1364,16 @@ const FeedbackStatsPage = () => {
     setIsDeletingFeedback(false);
   };
 
-  const storiesRead = stories.filter(s => s.is_read).length;
+  const [kpiStartDate, setKpiStartDate] = useState<Date | undefined>(undefined);
+  const [pendingKpiDate, setPendingKpiDate] = useState<Date | undefined>(undefined);
+
+  const kpiStories = useMemo(() => {
+    if (!kpiStartDate) return stories;
+    return stories.filter(s => new Date(s.created_at) >= kpiStartDate);
+  }, [stories, kpiStartDate]);
+
+  const storiesRead = kpiStories.filter(s => s.is_read).length;
+  const quizzesCompleted = kpiStories.filter(s => s.quiz_completed).length;
 
   if (isLoading) {
     return (
@@ -1028,19 +1388,48 @@ const FeedbackStatsPage = () => {
       <div className="container max-w-7xl mx-auto px-4 py-8">
         <PageHeader title={t.title} backTo="/" />
         <p className="text-muted-foreground mb-6">{t.subtitle}</p>
+        {/* KPI Date Filter */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-muted-foreground">KPI ab:</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="w-[150px] justify-start text-left font-normal">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {pendingKpiDate ? format(pendingKpiDate, "dd.MM.yyyy") : "Alle Daten"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={pendingKpiDate}
+                onSelect={setPendingKpiDate}
+                locale={de}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <Button size="sm" variant="secondary" onClick={() => setKpiStartDate(pendingKpiDate)}>
+            Neu berechnen
+          </Button>
+          {kpiStartDate && (
+            <Button size="sm" variant="ghost" onClick={() => { setKpiStartDate(undefined); setPendingKpiDate(undefined); }}>
+              ✕
+            </Button>
+          )}
+        </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.totalStories}
+                Aktive Kinder
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold">{stories.length}</span>
+                <Users className="h-5 w-5 text-primary" />
+                <span className="text-2xl font-bold">{totalKidProfiles}</span>
               </div>
             </CardContent>
           </Card>
@@ -1048,7 +1437,21 @@ const FeedbackStatsPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.storiesRead}
+                Bücher generiert
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <span className="text-2xl font-bold">{kpiStories.length}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Bücher gelesen
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1062,13 +1465,13 @@ const FeedbackStatsPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.wordsRequested}
+                Quizzes beendet
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-sky-500" />
-                <span className="text-2xl font-bold">{totalWordsRequested}</span>
+                <ShieldCheck className="h-5 w-5 text-mint" />
+                <span className="text-2xl font-bold">{quizzesCompleted}</span>
               </div>
             </CardContent>
           </Card>
@@ -1076,43 +1479,13 @@ const FeedbackStatsPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.wordsSaved}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <BookMarked className="h-5 w-5 text-violet-500" />
-                <span className="text-2xl font-bold">{totalWordsSaved}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.avgRating}
+                Ø Rating
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5 fill-sunshine text-sunshine" />
                 <span className="text-2xl font-bold">{avgRating}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t.mostCommonIssue}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-cotton-candy" />
-                <span className="text-sm font-medium truncate">
-                  {mostCommonIssue ? translateReason(mostCommonIssue) : "-"}
-                </span>
               </div>
             </CardContent>
           </Card>
@@ -1141,6 +1514,10 @@ const FeedbackStatsPage = () => {
               <Timer className="h-4 w-4" />
               {t.performanceTab}
             </TabsTrigger>
+            <TabsTrigger value="usage" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Usage Stats
+            </TabsTrigger>
           </TabsList>
 
           {/* Stories Tab */}
@@ -1148,93 +1525,127 @@ const FeedbackStatsPage = () => {
             {/* Filters */}
             <Card className="mb-4">
               <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Filter</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filter</span>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                        <Columns3 className="h-3 w-3" /> Filter ein/aus
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2" align="end">
+                      {([
+                        ['title', 'Titel'],
+                        ['user', 'User'],
+                        ['kid', 'Kind'],
+                        ['difficulty', 'Schwierigkeit'],
+                        ['status', 'Status'],
+                        ['jaiFini', "J'ai fini"],
+                        ['quiz', 'Quiz'],
+                      ] as [StoryFilterKey, string][]).map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 py-1 px-1 text-sm cursor-pointer hover:bg-muted/50 rounded">
+                          <Checkbox checked={visibleFilters.has(key)} onCheckedChange={() => toggleFilter(key)} />
+                          {label}
+                        </label>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Input
-                    placeholder={t.storyTitle}
-                    value={filterTitle}
-                    onChange={(e) => setFilterTitle(e.target.value)}
-                    className="h-9"
-                  />
-                  <Select value={filterUser} onValueChange={setFilterUser}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.user} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      {uniqueUsers.map(u => (
-                        <SelectItem key={u} value={u!}>{u}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterKid} onValueChange={setFilterKid}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.child} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      {uniqueKids.map(k => (
-                        <SelectItem key={k} value={k!}>{k}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterTextType} onValueChange={setFilterTextType}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.textType} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="fiction">{t.fiction}</SelectItem>
-                      <SelectItem value="non-fiction">{t.nonFiction}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.difficulty} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="easy">{t.easy}</SelectItem>
-                      <SelectItem value="medium">{t.medium}</SelectItem>
-                      <SelectItem value="difficult">{t.hard}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.status} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="read">{t.read}</SelectItem>
-                      <SelectItem value="unread">{t.unread}</SelectItem>
-                      <SelectItem value="active">{t.active}</SelectItem>
-                      <SelectItem value="deleted">{t.deleted}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterJaiFini} onValueChange={setFilterJaiFini}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.jaiFini} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="yes">{t.yes}</SelectItem>
-                      <SelectItem value="no">{t.no}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterQuestionsAnswered} onValueChange={setFilterQuestionsAnswered}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.questionsAnswered} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="answered">{t.answered}</SelectItem>
-                      <SelectItem value="not_answered">{t.notAnswered}</SelectItem>
-                      <SelectItem value="no_questions">{t.noQuestions}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-wrap gap-2">
+                  {visibleFilters.has('title') && (
+                    <Input
+                      placeholder="Titel"
+                      value={filterTitle}
+                      onChange={(e) => setFilterTitle(e.target.value)}
+                      className="h-9 w-[130px]"
+                    />
+                  )}
+                  {visibleFilters.has('user') && (
+                    <Select value={filterUser} onValueChange={setFilterUser}>
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">User:</span>
+                        <SelectValue placeholder="Alle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        {uniqueUsers.map(u => (
+                          <SelectItem key={u} value={u!}>{u}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('kid') && (
+                    <Select value={filterKid} onValueChange={setFilterKid}>
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">Kind:</span>
+                        <SelectValue placeholder="Alle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        {uniqueKids.map(k => (
+                          <SelectItem key={k} value={k!}>{k}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('difficulty') && (
+                    <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+                      <SelectTrigger className="h-9 w-[150px]">
+                        <span className="text-muted-foreground text-xs mr-1">Schwierigk.:</span>
+                        <SelectValue placeholder="Alle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="easy">{t.easy}</SelectItem>
+                        <SelectItem value="medium">{t.medium}</SelectItem>
+                        <SelectItem value="difficult">{t.hard}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('status') && (
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">Status:</span>
+                        <SelectValue placeholder="Alle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="read">{t.read}</SelectItem>
+                        <SelectItem value="unread">{t.unread}</SelectItem>
+                        <SelectItem value="active">{t.active}</SelectItem>
+                        <SelectItem value="deleted">{t.deleted}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('jaiFini') && (
+                    <Select value={filterJaiFini} onValueChange={setFilterJaiFini}>
+                      <SelectTrigger className="h-9 w-[130px]">
+                        <span className="text-muted-foreground text-xs mr-1">J'ai fini:</span>
+                        <SelectValue placeholder="Alle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="yes">{t.yes}</SelectItem>
+                        <SelectItem value="no">{t.no}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {visibleFilters.has('quiz') && (
+                    <Select value={filterQuizCompleted} onValueChange={setFilterQuizCompleted}>
+                      <SelectTrigger className="h-9 w-[120px]">
+                        <span className="text-muted-foreground text-xs mr-1">Quiz:</span>
+                        <SelectValue placeholder="Alle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.all}</SelectItem>
+                        <SelectItem value="yes">{t.yes}</SelectItem>
+                        <SelectItem value="no">{t.no}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1248,114 +1659,173 @@ const FeedbackStatsPage = () => {
             ) : (
               <Card>
                 <CardContent className="p-0">
+                  {/* Column visibility toggle */}
+                  <div className="flex justify-end p-2 border-b">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <Columns3 className="h-4 w-4" />
+                          Spalten
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56" align="end">
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium mb-2">Spalten ein/ausblenden</p>
+                          {([
+                            { key: 'date' as StoryColumnKey, label: t.date },
+                            { key: 'user' as StoryColumnKey, label: t.user },
+                            { key: 'child' as StoryColumnKey, label: t.child },
+                            { key: 'title' as StoryColumnKey, label: t.storyTitle },
+                            { key: 'textLanguage' as StoryColumnKey, label: t.language },
+                            { key: 'difficulty' as StoryColumnKey, label: t.difficulty },
+                            { key: 'jaiFini' as StoryColumnKey, label: t.jaiFini },
+                            { key: 'quizCompleted' as StoryColumnKey, label: 'Quiz' },
+                            { key: 'status' as StoryColumnKey, label: t.status },
+                            { key: 'theme' as StoryColumnKey, label: 'Theme' },
+                            { key: 'emotionBlueprint' as StoryColumnKey, label: 'Emotion Blueprint' },
+                          ]).map(col => (
+                            <div key={col.key} className="flex items-center gap-2">
+                              <Checkbox
+                                checked={visibleColumns.has(col.key)}
+                                onCheckedChange={(checked) => {
+                                  setVisibleColumns(prev => {
+                                    const next = new Set(prev);
+                                    if (checked) next.add(col.key);
+                                    else next.delete(col.key);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              <span className="text-sm">{col.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t.date}</TableHead>
-                          <TableHead>{t.user}</TableHead>
-                          <TableHead>{t.child}</TableHead>
-                          <TableHead>{t.storyTitle}</TableHead>
-                          <TableHead>{t.prompt}</TableHead>
-                          <TableHead>{t.textType}</TableHead>
-                          <TableHead>{t.difficulty}</TableHead>
-                          <TableHead>{t.words}</TableHead>
-                          <TableHead>{t.jaiFini}</TableHead>
-                          <TableHead>{t.questionsAnswered}</TableHead>
-                          <TableHead>{t.status}</TableHead>
+                          {visibleColumns.has('date') && <TableHead>{t.date}</TableHead>}
+                          {visibleColumns.has('user') && <TableHead>{t.user}</TableHead>}
+                          {visibleColumns.has('child') && <TableHead>{t.child}</TableHead>}
+                          {visibleColumns.has('title') && <TableHead>{t.storyTitle}</TableHead>}
+                          {visibleColumns.has('textLanguage') && <TableHead>{t.language}</TableHead>}
+                          {visibleColumns.has('difficulty') && <TableHead>{t.difficulty}</TableHead>}
+                          {visibleColumns.has('jaiFini') && <TableHead>{t.jaiFini}</TableHead>}
+                          {visibleColumns.has('quizCompleted') && <TableHead>Quiz</TableHead>}
+                          {visibleColumns.has('status') && <TableHead>{t.status}</TableHead>}
+                          {visibleColumns.has('theme') && <TableHead>Theme</TableHead>}
+                          {visibleColumns.has('emotionBlueprint') && <TableHead>Emotion</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredStories.map((story) => (
                           <TableRow key={story.id} className={story.is_deleted ? "opacity-50" : ""}>
-                            <TableCell className="whitespace-nowrap">
-                              {format(new Date(story.created_at), "dd.MM.yyyy")}
-                            </TableCell>
-                            <TableCell>{story.username || "-"}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{story.kid_name || "-"}</span>
-                                {story.kid_school_class && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {story.kid_school_class} ({story.kid_school_system?.toUpperCase()})
-                                  </span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate font-medium" title={story.title}>
-                              {story.title}
-                            </TableCell>
-                            <TableCell className="max-w-[150px] truncate text-muted-foreground" title={story.prompt || ""}>
-                              {story.prompt || "-"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {translateTextType(story.text_type)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                story.difficulty === "easy" ? "secondary" :
-                                story.difficulty === "difficult" ? "destructive" : "default"
-                              }>
-                                {translateDifficulty(story.difficulty)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col text-sm">
-                                <span className="flex items-center gap-1">
-                                  <MessageSquare className="h-3 w-3 text-sky-500" />
-                                  {story.words_requested}
-                                </span>
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                  <BookMarked className="h-3 w-3 text-violet-500" />
-                                  {story.words_saved}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {story.has_feedback ? (
-                                <Badge className="bg-mint/20 text-mint border-mint">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  {t.yes}
+                            {visibleColumns.has('date') && (
+                              <TableCell className="whitespace-nowrap">
+                                {format(new Date(story.created_at), "dd.MM.yyyy")}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('user') && (
+                              <TableCell>{story.username || "-"}</TableCell>
+                            )}
+                            {visibleColumns.has('child') && (
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{story.kid_name || "-"}</span>
+                                  {story.kid_school_class && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {story.kid_school_class} ({story.kid_school_system?.toUpperCase()})
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('title') && (
+                              <TableCell className="max-w-[200px] truncate font-medium" title={story.title}>
+                                {story.title}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('textLanguage') && (
+                              <TableCell>
+                                <Badge variant="outline">{story.text_language?.toUpperCase() || "-"}</Badge>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('difficulty') && (
+                              <TableCell>
+                                <Badge variant={
+                                  story.difficulty === "easy" ? "secondary" :
+                                  story.difficulty === "difficult" ? "destructive" : "default"
+                                }>
+                                  {translateDifficulty(story.difficulty)}
                                 </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-muted-foreground">
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  {t.no}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {story.questions_total > 0 ? (
-                                <Badge variant={story.questions_answered > 0 ? "default" : "outline"}>
-                                  {story.questions_answered}/{story.questions_total}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col gap-1">
-                                {story.is_read ? (
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('jaiFini') && (
+                              <TableCell>
+                                {story.has_feedback ? (
                                   <Badge className="bg-mint/20 text-mint border-mint">
                                     <CheckCircle className="h-3 w-3 mr-1" />
-                                    {t.read}
+                                    {t.yes}
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline" className="text-muted-foreground">
                                     <XCircle className="h-3 w-3 mr-1" />
-                                    {t.unread}
+                                    {t.no}
                                   </Badge>
                                 )}
-                                {story.is_deleted && (
-                                  <Badge variant="destructive">
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    {t.deleted}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('quizCompleted') && (
+                              <TableCell>
+                                {story.quiz_completed ? (
+                                  <Badge className="bg-mint/20 text-mint border-mint">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    {t.yes}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-muted-foreground">
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    {t.no}
                                   </Badge>
                                 )}
-                              </div>
-                            </TableCell>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('status') && (
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  {story.is_read ? (
+                                    <Badge className="bg-mint/20 text-mint border-mint">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      {t.read}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-muted-foreground">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      {t.unread}
+                                    </Badge>
+                                  )}
+                                  {story.is_deleted && (
+                                    <Badge variant="destructive">
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      {t.deleted}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('theme') && (
+                              <TableCell className="max-w-[120px] truncate" title={story.concrete_theme || ""}>
+                                {story.concrete_theme || "-"}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('emotionBlueprint') && (
+                              <TableCell className="max-w-[120px] truncate" title={story.emotional_coloring || ""}>
+                                {story.emotional_coloring || "-"}
+                              </TableCell>
+                            )}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1441,9 +1911,10 @@ const FeedbackStatsPage = () => {
                             />
                           </TableHead>
                           <TableHead>{t.date}</TableHead>
+                          <TableHead>{t.user}</TableHead>
                           <TableHead>{t.child}</TableHead>
                           <TableHead>{t.storyTitle}</TableHead>
-                          <TableHead>{t.prompt}</TableHead>
+                          <TableHead>{t.language}</TableHead>
                           <TableHead>{t.rating}</TableHead>
                           <TableHead></TableHead>
                         </TableRow>
@@ -1460,6 +1931,7 @@ const FeedbackStatsPage = () => {
                             <TableCell className="whitespace-nowrap">
                               {format(new Date(rating.created_at), "dd.MM.yyyy HH:mm")}
                             </TableCell>
+                            <TableCell>{rating.username || "-"}</TableCell>
                             <TableCell>
                               <div className="flex flex-col">
                                 <span className="font-medium">{rating.kid_name || "-"}</span>
@@ -1471,10 +1943,19 @@ const FeedbackStatsPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate" title={rating.story_title}>
-                              {rating.story_title}
+                              {rating.story_id ? (
+                                <button
+                                  onClick={() => openStoryPreview(rating.story_id!)}
+                                  className="text-primary hover:underline cursor-pointer text-left"
+                                >
+                                  {rating.story_title}
+                                </button>
+                              ) : (
+                                rating.story_title
+                              )}
                             </TableCell>
-                            <TableCell className="max-w-[150px] truncate" title={rating.story_prompt || ""}>
-                              {rating.story_prompt || "-"}
+                            <TableCell>
+                              <Badge variant="outline">{rating.text_language?.toUpperCase() || "-"}</Badge>
                             </TableCell>
                             <TableCell>{renderStars(rating.quality_rating)}</TableCell>
                             <TableCell>
@@ -1657,6 +2138,43 @@ const FeedbackStatsPage = () => {
                 <CardTitle className="text-lg">{t.performanceTab}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <Select value={perfFilterTextart} onValueChange={setPerfFilterTextart}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue placeholder={t.textType} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="N">N (Normal)</SelectItem>
+                      <SelectItem value="S">S (Serie)</SelectItem>
+                      <SelectItem value="SX">SX (Mitgestalten)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={perfFilterAge} onValueChange={setPerfFilterAge}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Alter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      {uniquePerfAges.map(age => (
+                        <SelectItem key={age} value={String(age)}>{age} J.</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={perfFilterLength} onValueChange={setPerfFilterLength}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder={t.length} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="S">S</SelectItem>
+                      <SelectItem value="M">M</SelectItem>
+                      <SelectItem value="L">L</SelectItem>
+                      <SelectItem value="XL">XL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -1669,6 +2187,8 @@ const FeedbackStatsPage = () => {
                         </TableHead>
                         <TableHead>{t.language}</TableHead>
                         <TableHead>{t.textType}</TableHead>
+                        <TableHead>Alter</TableHead>
+                        <TableHead>{t.length}</TableHead>
                         <TableHead>Episode</TableHead>
                         <TableHead className="text-center">✓ Text</TableHead>
                         <TableHead className="text-center">✓ Bilder</TableHead>
@@ -1695,7 +2215,11 @@ const FeedbackStatsPage = () => {
                           <TableCell className="text-xs">{item.username || '-'}</TableCell>
                           <TableCell className="text-xs uppercase">{item.text_language}</TableCell>
                           <TableCell className="text-xs">
-                            {item.series_id ? 'Serie' : 'Story'}
+                            <Badge variant="outline" className="text-xs">{getTextartCode(item)}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">{item.kid_age ?? '-'}</TableCell>
+                          <TableCell className="text-xs">
+                            <Badge variant="outline" className="text-xs">{getLengthCode(item.story_length)}</Badge>
                           </TableCell>
                           <TableCell className="text-xs">
                             {item.episode_number ?? '-'}
@@ -1718,6 +2242,16 @@ const FeedbackStatsPage = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Usage Stats Tab */}
+          <TabsContent value="usage">
+            <UsageStatsContent
+              stories={stories}
+              userProgressData={userProgressData}
+              usageStartDate={usageStartDate}
+              setUsageStartDate={setUsageStartDate}
+            />
           </TabsContent>
         </Tabs>
 
@@ -1748,6 +2282,48 @@ const FeedbackStatsPage = () => {
                 {selectedRating && format(new Date(selectedRating.created_at), "dd.MM.yyyy HH:mm")}
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Story Preview Dialog */}
+        <Dialog open={!!previewStory || previewLoading} onOpenChange={(open) => { if (!open) { setPreviewStory(null); setPreviewLoading(false); } }}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{previewStory?.title || "Laden..."}</DialogTitle>
+            </DialogHeader>
+            {previewLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : previewStory ? (
+              <div className="space-y-4">
+                {previewStory.cover_image_url && (
+                  <img
+                    src={previewStory.cover_image_url}
+                    alt="Cover"
+                    className="rounded-md mx-auto block"
+                    style={{ maxWidth: 400 }}
+                  />
+                )}
+                <div className="prose prose-sm max-w-none whitespace-pre-line text-foreground">
+                  {previewStory.content}
+                </div>
+                {previewStory.story_images && previewStory.story_images.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <h4 className="text-sm font-medium text-muted-foreground">Bilder</h4>
+                    {previewStory.story_images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt={`Scene ${i + 1}`}
+                        className="rounded-md mx-auto block"
+                        style={{ maxWidth: 400 }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
           </DialogContent>
         </Dialog>
       </div>

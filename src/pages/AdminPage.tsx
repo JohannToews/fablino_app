@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown } from "lucide-react";
+import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown, Flag } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, type PlanKey } from "@/config/plans";
@@ -547,7 +547,7 @@ const AdminPage = () => {
           {/* Account Tab — Accordions: Konto-Verwaltung + Abo & Plan */}
           <TabsContent value="account" className="h-full overflow-y-auto m-0 pr-2">
             <div className="max-w-3xl mx-auto">
-              <Accordion type="multiple" defaultValue={["account-management", "subscription"]} className="space-y-3">
+              <Accordion type="multiple" defaultValue={[]} className="space-y-3">
 
                 {/* Akkordeon 1: Konto-Verwaltung */}
                 <AccordionItem value="account-management" className="border border-orange-200 rounded-2xl overflow-hidden bg-white shadow-sm">
@@ -743,32 +743,91 @@ const AdminPage = () => {
           {/* System Tab - Admin Only */}
           {user?.role === 'admin' && (
             <TabsContent value="system" className="h-full overflow-y-auto m-0 pr-2">
-              <div className="max-w-4xl mx-auto space-y-6">
-                {/* Image Generation Config Link */}
-                <Card className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate('/admin/config')}>
-                  <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                    <Image className="h-5 w-5 text-orange-500" />
-                    <div>
-                      <CardTitle className="text-base">{t.adminImageGenConfig}</CardTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">{t.adminImageGenConfigDesc}</p>
-                    </div>
-                  </CardHeader>
-                </Card>
+              <div className="max-w-4xl mx-auto">
+                <Accordion type="multiple" defaultValue={[]} className="space-y-4">
+                  {/* Image Generation Config Link */}
+                  <AccordionItem value="image-gen-config" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Image className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">{t.adminImageGenConfig}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <p className="text-xs text-muted-foreground mb-3">{t.adminImageGenConfigDesc}</p>
+                      <Button size="sm" variant="outline" onClick={() => navigate('/admin/config')}>Konfiguration öffnen</Button>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                {/* Image Styles Management */}
-                <ImageStylesSection language={adminLang} />
+                  {/* Image Styles Management */}
+                  <AccordionItem value="image-styles" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Image className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-sm">Bildstile verwalten</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <ImageStylesSection language={adminLang} />
+                    </AccordionContent>
+                  </AccordionItem>
 
-                {/* System Prompt Editor */}
-                <SystemPromptSection language={adminLang} />
-                
-                {/* Age Rules Editor */}
-                <AgeRulesSection language={adminLang} />
-                
-                {/* User Management */}
-                <UserManagementSection 
-                  language={adminLang}
-                  currentUserId={user.id}
-                />
+                  {/* System Prompt Editor */}
+                  <AccordionItem value="system-prompt" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">System Prompt</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <SystemPromptSection language={adminLang} />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Age Rules Editor */}
+                  <AccordionItem value="age-rules" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">Altersregeln</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <AgeRulesSection language={adminLang} />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* User Management */}
+                  <AccordionItem value="user-mgmt" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">Benutzerverwaltung</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <UserManagementSection 
+                        language={adminLang}
+                        currentUserId={user.id}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Feature Flags */}
+                  <AccordionItem value="feature-flags" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Flag className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">Feature Flags</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <p className="text-xs text-muted-foreground mb-3">Features wie Emotion-Flow und Comic-Strip pro User oder global aktivieren.</p>
+                      <Button size="sm" variant="outline" onClick={() => navigate('/admin/feature-flags')}>Feature Flags öffnen</Button>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </TabsContent>
           )}

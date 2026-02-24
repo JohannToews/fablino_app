@@ -2049,8 +2049,22 @@ Deno.serve(async (req) => {
       DE: "Deutsch",
       FR: "Französisch",
       EN: "Englisch",
+      ES: "Spanisch",
+      NL: "Niederländisch",
+      IT: "Italienisch",
+      BS: "Bosnisch",
+      TR: "Türkisch",
+      BG: "Bulgarisch",
+      RO: "Rumänisch",
+      PL: "Polnisch",
+      LT: "Litauisch",
+      HU: "Ungarisch",
+      CA: "Katalanisch",
+      SL: "Slowenisch",
+      PT: "Portugiesisch",
+      SK: "Slowakisch",
     };
-    const targetLanguage = languageNames[textLanguage] || "Französisch";
+    const targetLanguage = languageNames[(textLanguage || '').toUpperCase()] || languageNames[effectiveStoryLanguage.toUpperCase()] || "Französisch";
 
     // Map length to approximate word count with explicit minimum
     const lengthMap: Record<string, { range: string; min: number; max: number }> = {
@@ -2627,6 +2641,32 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }));
       // Log full panel details for debugging
       console.log('[COMIC] Panel details: ' + JSON.stringify(allPanels));
+
+      // ── Scene Variance Validation ──
+      function checkGridVariance(gridPanels: any[], gridNum: number) {
+        const cameras = gridPanels.map((p: any) => p.camera);
+        const scenes = gridPanels.map((p: any) => (p.scene_en || '').substring(0, 50).toLowerCase());
+
+        // Check camera repetition within grid
+        const uniqueCameras = new Set(cameras).size;
+        if (uniqueCameras < 3) {
+          console.warn(`[COMIC][VARIANCE] Grid ${gridNum}: LOW camera variety — only ${uniqueCameras} unique cameras: [${cameras.join(', ')}]`);
+        }
+        for (let i = 0; i < cameras.length - 1; i++) {
+          if (cameras[i] === cameras[i + 1]) {
+            console.warn(`[COMIC][VARIANCE] Grid ${gridNum}: REPEATED camera — panels ${i + 1}-${i + 2} both use "${cameras[i]}"`);
+          }
+        }
+
+        // Check scene description similarity (first 50 chars)
+        for (let i = 0; i < scenes.length - 1; i++) {
+          if (scenes[i] && scenes[i + 1] && scenes[i] === scenes[i + 1]) {
+            console.warn(`[COMIC][VARIANCE] Grid ${gridNum}: IDENTICAL scene descriptions — panels ${i + 1}-${i + 2}: "${scenes[i]}"`);
+          }
+        }
+      }
+      checkGridVariance(comicImagePlan.grid_1, 1);
+      checkGridVariance(comicImagePlan.grid_2, 2);
     }
 
     // ================== Block 2.4: LOAD IMAGE RULES FROM DB ==================
@@ -2650,7 +2690,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     console.log(`[PERF] Image rules loaded in ${Date.now() - imageRulesStart}ms`);
 
     // ================== Image Style from DB (Phase 1) ==================
-    let imageStyleData: { styleKey: string; promptSnippet: string; ageModifier: string } | undefined;
+    let imageStyleData: { styleKey: string; promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string } | undefined;
     try {
       imageStyleData = await getStyleForAge(
         supabase,
@@ -2921,7 +2961,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
           if (GEMINI_API_KEY) {
             try {
-              imageUrl = await callVertexImageAPI(GEMINI_API_KEY, imgPrompt.prompt);
+              console.log(`[IMAGE] Style: ${imageStyleData?.styleKey || 'default'}, negativePrompt: ${imgPrompt.negative_prompt?.substring(0, 100) || 'NONE'}`);
+              imageUrl = await callVertexImageAPI(GEMINI_API_KEY, imgPrompt.prompt, 3, imgPrompt.negative_prompt || undefined);
             } catch (vertexError) {
               console.log(`[IMAGE-PIPELINE] Vertex AI failed for ${imgPrompt.label}, trying Lovable Gateway`);
             }
@@ -3091,38 +3132,33 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             imageStyleData?.ageModifier || '',
           ].filter(Boolean).join('\n');
 
-          // Style-specific negative prompt for Vertex
-          const styleKey = imageStyleData?.styleKey || 'default';
-          const STYLE_NEGATIVE_PROMPTS: Record<string, string> = {
-            graphic_novel: '3D render, 3D animation, Pixar style, CGI, smooth plastic skin, ray tracing, photorealistic, hyperrealistic, Unreal Engine, octane render',
-            storybook_soft: '3D render, CGI, harsh lighting, dark shadows, photorealistic',
-            manga_anime: 'photorealistic, western cartoon, 3D render',
-          };
-          const comicNegativePrompt = STYLE_NEGATIVE_PROMPTS[styleKey] || undefined;
+          // Style-specific negative prompt + consistency suffix from DB
+          const comicNegativePrompt = imageStyleData?.negative_prompt || undefined;
+          const consistencySuffix = imageStyleData?.consistency_suffix || 'Consistent character design across all panels.';
 
-          console.log(`[COMIC] Style key: "${styleKey}", prefix (first 120 chars): "${imageStylePrefix.substring(0, 120)}"`);
-          if (comicNegativePrompt) {
-            console.log(`[COMIC] Negative prompt: "${comicNegativePrompt}"`);
-          }
+          console.log(`[IMAGE] Style: ${imageStyleData?.styleKey || 'default'}, negativePrompt: ${comicNegativePrompt?.substring(0, 100) || 'NONE'}, suffix: ${consistencySuffix?.substring(0, 60)}`);
 
           const prompt1 = buildComicGridPrompt(
             comicImagePlan.grid_1,
             characterAnchor,
             comicImagePlan.world_anchor,
             imageStylePrefix,
+            consistencySuffix,
           );
           const prompt2 = buildComicGridPrompt(
             comicImagePlan.grid_2,
             characterAnchor,
             comicImagePlan.world_anchor,
             imageStylePrefix,
+            consistencySuffix,
           );
 
           // Log final Vertex prompts for debugging
           console.log(`[COMIC] Vertex prompt grid_1 (first 2000 chars): ${prompt1.substring(0, 2000)}`);
           console.log(`[COMIC] Vertex prompt grid_2 (first 2000 chars): ${prompt2.substring(0, 2000)}`);
-          const anchor1 = prompt1.includes(`Characters: ${characterAnchor}`);
-          const anchor2 = prompt2.includes(`Characters: ${characterAnchor}`);
+          const anchorText = `Character reference (same character(s) in all 4 panels): ${characterAnchor}`;
+          const anchor1 = prompt1.includes(anchorText);
+          const anchor2 = prompt2.includes(anchorText);
           console.log(`[COMIC] Character anchor identical in both grids: ${anchor1 && anchor2} (grid_1: ${anchor1}, grid_2: ${anchor2})`);
           console.log('[COMIC] Generating 2 grid images in parallel...');
           const [consistencySettled, result1, result2] = await Promise.allSettled([

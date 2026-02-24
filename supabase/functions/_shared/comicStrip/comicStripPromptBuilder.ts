@@ -59,16 +59,63 @@ export function buildComicStripInstructions(
       '- "medium_wide" — 2+ characters interacting, showing body language and relationship',
       '- "wide_peaceful" — calm wide shot, resolution mood, warm/soft lighting',
       '',
-      '**Variety rules:**',
-      '- You MUST use at least 4 DIFFERENT camera values across the 8 panels.',
-      '- No two ADJACENT panels (in reading order) may have the same camera value.',
+      '## VISUAL VARIETY RULES (MANDATORY — these override narrative convenience):',
+      '',
+      '**RULE 1 — NO IDENTICAL PANELS:**',
+      'No two adjacent panels may have the same visual composition.',
+      'Every panel must look CLEARLY DIFFERENT from its neighbors.',
+      'The reader must see 4 distinct images per grid, not 4 variations of the same shot.',
+      '',
+      '**RULE 2 — LOCATION VARIETY across grids:**',
+      'Pick scenes from across the FULL story arc for each grid.',
+      '- Do NOT assign grid_1 = "first half of story" and grid_2 = "second half."',
+      '- Instead, distribute KEY MOMENTS evenly. Each grid should contain a mix of calm and dramatic scenes.',
+      '- Grid 1 might show: setup → inciting incident → midpoint twist → climax approach',
+      '- Grid 2 might show: climax peak → consequence → resolution → final image',
+      '- This ensures each grid has built-in location and mood variety.',
+      '',
+      '**RULE 3 — WHEN SCENES SHARE A LOCATION, USE MICRO-LOCATIONS + CAMERA SHIFTS:**',
+      'If two panels must be in the same general place (e.g., "garden"), they MUST differ in:',
+      '  a) MICRO-LOCATION: Different part of the same place',
+      '     ✅ "Under the apple tree" → "Behind the thorny hedge" → "On the wooden terrace" → "At the garden gate"',
+      '     ❌ "In the garden" → "In the garden" → "In the garden" → "In the garden"',
+      '  b) CAMERA: Drastically different angle and distance',
+      '     ✅ wide_establishing → close_up → over_shoulder → action_dynamic',
+      '     ❌ medium → medium → medium → wide_establishing',
+      '  c) FOCUS SUBJECT: What is centered in the frame must change',
+      '     ✅ "Two boys looking up at tree" → "Extreme close-up: glowing creature in hedge" → "Over Papa\'s shoulder, boys in background" → "Low angle: boy reaching into hedge, thorns framing shot"',
+      '',
+      '**RULE 4 — SCENE DESCRIPTION FORMAT:**',
+      'Every scene_en MUST follow this structure:',
+      '  "[MICRO-LOCATION] — [WHAT IS HAPPENING] — [VISUAL FOCUS/MOOD]"',
+      '  ✅ "Behind the thorny hedge, close-up — Pix discovers a tiny glowing creature with silver fur — wonder and soft blue light"',
+      '  ✅ "Wooden terrace, over-the-shoulder from Papa — the two boys freeze, hiding something — suspense, warm afternoon light"',
+      '  ❌ "Pix and Mikel stand in the garden looking at something" (too generic, no micro-location, no visual focus)',
+      '',
+      '**RULE 5 — CAMERA VALUES within a grid:**',
+      'All 4 panels in a single grid must use DIFFERENT cameras.',
+      '- NEVER repeat a camera value within the same grid.',
+      '- FORBIDDEN combo: same micro-location + same camera = rejected.',
       '- At least 1× close_up and 1× detail_macro across both grids.',
       '- At least 1× wide shot (wide_establishing or wide_peaceful) per grid.',
       '',
-      '**Scene content rules:**',
-      '- Each scene_en must START with the character_anchor text (copy it exactly).',
-      '- After the character_anchor, describe: the specific action, the environment details, the mood/lighting.',
-      '- Scenes must follow the story chronologically (panel 1 = start, panel 8 = end).',
+      '**RULE 6 — PICK THE MOST VISUAL MOMENTS:**',
+      'Scan the full story text and identify scenes with the richest visual descriptions',
+      '(colors, light effects, creatures, transformations, weather, emotions on faces).',
+      'These MUST become panels.',
+      '',
+      'RANKING for panel selection (highest priority first):',
+      '1. TRANSFORMATION / MAGIC moments (object changes, creature appears, world shifts)',
+      '2. DISCOVERY / REVEAL moments (creature found, door opens, object appears)',
+      '3. EMOTIONAL PEAKS (fear, wonder, triumph — shown on faces via close_up)',
+      '4. ACTION moments (climbing, running, flying)',
+      '5. ESTABLISHING shots (characters standing somewhere) — use MAX 1 per grid!',
+      '',
+      '**Scene content rules (IMPORTANT):**',
+      '- Each scene_en must focus PRIMARILY on the ACTION, ENVIRONMENT, and MOOD — the scene is the star, not the character description.',
+      '- Include the character_anchor text ONCE at the end of each scene_en (not at the start).',
+      '- If there are multiple characters, describe ALL of them in the character_anchor.',
+      '- Characters must wear the SAME clothes in all panels (unless the story involves a costume change).',
       '- Every scene_en must be in ENGLISH regardless of story language.',
       '- No text, signs, numbers, or readable writing in any scene.',
       '- Each scene_en should be 2-3 sentences, specific and visual.',
@@ -84,11 +131,49 @@ export function buildComicStripInstructions(
       'BAD anchor: "A girl with dark hair wearing a school uniform and glasses"',
       'GOOD anchor: "An 8-year-old East Asian girl with jet-black twin braids, round silver-rimmed glasses, a dark purple wizard\'s cloak with a golden crest, and a crimson-gold striped tie."',
       '',
-      '**Scene content rules (IMPORTANT):**',
-      '- Each scene_en must focus PRIMARILY on the ACTION, ENVIRONMENT, and MOOD — the scene is the star, not the character description.',
-      '- Include the character_anchor text ONCE at the end of each scene_en (not at the start).',
-      '- If there are multiple characters, describe ALL of them in the character_anchor.',
-      '- Characters must wear the SAME clothes in all panels (unless the story involves a costume change).',
+      '## CHARACTER LOCK RULES (MANDATORY — every panel must obey these):',
+      '',
+      '**RULE 1 — GENDER MUST BE EXPLICIT AND REINFORCED:**',
+      'Every character description MUST include:',
+      '- Explicit gender word: "boy", "girl", "man", "woman" (NEVER omit this)',
+      '- Gender-reinforcing physical detail:',
+      '  For boys: "short hair", "boy\'s t-shirt", "masculine features"',
+      '  For girls: "long hair with bow", "girl\'s dress", "feminine features"',
+      '- Age indicator: "7-year-old boy", "young girl around age 8", "adult man"',
+      '',
+      '✅ "7-year-old boy with short messy brown hair, yellow t-shirt, blue shorts, red rain boots"',
+      '❌ "child with brown hair in yellow pajamas" (gender ambiguous!)',
+      '❌ "Pix in pajamas near the tent" (no physical description at all!)',
+      '',
+      '**RULE 2 — CHARACTER ID CARD (copy-paste identical in every panel):**',
+      'For EACH named character, define a fixed attribute string in this order:',
+      '  [Gender + age] + [Signature item FIRST] + [Hair] + [Top clothing] + [Bottom clothing]',
+      '',
+      'The signature item (glasses, hat, scarf, bandana) goes FIRST after gender+age,',
+      'so it is never truncated if the prompt is long.',
+      '',
+      '✅ "8-year-old boy, round black glasses, spiky blond hair, orange plaid shirt, brown pants"',
+      '❌ "8-year-old boy, spiky blond hair, orange plaid shirt, brown pants, round black glasses" (glasses at end = truncation risk)',
+      '',
+      'This exact string must appear WORD-FOR-WORD in every scene_en where that character is visible.',
+      'NO paraphrasing. NO variation. Copy-paste identical.',
+      '',
+      '**RULE 3 — SIGNATURE ITEMS ARE SACRED:**',
+      'If a character has glasses, a hat, a scarf, or any defining accessory,',
+      'it MUST appear in EVERY panel where that character appears. No exceptions.',
+      '',
+      '✅ Simon always: "boy with round black glasses" — in ALL panels',
+      '❌ Panel 1: "boy with round glasses" → Panel 3: "boy laughing" (glasses dropped!)',
+      '',
+      '**RULE 4 — SIDEKICK & PET CONSISTENCY:**',
+      'Co-stars and animal companions get the SAME character lock treatment.',
+      'Their ID string is shorter but equally strict and copy-paste identical:',
+      '  Sidekick: "[gender + age], [signature item], [hair], [one clothing item]"',
+      '  Pet: "[species + size], [fur/feather color], [signature accessory]"',
+      '',
+      '  Example: "Simon: 9-year-old boy, round black glasses, spiky blond hair, orange plaid shirt"',
+      '  Example: "Bello: small pug dog, beige fur, blue polka-dot bandana"',
+      '  → These EXACT strings appear in every panel where they are visible.',
     ].join('\n');
   }
 
@@ -135,7 +220,7 @@ const NO_TEXT_RULE =
 
 /** For 4-panel (legacy): thick borders. For 2x2 grid (refined): no borders, 2px white gap. */
 const COMIC_GRID_RULES_REFINED =
-  'CRITICAL LAYOUT RULES: NO panel borders, NO black lines, NO frames between scenes. Separate panels ONLY with a 2-pixel thin white gap. Each panel fills exactly 1/4 of the image with NO padding or margins. The 4 scenes should flow visually but be clearly distinct scenes.';
+  'STRICT GRID RULES:\n- Exactly 4 equal-sized panels in a 2x2 grid (2 rows, 2 columns).\n- Each panel MUST be exactly 50% width and 50% height of the total image. No variation in panel dimensions.\n- Panels are separated by a thin 2-4px white gap ONLY. No black borders, no thick lines.\n- The image MUST be edge-to-edge: NO decorative border, NO frame, NO margin, NO vignette, NO rounded corners around the outer edges.\n- The panels MUST extend to the very edge of the image.\n- Every panel must be the same aspect ratio (square if the total image is square).\n- NO panel borders, NO outlines, NO dark edges, NO comic-style dividers.\n- The 4 scenes should flow visually but each be a clearly distinct scene.';
 const STYLE_CONSISTENCY_LEGACY = 'All panels share the same art style. Thick black borders between panels.';
 
 /** Camera direction per panel index (1–8) for 2×(2x2) variation. */
@@ -153,38 +238,48 @@ export const CAMERA_DIRECTIONS: Record<number, string> = {
 // ─── buildComicGridPrompt (LLM grid_1 / grid_2 format) ─────────────────────
 
 const GRID_LAYOUT_RULES =
-  'ABSOLUTE CRITICAL LAYOUT RULES (MUST FOLLOW):\n- ABSOLUTELY NO panel borders, NO frames, NO outlines, NO black lines, NO dark edges, NO comic-style dividers, NO rounded corners on panels.\n- The image must look like 4 photos laid side by side on a white table with only a 2-pixel thin white gap between them.\n- NO decorative elements between or around panels. The edge of each scene goes right to the edge of its quadrant.\n- Each panel fills exactly 1/4 of the image (2x2 grid) with NO padding, NO margins, NO borders.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
+  'STRICT GRID RULES (ABSOLUTE — MUST FOLLOW):\n- Exactly 4 equal-sized panels in a 2x2 grid (2 rows, 2 columns).\n- Each panel MUST be exactly 50% width and 50% height of the total image. No variation in panel dimensions whatsoever.\n- Panels are separated by a thin 2-4px white gap ONLY. No black borders, no thick lines, no outlines.\n- The image MUST be edge-to-edge: NO decorative border, NO frame, NO margin, NO vignette, NO rounded corners around the outer edges of the image.\n- The panels MUST extend to the very edge of the image. The outermost pixels of each corner panel must be scene content, not border/frame.\n- Every panel must be the same aspect ratio (square, since the total image is square).\n- NO panel borders, NO outlines, NO dark edges, NO comic-style dividers, NO stamp edges, NO film strip borders, NO photo frames.\n- The 4 scenes should flow visually but each be a clearly distinct scene.\n- The character(s) MUST look identical in all 4 panels.';
 
 /**
  * Builds a single Vertex prompt for one 2x2 grid (4 panels) from the LLM-generated grid format.
+ * Structure: Style → Grid Rules → SCENE DESCRIPTIONS (with inline character IDs) → Character reference (once at end)
+ * Character descriptions are KEPT in each panel's scene_en for strong per-panel character lock.
+ * The full character anchor also appears once at the end as reinforcement.
  */
 export function buildComicGridPrompt(
   grid: ComicPanel[],
   characterAnchor: string,
   worldAnchor: string,
   imageStylePrefix: string,
+  consistencySuffix?: string,
 ): string {
   const panelDescriptions = grid.map((panel) => {
-    // Scene first, character anchor at the end — Imagen weights prompt start more heavily
-    const sceneText = panel.scene_en.trim().replace(new RegExp(`^${characterAnchor.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`, 'i'), '');
+    // KEEP character descriptions in scene_en — they serve as per-panel character lock.
+    // Only remove generic trailing "Character:" labels that add no visual info.
+    let sceneText = panel.scene_en.trim();
+    sceneText = sceneText.replace(/\s*Character:?\s*$/i, '').trim();
     const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase();
-    return `${panelLabel}: [${panel.camera}] ${sceneText} Character: ${characterAnchor.trim()}.`;
+    return `${panelLabel}: [${panel.camera}] ${sceneText}`;
   }).join('\n\n');
+
+  const suffix = consistencySuffix || 'Consistent character design across all panels.';
 
   return `${imageStylePrefix}
 
-Create a 2x2 grid of 4 children's book illustrations.
+Create a 2x2 grid of 4 children's book illustrations. Each panel MUST look visually DISTINCT — different framing, different part of the scene, different mood.
 Setting: ${worldAnchor}
 
 ${GRID_LAYOUT_RULES}
+
+CRITICAL: Each of the 4 panels must show a CLEARLY DIFFERENT visual composition. Vary the camera distance, angle, lighting, and which part of the setting is visible. The viewer must immediately see 4 unique images, not 4 variations of the same shot.
 
 Panel layout (reading order: left-to-right, top-to-bottom):
 
 ${panelDescriptions}
 
-Character reference: ${characterAnchor}
+Character reference (same character(s) in all 4 panels): ${characterAnchor}
 No text, signs, numbers, or readable writing in any panel.
-Consistent character design across all panels.`;
+${suffix}`;
 }
 
 export interface BuildComicStripImagePromptParams {
@@ -265,26 +360,27 @@ export function buildComicStripImagePrompts(
       const charactersVisible = planPanel?.characters_visible ?? '';
       const emotion = planPanel?.emotion ?? 'neutral';
 
+      // SCENE-FIRST: camera + scene description only — NO character anchor per panel
       let block = `${promptLabel} ${cameraDir ? cameraDir + ' ' : ''}${action}.`;
       if (charactersVisible) block += ` ${charactersVisible}.`;
       block += ` Mood: ${emotion}.`;
-      if (characterAnchor) block += ` Character details: ${characterAnchor}.`;
 
       panelBlocks.push(block.trim());
     }
 
     return [
       styleBlockParts.join('\n'),
-      'Create a 2x2 grid of 4 children\'s book illustrations.',
+      'Create a 2x2 grid of 4 children\'s book illustrations. Each panel MUST look visually DISTINCT.',
       gridRule,
-      'Consistent character appearance across all 4 panels.',
       '',
       'Panel layout (left-to-right, top-to-bottom):',
       ...panelBlocks,
       '',
+      // Character anchor ONCE at the end — not per panel
+      characterAnchor ? `Character reference (same character(s) in all 4 panels): ${characterAnchor}` : '',
       'IMPORTANT: Same character(s) must look identical in all panels. Vary the camera angle and framing as specified per panel.',
       NO_TEXT_RULE,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
   };
 
   if (is8Panel) {

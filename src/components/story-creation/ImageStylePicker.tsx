@@ -4,6 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import { cn } from "@/lib/utils";
 
+// Style preview images
+import previewStorybookSoft from "@/assets/style-previews/storybook_soft.jpg";
+import previewStorybookVibrant from "@/assets/style-previews/storybook_vibrant.jpg";
+import previewMangaAnime from "@/assets/style-previews/manga_anime.jpg";
+import previewAdventureCartoon from "@/assets/style-previews/adventure_cartoon.jpg";
+import previewGraphicNovel from "@/assets/style-previews/graphic_novel.jpg";
+import previewSemiRealistic from "@/assets/style-previews/semi_realistic.jpg";
+import preview3dAdventure from "@/assets/style-previews/3d_adventure.jpg";
+import previewVintageRetro from "@/assets/style-previews/vintage_retro.jpg";
+
+const LOCAL_STYLE_PREVIEWS: Record<string, string> = {
+  storybook_soft: previewStorybookSoft,
+  storybook_vibrant: previewStorybookVibrant,
+  manga_anime: previewMangaAnime,
+  adventure_cartoon: previewAdventureCartoon,
+  graphic_novel: previewGraphicNovel,
+  semi_realistic: previewSemiRealistic,
+  "3d_adventure": preview3dAdventure,
+  vintage_retro: previewVintageRetro,
+};
+
 interface ImageStyle {
   id: string;
   style_key: string;
@@ -181,23 +202,18 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
               >
                 {/* Image / Emoji container — square, same as CharacterTile */}
                 <div className="relative w-full overflow-hidden rounded-xl aspect-square">
-                  {style.preview_image_url ? (
+                  {(LOCAL_STYLE_PREVIEWS[style.style_key] || style.preview_image_url) ? (
                     <img
-                      src={style.preview_image_url}
+                      src={LOCAL_STYLE_PREVIEWS[style.style_key] || style.preview_image_url!}
                       alt={label}
                       className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'flex';
-                      }}
                     />
                   ) : null}
-                  {/* Emoji fallback — shown when no preview_image_url or on load error */}
+                  {/* Emoji fallback — shown when no preview available */}
                   <div
                     className={cn(
                       "absolute inset-0 items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50",
-                      style.preview_image_url ? "hidden" : "flex"
+                      (LOCAL_STYLE_PREVIEWS[style.style_key] || style.preview_image_url) ? "hidden" : "flex"
                     )}
                   >
                     <span className="text-4xl">{emoji}</span>

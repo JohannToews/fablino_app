@@ -81,7 +81,7 @@ const STORY_CATEGORIES = [
   },
 ];
 
-const AGES = [5, 6, 7, 8, 9, 10, 11, 12];
+const AGES = [6, 7, 8, 9, 10, 11, 12];
 
 // UI-supported languages for admin language selection
 const UI_LANGUAGES = LANGUAGES.filter((l) => l.uiSupported).sort((a, b) => a.nameNative.localeCompare(b.nameNative));
@@ -234,6 +234,7 @@ function MultiSelect({
 const OnboardingKindPage = () => {
   const [step, setStep] = useState<Step>("adminLang");
   const [adminLang, setAdminLang] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
   const [name, setName] = useState("");
   const [selectedAge, setSelectedAge] = useState<number | null>(null);
   const [gender, setGender] = useState<string | null>(null);
@@ -381,12 +382,22 @@ const OnboardingKindPage = () => {
       const age = selectedAge!;
       const storyLanguages = Array.from(new Set([schoolLang!, ...extraLangs]));
 
-      // Save admin language to user_profiles
-      if (adminLang && user.id) {
-        await supabase
-          .from("user_profiles")
-          .update({ app_language: adminLang, admin_language: adminLang })
-          .eq("auth_id", user.id);
+      // Save admin language + display name to user_profiles
+      if (user.id) {
+        const profileUpdate: Record<string, string> = {};
+        if (adminLang) {
+          profileUpdate.app_language = adminLang;
+          profileUpdate.admin_language = adminLang;
+        }
+        if (displayName.trim()) {
+          profileUpdate.display_name = displayName.trim();
+        }
+        if (Object.keys(profileUpdate).length > 0) {
+          await supabase
+            .from("user_profiles")
+            .update(profileUpdate)
+            .eq("auth_id", user.id);
+        }
       }
 
       const { data: savedProfile, error } = await supabase
@@ -439,7 +450,7 @@ const OnboardingKindPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-8 overflow-y-auto" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
       {/* Header */}
-      <div className="flex flex-col items-center mb-6 w-full max-w-md">
+      <div className={`flex flex-col items-center mb-6 w-full ${step === "profile" ? "max-w-2xl" : "max-w-md"}`}>
         <img
           src="/mascot/6_Onboarding.png"
           alt="Fablino"
@@ -457,6 +468,22 @@ const OnboardingKindPage = () => {
       {/* === STEP 0: Admin Language === */}
       {step === "adminLang" && (
         <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
+          {/* Display Name */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold">Anzeige Name</Label>
+            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+              Dein Name, wie er in der App angezeigt wird.
+            </p>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value.slice(0, 40))}
+              placeholder="z.B. Mama, Papa, Lisa…"
+              className="h-12 rounded-xl border-2 px-4 text-sm bg-white"
+              style={{ borderColor: displayName ? "#E8863A" : "rgba(232,134,58,0.3)" }}
+            />
+          </div>
+
+          {/* Admin Language */}
           <div className="space-y-1.5">
             <Label className="text-sm font-semibold">{t.onboardingAdminLangLabel}</Label>
             <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
@@ -483,100 +510,104 @@ const OnboardingKindPage = () => {
 
       {/* === STEP 1: Profile === */}
       {step === "profile" && (
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
-          {/* Name */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">{t.onboardingChildName}</Label>
-            <Input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value.slice(0, 30))}
-              placeholder={t.onboardingChildNamePlaceholder}
-              className="h-12 rounded-xl border-2 text-base"
-              style={{ borderColor: "rgba(232,134,58,0.3)" }}
-              autoComplete="off"
-              autoFocus
-            />
-          </div>
-
-          {/* Alter */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
-            <div className="flex flex-wrap gap-2">
-              {AGES.map((age) => (
-                <button
-                  key={age}
-                  type="button"
-                  onClick={() => setSelectedAge(age)}
-                  className="h-12 w-12 rounded-xl text-base font-bold transition-all border-2 flex-shrink-0"
-                  style={{
-                    background: selectedAge === age ? "#E8863A" : "transparent",
-                    color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
-                    borderColor: selectedAge === age ? "#E8863A" : "rgba(232,134,58,0.25)",
-                  }}
-                >
-                  {age}
-                </button>
-              ))}
+        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-lg px-6 py-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            {/* Left Column */}
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">{t.onboardingChildName}</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value.slice(0, 30))}
+                placeholder={t.onboardingChildNamePlaceholder}
+                className="h-12 rounded-xl border-2 text-base"
+                style={{ borderColor: "rgba(232,134,58,0.3)" }}
+                autoComplete="off"
+                autoFocus
+              />
             </div>
-          </div>
 
-          {/* Geschlecht */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
-            <div className="flex gap-2">
-              {GENDERS_TRANSLATED.map((g) => (
-                <button
-                  key={g.value}
-                  type="button"
-                  onClick={() => setGender(g.value)}
-                  className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border-2 transition-all"
-                  style={{
-                    background: gender === g.value ? "#E8863A" : "transparent",
-                    color: gender === g.value ? "white" : "rgba(45,24,16,0.75)",
-                    borderColor: gender === g.value ? "#E8863A" : "rgba(232,134,58,0.25)",
-                  }}
-                >
-                  <span className="text-2xl">{g.emoji}</span>
-                  <span className="text-xs font-semibold">{g.label}</span>
-                </button>
-              ))}
+            {/* Geschlecht – compact pills */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
+              <div className="flex gap-2">
+                {GENDERS_TRANSLATED.map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setGender(g.value)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-150 active:scale-95"
+                    style={{
+                      background: gender === g.value ? "#E8863A" : "white",
+                      color: gender === g.value ? "white" : "#2D1810",
+                      borderColor: gender === g.value ? "#E8863A" : "rgba(209,213,219,1)",
+                      boxShadow: gender === g.value ? "0 2px 8px rgba(232,134,58,0.3)" : "none",
+                    }}
+                  >
+                    <span>{g.emoji}</span>
+                    <span>{g.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Schulsprache (single dropdown) */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">{t.onboardingSchoolLang}</Label>
-            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              {t.onboardingSchoolLangHint}
-            </p>
-            <SingleSelect
-              options={langOptions}
-              value={schoolLang}
-              onChange={setSchoolLang}
-              placeholder={t.onboardingSelectLang}
-            />
-          </div>
+            {/* Alter */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
+              <div className="flex gap-2">
+                {AGES.map((age) => (
+                  <button
+                    key={age}
+                    type="button"
+                    onClick={() => setSelectedAge(age)}
+                    className="min-w-[44px] min-h-[44px] h-11 w-11 rounded-xl text-base font-bold transition-all duration-150 active:scale-95 border-2 flex-shrink-0 flex items-center justify-center"
+                    style={{
+                      background: selectedAge === age ? "#E8863A" : "transparent",
+                      color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
+                      borderColor: selectedAge === age ? "#E8863A" : "rgba(232,134,58,0.25)",
+                    }}
+                  >
+                    {age}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Weitere Lesesprachen (multi dropdown) */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold">{t.onboardingExtraLangs} <span className="font-normal text-xs">{t.onboardingExtraLangsOptional}</span></Label>
-            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
-              {t.onboardingExtraLangsHint}
-            </p>
-            <MultiSelect
-              options={langOptions}
-              values={extraLangs}
-              onChange={setExtraLangs}
-              placeholder={t.onboardingExtraLangsPlaceholder}
-              excludeCode={schoolLang}
-            />
+            {/* Schulsprache (single dropdown) */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">{t.onboardingSchoolLang}</Label>
+              <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+                {t.onboardingSchoolLangHint}
+              </p>
+              <SingleSelect
+                options={langOptions}
+                value={schoolLang}
+                onChange={setSchoolLang}
+                placeholder={t.onboardingSelectLang}
+              />
+            </div>
+
+            {/* Weitere Lesesprachen (multi dropdown) – spans full width on md */}
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-sm font-semibold">{t.onboardingExtraLangs} <span className="font-normal text-xs">{t.onboardingExtraLangsOptional}</span></Label>
+              <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+                {t.onboardingExtraLangsHint}
+              </p>
+              <MultiSelect
+                options={langOptions}
+                values={extraLangs}
+                onChange={setExtraLangs}
+                placeholder={t.onboardingExtraLangsPlaceholder}
+                excludeCode={schoolLang}
+              />
+            </div>
           </div>
 
           <Button
             type="button"
             onClick={handleProfileNext}
-            className="w-full font-semibold rounded-2xl text-white shadow-md"
+            className="w-full font-semibold rounded-2xl text-white shadow-md mt-6"
             style={{ backgroundColor: "#E8863A", height: "52px", fontSize: "1rem" }}
           >
             {t.onboardingNext}
@@ -626,49 +657,40 @@ const OnboardingKindPage = () => {
             );
           })()}
 
-          {/* Two main categories with subtypes */}
-          {STORY_CATEGORIES.map((cat) => (
-            <div key={cat.key} className="bg-white rounded-2xl shadow-sm overflow-hidden border" style={{ borderColor: "rgba(232,134,58,0.15)" }}>
-              {/* Category header */}
-              <div className="px-5 py-3 flex items-center gap-2.5" style={{ background: "rgba(232,134,58,0.08)" }}>
-                <span className="text-2xl">{cat.emoji}</span>
-                <span className="font-bold text-base" style={{ color: "rgba(45,24,16,0.85)" }}>{cat.label}</span>
-              </div>
-
-              {/* Subtypes */}
-              <div className="divide-y" style={{ borderColor: "rgba(232,134,58,0.1)" }}>
-                {cat.subtypes.map((sub) => {
-                  const isSelected = selectedCategory === cat.key && selectedSubtype === sub.key;
-                  return (
-                    <button
-                      key={sub.key}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory(cat.key);
-                        setSelectedSubtype(sub.key);
-                        setCustomDetail("");
-                      }}
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left transition-all"
-                      style={{
-                        background: isSelected ? "#FFF3E8" : "transparent",
-                      }}
-                    >
-                      <span className="text-2xl flex-shrink-0">{sub.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold" style={{ color: "rgba(45,24,16,0.9)" }}>{sub.label}</p>
-                        <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(45,24,16,0.5)" }}>{sub.description}</p>
-                      </div>
-                      {isSelected && (
-                        <div className="h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#E8863A" }}>
-                          <Check className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+          {/* Two main category tiles – click picks a random subtype */}
+          <div className="grid grid-cols-2 gap-3">
+            {STORY_CATEGORIES.map((cat) => {
+              const isSelected = selectedCategory === cat.key;
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => {
+                    const randomSub = cat.subtypes[Math.floor(Math.random() * cat.subtypes.length)];
+                    setSelectedCategory(cat.key);
+                    setSelectedSubtype(randomSub.key);
+                    setCustomDetail("");
+                  }}
+                  className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 py-8 px-4 transition-all duration-150 active:scale-95"
+                  style={{
+                    background: isSelected ? "#FFF3E8" : "white",
+                    borderColor: isSelected ? "#E8863A" : "rgba(232,134,58,0.15)",
+                    boxShadow: isSelected ? "0 4px 16px rgba(232,134,58,0.25)" : "0 2px 8px rgba(45,24,16,0.06)",
+                  }}
+                >
+                  <span className="text-5xl">{cat.emoji}</span>
+                  <span className="font-bold text-base" style={{ color: isSelected ? "#E8863A" : "rgba(45,24,16,0.85)" }}>
+                    {cat.label}
+                  </span>
+                  {isSelected && (
+                    <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ background: "#E8863A" }}>
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Voice / text detail input – appears after a subtype is picked */}
           {selectedSubtype && (() => {

@@ -373,14 +373,6 @@ const OnboardingStoryPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8" style={{ background: "linear-gradient(180deg, #FFF8F0 0%, #FFECD2 100%)" }}>
-      {/* Progress */}
-      <div className="w-full max-w-md mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="flex-1 h-2 rounded-full" style={{ background: "#E8863A" }} />
-          <div className="flex-1 h-2 rounded-full" style={{ background: status === "done" ? "#E8863A" : "rgba(232,134,58,0.2)" }} />
-        </div>
-        <p className="text-xs text-center" style={{ color: "rgba(45,24,16,0.5)" }}>{t.onboardingStep2of2}</p>
-      </div>
 
       <div className="w-full max-w-md flex flex-col items-center">
         {/* Mascot + Fun fact speech bubble */}

@@ -537,7 +537,7 @@ const SpecialEffectsScreen = ({
           {availableLanguages.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-[#92400E] w-18 sm:w-20 shrink-0">{st.languageLabel}</span>
-              <div className="flex-1 relative">
+              <div className="flex-1 relative z-20">
                 <button
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
                   className="w-full flex items-center justify-between min-h-[48px] py-2 px-3 text-base font-medium rounded-xl bg-orange-50/60 hover:bg-white/60 transition-colors"
