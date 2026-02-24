@@ -130,6 +130,50 @@ export function buildComicStripInstructions(
       '',
       'BAD anchor: "A girl with dark hair wearing a school uniform and glasses"',
       'GOOD anchor: "An 8-year-old East Asian girl with jet-black twin braids, round silver-rimmed glasses, a dark purple wizard\'s cloak with a golden crest, and a crimson-gold striped tie."',
+      '',
+      '## CHARACTER LOCK RULES (MANDATORY — every panel must obey these):',
+      '',
+      '**RULE 1 — GENDER MUST BE EXPLICIT AND REINFORCED:**',
+      'Every character description MUST include:',
+      '- Explicit gender word: "boy", "girl", "man", "woman" (NEVER omit this)',
+      '- Gender-reinforcing physical detail:',
+      '  For boys: "short hair", "boy\'s t-shirt", "masculine features"',
+      '  For girls: "long hair with bow", "girl\'s dress", "feminine features"',
+      '- Age indicator: "7-year-old boy", "young girl around age 8", "adult man"',
+      '',
+      '✅ "7-year-old boy with short messy brown hair, yellow t-shirt, blue shorts, red rain boots"',
+      '❌ "child with brown hair in yellow pajamas" (gender ambiguous!)',
+      '❌ "Pix in pajamas near the tent" (no physical description at all!)',
+      '',
+      '**RULE 2 — CHARACTER ID CARD (copy-paste identical in every panel):**',
+      'For EACH named character, define a fixed attribute string in this order:',
+      '  [Gender + age] + [Signature item FIRST] + [Hair] + [Top clothing] + [Bottom clothing]',
+      '',
+      'The signature item (glasses, hat, scarf, bandana) goes FIRST after gender+age,',
+      'so it is never truncated if the prompt is long.',
+      '',
+      '✅ "8-year-old boy, round black glasses, spiky blond hair, orange plaid shirt, brown pants"',
+      '❌ "8-year-old boy, spiky blond hair, orange plaid shirt, brown pants, round black glasses" (glasses at end = truncation risk)',
+      '',
+      'This exact string must appear WORD-FOR-WORD in every scene_en where that character is visible.',
+      'NO paraphrasing. NO variation. Copy-paste identical.',
+      '',
+      '**RULE 3 — SIGNATURE ITEMS ARE SACRED:**',
+      'If a character has glasses, a hat, a scarf, or any defining accessory,',
+      'it MUST appear in EVERY panel where that character appears. No exceptions.',
+      '',
+      '✅ Simon always: "boy with round black glasses" — in ALL panels',
+      '❌ Panel 1: "boy with round glasses" → Panel 3: "boy laughing" (glasses dropped!)',
+      '',
+      '**RULE 4 — SIDEKICK & PET CONSISTENCY:**',
+      'Co-stars and animal companions get the SAME character lock treatment.',
+      'Their ID string is shorter but equally strict and copy-paste identical:',
+      '  Sidekick: "[gender + age], [signature item], [hair], [one clothing item]"',
+      '  Pet: "[species + size], [fur/feather color], [signature accessory]"',
+      '',
+      '  Example: "Simon: 9-year-old boy, round black glasses, spiky blond hair, orange plaid shirt"',
+      '  Example: "Bello: small pug dog, beige fur, blue polka-dot bandana"',
+      '  → These EXACT strings appear in every panel where they are visible.',
     ].join('\n');
   }
 
@@ -324,26 +368,27 @@ export function buildComicStripImagePrompts(
       const charactersVisible = planPanel?.characters_visible ?? '';
       const emotion = planPanel?.emotion ?? 'neutral';
 
+      // SCENE-FIRST: camera + scene description only — NO character anchor per panel
       let block = `${promptLabel} ${cameraDir ? cameraDir + ' ' : ''}${action}.`;
       if (charactersVisible) block += ` ${charactersVisible}.`;
       block += ` Mood: ${emotion}.`;
-      if (characterAnchor) block += ` Character details: ${characterAnchor}.`;
 
       panelBlocks.push(block.trim());
     }
 
     return [
       styleBlockParts.join('\n'),
-      'Create a 2x2 grid of 4 children\'s book illustrations.',
+      'Create a 2x2 grid of 4 children\'s book illustrations. Each panel MUST look visually DISTINCT.',
       gridRule,
-      'Consistent character appearance across all 4 panels.',
       '',
       'Panel layout (left-to-right, top-to-bottom):',
       ...panelBlocks,
       '',
+      // Character anchor ONCE at the end — not per panel
+      characterAnchor ? `Character reference (same character(s) in all 4 panels): ${characterAnchor}` : '',
       'IMPORTANT: Same character(s) must look identical in all panels. Vary the camera angle and framing as specified per panel.',
       NO_TEXT_RULE,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
   };
 
   if (is8Panel) {
