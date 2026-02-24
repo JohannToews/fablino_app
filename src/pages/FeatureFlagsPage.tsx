@@ -18,11 +18,12 @@ interface UserRow {
   username: string;
 }
 
-type FeatureKey = "emotion_flow_enabled_users" | "comic_strip_enabled_users";
+type FeatureKey = "emotion_flow_enabled_users" | "comic_strip_enabled_users" | "premium_ui_enabled_users";
 
 const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string }[] = [
   { key: "emotion_flow_enabled_users", label: "Emotion-Flow", globalLabel: "Emotion-Flow für ALLE aktivieren" },
   { key: "comic_strip_enabled_users", label: "Comic-Strip", globalLabel: "Comic-Strip für ALLE aktivieren" },
+  { key: "premium_ui_enabled_users", label: "Premium UI", globalLabel: "Premium UI für ALLE aktivieren" },
 ];
 
 const FeatureFlagsPage = () => {
@@ -33,6 +34,7 @@ const FeatureFlagsPage = () => {
   const [flags, setFlags] = useState<Record<FeatureKey, string[]>>({
     emotion_flow_enabled_users: [],
     comic_strip_enabled_users: [],
+    premium_ui_enabled_users: [],
   });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -54,6 +56,7 @@ const FeatureFlagsPage = () => {
         (supabase as any).from("app_settings").select("key, value").in("key", [
           "emotion_flow_enabled_users",
           "comic_strip_enabled_users",
+          "premium_ui_enabled_users",
         ]),
         (supabase as any).from("user_profiles").select("id, display_name, email, username").order("display_name"),
       ]);
@@ -70,6 +73,7 @@ const FeatureFlagsPage = () => {
         setFlags({
           emotion_flow_enabled_users: parsed.emotion_flow_enabled_users || [],
           comic_strip_enabled_users: parsed.comic_strip_enabled_users || [],
+          premium_ui_enabled_users: parsed.premium_ui_enabled_users || [],
         });
       }
 
