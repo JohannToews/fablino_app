@@ -844,6 +844,20 @@ const ResultsPage = () => {
     return () => clearTimeout(timer);
   }, [selectedProfileId, newBadgeIds]);
 
+  // Translate levels and badges to app language
+  const translatedLevels = useMemo(() => 
+    (data?.levels || []).map(l => ({ ...l, name: translateLevelName(l.name, kidAppLanguage) })),
+    [data?.levels, kidAppLanguage]
+  );
+  const translatedBadges = useMemo(() =>
+    (data?.badges || []).map(b => ({
+      ...b,
+      name: translateBadgeName(b.name, kidAppLanguage),
+      fablino_message: translateBadgeMessage(b.name, kidAppLanguage) || b.fablino_message,
+    })),
+    [data?.badges, kidAppLanguage]
+  );
+
   if (loading || !data) {
     return (
       <div
@@ -861,20 +875,6 @@ const ResultsPage = () => {
       </div>
     );
   }
-
-  // Translate levels and badges to app language
-  const translatedLevels = useMemo(() => 
-    data.levels.map(l => ({ ...l, name: translateLevelName(l.name, kidAppLanguage) })),
-    [data.levels, kidAppLanguage]
-  );
-  const translatedBadges = useMemo(() =>
-    (data.badges || []).map(b => ({
-      ...b,
-      name: translateBadgeName(b.name, kidAppLanguage),
-      fablino_message: translateBadgeMessage(b.name, kidAppLanguage) || b.fablino_message,
-    })),
-    [data.badges, kidAppLanguage]
-  );
 
   const { current, next, sorted } = getLevelProgress(translatedLevels, data.total_stars);
   const fablinoMsg = getFablinoMessage(t, data.child_name, data.total_stars, data.current_streak, current, next);
