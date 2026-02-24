@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3 } from "lucide-react";
 import { format } from "date-fns";
 import { Language } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
@@ -70,9 +71,8 @@ interface PerformanceEntry {
 interface StoryStats {
   id: string;
   title: string;
-  prompt: string | null;
   difficulty: string | null;
-  text_type: string | null;
+  text_language: string;
   is_deleted: boolean;
   created_at: string;
   user_id: string | null;
@@ -82,11 +82,20 @@ interface StoryStats {
   kid_school_system?: string;
   username?: string;
   is_read: boolean;
-  words_requested: number;
-  words_saved: number;
   has_feedback: boolean;
-  questions_answered: number;
-  questions_total: number;
+  quiz_completed: boolean;
+  concrete_theme: string | null;
+  emotional_coloring: string | null;
+}
+
+// Column definitions for the stories table
+type StoryColumnKey = 'date' | 'user' | 'child' | 'title' | 'textLanguage' | 'difficulty' | 'jaiFini' | 'quizCompleted' | 'status' | 'theme' | 'emotionBlueprint';
+
+interface StoryColumnDef {
+  key: StoryColumnKey;
+  label: string;
+  defaultVisible: boolean;
+  optional: boolean; // true = can be toggled
 }
 
 const translations: Record<Language, {
@@ -575,12 +584,16 @@ const FeedbackStatsPage = () => {
   // Filter states for stories
   const [filterUser, setFilterUser] = useState<string>("all");
   const [filterKid, setFilterKid] = useState<string>("all");
-  const [filterTextType, setFilterTextType] = useState<string>("all");
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterTitle, setFilterTitle] = useState<string>("");
   const [filterJaiFini, setFilterJaiFini] = useState<string>("all");
-  const [filterQuestionsAnswered, setFilterQuestionsAnswered] = useState<string>("all");
+  const [filterQuizCompleted, setFilterQuizCompleted] = useState<string>("all");
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<Set<StoryColumnKey>>(new Set([
+    'date', 'user', 'child', 'title', 'textLanguage', 'difficulty', 'jaiFini', 'quizCompleted', 'status'
+  ]));
 
   // Filter states for feedback
   const [filterFeedbackKid, setFilterFeedbackKid] = useState<string>("all");
@@ -644,6 +657,7 @@ const FeedbackStatsPage = () => {
         structure_middle,
         structure_ending,
         emotional_coloring,
+        concrete_theme,
         series_id,
         series_mode,
         episode_number,
@@ -744,16 +758,13 @@ const FeedbackStatsPage = () => {
 
     if (storiesData) {
       const mappedStories: StoryStats[] = storiesData.map((story: any) => {
-        const wordStats = wordsPerStory.get(story.id) || { requested: 0, saved: 0 };
         const comprehensionStats = comprehensionPerStory.get(story.id);
-        const totalQuestions = questionsPerStory.get(story.id) || 0;
         
         return {
           id: story.id,
           title: story.title,
-          prompt: story.prompt,
           difficulty: story.difficulty,
-          text_type: story.text_type,
+          text_language: story.text_language || '-',
           is_deleted: story.is_deleted || false,
           created_at: story.created_at,
           user_id: story.user_id,
@@ -763,11 +774,10 @@ const FeedbackStatsPage = () => {
           kid_school_system: story.kid_profiles?.school_system,
           username: story.user_id ? usersMap.get(story.user_id) : undefined,
           is_read: readStoryIds.has(story.id),
-          words_requested: wordStats.requested,
-          words_saved: wordStats.saved,
           has_feedback: feedbackStoryIds.has(story.id),
-          questions_answered: comprehensionStats?.answered || 0,
-          questions_total: comprehensionStats?.total || totalQuestions,
+          quiz_completed: (comprehensionStats?.answered || 0) > 0,
+          concrete_theme: story.concrete_theme,
+          emotional_coloring: story.emotional_coloring,
         };
       });
       setStories(mappedStories);
@@ -826,7 +836,6 @@ const FeedbackStatsPage = () => {
     return stories.filter(story => {
       if (filterUser !== "all" && story.username !== filterUser) return false;
       if (filterKid !== "all" && story.kid_name !== filterKid) return false;
-      if (filterTextType !== "all" && story.text_type !== filterTextType) return false;
       if (filterDifficulty !== "all" && story.difficulty !== filterDifficulty) return false;
       if (filterStatus === "read" && !story.is_read) return false;
       if (filterStatus === "unread" && story.is_read) return false;
@@ -835,12 +844,11 @@ const FeedbackStatsPage = () => {
       if (filterTitle && !story.title.toLowerCase().includes(filterTitle.toLowerCase())) return false;
       if (filterJaiFini === "yes" && !story.has_feedback) return false;
       if (filterJaiFini === "no" && story.has_feedback) return false;
-      if (filterQuestionsAnswered === "answered" && story.questions_answered === 0) return false;
-      if (filterQuestionsAnswered === "not_answered" && (story.questions_answered > 0 || story.questions_total === 0)) return false;
-      if (filterQuestionsAnswered === "no_questions" && story.questions_total > 0) return false;
+      if (filterQuizCompleted === "yes" && !story.quiz_completed) return false;
+      if (filterQuizCompleted === "no" && story.quiz_completed) return false;
       return true;
     });
-  }, [stories, filterUser, filterKid, filterTextType, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuestionsAnswered]);
+  }, [stories, filterUser, filterKid, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuizCompleted]);
 
   // Filtered ratings
   const filteredRatings = useMemo(() => {
@@ -965,8 +973,8 @@ const FeedbackStatsPage = () => {
     ? (ratings.reduce((sum, r) => sum + r.quality_rating, 0) / ratings.length).toFixed(1)
     : "0";
 
-  const totalWordsRequested = stories.reduce((sum, s) => sum + s.words_requested, 0);
-  const totalWordsSaved = stories.reduce((sum, s) => sum + s.words_saved, 0);
+  const totalWordsRequested = 0;
+  const totalWordsSaved = 0;
 
   const getMostCommonIssue = () => {
     const issues: Record<string, number> = {};
@@ -1244,16 +1252,6 @@ const FeedbackStatsPage = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={filterTextType} onValueChange={setFilterTextType}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.textType} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="fiction">{t.fiction}</SelectItem>
-                      <SelectItem value="non-fiction">{t.nonFiction}</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder={t.difficulty} />
@@ -1287,15 +1285,14 @@ const FeedbackStatsPage = () => {
                       <SelectItem value="no">{t.no}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={filterQuestionsAnswered} onValueChange={setFilterQuestionsAnswered}>
+                  <Select value={filterQuizCompleted} onValueChange={setFilterQuizCompleted}>
                     <SelectTrigger className="h-9">
-                      <SelectValue placeholder={t.questionsAnswered} />
+                      <SelectValue placeholder="Quiz" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">{t.all}</SelectItem>
-                      <SelectItem value="answered">{t.answered}</SelectItem>
-                      <SelectItem value="not_answered">{t.notAnswered}</SelectItem>
-                      <SelectItem value="no_questions">{t.noQuestions}</SelectItem>
+                      <SelectItem value="yes">{t.yes}</SelectItem>
+                      <SelectItem value="no">{t.no}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1311,114 +1308,173 @@ const FeedbackStatsPage = () => {
             ) : (
               <Card>
                 <CardContent className="p-0">
+                  {/* Column visibility toggle */}
+                  <div className="flex justify-end p-2 border-b">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <Columns3 className="h-4 w-4" />
+                          Spalten
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56" align="end">
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium mb-2">Spalten ein/ausblenden</p>
+                          {([
+                            { key: 'date' as StoryColumnKey, label: t.date },
+                            { key: 'user' as StoryColumnKey, label: t.user },
+                            { key: 'child' as StoryColumnKey, label: t.child },
+                            { key: 'title' as StoryColumnKey, label: t.storyTitle },
+                            { key: 'textLanguage' as StoryColumnKey, label: t.language },
+                            { key: 'difficulty' as StoryColumnKey, label: t.difficulty },
+                            { key: 'jaiFini' as StoryColumnKey, label: t.jaiFini },
+                            { key: 'quizCompleted' as StoryColumnKey, label: 'Quiz' },
+                            { key: 'status' as StoryColumnKey, label: t.status },
+                            { key: 'theme' as StoryColumnKey, label: 'Theme' },
+                            { key: 'emotionBlueprint' as StoryColumnKey, label: 'Emotion Blueprint' },
+                          ]).map(col => (
+                            <div key={col.key} className="flex items-center gap-2">
+                              <Checkbox
+                                checked={visibleColumns.has(col.key)}
+                                onCheckedChange={(checked) => {
+                                  setVisibleColumns(prev => {
+                                    const next = new Set(prev);
+                                    if (checked) next.add(col.key);
+                                    else next.delete(col.key);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              <span className="text-sm">{col.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t.date}</TableHead>
-                          <TableHead>{t.user}</TableHead>
-                          <TableHead>{t.child}</TableHead>
-                          <TableHead>{t.storyTitle}</TableHead>
-                          <TableHead>{t.prompt}</TableHead>
-                          <TableHead>{t.textType}</TableHead>
-                          <TableHead>{t.difficulty}</TableHead>
-                          <TableHead>{t.words}</TableHead>
-                          <TableHead>{t.jaiFini}</TableHead>
-                          <TableHead>{t.questionsAnswered}</TableHead>
-                          <TableHead>{t.status}</TableHead>
+                          {visibleColumns.has('date') && <TableHead>{t.date}</TableHead>}
+                          {visibleColumns.has('user') && <TableHead>{t.user}</TableHead>}
+                          {visibleColumns.has('child') && <TableHead>{t.child}</TableHead>}
+                          {visibleColumns.has('title') && <TableHead>{t.storyTitle}</TableHead>}
+                          {visibleColumns.has('textLanguage') && <TableHead>{t.language}</TableHead>}
+                          {visibleColumns.has('difficulty') && <TableHead>{t.difficulty}</TableHead>}
+                          {visibleColumns.has('jaiFini') && <TableHead>{t.jaiFini}</TableHead>}
+                          {visibleColumns.has('quizCompleted') && <TableHead>Quiz</TableHead>}
+                          {visibleColumns.has('status') && <TableHead>{t.status}</TableHead>}
+                          {visibleColumns.has('theme') && <TableHead>Theme</TableHead>}
+                          {visibleColumns.has('emotionBlueprint') && <TableHead>Emotion</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredStories.map((story) => (
                           <TableRow key={story.id} className={story.is_deleted ? "opacity-50" : ""}>
-                            <TableCell className="whitespace-nowrap">
-                              {format(new Date(story.created_at), "dd.MM.yyyy")}
-                            </TableCell>
-                            <TableCell>{story.username || "-"}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{story.kid_name || "-"}</span>
-                                {story.kid_school_class && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {story.kid_school_class} ({story.kid_school_system?.toUpperCase()})
-                                  </span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate font-medium" title={story.title}>
-                              {story.title}
-                            </TableCell>
-                            <TableCell className="max-w-[150px] truncate text-muted-foreground" title={story.prompt || ""}>
-                              {story.prompt || "-"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {translateTextType(story.text_type)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                story.difficulty === "easy" ? "secondary" :
-                                story.difficulty === "difficult" ? "destructive" : "default"
-                              }>
-                                {translateDifficulty(story.difficulty)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col text-sm">
-                                <span className="flex items-center gap-1">
-                                  <MessageSquare className="h-3 w-3 text-sky-500" />
-                                  {story.words_requested}
-                                </span>
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                  <BookMarked className="h-3 w-3 text-violet-500" />
-                                  {story.words_saved}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {story.has_feedback ? (
-                                <Badge className="bg-mint/20 text-mint border-mint">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  {t.yes}
+                            {visibleColumns.has('date') && (
+                              <TableCell className="whitespace-nowrap">
+                                {format(new Date(story.created_at), "dd.MM.yyyy")}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('user') && (
+                              <TableCell>{story.username || "-"}</TableCell>
+                            )}
+                            {visibleColumns.has('child') && (
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{story.kid_name || "-"}</span>
+                                  {story.kid_school_class && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {story.kid_school_class} ({story.kid_school_system?.toUpperCase()})
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('title') && (
+                              <TableCell className="max-w-[200px] truncate font-medium" title={story.title}>
+                                {story.title}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('textLanguage') && (
+                              <TableCell>
+                                <Badge variant="outline">{story.text_language?.toUpperCase() || "-"}</Badge>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('difficulty') && (
+                              <TableCell>
+                                <Badge variant={
+                                  story.difficulty === "easy" ? "secondary" :
+                                  story.difficulty === "difficult" ? "destructive" : "default"
+                                }>
+                                  {translateDifficulty(story.difficulty)}
                                 </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-muted-foreground">
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  {t.no}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {story.questions_total > 0 ? (
-                                <Badge variant={story.questions_answered > 0 ? "default" : "outline"}>
-                                  {story.questions_answered}/{story.questions_total}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col gap-1">
-                                {story.is_read ? (
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('jaiFini') && (
+                              <TableCell>
+                                {story.has_feedback ? (
                                   <Badge className="bg-mint/20 text-mint border-mint">
                                     <CheckCircle className="h-3 w-3 mr-1" />
-                                    {t.read}
+                                    {t.yes}
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline" className="text-muted-foreground">
                                     <XCircle className="h-3 w-3 mr-1" />
-                                    {t.unread}
+                                    {t.no}
                                   </Badge>
                                 )}
-                                {story.is_deleted && (
-                                  <Badge variant="destructive">
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    {t.deleted}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('quizCompleted') && (
+                              <TableCell>
+                                {story.quiz_completed ? (
+                                  <Badge className="bg-mint/20 text-mint border-mint">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    {t.yes}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-muted-foreground">
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    {t.no}
                                   </Badge>
                                 )}
-                              </div>
-                            </TableCell>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('status') && (
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  {story.is_read ? (
+                                    <Badge className="bg-mint/20 text-mint border-mint">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      {t.read}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-muted-foreground">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      {t.unread}
+                                    </Badge>
+                                  )}
+                                  {story.is_deleted && (
+                                    <Badge variant="destructive">
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      {t.deleted}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('theme') && (
+                              <TableCell className="max-w-[120px] truncate" title={story.concrete_theme || ""}>
+                                {story.concrete_theme || "-"}
+                              </TableCell>
+                            )}
+                            {visibleColumns.has('emotionBlueprint') && (
+                              <TableCell className="max-w-[120px] truncate" title={story.emotional_coloring || ""}>
+                                {story.emotional_coloring || "-"}
+                              </TableCell>
+                            )}
                           </TableRow>
                         ))}
                       </TableBody>
