@@ -528,49 +528,94 @@ const OnboardingKindPage = () => {
               />
             </div>
 
-            {/* Geschlecht – compact pills */}
+            {/* Geschlecht – dropdown */}
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
-              <div className="flex gap-2">
-                {GENDERS_TRANSLATED.map((g) => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    onClick={() => setGender(g.value)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-150 active:scale-95"
-                    style={{
-                      background: gender === g.value ? "#E8863A" : "white",
-                      color: gender === g.value ? "white" : "#2D1810",
-                      borderColor: gender === g.value ? "#E8863A" : "rgba(209,213,219,1)",
-                      boxShadow: gender === g.value ? "0 2px 8px rgba(232,134,58,0.3)" : "none",
-                    }}
-                  >
-                    <span>{g.emoji}</span>
-                    <span>{g.label}</span>
-                  </button>
-                ))}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('gender-dropdown');
+                    if (el) el.classList.toggle('hidden');
+                  }}
+                  className="w-full flex items-center justify-between h-12 rounded-xl border-2 px-4 text-sm bg-white"
+                  style={{
+                    borderColor: gender ? "#E8863A" : "rgba(232,134,58,0.3)",
+                    color: gender ? "rgba(45,24,16,0.9)" : "rgba(45,24,16,0.45)",
+                  }}
+                >
+                  <span>
+                    {gender
+                      ? `${GENDERS_TRANSLATED.find(g => g.value === gender)?.emoji} ${GENDERS_TRANSLATED.find(g => g.value === gender)?.label}`
+                      : t.onboardingGender}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </button>
+                <div
+                  id="gender-dropdown"
+                  className="hidden absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
+                  style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
+                >
+                  {GENDERS_TRANSLATED.map((g) => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      onClick={() => {
+                        setGender(g.value);
+                        document.getElementById('gender-dropdown')?.classList.add('hidden');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
+                      style={{ color: "rgba(45,24,16,0.85)" }}
+                    >
+                      <span className="text-lg">{g.emoji}</span>
+                      <span>{g.label}</span>
+                      {g.value === gender && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Alter */}
-            <div className="space-y-2">
+            {/* Alter – dropdown */}
+            <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
-              <div className="flex gap-2">
-                {AGES.map((age) => (
-                  <button
-                    key={age}
-                    type="button"
-                    onClick={() => setSelectedAge(age)}
-                    className="min-w-[44px] min-h-[44px] h-11 w-11 rounded-xl text-base font-bold transition-all duration-150 active:scale-95 border-2 flex-shrink-0 flex items-center justify-center"
-                    style={{
-                      background: selectedAge === age ? "#E8863A" : "transparent",
-                      color: selectedAge === age ? "white" : "rgba(45,24,16,0.7)",
-                      borderColor: selectedAge === age ? "#E8863A" : "rgba(232,134,58,0.25)",
-                    }}
-                  >
-                    {age}
-                  </button>
-                ))}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('age-dropdown');
+                    if (el) el.classList.toggle('hidden');
+                  }}
+                  className="w-full flex items-center justify-between h-12 rounded-xl border-2 px-4 text-sm bg-white"
+                  style={{
+                    borderColor: selectedAge ? "#E8863A" : "rgba(232,134,58,0.3)",
+                    color: selectedAge ? "rgba(45,24,16,0.9)" : "rgba(45,24,16,0.45)",
+                  }}
+                >
+                  <span>{selectedAge ? `${selectedAge} Jahre` : t.onboardingAge}</span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </button>
+                <div
+                  id="age-dropdown"
+                  className="hidden absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
+                  style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
+                >
+                  {AGES.map((age) => (
+                    <button
+                      key={age}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAge(age);
+                        document.getElementById('age-dropdown')?.classList.add('hidden');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
+                      style={{ color: "rgba(45,24,16,0.85)" }}
+                    >
+                      <span className="font-medium">{age} Jahre</span>
+                      {age === selectedAge && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
