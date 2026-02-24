@@ -234,6 +234,7 @@ function MultiSelect({
 const OnboardingKindPage = () => {
   const [step, setStep] = useState<Step>("adminLang");
   const [adminLang, setAdminLang] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
   const [name, setName] = useState("");
   const [selectedAge, setSelectedAge] = useState<number | null>(null);
   const [gender, setGender] = useState<string | null>(null);
@@ -381,12 +382,22 @@ const OnboardingKindPage = () => {
       const age = selectedAge!;
       const storyLanguages = Array.from(new Set([schoolLang!, ...extraLangs]));
 
-      // Save admin language to user_profiles
-      if (adminLang && user.id) {
-        await supabase
-          .from("user_profiles")
-          .update({ app_language: adminLang, admin_language: adminLang })
-          .eq("auth_id", user.id);
+      // Save admin language + display name to user_profiles
+      if (user.id) {
+        const profileUpdate: Record<string, string> = {};
+        if (adminLang) {
+          profileUpdate.app_language = adminLang;
+          profileUpdate.admin_language = adminLang;
+        }
+        if (displayName.trim()) {
+          profileUpdate.display_name = displayName.trim();
+        }
+        if (Object.keys(profileUpdate).length > 0) {
+          await supabase
+            .from("user_profiles")
+            .update(profileUpdate)
+            .eq("auth_id", user.id);
+        }
       }
 
       const { data: savedProfile, error } = await supabase
@@ -457,6 +468,22 @@ const OnboardingKindPage = () => {
       {/* === STEP 0: Admin Language === */}
       {step === "adminLang" && (
         <div className="w-full max-w-md bg-white rounded-3xl shadow-lg px-6 py-7 space-y-5">
+          {/* Display Name */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold">Anzeige Name</Label>
+            <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
+              Dein Name, wie er in der App angezeigt wird.
+            </p>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value.slice(0, 40))}
+              placeholder="z.B. Mama, Papa, Lisa…"
+              className="h-12 rounded-xl border-2 px-4 text-sm bg-white"
+              style={{ borderColor: displayName ? "#E8863A" : "rgba(232,134,58,0.3)" }}
+            />
+          </div>
+
+          {/* Admin Language */}
           <div className="space-y-1.5">
             <Label className="text-sm font-semibold">{t.onboardingAdminLangLabel}</Label>
             <p className="text-xs" style={{ color: "rgba(45,24,16,0.45)" }}>
