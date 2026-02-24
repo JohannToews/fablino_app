@@ -657,49 +657,40 @@ const OnboardingKindPage = () => {
             );
           })()}
 
-          {/* Two main categories with subtypes */}
-          {STORY_CATEGORIES.map((cat) => (
-            <div key={cat.key} className="bg-white rounded-2xl shadow-sm overflow-hidden border" style={{ borderColor: "rgba(232,134,58,0.15)" }}>
-              {/* Category header */}
-              <div className="px-5 py-3 flex items-center gap-2.5" style={{ background: "rgba(232,134,58,0.08)" }}>
-                <span className="text-2xl">{cat.emoji}</span>
-                <span className="font-bold text-base" style={{ color: "rgba(45,24,16,0.85)" }}>{cat.label}</span>
-              </div>
-
-              {/* Subtypes */}
-              <div className="divide-y" style={{ borderColor: "rgba(232,134,58,0.1)" }}>
-                {cat.subtypes.map((sub) => {
-                  const isSelected = selectedCategory === cat.key && selectedSubtype === sub.key;
-                  return (
-                    <button
-                      key={sub.key}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory(cat.key);
-                        setSelectedSubtype(sub.key);
-                        setCustomDetail("");
-                      }}
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left transition-all"
-                      style={{
-                        background: isSelected ? "#FFF3E8" : "transparent",
-                      }}
-                    >
-                      <span className="text-2xl flex-shrink-0">{sub.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold" style={{ color: "rgba(45,24,16,0.9)" }}>{sub.label}</p>
-                        <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(45,24,16,0.5)" }}>{sub.description}</p>
-                      </div>
-                      {isSelected && (
-                        <div className="h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#E8863A" }}>
-                          <Check className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+          {/* Two main category tiles – click picks a random subtype */}
+          <div className="grid grid-cols-2 gap-3">
+            {STORY_CATEGORIES.map((cat) => {
+              const isSelected = selectedCategory === cat.key;
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => {
+                    const randomSub = cat.subtypes[Math.floor(Math.random() * cat.subtypes.length)];
+                    setSelectedCategory(cat.key);
+                    setSelectedSubtype(randomSub.key);
+                    setCustomDetail("");
+                  }}
+                  className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 py-8 px-4 transition-all duration-150 active:scale-95"
+                  style={{
+                    background: isSelected ? "#FFF3E8" : "white",
+                    borderColor: isSelected ? "#E8863A" : "rgba(232,134,58,0.15)",
+                    boxShadow: isSelected ? "0 4px 16px rgba(232,134,58,0.25)" : "0 2px 8px rgba(45,24,16,0.06)",
+                  }}
+                >
+                  <span className="text-5xl">{cat.emoji}</span>
+                  <span className="font-bold text-base" style={{ color: isSelected ? "#E8863A" : "rgba(45,24,16,0.85)" }}>
+                    {cat.label}
+                  </span>
+                  {isSelected && (
+                    <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ background: "#E8863A" }}>
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Voice / text detail input – appears after a subtype is picked */}
           {selectedSubtype && (() => {
