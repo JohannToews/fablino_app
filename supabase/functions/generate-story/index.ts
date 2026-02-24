@@ -3094,7 +3094,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           // Style-specific negative prompt for Vertex
           const styleKey = imageStyleData?.styleKey || 'default';
           const STYLE_NEGATIVE_PROMPTS: Record<string, string> = {
-            graphic_novel: '3D render, photorealistic, Pixar, CGI, smooth plastic skin, ray tracing, subsurface scattering, hyperrealistic',
+            graphic_novel: '3D render, 3D animation, Pixar style, CGI, smooth plastic skin, ray tracing, photorealistic, hyperrealistic, Unreal Engine, octane render',
             storybook_soft: '3D render, CGI, harsh lighting, dark shadows, photorealistic',
             manga_anime: 'photorealistic, western cartoon, 3D render',
           };
