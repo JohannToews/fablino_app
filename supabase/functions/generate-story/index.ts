@@ -3411,6 +3411,14 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     if (comicStripHandled) {
       console.log(`[COMIC] Pipeline complete. Grids: ${comicFullImageUrl ? '✅' : '❌'} / ${comicFullImageUrl2 ? '✅' : '❌'}, layout: ${comicLayoutKeyResult}, panels: ${comicPanelCountResult}`);
       console.log('[COMIC] Server-side cropping: DISABLED (client-side cropping in frontend)');
+
+      // Hotfix: Map comic grid URLs to legacy fields so DB trigger sets status='complete'
+      // and frontend can display images even before 8-panel cropping is wired up
+      if (comicFullImageUrl && !coverImageUrl) {
+        coverImageUrl = comicFullImageUrl;
+        storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
+        console.log('[COMIC] Legacy fields mapped: cover_image_url = comic_full_image, story_images = [comic_full_image_2]');
+      }
     }
 
     return new Response(JSON.stringify({
