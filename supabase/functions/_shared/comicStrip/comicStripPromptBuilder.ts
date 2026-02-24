@@ -242,8 +242,9 @@ const GRID_LAYOUT_RULES =
 
 /**
  * Builds a single Vertex prompt for one 2x2 grid (4 panels) from the LLM-generated grid format.
- * Structure: Style → Grid Rules → SCENE DESCRIPTIONS (weighted heavily) → Character reference (once at end)
- * This ensures Imagen focuses on the SCENE DIFFERENCES rather than repeating the character.
+ * Structure: Style → Grid Rules → SCENE DESCRIPTIONS (with inline character IDs) → Character reference (once at end)
+ * Character descriptions are KEPT in each panel's scene_en for strong per-panel character lock.
+ * The full character anchor also appears once at the end as reinforcement.
  */
 export function buildComicGridPrompt(
   grid: ComicPanel[],
@@ -252,26 +253,17 @@ export function buildComicGridPrompt(
   imageStylePrefix: string,
   consistencySuffix?: string,
 ): string {
-  // Strip character anchor from scene_en if LLM embedded it (we add it once at the end)
-  const anchorPattern = new RegExp(
-    `\\s*${characterAnchor.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`,
-    'gi'
-  );
-
   const panelDescriptions = grid.map((panel) => {
-    // Remove character anchor from scene text — it will be added ONCE at the end
-    let sceneText = panel.scene_en.trim().replace(anchorPattern, ' ').trim();
-    // Also remove generic trailing "Character:" references
-    sceneText = sceneText.replace(/\s*Character:.*$/i, '').trim();
+    // KEEP character descriptions in scene_en — they serve as per-panel character lock.
+    // Only remove generic trailing "Character:" labels that add no visual info.
+    let sceneText = panel.scene_en.trim();
+    sceneText = sceneText.replace(/\s*Character:?\s*$/i, '').trim();
     const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase();
-    // SCENE-FIRST: camera + scene description only — NO character anchor per panel
     return `${panelLabel}: [${panel.camera}] ${sceneText}`;
   }).join('\n\n');
 
   const suffix = consistencySuffix || 'Consistent character design across all panels.';
 
-  // KEY CHANGE: Character anchor appears ONCE at the very end, not per panel.
-  // This gives Imagen more "attention budget" for the scene differences.
   return `${imageStylePrefix}
 
 Create a 2x2 grid of 4 children's book illustrations. Each panel MUST look visually DISTINCT — different framing, different part of the scene, different mood.
