@@ -1449,12 +1449,16 @@ Deno.serve(async (req) => {
     let imageGenConfig: {
       coverModel: string;
       sceneModel: string;
+      personGeneration: string;
+      safetySetting: string;
       maxImagesPerStory: number;
       maxStoriesPerDayFree: number;
       maxStoriesPerDayPremium: number;
     } = {
-      coverModel: 'imagen-3.0-generate-002',
-      sceneModel: 'imagen-3.0-fast-generate-001',
+      coverModel: 'imagen-4.0-generate-001',
+      sceneModel: 'imagen-4.0-fast-generate-001',
+      personGeneration: 'allow_all',
+      safetySetting: 'block_only_high',
       maxImagesPerStory: 4,
       maxStoriesPerDayFree: 2,
       maxStoriesPerDayPremium: 10,
