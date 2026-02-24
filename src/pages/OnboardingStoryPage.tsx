@@ -142,7 +142,7 @@ const OnboardingStoryPage = () => {
       const extracted = data
         .map((row) => {
           const translations = row.translations as Record<string, string>;
-          const text = translations?.[lang] || translations?.de || translations?.en;
+          const text = translations?.[lang] || translations?.en || translations?.de;
           return text ? `${text} ${row.emoji}` : null;
         })
         .filter(Boolean) as string[];
