@@ -12,12 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3 } from "lucide-react";
-import { format } from "date-fns";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Calendar } from "@/components/ui/calendar";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3, CalendarIcon, Users } from "lucide-react";
+import { format, startOfDay, getDay } from "date-fns";
+import { de } from "date-fns/locale";
 import { Language } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 interface StoryRating {
   id: string;
   story_id: string | null;
@@ -574,6 +578,138 @@ const translations: Record<Language, {
   tr: { title: "Story Statistics", subtitle: "Overview of all stories and ratings", storiesTab: "Stories", feedbackTab: "Feedback", totalStories: "Total Stories", storiesRead: "Read", avgRating: "Average", mostCommonIssue: "Most Common Issue", wordsRequested: "Words Requested", wordsSaved: "Words Saved", storyTitle: "Title", child: "Child", user: "User", rating: "Rating", weakestPart: "Weakest Part", reason: "Reason", date: "Date", noData: "No data", beginning: "Beginning", development: "Development", ending: "Ending", tooShort: "Too short", tooShallow: "Too shallow", tooRepetitive: "Too repetitive", prompt: "Prompt", difficulty: "Difficulty", textType: "Text Type", status: "Status", fiction: "Fiction", nonFiction: "Non-Fiction", easy: "Easy", medium: "Medium", hard: "Hard", read: "Read", unread: "Unread", active: "Active", deleted: "Deleted", language: "Language", length: "Length", words: "Words", filterPlaceholder: "Filter...", all: "All", jaiFini: "J'ai fini", questionsAnswered: "Questions", yes: "Yes", no: "No", answered: "Answered", notAnswered: "Not answered", noQuestions: "No questions", consistencyTab: "Quality Check", classificationTab: "Classification", structureBeginning: "Beginning", structureMiddle: "Middle", structureEnding: "Ending", emotionalColoring: "Emotional Coloring", performanceTab: "Performance" },
 };
 
+const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+const toMonBasedDay = (d: Date) => {
+  const day = d.getDay();
+  return day === 0 ? 6 : day - 1;
+};
+
+interface UsageStatsProps {
+  stories: StoryStats[];
+  userProgressData: Array<{ kid_profile_id: string; total_stars: number | null; total_stories_read: number | null }>;
+  usageStartDate: Date;
+  setUsageStartDate: (d: Date) => void;
+}
+
+const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsageStartDate }: UsageStatsProps) => {
+  const userKidStats = useMemo(() => {
+    const map = new Map<string, { username: string; kidName: string; kidProfileId: string | null; generated: number; read: number; stars: number }>();
+    stories.forEach(s => {
+      const key = `${s.username || '-'}__${s.kid_name || '-'}`;
+      if (!map.has(key)) {
+        const progress = userProgressData.find(p => p.kid_profile_id === s.kid_profile_id);
+        map.set(key, { username: s.username || '-', kidName: s.kid_name || '-', kidProfileId: s.kid_profile_id, generated: 0, read: 0, stars: progress?.total_stars || 0 });
+      }
+      const entry = map.get(key)!;
+      entry.generated++;
+      if (s.is_read) entry.read++;
+    });
+    return [...map.values()].sort((a, b) => b.generated - a.generated);
+  }, [stories, userProgressData]);
+
+  const weekdayStats = useMemo(() => {
+    const startDay = startOfDay(usageStartDate);
+    const filteredStories = stories.filter(s => new Date(s.created_at) >= startDay);
+    const generated = new Array(7).fill(0);
+    const read = new Array(7).fill(0);
+    filteredStories.forEach(s => {
+      const dayIdx = toMonBasedDay(new Date(s.created_at));
+      generated[dayIdx]++;
+      if (s.is_read) read[dayIdx]++;
+    });
+    return WEEKDAY_LABELS.map((label, i) => ({ label, generated: generated[i], read: read[i] }));
+  }, [stories, usageStartDate]);
+
+  const totalGenerated = weekdayStats.reduce((sum, d) => sum + d.generated, 0);
+  const totalRead = weekdayStats.reduce((sum, d) => sum + d.read, 0);
+
+  return (
+    <Accordion type="multiple" defaultValue={["user-kid", "weekday"]} className="space-y-4">
+      <AccordionItem value="user-kid" className="border rounded-lg">
+        <AccordionTrigger className="px-4">
+          <div className="flex items-center gap-2"><Users className="h-4 w-4" /><span className="font-semibold">User – Kind Übersicht</span></div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Kind</TableHead>
+                  <TableHead className="text-right">Stories generiert</TableHead>
+                  <TableHead className="text-right">Stories gelesen</TableHead>
+                  <TableHead className="text-right">⭐ Sterne</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {userKidStats.map((row, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{row.username}</TableCell>
+                    <TableCell>{row.kidName}</TableCell>
+                    <TableCell className="text-right font-mono">{row.generated}</TableCell>
+                    <TableCell className="text-right font-mono">{row.read}</TableCell>
+                    <TableCell className="text-right font-mono">{row.stars}</TableCell>
+                  </TableRow>
+                ))}
+                {userKidStats.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Keine Daten</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="weekday" className="border rounded-lg">
+        <AccordionTrigger className="px-4">
+          <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /><span className="font-semibold">Stories pro Wochentag (kumuliert)</span></div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-muted-foreground">Ab:</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[200px] justify-start text-left font-normal")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(usageStartDate, "dd.MM.yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={usageStartDate} onSelect={(d) => d && setUsageStartDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Wochentag</TableHead>
+                  <TableHead className="text-right">Stories generiert</TableHead>
+                  <TableHead className="text-right">Stories gelesen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {weekdayStats.map((day, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{day.label}</TableCell>
+                    <TableCell className="text-right font-mono">{day.generated}</TableCell>
+                    <TableCell className="text-right font-mono">{day.read}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-semibold border-t-2">
+                  <TableCell>Gesamt</TableCell>
+                  <TableCell className="text-right font-mono">{totalGenerated}</TableCell>
+                  <TableCell className="text-right font-mono">{totalRead}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+};
+
 const FeedbackStatsPage = () => {
   const { user } = useAuth();
   const [ratings, setRatings] = useState<StoryRating[]>([]);
@@ -618,6 +754,18 @@ const FeedbackStatsPage = () => {
   const [perfFilterTextart, setPerfFilterTextart] = useState<string>("all");
   const [perfFilterAge, setPerfFilterAge] = useState<string>("all");
   const [perfFilterLength, setPerfFilterLength] = useState<string>("all");
+
+  // Usage stats state
+  const [usageStartDate, setUsageStartDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d;
+  });
+  const [userProgressData, setUserProgressData] = useState<Array<{
+    kid_profile_id: string;
+    total_stars: number | null;
+    total_stories_read: number | null;
+  }>>([]);
   
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
@@ -822,6 +970,12 @@ const FeedbackStatsPage = () => {
       }));
       setPerformanceData(perfData);
     }
+
+    // Load user_progress for stars
+    const { data: progressData } = await supabase
+      .from("user_progress")
+      .select("kid_profile_id, total_stars, total_stories_read");
+    setUserProgressData(progressData || []);
 
     setIsLoading(false);
   };
@@ -1211,6 +1365,10 @@ const FeedbackStatsPage = () => {
             <TabsTrigger value="performance" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
               {t.performanceTab}
+            </TabsTrigger>
+            <TabsTrigger value="usage" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Usage Stats
             </TabsTrigger>
           </TabsList>
 
@@ -1882,6 +2040,16 @@ const FeedbackStatsPage = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Usage Stats Tab */}
+          <TabsContent value="usage">
+            <UsageStatsContent
+              stories={stories}
+              userProgressData={userProgressData}
+              usageStartDate={usageStartDate}
+              setUsageStartDate={setUsageStartDate}
+            />
           </TabsContent>
         </Tabs>
 
