@@ -27,7 +27,7 @@ export function buildComicStripInstructions(
       'You must generate an image_plan with EXACTLY this structure:',
       '',
       '{',
-      '  "character_anchor": "<Detailed visual description of the main character(s). Be VERY specific: hair color/style, skin tone, eye color, clothing with colors and details, distinguishing features. This EXACT description will be used for EVERY panel to ensure visual consistency.>",',
+      '  "character_anchor": "<HYPER-SPECIFIC visual description of the main character(s) — see CHARACTER ANCHOR RULES below>",',
       '  "world_anchor": "<Detailed visual description of the main setting/world. Lighting, atmosphere, color palette, key environmental details.>",',
       '  "grid_1": [',
       '    { "panel": "top_left", "role": "cover", "camera": "<your choice>", "scene_en": "<English image prompt for this panel>" },',
@@ -72,6 +72,19 @@ export function buildComicStripInstructions(
       '- Every scene_en must be in ENGLISH regardless of story language.',
       '- No text, signs, numbers, or readable writing in any scene.',
       '- Each scene_en should be 2-3 sentences, specific and visual.',
+      '',
+      '**CHARACTER ANCHOR RULES:**',
+      'The character_anchor must be hyper-specific to ensure visual consistency across multiple image generations. Include ALL of the following for EVERY character:',
+      '',
+      '1. EXACT outfit colors using specific color names (not "colorful" but "crimson red and gold striped")',
+      '2. EXACT clothing items with distinctive details (not "a vest" but "a dark olive canvas vest with three brass buttons and a front chest pocket")',
+      '3. EXACT hair description (color, style, length, accessories with colors)',
+      '4. EXACT accessories with materials and colors (not "glasses" but "round wire-framed glasses with thin silver rims")',
+      '5. EXACT body type / proportions (not "young" but "small, about 8 years old, slim build")',
+      '6. ONE distinctive visual marker that is unmistakable (e.g., "a bright red scarf with white polka dots", "a visible scar above the left eyebrow", "mismatched socks — one blue, one green")',
+      '',
+      'BAD anchor: "A girl with dark hair wearing a school uniform and glasses"',
+      'GOOD anchor: "An 8-year-old East Asian girl, slim build, with jet-black hair in two long braids tied with copper-colored hair elastics. She wears round wire-framed glasses with thin silver rims, a dark purple wizard\'s cloak reaching to her knees with a golden lion crest badge on the left chest, a crimson-and-gold diagonally striped necktie, a white collared shirt underneath, and black Mary Jane shoes with white ankle socks."',
       '',
       '**Character consistency rules:**',
       '- The character_anchor MUST appear word-for-word at the start of every scene_en.',
@@ -177,7 +190,8 @@ ${panelDescriptions}
 IMPORTANT:
 - Same character(s) must look IDENTICAL in all panels — same hair, skin, clothes, features.
 - No text, signs, numbers, or readable writing in any panel.
-- Each panel has its own distinct background/setting as described.`;
+- Each panel has its own distinct background/setting as described.
+- Maintain exact character design: same outfit, same colors, same proportions, same accessories in every panel. Same art complexity and level of detail in every panel. Same character age, same body proportions, same face shape.`;
 }
 
 export interface BuildComicStripImagePromptParams {
