@@ -2256,6 +2256,7 @@ export type Database = {
           ending_type: string
           episode_number: number
           generation_status: string
+          has_comic_grid: boolean
           id: string
           image_count: number
           is_deleted: boolean
