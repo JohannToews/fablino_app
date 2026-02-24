@@ -13,6 +13,7 @@ import HomeFablino from "./pages/HomeFablino";
 import { FEATURES } from "./config/features";
 import AdminPage from "./pages/AdminPage";
 import AdminConfigPage from "./pages/AdminConfigPage";
+import FeatureFlagsPage from "./pages/FeatureFlagsPage";
 import StorySelectPage from "./pages/StorySelectPage";
 import ReadingPage from "./pages/ReadingPage";
 // POST-BETA: Vokabel-Quiz & Verwaltung — reaktivieren wenn Wort-Tracking zeigt dass Feature genutzt wird
@@ -69,6 +70,11 @@ const App = () => (
             <Route path="/admin/config" element={
               <ProtectedRoute skipKidCheck>
                 <AdminConfigPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/feature-flags" element={
+              <ProtectedRoute skipKidCheck>
+                <FeatureFlagsPage />
               </ProtectedRoute>
             } />
             <Route path="/stories" element={
