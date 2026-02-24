@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,6 +137,33 @@ const ImageStylesSection = ({ language }: Props) => {
     }
   };
 
+  const triggerTranslation = async (styleId: string, labels: Record<string, string>, description: Record<string, string>) => {
+    const enLabel = labels?.en;
+    const enDesc = description?.en;
+    if (!enLabel && !enDesc) return;
+
+    try {
+      const { data: result } = await invokeEdgeFunction("translate-labels", {
+        texts: { label_en: enLabel || "", description_en: enDesc || "" },
+        style_id: styleId,
+      });
+      if (result?.labels || result?.descriptions) {
+        // Update local state with translated values
+        setStyles(prev => prev.map(s => {
+          if (s.id !== styleId) return s;
+          return {
+            ...s,
+            labels: (result.labels || s.labels) as Record<string, string>,
+            description: (result.descriptions || s.description) as Record<string, string>,
+          };
+        }));
+        toast.success("Übersetzungen aktualisiert");
+      }
+    } catch (e) {
+      console.error("Translation error:", e);
+    }
+  };
+
   const handleSave = async () => {
     if (!editStyle) return;
 
@@ -169,10 +197,12 @@ const ImageStylesSection = ({ language }: Props) => {
       if (error) {
         toast.error("Fehler beim Erstellen: " + error.message);
       } else {
-        toast.success("Stil erstellt");
+        toast.success("Stil erstellt – Übersetzungen werden generiert...");
         const mapped = { ...data, labels: (data.labels ?? {}) as Record<string, string>, description: (data.description ?? {}) as Record<string, string>, age_modifiers: (data.age_modifiers ?? {}) as Record<string, string>, age_groups: data.age_groups as string[], default_for_ages: (data.default_for_ages ?? []) as string[] };
         setStyles(prev => [...prev, mapped].sort((a, b) => a.sort_order - b.sort_order));
         setEditStyle(null);
+        // Trigger background translation
+        triggerTranslation(data.id, mapped.labels, mapped.description);
       }
     } else {
       const { error } = await supabase
@@ -183,9 +213,14 @@ const ImageStylesSection = ({ language }: Props) => {
       if (error) {
         toast.error("Fehler beim Speichern: " + error.message);
       } else {
-        toast.success("Stil gespeichert");
+        toast.success("Stil gespeichert – Übersetzungen werden generiert...");
         setStyles(prev => prev.map(s => s.id === editStyle.id ? { ...s, ...payload } : s).sort((a, b) => a.sort_order - b.sort_order));
+        const savedId = editStyle.id!;
+        const savedLabels = (editStyle.labels || {}) as Record<string, string>;
+        const savedDesc = (editStyle.description || {}) as Record<string, string>;
         setEditStyle(null);
+        // Trigger background translation
+        triggerTranslation(savedId, savedLabels, savedDesc);
       }
     }
 
@@ -405,40 +440,32 @@ const ImageStylesSection = ({ language }: Props) => {
                 </div>
               </div>
 
-              {/* Labels (per language) */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Name (mehrsprachig)</Label>
-                <div className="grid grid-cols-1 gap-2">
-                  {LANGUAGES.map(lang => (
-                    <div key={lang.code} className="flex items-center gap-2">
-                      <span className="text-sm w-6 shrink-0">{lang.flag}</span>
-                      <Input
-                        value={(editStyle.labels as Record<string, string>)?.[lang.code] || ""}
-                        onChange={(e) => updateLabel(lang.code, e.target.value)}
-                        placeholder={`Name (${lang.label})`}
-                        className="text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
+              {/* Label (English only) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Name (English)</Label>
+                <Input
+                  value={(editStyle.labels as Record<string, string>)?.en || ""}
+                  onChange={(e) => updateLabel("en", e.target.value)}
+                  placeholder="e.g. Picture Book (Soft)"
+                  className="text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Wird beim Speichern automatisch in alle Sprachen übersetzt.
+                </p>
               </div>
 
-              {/* Descriptions (DE + EN are the most important) */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Beschreibung (mehrsprachig)</Label>
-                <div className="grid grid-cols-1 gap-2">
-                  {LANGUAGES.map(lang => (
-                    <div key={lang.code} className="flex items-start gap-2">
-                      <span className="text-sm w-6 shrink-0 mt-2">{lang.flag}</span>
-                      <Input
-                        value={(editStyle.description as Record<string, string>)?.[lang.code] || ""}
-                        onChange={(e) => updateDescription(lang.code, e.target.value)}
-                        placeholder={`Beschreibung (${lang.label})`}
-                        className="text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
+              {/* Description (English only) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Description (English)</Label>
+                <Input
+                  value={(editStyle.description as Record<string, string>)?.en || ""}
+                  onChange={(e) => updateDescription("en", e.target.value)}
+                  placeholder="e.g. Soft, warm colours like a classic picture book..."
+                  className="text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Wird beim Speichern automatisch in alle Sprachen übersetzt.
+                </p>
               </div>
 
               {/* Imagen Prompt Snippet */}
