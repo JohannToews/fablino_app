@@ -1875,7 +1875,18 @@ const FeedbackStatsPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate" title={rating.story_title}>
-                              {rating.story_title}
+                              {rating.story_id ? (
+                                <a
+                                  href={`/reading/${rating.story_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline cursor-pointer"
+                                >
+                                  {rating.story_title}
+                                </a>
+                              ) : (
+                                rating.story_title
+                              )}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">{rating.text_language?.toUpperCase() || "-"}</Badge>
