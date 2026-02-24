@@ -2049,8 +2049,22 @@ Deno.serve(async (req) => {
       DE: "Deutsch",
       FR: "Französisch",
       EN: "Englisch",
+      ES: "Spanisch",
+      NL: "Niederländisch",
+      IT: "Italienisch",
+      BS: "Bosnisch",
+      TR: "Türkisch",
+      BG: "Bulgarisch",
+      RO: "Rumänisch",
+      PL: "Polnisch",
+      LT: "Litauisch",
+      HU: "Ungarisch",
+      CA: "Katalanisch",
+      SL: "Slowenisch",
+      PT: "Portugiesisch",
+      SK: "Slowakisch",
     };
-    const targetLanguage = languageNames[textLanguage] || "Französisch";
+    const targetLanguage = languageNames[(textLanguage || '').toUpperCase()] || languageNames[effectiveStoryLanguage.toUpperCase()] || "Französisch";
 
     // Map length to approximate word count with explicit minimum
     const lengthMap: Record<string, { range: string; min: number; max: number }> = {
