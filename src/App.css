@@ -41,22 +41,4 @@
   color: #888;
 }
 
-/* Comic Panel Styles */
-.comic-panel {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin: 16px auto;
-}
-
-.comic-panel img {
-  border-radius: 8px;
-}
-
-.comic-panel-cover,
-.comic-panel-ending {
-  width: 100%;
-}
-
-.comic-panel-inner {
-  width: 80%;
-}
+/* Comic Panel Styles — minimal, no card wrapper */

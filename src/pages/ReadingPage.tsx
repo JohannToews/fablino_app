@@ -1640,14 +1640,13 @@ const ReadingPage = () => {
         if (pIndex + 1 >= targetPosition) {
           const panel = innerPanels[nextPanelIndex];
           elements.push(
-            <div key={`comic-inner-${panel.position}`} className="my-6 flex justify-center comic-panel comic-panel-inner">
-              <img
-                src={panel.dataUrl}
-                alt={`Story illustration ${panel.position}`}
-                className="rounded-lg shadow-md w-[80%] max-h-72 md:max-h-96 object-contain"
-                loading="lazy"
-              />
-            </div>
+            <img
+              key={`comic-inner-${panel.position}`}
+              src={panel.dataUrl}
+              alt={`Story illustration ${panel.position}`}
+              className="block mx-auto my-4 w-full max-w-[500px] rounded-md"
+              loading="lazy"
+            />
           );
           nextPanelIndex++;
         }
@@ -1657,14 +1656,13 @@ const ReadingPage = () => {
     // Ending panel → displayed after all text
     if (endingPanel) {
       elements.push(
-        <div key="comic-ending" className="my-4 flex justify-center comic-panel comic-panel-ending">
-          <img
-            src={endingPanel.dataUrl}
-            alt="Story ending"
-            className="rounded-lg shadow-md w-full max-h-80 md:max-h-[28rem] object-contain"
-            loading="lazy"
-          />
-        </div>
+        <img
+          key="comic-ending"
+          src={endingPanel.dataUrl}
+          alt="Story ending"
+          className="block mx-auto my-4 w-full max-w-[500px] rounded-md"
+          loading="lazy"
+        />
       );
     }
 
