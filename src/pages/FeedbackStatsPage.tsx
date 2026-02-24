@@ -889,7 +889,7 @@ const FeedbackStatsPage = () => {
     const { data: comprehensionResults } = await supabase
       .from("user_results")
       .select("reference_id, total_questions, correct_answers")
-      .eq("activity_type", "story_completed");
+      .in("activity_type", ["quiz_complete", "quiz_completed"]);
 
     const comprehensionPerStory = new Map<string, { answered: number; total: number }>();
     comprehensionResults?.forEach(r => {
@@ -1289,17 +1289,25 @@ const FeedbackStatsPage = () => {
     setIsDeletingFeedback(false);
   };
 
-  const storiesRead = stories.filter(s => s.is_read).length;
+  const [kpiStartDate, setKpiStartDate] = useState<Date | undefined>(undefined);
+  const [pendingKpiDate, setPendingKpiDate] = useState<Date | undefined>(undefined);
+
+  const kpiStories = useMemo(() => {
+    if (!kpiStartDate) return stories;
+    return stories.filter(s => new Date(s.created_at) >= kpiStartDate);
+  }, [stories, kpiStartDate]);
+
+  const storiesRead = kpiStories.filter(s => s.is_read).length;
   const activeKids = useMemo(() => {
     const kidCounts = new Map<string, number>();
-    stories.forEach(s => {
+    kpiStories.forEach(s => {
       if (s.kid_profile_id) {
         kidCounts.set(s.kid_profile_id, (kidCounts.get(s.kid_profile_id) || 0) + 1);
       }
     });
     return [...kidCounts.values()].filter(count => count > 1).length;
-  }, [stories]);
-  const quizzesCompleted = stories.filter(s => s.quiz_completed).length;
+  }, [kpiStories]);
+  const quizzesCompleted = kpiStories.filter(s => s.quiz_completed).length;
 
   if (isLoading) {
     return (
@@ -1314,6 +1322,35 @@ const FeedbackStatsPage = () => {
       <div className="container max-w-7xl mx-auto px-4 py-8">
         <PageHeader title={t.title} backTo="/" />
         <p className="text-muted-foreground mb-6">{t.subtitle}</p>
+        {/* KPI Date Filter */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-muted-foreground">KPI ab:</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="w-[150px] justify-start text-left font-normal">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {pendingKpiDate ? format(pendingKpiDate, "dd.MM.yyyy") : "Alle Daten"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={pendingKpiDate}
+                onSelect={setPendingKpiDate}
+                locale={de}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <Button size="sm" variant="secondary" onClick={() => setKpiStartDate(pendingKpiDate)}>
+            Neu berechnen
+          </Button>
+          {kpiStartDate && (
+            <Button size="sm" variant="ghost" onClick={() => { setKpiStartDate(undefined); setPendingKpiDate(undefined); }}>
+              ✕
+            </Button>
+          )}
+        </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -1340,7 +1377,7 @@ const FeedbackStatsPage = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold">{stories.length}</span>
+                <span className="text-2xl font-bold">{kpiStories.length}</span>
               </div>
             </CardContent>
           </Card>
