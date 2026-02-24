@@ -468,6 +468,8 @@ const ro: Translations = {
   adminImageGenConfigDesc: 'Gestionați modele Imagen, costuri și limite',
 
   stickerStoriesCollectedFallback: '{count} povești colectate! Continuă așa! 🌟',
+  onboardingCategoryAdventure: 'Aventură',
+  onboardingCategoryFantasy: 'Fantezie',
 };
 
 export default ro;

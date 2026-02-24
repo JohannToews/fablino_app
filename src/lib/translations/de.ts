@@ -472,6 +472,8 @@ const de: Translations = {
 
   // StickerBookPage
   stickerStoriesCollectedFallback: '{count} Geschichten gesammelt! Weiter so!',
+  onboardingCategoryAdventure: 'Abenteuer',
+  onboardingCategoryFantasy: 'Fantasie',
 };
 
 export default de;

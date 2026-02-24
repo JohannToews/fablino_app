@@ -468,6 +468,8 @@ const sk: Translations = {
   adminImageGenConfigDesc: 'Manage Imagen models, costs & limits',
 
   stickerStoriesCollectedFallback: '{count} stories collected! Keep going!',
+  onboardingCategoryAdventure: 'Dobrodružstvo',
+  onboardingCategoryFantasy: 'Fantázia',
 };
 
 export default sk;

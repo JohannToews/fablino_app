@@ -468,6 +468,8 @@ const sl: Translations = {
   adminImageGenConfigDesc: 'Upravljanje modelov Imagen, stroškov in limitov',
 
   stickerStoriesCollectedFallback: '{count} zgodb zbranih! Kar tako naprej! 🌟',
+  onboardingCategoryAdventure: 'Pustolovina',
+  onboardingCategoryFantasy: 'Domišljija',
 };
 
 export default sl;

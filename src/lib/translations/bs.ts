@@ -468,6 +468,8 @@ const bs: Translations = {
   adminImageGenConfigDesc: 'Upravljajte Imagen modelima, troškovima i limitima',
 
   stickerStoriesCollectedFallback: '{count} priča sakupljeno! Samo nastavi!',
+  onboardingCategoryAdventure: 'Avantura',
+  onboardingCategoryFantasy: 'Fantazija',
 };
 
 export default bs;

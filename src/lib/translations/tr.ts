@@ -468,6 +468,8 @@ const tr: Translations = {
   adminImageGenConfigDesc: 'Imagen modelleri, maliyetler ve limitleri yönetin',
 
   stickerStoriesCollectedFallback: '{count} hikaye toplandı! Harika gidiyorsun! 🌟',
+  onboardingCategoryAdventure: 'Macera',
+  onboardingCategoryFantasy: 'Fantezi',
 };
 
 export default tr;

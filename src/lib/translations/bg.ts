@@ -468,6 +468,8 @@ const bg: Translations = {
   adminImageGenConfigDesc: 'Управление на Imagen модели, разходи и лимити',
 
   stickerStoriesCollectedFallback: '{count} истории събрани! Продължавай така! 🌟',
+  onboardingCategoryAdventure: 'Приключение',
+  onboardingCategoryFantasy: 'Фантазия',
 };
 
 export default bg;

@@ -468,6 +468,8 @@ const en: Translations = {
   adminImageGenConfigDesc: 'Manage Imagen models, costs & limits',
 
   stickerStoriesCollectedFallback: '{count} stories collected! Keep going!',
+  onboardingCategoryAdventure: 'Adventure',
+  onboardingCategoryFantasy: 'Fantasy',
 };
 
 export default en;

@@ -468,6 +468,8 @@ const lt: Translations = {
   adminImageGenConfigDesc: 'Tvarkyti Imagen modelius, išlaidas ir limitus',
 
   stickerStoriesCollectedFallback: '{count} istorijų surinkta! Taip ir toliau! 🌟',
+  onboardingCategoryAdventure: 'Nuotykis',
+  onboardingCategoryFantasy: 'Fantazija',
 };
 
 export default lt;
