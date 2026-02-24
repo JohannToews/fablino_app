@@ -74,20 +74,19 @@ export function buildComicStripInstructions(
       '- Each scene_en should be 2-3 sentences, specific and visual.',
       '',
       '**CHARACTER ANCHOR RULES:**',
-      'The character_anchor must be hyper-specific to ensure visual consistency across multiple image generations. Include ALL of the following for EVERY character:',
-      '',
-      '1. EXACT outfit colors using specific color names (not "colorful" but "crimson red and gold striped")',
-      '2. EXACT clothing items with distinctive details (not "a vest" but "a dark olive canvas vest with three brass buttons and a front chest pocket")',
-      '3. EXACT hair description (color, style, length, accessories with colors)',
-      '4. EXACT accessories with materials and colors (not "glasses" but "round wire-framed glasses with thin silver rims")',
-      '5. EXACT body type / proportions (not "young" but "small, about 8 years old, slim build")',
-      '6. ONE distinctive visual marker that is unmistakable (e.g., "a bright red scarf with white polka dots", "a visible scar above the left eyebrow", "mismatched socks — one blue, one green")',
+      'The character_anchor must be CONCISE: maximum 2 sentences, 50-60 words. Focus on the 5 most visually distinctive traits:',
+      '1. Age and build',
+      '2. Hair color and style',
+      '3. Key accessory (glasses, hat, scarf — with color)',
+      '4. Main clothing item with specific color',
+      '5. One signature detail (a patch, a pin, mismatched socks, etc.)',
       '',
       'BAD anchor: "A girl with dark hair wearing a school uniform and glasses"',
-      'GOOD anchor: "An 8-year-old East Asian girl, slim build, with jet-black hair in two long braids tied with copper-colored hair elastics. She wears round wire-framed glasses with thin silver rims, a dark purple wizard\'s cloak reaching to her knees with a golden lion crest badge on the left chest, a crimson-and-gold diagonally striped necktie, a white collared shirt underneath, and black Mary Jane shoes with white ankle socks."',
+      'GOOD anchor: "An 8-year-old East Asian girl with jet-black twin braids, round silver-rimmed glasses, a dark purple wizard\'s cloak with a golden crest, and a crimson-gold striped tie."',
       '',
-      '**Character consistency rules:**',
-      '- The character_anchor MUST appear word-for-word at the start of every scene_en.',
+      '**Scene content rules (IMPORTANT):**',
+      '- Each scene_en must focus PRIMARILY on the ACTION, ENVIRONMENT, and MOOD — the scene is the star, not the character description.',
+      '- Include the character_anchor text ONCE at the end of each scene_en (not at the start).',
       '- If there are multiple characters, describe ALL of them in the character_anchor.',
       '- Characters must wear the SAME clothes in all panels (unless the story involves a costume change).',
     ].join('\n');
@@ -166,20 +165,16 @@ export function buildComicGridPrompt(
   imageStylePrefix: string,
 ): string {
   const panelDescriptions = grid.map((panel) => {
-    const sceneWithAnchor =
-      panel.scene_en.trim().startsWith(characterAnchor.trim())
-        ? panel.scene_en.trim()
-        : `${characterAnchor.trim()}. ${panel.scene_en.trim()}`;
-    const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase(); // "TOP-LEFT" etc.
-    return `${panelLabel}: [${panel.camera}] ${sceneWithAnchor}`;
+    // Scene first, character anchor at the end — Imagen weights prompt start more heavily
+    const sceneText = panel.scene_en.trim().replace(new RegExp(`^${characterAnchor.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`, 'i'), '');
+    const panelLabel = panel.panel.replace(/_/g, '-').toUpperCase();
+    return `${panelLabel}: [${panel.camera}] ${sceneText} Character: ${characterAnchor.trim()}.`;
   }).join('\n\n');
 
   return `${imageStylePrefix}
 
-Characters: ${characterAnchor}
-Setting: ${worldAnchor}
-
 Create a 2x2 grid of 4 children's book illustrations.
+Setting: ${worldAnchor}
 
 ${GRID_LAYOUT_RULES}
 
@@ -187,11 +182,9 @@ Panel layout (reading order: left-to-right, top-to-bottom):
 
 ${panelDescriptions}
 
-IMPORTANT:
-- Same character(s) must look IDENTICAL in all panels — same hair, skin, clothes, features.
-- No text, signs, numbers, or readable writing in any panel.
-- Each panel has its own distinct background/setting as described.
-- Maintain exact character design: same outfit, same colors, same proportions, same accessories in every panel. Same art complexity and level of detail in every panel. Same character age, same body proportions, same face shape.`;
+Character reference: ${characterAnchor}
+No text, signs, numbers, or readable writing in any panel.
+Consistent character design across all panels.`;
 }
 
 export interface BuildComicStripImagePromptParams {
