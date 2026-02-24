@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./useAuth";
+import { useAuthOptional } from "./useAuth";
 
 export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs'
   | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk';
@@ -69,7 +69,8 @@ interface KidProfileContextType {
 const KidProfileContext = createContext<KidProfileContextType | undefined>(undefined);
 
 export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  const auth = useAuthOptional();
+  const user = auth?.user ?? null;
   const [kidProfiles, setKidProfiles] = useState<KidProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(() => {
     // Try to restore from sessionStorage
