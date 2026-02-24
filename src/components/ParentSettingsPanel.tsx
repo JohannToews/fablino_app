@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Save, Check, X, AlertTriangle, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Save, Check, X, AlertTriangle, Loader2, Sparkles, Trash2, Users } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslations, Language } from "@/lib/translations";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { usePremiumUi } from "@/hooks/usePremiumUi";
@@ -64,7 +65,7 @@ const categoryIcons: Record<string, string> = {
 
 const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
   const t = useTranslations(language);
-  const { selectedProfileId } = useKidProfile();
+  const { selectedProfileId, selectedProfile, kidProfiles, setSelectedProfileId } = useKidProfile();
   const { premiumUiEnabled, setPremiumUiEnabled, isLoading: premiumUiLoading } = usePremiumUi();
   const displayLang = (language || 'de') as string;
 
@@ -357,6 +358,70 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Kid Profile Selector */}
+      {kidProfiles.length > 0 && (
+        <div className="flex items-center justify-center gap-2 bg-card/60 backdrop-blur-sm rounded-xl p-3">
+          <span className="text-sm text-muted-foreground mr-2">
+            {t.adminStoryFor}
+          </span>
+          {kidProfiles.length === 1 ? (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500 text-white">
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-border">
+                {kidProfiles[0].cover_image_url ? (
+                  <img src={kidProfiles[0].cover_image_url} alt={kidProfiles[0].name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <Users className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <span className="font-medium text-sm">{kidProfiles[0].name}</span>
+            </div>
+          ) : (
+            <Select
+              value={selectedProfileId || ''}
+              onValueChange={(value) => setSelectedProfileId(value)}
+            >
+              <SelectTrigger className="w-[200px] bg-card">
+                <SelectValue>
+                  {selectedProfile && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full overflow-hidden border border-border">
+                        {selectedProfile.cover_image_url ? (
+                          <img src={selectedProfile.cover_image_url} alt={selectedProfile.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Users className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <span>{selectedProfile.name}</span>
+                    </div>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border z-50">
+                {kidProfiles.map((profile) => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full overflow-hidden border border-border">
+                        {profile.cover_image_url ? (
+                          <img src={profile.cover_image_url} alt={profile.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Users className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <span>{profile.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      )}
       {/* Premium UI (per-user feature flag) */}
       <div className="flex flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-orange-200 bg-white shadow-sm">
         <div className="flex-1">
