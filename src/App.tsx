@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { KidProfileProvider } from "@/hooks/useKidProfile";
+import PremiumUiBodyClass from "@/components/PremiumUiBodyClass";
+import PremiumRouteTransition from "@/components/PremiumRouteTransition";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
@@ -40,6 +42,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <PremiumUiBodyClass />
         <KidProfileProvider>
           <Toaster />
         <Sonner />
@@ -56,72 +59,72 @@ const App = () => (
             <Route path="/welcome" element={<WelcomePage />} />
             <Route path="/onboarding/child" element={<OnboardingKindPage />} />
             <Route path="/onboarding/story" element={<OnboardingStoryPage />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                {FEATURES.NEW_FABLINO_HOME ? <HomeFablino /> : <HomeClassic />}
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute skipKidCheck>
-                <AdminPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/config" element={
-              <ProtectedRoute skipKidCheck>
-                <AdminConfigPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/stories" element={
-              <ProtectedRoute>
-                <StorySelectPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/read/:id" element={
-              <ProtectedRoute skipKidCheck>
-                <ReadingPage />
-              </ProtectedRoute>
-            } />
-            {/* POST-BETA: Vokabel-Quiz Route — reaktivieren wenn Wort-Tracking zeigt dass Feature genutzt wird
-            <Route path="/quiz" element={
-              <ProtectedRoute>
-                <VocabularyQuizPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/words" element={
-              <ProtectedRoute>
-                <VocabularyManagePage />
-              </ProtectedRoute>
-            } />
-            */}
-            <Route path="/results" element={
-              <ProtectedRoute>
-                <ResultsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/feedback-stats" element={
-              <ProtectedRoute>
-                <FeedbackStatsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/create-story" element={
-              <ProtectedRoute>
-                <CreateStoryPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/collection" element={
-              <ProtectedRoute>
-                <CollectionPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/sticker-buch" element={
-              <ProtectedRoute>
-                <StickerBookPage />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route element={<PremiumRouteTransition />}>
+              <Route path="/" element={
+                <ProtectedRoute>
+                  {FEATURES.NEW_FABLINO_HOME ? <HomeFablino /> : <HomeClassic />}
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute skipKidCheck>
+                  <AdminPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/config" element={
+                <ProtectedRoute skipKidCheck>
+                  <AdminConfigPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/stories" element={
+                <ProtectedRoute>
+                  <StorySelectPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/read/:id" element={
+                <ProtectedRoute skipKidCheck>
+                  <ReadingPage />
+                </ProtectedRoute>
+              } />
+              {/* POST-BETA: Vokabel-Quiz Route — reaktivieren wenn Wort-Tracking zeigt dass Feature genutzt wird
+              <Route path="/quiz" element={
+                <ProtectedRoute>
+                  <VocabularyQuizPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/words" element={
+                <ProtectedRoute>
+                  <VocabularyManagePage />
+                </ProtectedRoute>
+              } />
+              */}
+              <Route path="/results" element={
+                <ProtectedRoute>
+                  <ResultsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/feedback-stats" element={
+                <ProtectedRoute>
+                  <FeedbackStatsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/create-story" element={
+                <ProtectedRoute>
+                  <CreateStoryPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/collection" element={
+                <ProtectedRoute>
+                  <CollectionPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/sticker-buch" element={
+                <ProtectedRoute>
+                  <StickerBookPage />
+                </ProtectedRoute>
+              } />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
         </ErrorBoundary>

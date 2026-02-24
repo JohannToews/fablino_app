@@ -19,27 +19,27 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 30% 18%;
 
-    /* Kräftiges Blau als Primärfarbe (Sport, Dynamik) */
-    --primary: 215 90% 50%;
+    /* Fablino Orange als Primärfarbe (#E8863A) */
+    --primary: 25 85% 55%;
     --primary-foreground: 0 0% 100%;
 
-    /* Frisches Türkis/Teal (Energie, Bewegung) */
-    --secondary: 175 70% 40%;
-    --secondary-foreground: 0 0% 100%;
+    /* Warme helle Sekundärfarben */
+    --secondary: 30 100% 97%;
+    --secondary-foreground: 25 30% 18%;
 
-    /* Helles Cyan für Akzente */
-    --accent: 195 85% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Helles Warm für Akzente */
+    --accent: 30 80% 95%;
+    --accent-foreground: 25 30% 18%;
 
-    --muted: 210 20% 92%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 30 20% 92%;
+    --muted-foreground: 25 15% 45%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 25% 88%;
-    --input: 210 25% 92%;
-    --ring: 215 90% 45%;
+    --border: 30 25% 88%;
+    --input: 30 25% 92%;
+    --ring: 25 85% 50%;
 
     --radius: 1rem;
 
@@ -382,4 +382,65 @@
     0% { stroke-dashoffset: 283; }
     100% { stroke-dashoffset: var(--ring-offset, 0); }
   }
+}
+
+/* ═══ Premium UI (only when feature flag premium_ui is on) ═══ */
+body.premium-ui .btn-kid,
+body.premium-ui [data-premium-button="primary"] {
+  box-shadow: 0 2px 8px rgba(45, 24, 16, 0.12);
+  transition: all 200ms ease;
+}
+body.premium-ui .btn-kid:hover,
+body.premium-ui [data-premium-button="primary"]:hover {
+  box-shadow: 0 4px 16px rgba(232, 134, 58, 0.25);
+}
+body.premium-ui .btn-kid:active,
+body.premium-ui [data-premium-button="primary"]:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(45, 24, 16, 0.15);
+}
+
+body.premium-ui [data-premium-button="secondary"] {
+  box-shadow: 0 1px 4px rgba(45, 24, 16, 0.06);
+  transition: all 200ms ease;
+}
+body.premium-ui [data-premium-button="secondary"]:hover {
+  box-shadow: 0 2px 8px rgba(45, 24, 16, 0.1);
+}
+body.premium-ui [data-premium-button="secondary"]:active {
+  transform: scale(0.98);
+}
+
+body.premium-ui .card-story,
+body.premium-ui [data-premium-card] {
+  box-shadow: 0 2px 12px -4px rgba(45, 24, 16, 0.1);
+  transition: all 250ms ease;
+}
+body.premium-ui .card-story:hover,
+body.premium-ui [data-premium-card]:hover {
+  box-shadow: 0 8px 24px -8px rgba(45, 24, 16, 0.15);
+  transform: translateY(-2px);
+}
+
+body.premium-ui .rounded-lg.border.bg-card {
+  box-shadow: 0 2px 8px rgba(45, 24, 16, 0.06);
+}
+
+body.premium-ui {
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(252, 233, 213, 0.5), transparent 50%),
+    linear-gradient(180deg, #FFF8F0 0%, #FEF1E1 50%, #FDE8D0 100%) !important;
+  background-attachment: fixed !important;
+}
+
+body.premium-ui input:not([type="hidden"]),
+body.premium-ui select,
+body.premium-ui textarea {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+body.premium-ui [data-state="checked"],
+body.premium-ui .ring-\[\\#E8863A\\] {
+  box-shadow: 0 0 0 3px rgba(232, 134, 58, 0.15);
 }

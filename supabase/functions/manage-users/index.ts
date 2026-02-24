@@ -8,7 +8,69 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage, appLanguage } = body;
+    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage, appLanguage, enabled } = body;
+
+    // Premium UI flag: any authenticated user can read or toggle for themselves
+    if (action === "getPremiumUi") {
+      const auth = await getAuthenticatedUser(req);
+      const { data: row } = await auth.supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "premium_ui_enabled_users")
+        .maybeSingle();
+
+      let ids: string[] = [];
+      if (row?.value) {
+        try {
+          ids = JSON.parse(row.value);
+          if (!Array.isArray(ids)) ids = [];
+        } catch {
+          ids = [];
+        }
+      }
+      const enabled = ids.includes("*") || ids.includes(auth.userId);
+      return new Response(JSON.stringify({ enabled }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "setPremiumUi" && typeof enabled === "boolean") {
+      const auth = await getAuthenticatedUser(req);
+      const { data: row } = await auth.supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "premium_ui_enabled_users")
+        .maybeSingle();
+
+      let ids: string[] = [];
+      if (row?.value) {
+        try {
+          ids = JSON.parse(row.value);
+          if (!Array.isArray(ids)) ids = [];
+        } catch {
+          ids = [];
+        }
+      }
+
+      const has = ids.includes("*") || ids.includes(auth.userId);
+      if (enabled && !has) {
+        ids.push(auth.userId);
+      } else if (!enabled && has && !ids.includes("*")) {
+        ids = ids.filter((id: string) => id !== auth.userId);
+      }
+
+      const { error } = await auth.supabase
+        .from("app_settings")
+        .upsert(
+          { key: "premium_ui_enabled_users", value: JSON.stringify(ids), updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        );
+
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
 
     // For language updates on own profile, allow any authenticated user
     if (action === "updateLanguages" || action === "updateLanguage") {

@@ -142,6 +142,7 @@ const BranchDecisionScreen = ({
       {selectedOption && (
         <button
           onClick={handleConfirm}
+          data-premium-button="primary"
           className="w-full h-14 rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-all duration-200 animate-fade-in shadow-md"
         >
           {t.confirmButton}

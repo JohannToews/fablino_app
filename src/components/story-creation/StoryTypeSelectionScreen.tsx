@@ -277,6 +277,7 @@ const StoryTypeSelectionScreen = ({
             <Button
               onClick={handleContinue}
               disabled={!canContinue()}
+              data-premium-button="primary"
               className="w-full h-14 rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors"
             >
               {translations.continue} →

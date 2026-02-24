@@ -8,7 +8,10 @@ import { Save, Check, X, AlertTriangle, Loader2, Sparkles, Trash2 } from "lucide
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useTranslations, Language } from "@/lib/translations";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { usePremiumUi } from "@/hooks/usePremiumUi";
 import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface LearningTheme {
   id: string;
@@ -62,6 +65,7 @@ const categoryIcons: Record<string, string> = {
 const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
   const t = useTranslations(language);
   const { selectedProfileId } = useKidProfile();
+  const { premiumUiEnabled, setPremiumUiEnabled, isLoading: premiumUiLoading } = usePremiumUi();
   const displayLang = (language || 'de') as string;
 
   const [learningThemes, setLearningThemes] = useState<LearningTheme[]>([]);
@@ -353,6 +357,27 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Premium UI (per-user feature flag) */}
+      <div className="flex flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-orange-200 bg-white shadow-sm">
+        <div className="flex-1">
+          <Label htmlFor="premium-ui" className="text-base font-semibold text-[#2D1810] cursor-pointer">
+            Premium UI
+          </Label>
+          <p className="text-xs text-[#2D1810]/50 mt-0.5">
+            {language === "de" && "Neues App-Design mit mehr Tiefe und Animationen (Test)."}
+            {language === "en" && "New app design with more depth and animations (beta)."}
+            {language === "fr" && "Nouveau design avec plus de relief et d’animations (test)."}
+            {!["de", "en", "fr"].includes(language) && "New app design (beta)."}
+          </p>
+        </div>
+        <Switch
+          id="premium-ui"
+          checked={premiumUiEnabled}
+          onCheckedChange={setPremiumUiEnabled}
+          disabled={premiumUiLoading}
+        />
+      </div>
+
       <Accordion type="multiple" defaultValue={["learning-themes"]} className="space-y-3">
 
         {/* ═══ Akkordeon 1: Lernthemen ═══ */}

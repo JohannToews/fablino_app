@@ -40,3 +40,18 @@ export const FABLINO_STYLES = {
   primaryButton: 'h-14 w-full max-w-md text-lg font-semibold rounded-2xl bg-[#E8863A] text-white hover:bg-[#D4752E] transition-colors',
   secondaryButton: 'h-14 w-full max-w-md text-lg font-semibold rounded-2xl bg-white border-2 border-[#E8863A] text-[#E8863A] hover:bg-[#FFF8F0] transition-colors',
 } as const;
+
+export const FABLINO_SHADOWS = {
+  soft: '0 2px 8px rgba(45,24,16,0.08)',
+  card: '0 2px 12px -4px rgba(45,24,16,0.1)',
+  cardHover: '0 8px 24px -8px rgba(45,24,16,0.15)',
+  button: '0 2px 8px rgba(45,24,16,0.12)',
+  buttonHover: '0 4px 16px rgba(232,134,58,0.25)',
+  modal: '0 20px 50px -12px rgba(45,24,16,0.2)',
+} as const;
+
+export const FABLINO_MOTION = {
+  fast: 150,
+  normal: 250,
+  slow: 400,
+} as const;

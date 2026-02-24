@@ -703,6 +703,7 @@ const SpecialEffectsScreen = ({
         <div className="max-w-[600px] mx-auto px-4 pt-3 pb-3 bg-gradient-to-t from-[#FFF8F0] via-[#FFF8F0]/95 to-transparent">
           <button
             onClick={handleContinue}
+            data-premium-button="primary"
             className="w-full min-h-[56px] rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98]"
           >
             {isSeries ? t.continueEpisode1 : t.continue} ✨
