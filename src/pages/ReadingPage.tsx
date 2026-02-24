@@ -1909,25 +1909,39 @@ const ReadingPage = () => {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Reading Area - wider for tablets */}
           <div className="xl:col-span-3">
-            {/* Cover image — use first cropped panel if available, otherwise full cover */}
+            {/* Cover image — use first cropped panel for comic stories, otherwise full cover */}
             {(() => {
-              // Determine best cover source: cropped panel > raw cover URL
-              const coverSrc = comicCroppedPanelsWithMeta?.[0]?.dataUrl
-                || comicCroppedPanels?.[0]
-                || story?.cover_image_url;
-              console.log('[ReadingPage] COVER render:', {
-                hasMetaPanels: !!comicCroppedPanelsWithMeta,
-                metaCount: comicCroppedPanelsWithMeta?.length,
-                hasCroppedPanels: !!comicCroppedPanels,
-                croppedCount: comicCroppedPanels?.length,
-                coverSrcStart: coverSrc?.substring(0, 40),
-                rawCoverStart: story?.cover_image_url?.substring(0, 40),
-              });
-              if (!coverSrc) return null;
+              const isComicStory = !!(story?.comic_full_image && story?.comic_grid_plan);
+              
+              if (isComicStory) {
+                // Comic story: ONLY show cropped panel 1 as cover, never the full 2x2 grid
+                const croppedCover = comicCroppedPanelsWithMeta?.[0]?.dataUrl || comicCroppedPanels?.[0];
+                if (!croppedCover) {
+                  // Cropping still in progress — show skeleton
+                  return (
+                    <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8] animate-pulse">
+                      <div className="w-full h-[200px] md:h-[300px] bg-muted" />
+                    </div>
+                  );
+                }
+                return (
+                  <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
+                    <img 
+                      src={croppedCover} 
+                      alt={story?.title || ''}
+                      className="w-full max-h-[250px] md:max-h-[400px] object-cover"
+                      onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
+                    />
+                  </div>
+                );
+              }
+              
+              // Non-comic story: use cover_image_url directly
+              if (!story?.cover_image_url) return null;
               return (
                 <div className="mb-6 rounded-xl overflow-hidden shadow-card bg-[#FAFAF8]">
                   <img 
-                    src={coverSrc} 
+                    src={story.cover_image_url} 
                     alt={story?.title || ''}
                     className="w-full max-h-[250px] md:max-h-[400px] object-cover"
                     onError={(e) => { e.currentTarget.src = '/fallback-illustration.svg'; }}
