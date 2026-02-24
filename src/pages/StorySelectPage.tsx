@@ -399,6 +399,7 @@ const StorySelectPage = () => {
                   </span>
                 )}
               </TabsTrigger>
+              {/* Non-Fiction tab – temporarily hidden, may come back later
               <TabsTrigger 
                 value="non-fiction" 
                 className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground whitespace-nowrap px-2 sm:px-3"
@@ -411,6 +412,7 @@ const StorySelectPage = () => {
                   </span>
                 )}
               </TabsTrigger>
+              */}
             </TabsList>
 
             <TabsContent value="series">
@@ -428,9 +430,11 @@ const StorySelectPage = () => {
               <StoryGrid stories={fictionStories} t={t} navigate={navigate} storyStatuses={storyStatuses} />
             </TabsContent>
 
+            {/* Non-Fiction content – temporarily hidden
             <TabsContent value="non-fiction">
               <StoryGrid stories={nonFictionStories} t={t} navigate={navigate} storyStatuses={storyStatuses} />
             </TabsContent>
+            */}
           </Tabs>
         )}
       </div>
