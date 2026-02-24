@@ -468,6 +468,8 @@ const nl: Translations = {
   adminImageGenConfigDesc: 'Imagen modellen, kosten & limieten beheren',
 
   stickerStoriesCollectedFallback: '{count} verhalen verzameld! Ga zo door!',
+  onboardingCategoryAdventure: 'Avontuur',
+  onboardingCategoryFantasy: 'Fantasie',
 };
 
 export default nl;

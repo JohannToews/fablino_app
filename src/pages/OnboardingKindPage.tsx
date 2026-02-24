@@ -20,63 +20,21 @@ const STORY_CATEGORIES = [
   {
     key: "adventure",
     emoji: "🏰",
-    label: "Abenteuer",
+    labelKey: "onboardingCategoryAdventure" as const,
     subtypes: [
-      {
-        key: "heroes",
-        emoji: "🦸",
-        label: "Helden & Schurken",
-        description: "Superhelden, geheime Kräfte, Bösewichte besiegen",
-        placeholder: "z.B. Ein Mädchen entdeckt, dass sie unsichtbar werden kann...",
-        voicePrompt: "Du hast Helden & Schurken gewählt – möchtest du noch mehr erzählen? 🎤",
-      },
-      {
-        key: "detective",
-        emoji: "🔍",
-        label: "Geheimnisse & Detektive",
-        description: "Rätsel lösen, versteckte Hinweise, mysteriöse Fälle",
-        placeholder: "z.B. Im Schulkeller verschwindet jede Nacht etwas...",
-        voicePrompt: "Du hast Geheimnisse & Detektive gewählt – möchtest du noch mehr erzählen? 🎤",
-      },
-      {
-        key: "space",
-        emoji: "🚀",
-        label: "Weltraum & Entdecker",
-        description: "Fremde Planeten, Zeitreisen, unbekannte Welten",
-        placeholder: "z.B. Auf dem Weg zum Mars entdecken sie einen geheimen Planeten...",
-        voicePrompt: "Du hast Weltraum & Entdecker gewählt – möchtest du noch mehr erzählen? 🎤",
-      },
+      { key: "heroes" },
+      { key: "detective" },
+      { key: "space" },
     ],
   },
   {
     key: "fantasy",
     emoji: "🧚",
-    label: "Fantasie",
+    labelKey: "onboardingCategoryFantasy" as const,
     subtypes: [
-      {
-        key: "wizards",
-        emoji: "🧙",
-        label: "Zauberer & Hexen",
-        description: "Magie, Zaubertränke, Sprüche",
-        placeholder: "z.B. Ein junger Zauberlehrling braut seinen ersten Trank...",
-        voicePrompt: "Du hast Zauberei & Hexen gewählt – möchtest du noch mehr erzählen? 🎤",
-      },
-      {
-        key: "dragons",
-        emoji: "🐉",
-        label: "Drachen & Fabelwesen",
-        description: "Einhörner, Phönixe, magische Tiere",
-        placeholder: "z.B. Ein kleiner Drache, der kein Feuer spucken kann...",
-        voicePrompt: "Du hast Drachen & Fabelwesen gewählt – möchtest du noch mehr erzählen? 🎤",
-      },
-      {
-        key: "enchanted",
-        emoji: "🌿",
-        label: "Verwunschene Welten",
-        description: "Geheime Portale, verzauberte Wälder, verborgene Königreiche",
-        placeholder: "z.B. Hinter dem alten Baum öffnet sich ein Portal in eine andere Welt...",
-        voicePrompt: "Du hast Verwunschene Welten gewählt – möchtest du noch mehr erzählen? 🎤",
-      },
+      { key: "wizards" },
+      { key: "dragons" },
+      { key: "enchanted" },
     ],
   },
 ];
@@ -579,6 +537,7 @@ const OnboardingKindPage = () => {
             {/* Alter – dropdown */}
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
+              <p className="text-xs invisible" aria-hidden="true">&nbsp;</p>
               <div className="relative">
                 <button
                   type="button"
@@ -592,7 +551,7 @@ const OnboardingKindPage = () => {
                     color: selectedAge ? "rgba(45,24,16,0.9)" : "rgba(45,24,16,0.45)",
                   }}
                 >
-                  <span>{selectedAge ? `${selectedAge} Jahre` : t.onboardingAge}</span>
+                  <span>{selectedAge ? `${selectedAge} ${t.years}` : t.onboardingAge}</span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </button>
                 <div
@@ -611,7 +570,7 @@ const OnboardingKindPage = () => {
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
                       style={{ color: "rgba(45,24,16,0.85)" }}
                     >
-                      <span className="font-medium">{age} Jahre</span>
+                      <span className="font-medium">{age} {t.years}</span>
                       {age === selectedAge && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
                     </button>
                   ))}
@@ -725,7 +684,7 @@ const OnboardingKindPage = () => {
                 >
                   <span className="text-5xl">{cat.emoji}</span>
                   <span className="font-bold text-base" style={{ color: isSelected ? "#E8863A" : "rgba(45,24,16,0.85)" }}>
-                    {cat.label}
+                    {t[cat.labelKey]}
                   </span>
                   {isSelected && (
                     <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ background: "#E8863A" }}>

@@ -468,6 +468,8 @@ const hu: Translations = {
   adminImageGenConfigDesc: 'Imagen modellek, költségek és limitek kezelése',
 
   stickerStoriesCollectedFallback: '{count} történet gyűjtve! Így tovább! 🌟',
+  onboardingCategoryAdventure: 'Kaland',
+  onboardingCategoryFantasy: 'Fantázia',
 };
 
 export default hu;

@@ -468,6 +468,8 @@ const fr: Translations = {
   adminImageGenConfigDesc: 'Gérer les modèles Imagen, coûts et limites',
 
   stickerStoriesCollectedFallback: '{count} histoires collectées ! Continue !',
+  onboardingCategoryAdventure: 'Aventure',
+  onboardingCategoryFantasy: 'Fantaisie',
 };
 
 export default fr;

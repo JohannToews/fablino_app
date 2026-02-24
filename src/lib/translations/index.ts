@@ -472,6 +472,8 @@ export interface Translations {
   onboardingSelectStory: string;
   onboardingProfileSaveError: string;
   onboardingLetsGo: string;
+  onboardingCategoryAdventure: string;
+  onboardingCategoryFantasy: string;
   onboardingStoryLang: string;
   onboardingStoryLangHint: string;
   onboardingNotSupported: string;
