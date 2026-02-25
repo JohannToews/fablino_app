@@ -69,6 +69,8 @@ const AdminPage = () => {
     { value: 'sl', label: 'Slovenščina', flag: '🇸🇮' },
     { value: 'pt', label: 'Português', flag: '🇵🇹' },
     { value: 'sk', label: 'Slovenčina', flag: '🇸🇰' },
+    { value: 'uk', label: 'Українська', flag: '🇺🇦' },
+    { value: 'ru', label: 'Русский', flag: '🇷🇺' },
   ];
 
   const handleAdminLanguageChange = async (newLang: Language) => {

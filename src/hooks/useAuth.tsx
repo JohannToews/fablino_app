@@ -10,9 +10,9 @@ export interface UserSettings {
   id: string;
   username: string;
   displayName: string;
-  adminLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs';
-  appLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs';
-  textLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs';
+  adminLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs' | 'uk' | 'ru';
+  appLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs' | 'uk' | 'ru';
+  textLanguage: 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs' | 'uk' | 'ru';
   systemPrompt: string | null;
   role: UserRole;
   email?: string | null;
