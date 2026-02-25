@@ -424,8 +424,7 @@ const SpecialEffectsScreen = ({
   fablinoMessage,
 }: SpecialEffectsScreenProps) => {
   const { kidAppLanguage, kidReadingLanguage, selectedProfile } = useKidProfile();
-  const t = translations[kidAppLanguage] || translations.de;
-  const st = settingsTranslations[kidAppLanguage] || settingsTranslations.de;
+  const [storyLanguage, setStoryLanguage] = useState<string>(defaultLanguage);
 
   const { options: lengthOptions, defaultLength, loading: lengthLoading } = useStoryLengthOptions(selectedProfile?.age);
 
@@ -444,7 +443,16 @@ const SpecialEffectsScreen = ({
   }
   const [isSeries, setIsSeries] = useState(false);
   const [seriesMode, setSeriesMode] = useState<'normal' | 'interactive'>('normal');
-  const [storyLanguage, setStoryLanguage] = useState<string>(defaultLanguage);
+
+  // Prefer kid's profile language (uk/ru) so we never show German when school language is Russian/Ukrainian; else use story dropdown language
+  const uiLang =
+    kidAppLanguage === 'uk' || kidAppLanguage === 'ru'
+      ? kidAppLanguage
+      : storyLanguage && translations[storyLanguage] && settingsTranslations[storyLanguage]
+        ? storyLanguage
+        : kidAppLanguage;
+  const t = translations[uiLang] || translations.de;
+  const st = settingsTranslations[uiLang] || settingsTranslations.de;
 
   const toggleAttribute = (attr: SpecialAttribute) => {
     if (attr === "normal") {
@@ -488,7 +496,7 @@ const SpecialEffectsScreen = ({
   const lengthItems = lengthOptions.length > 0
     ? lengthOptions.map((opt) => ({
         key: opt.story_length as StoryLength,
-        label: (opt.length_labels as Record<string, string>)?.[kidAppLanguage]
+        label: (opt.length_labels as Record<string, string>)?.[uiLang]
           || (opt.length_labels as Record<string, string>)?.de
           || opt.story_length,
       }))
@@ -590,7 +598,7 @@ const SpecialEffectsScreen = ({
                   className="w-full flex items-center justify-between min-h-[48px] py-2 px-3 text-base font-medium rounded-xl bg-orange-50/60 hover:bg-white/60 transition-colors"
                 >
                   <span>
-                    {LANGUAGE_FLAGS[storyLanguage] || ''} {LANGUAGE_LABELS[storyLanguage]?.[kidAppLanguage] || storyLanguage.toUpperCase()}
+                    {LANGUAGE_FLAGS[storyLanguage] || ''} {LANGUAGE_LABELS[storyLanguage]?.[uiLang] || storyLanguage.toUpperCase()}
                   </span>
                   <ChevronDown className={cn("h-4 w-4 text-[#92400E] transition-transform", langDropdownOpen && "rotate-180")} />
                 </button>
@@ -605,7 +613,7 @@ const SpecialEffectsScreen = ({
                           storyLanguage === lang ? "bg-orange-50 text-[#E8863A]" : "text-[#2D1810]"
                         )}
                       >
-                        {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[kidAppLanguage] || lang.toUpperCase()}
+                        {LANGUAGE_FLAGS[lang] || ''} {LANGUAGE_LABELS[lang]?.[uiLang] || lang.toUpperCase()}
                       </button>
                     ))}
                   </div>

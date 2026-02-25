@@ -73,8 +73,9 @@ const IMAGE_STYLES = [
   { id: 'anime', value: 'anime manga illustration style' },
 ];
 
+const PROFILE_LANGUAGES: Language[] = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl', 'pt', 'sk', 'uk', 'ru'];
+
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
-  const t = useTranslations(language);
   const { refreshProfiles: refreshGlobalProfiles, setSelectedProfileId: setGlobalSelectedProfileId, selectedProfileId: globalSelectedProfileId } = useKidProfile();
   const [profiles, setProfiles] = useState<KidProfile[]>([]);
   const [selectedProfileIndex, setSelectedProfileIndex] = useState<number>(0);
@@ -103,6 +104,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     gender: '',
     age: undefined,
   };
+
+  // Use kid's school/app language for labels when valid, so e.g. Russian profile shows "Основы", "Имя" etc.
+  const sectionLanguage: Language = (currentProfile?.school_system && PROFILE_LANGUAGES.includes(currentProfile.school_system as Language)) ? currentProfile.school_system as Language : language;
+  const t = useTranslations(sectionLanguage);
 
   const loadCharacters = useCallback(async (profileId?: string) => {
     const id = profileId || currentProfile?.id;
