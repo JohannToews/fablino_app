@@ -1354,7 +1354,7 @@ const ReadingPage = () => {
       // Use story's text_language for both word context and explanation language
       const storyLang = story?.text_language || 'fr';
       const { data, error } = await supabase.functions.invoke("explain-word", {
-        body: { word: text, language: storyLang, explanationLanguage: storyLang },
+        body: { word: text, language: storyLang, explanationLanguage: storyLang, kidProfileId: selectedProfile?.id, storyId: story?.id },
       });
 
       if (error) {

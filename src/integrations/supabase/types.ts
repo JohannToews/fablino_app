@@ -2154,6 +2154,51 @@ export type Database = {
           },
         ]
       }
+      word_explanation_log: {
+        Row: {
+          created_at: string
+          explanation_language: string
+          id: string
+          kid_profile_id: string
+          story_id: string | null
+          word: string
+          word_language: string
+        }
+        Insert: {
+          created_at?: string
+          explanation_language: string
+          id?: string
+          kid_profile_id: string
+          story_id?: string | null
+          word: string
+          word_language: string
+        }
+        Update: {
+          created_at?: string
+          explanation_language?: string
+          id?: string
+          kid_profile_id?: string
+          story_id?: string | null
+          word?: string
+          word_language?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "word_explanation_log_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_explanation_log_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
