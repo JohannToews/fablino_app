@@ -254,21 +254,9 @@ const resultsT: Record<string, Record<string, string>> = {
     almostThere: "Quase, {name}! 🎉 Só mais {n} estrelas!",
     keepGoing: "Muito bem, {name}! Mais {n} estrelas para {level}. Continua a ler! 🧡",
   },
-  sk: {
-    currentLevel: "Aktuálna úroveň",
-    highestLevel: "Najvyššia úroveň",
-    starsRemaining: "Ešte {n} hviezdičiek do {emoji} {name}",
-    highestReached: "🏆 Dosiahol/a si najvyššiu úroveň!",
-    roadmapTitle: "🗺️ Tvoja cesta na vrchol",
-    badgesTitle: "🏷️ Nálepky a odznaky",
-    allCollected: "🎉 Všetky nálepky zozbierané!",
-    firstStory: "Prečítaj príbeh a získaj svoju prvú nálepku!",
-    welcome: "Vitaj, {name}! Prečítaj si svoj prvý príbeh! 📖",
-    meister: "Wow, {name}! Si {level}! 👑",
-    streakMsg: "{streak} dní v rade, {name}! 🔥 Ešte {n} hviezdičiek do {level}!",
-    almostThere: "Skoro, {name}! 🎉 Len {n} hviezdičiek!",
-    keepGoing: "Výborne, {name}! Ešte {n} hviezdičiek do {level}. Čítaj ďalej! 🧡",
-  },
+  sk: { currentLevel: "Aktuálna úroveň", highestLevel: "Najvyššia úroveň", starsRemaining: "Ešte {n} hviezdičiek do {emoji} {name}", highestReached: "🏆 Dosiahol/a si najvyššiu úroveň!", roadmapTitle: "🗺️ Tvoja cesta na vrchol", badgesTitle: "🏷️ Nálepky a odznaky", allCollected: "🎉 Všetky nálepky zozbierané!", firstStory: "Prečítaj príbeh a získaj svoju prvú nálepku!", welcome: "Vitaj, {name}! Prečítaj si svoj prvý príbeh! 📖", meister: "Wow, {name}! Si {level}! 👑", streakMsg: "{streak} dní v rade, {name}! 🔥 Ešte {n} hviezdičiek do {level}!", almostThere: "Skoro, {name}! 🎉 Len {n} hviezdičiek!", keepGoing: "Výborne, {name}! Ešte {n} hviezdičiek do {level}. Čítaj ďalej! 🧡" },
+  uk: { currentLevel: "Поточний рівень", highestLevel: "Найвищий рівень", starsRemaining: "Ще {n} зірок до {emoji} {name}", highestReached: "🏆 Ти досяг найвищого рівня!", roadmapTitle: "🗺️ Твій шлях до вершини", badgesTitle: "🏷️ Наклейки та значки", allCollected: "🎉 Усі наклейки зібрано!", firstStory: "Прочитай історію, щоб отримати першу наклейку!", welcome: "Ласкаво просимо, {name}! Прочитай свою першу історію! 📖", meister: "Ого, {name}! Ти {level}! 👑", streakMsg: "{streak} днів поспіль, {name}! 🔥 Ще {n} зірок до {level}!", almostThere: "Майже, {name}! 🎉 Лише {n} зірок!", keepGoing: "Молодець, {name}! Ще {n} зірок до {level}. Читай далі! 🧡" },
+  ru: { currentLevel: "Текущий уровень", highestLevel: "Высший уровень", starsRemaining: "Ещё {n} звёзд до {emoji} {name}", highestReached: "🏆 Ты достиг высшего уровня!", roadmapTitle: "🗺️ Твой путь к вершине", badgesTitle: "🏷️ Наклейки и значки", allCollected: "🎉 Все наклейки собраны!", firstStory: "Прочитай историю, чтобы получить первую наклейку!", welcome: "Добро пожаловать, {name}! Прочитай свою первую историю! 📖", meister: "Ого, {name}! Ты {level}! 👑", streakMsg: "{streak} дней подряд, {name}! 🔥 Ещё {n} звёзд до {level}!", almostThere: "Почти, {name}! 🎉 Только {n} звёзд!", keepGoing: "Молодец, {name}! Ещё {n} звёзд до {level}. Читай дальше! 🧡" },
 };
 
 function getT(lang: Lang) {
@@ -727,17 +715,9 @@ const hintTemplates: Record<string, Record<string, string>> = {
     languages_read: "Lê histórias em {value} línguas",
     generic: "Continua!",
   },
-  sk: {
-    total_stars: "Zozbieraj {value} hviezdičiek",
-    weekly_stories: "Prečítaj {value} príbehov za týždeň",
-    streak_days: "Čítaj {value} dní v rade",
-    total_stories_read: "Prečítaj {value} príbehov",
-    consecutive_perfect_quiz: "Dosiahni {value} perfektných kvízov v rade",
-    total_perfect_quiz: "Dosiahni {value} perfektných kvízov",
-    series_completed: "Dokonči sériu",
-    languages_read: "Čítaj príbehy v {value} jazykoch",
-    generic: "Tak ďalej!",
-  },
+  sk: { total_stars: "Zozbieraj {value} hviezdičiek", weekly_stories: "Prečítaj {value} príbehov za týždeň", streak_days: "Čítaj {value} dní v rade", total_stories_read: "Prečítaj {value} príbehov", consecutive_perfect_quiz: "Dosiahni {value} perfektných kvízov v rade", total_perfect_quiz: "Dosiahni {value} perfektných kvízov", series_completed: "Dokonči sériu", languages_read: "Čítaj príbehy v {value} jazykoch", generic: "Tak ďalej!" },
+  uk: { total_stars: "Збери {value} зірок", weekly_stories: "Прочитай {value} історій за тиждень", streak_days: "Читай {value} днів поспіль", total_stories_read: "Прочитай {value} історій", consecutive_perfect_quiz: "Досягни {value} ідеальних квізів поспіль", total_perfect_quiz: "Досягни {value} ідеальних квізів", series_completed: "Заверши серію", languages_read: "Читай історії {value} мовами", generic: "Так тримай!" },
+  ru: { total_stars: "Собери {value} звёзд", weekly_stories: "Прочитай {value} историй за неделю", streak_days: "Читай {value} дней подряд", total_stories_read: "Прочитай {value} историй", consecutive_perfect_quiz: "Сделай {value} идеальных квизов подряд", total_perfect_quiz: "Сделай {value} идеальных квизов", series_completed: "Заверши серию", languages_read: "Читай истории на {value} языках", generic: "Так держать!" },
 };
 
 function getConditionHint(conditionType: string, conditionValue: number, lang: string): string {
@@ -749,10 +729,10 @@ function getConditionHint(conditionType: string, conditionValue: number, lang: s
 // ── Category config ──
 
 const BADGE_CATEGORIES = [
-  { key: "milestone", emoji: "⭐", de: "Meilensteine", fr: "Étapes", en: "Milestones", es: "Hitos", nl: "Mijlpalen", it: "Traguardi", bs: "Prekretnice", tr: "Kilometre Taşları", bg: "Етапи", ro: "Etape", pl: "Kamienie milowe", lt: "Etapai", hu: "Mérföldkövek", ca: "Fites", sl: "Mejniki", pt: "Marcos", sk: "Míľniky" },
-  { key: "weekly",    emoji: "🔥", de: "Wochen-Badges", fr: "Badges semaine", en: "Weekly Badges", es: "Badges semanales", nl: "Week-badges", it: "Badge settimanali", bs: "Sedmični bedževi", tr: "Haftalık Rozetler", bg: "Седмични значки", ro: "Insigne săptămânale", pl: "Tygodniowe odznaki", lt: "Savaitiniai ženkliukai", hu: "Heti jelvények", ca: "Insígnies setmanals", sl: "Tedenske značke", pt: "Crachás semanais", sk: "Týždenné odznaky" },
-  { key: "streak",    emoji: "🔗", de: "Serien-Badges", fr: "Badges série", en: "Streak Badges", es: "Badges de racha", nl: "Reeks-badges", it: "Badge serie", bs: "Bedževi serija", tr: "Seri Rozetleri", bg: "Серийни значки", ro: "Insigne serie", pl: "Odznaki serii", lt: "Serijos ženkliukai", hu: "Sorozat jelvények", ca: "Insígnies de sèrie", sl: "Serijske značke", pt: "Crachás de série", sk: "Odznaky série" },
-  { key: "special",   emoji: "🎯", de: "Spezial-Badges", fr: "Badges spéciaux", en: "Special Badges", es: "Badges especiales", nl: "Speciale badges", it: "Badge speciali", bs: "Posebni bedževi", tr: "Özel Rozetler", bg: "Специални значки", ro: "Insigne speciale", pl: "Specjalne odznaki", lt: "Specialūs ženkliukai", hu: "Különleges jelvények", ca: "Insígnies especials", sl: "Posebne značke", pt: "Crachás especiais", sk: "Špeciálne odznaky" },
+  { key: "milestone", emoji: "⭐", de: "Meilensteine", fr: "Étapes", en: "Milestones", es: "Hitos", nl: "Mijlpalen", it: "Traguardi", bs: "Prekretnice", tr: "Kilometre Taşları", bg: "Етапи", ro: "Etape", pl: "Kamienie milowe", lt: "Etapai", hu: "Mérföldkövek", ca: "Fites", sl: "Mejniki", pt: "Marcos", sk: "Míľniky", uk: "Віхи", ru: "Вехи" },
+  { key: "weekly",    emoji: "🔥", de: "Wochen-Badges", fr: "Badges semaine", en: "Weekly Badges", es: "Badges semanales", nl: "Week-badges", it: "Badge settimanali", bs: "Sedmični bedževi", tr: "Haftalık Rozetler", bg: "Седмични значки", ro: "Insigne săptămânale", pl: "Tygodniowe odznaki", lt: "Savaitiniai ženkliukai", hu: "Heti jelvények", ca: "Insígnies setmanals", sl: "Tedenske značke", pt: "Crachás semanais", sk: "Týždenné odznaky", uk: "Тижневі значки", ru: "Недельные значки" },
+  { key: "streak",    emoji: "🔗", de: "Serien-Badges", fr: "Badges série", en: "Streak Badges", es: "Badges de racha", nl: "Reeks-badges", it: "Badge serie", bs: "Bedževi serija", tr: "Seri Rozetleri", bg: "Серийни значки", ro: "Insigne serie", pl: "Odznaki serii", lt: "Serijos ženkliukai", hu: "Sorozat jelvények", ca: "Insígnies de sèrie", sl: "Serijske značke", pt: "Crachás de série", sk: "Odznaky série", uk: "Значки серій", ru: "Значки серий" },
+  { key: "special",   emoji: "🎯", de: "Spezial-Badges", fr: "Badges spéciaux", en: "Special Badges", es: "Badges especiales", nl: "Speciale badges", it: "Badge speciali", bs: "Posebni bedževi", tr: "Özel Rozetler", bg: "Специални значки", ro: "Insigne speciale", pl: "Specjalne odznaki", lt: "Specialūs ženkliukai", hu: "Különleges jelvények", ca: "Insígnies especials", sl: "Posebne značke", pt: "Crachás especiais", sk: "Špeciálne odznaky", uk: "Спеціальні значки", ru: "Специальные значки" },
 ];
 
 const BADGE_CATEGORY_STYLES: Record<string, { bg: string; border: string; headerBg: string }> = {

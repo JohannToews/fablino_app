@@ -37,6 +37,18 @@ const dailyLimitLabels: Record<string, { remaining: string; limitReached: string
   nl: { remaining: 'Nog {remaining} van {total} verhalen vandaag over', limitReached: 'Daglimiet bereikt ({n}/{n})' },
   it: { remaining: 'Ancora {remaining} di {total} storie oggi', limitReached: 'Limite giornaliero raggiunto ({n}/{n})' },
   bs: { remaining: 'Još {remaining} od {total} priča danas', limitReached: 'Dnevni limit dostignut ({n}/{n})' },
+  tr: { remaining: 'Bugün {remaining}/{total} hikâye kaldı', limitReached: 'Günlük limit doldu ({n}/{n})' },
+  bg: { remaining: 'Още {remaining} от {total} истории днес', limitReached: 'Дневният лимит е достигнат ({n}/{n})' },
+  ro: { remaining: 'Încă {remaining} din {total} povești azi', limitReached: 'Limita zilnică atinsă ({n}/{n})' },
+  pl: { remaining: 'Jeszcze {remaining} z {total} historii dziś', limitReached: 'Dzienny limit osiągnięty ({n}/{n})' },
+  lt: { remaining: 'Dar {remaining} iš {total} istorijų šiandien', limitReached: 'Dienos limitas pasiektas ({n}/{n})' },
+  hu: { remaining: 'Még {remaining}/{total} történet ma', limitReached: 'Napi limit elérve ({n}/{n})' },
+  ca: { remaining: 'Encara {remaining} de {total} històries avui', limitReached: 'Límit diari assolit ({n}/{n})' },
+  sl: { remaining: 'Še {remaining} od {total} zgodb danes', limitReached: 'Dnevna omejitev dosežena ({n}/{n})' },
+  pt: { remaining: 'Ainda {remaining} de {total} histórias hoje', limitReached: 'Limite diário atingido ({n}/{n})' },
+  sk: { remaining: 'Ešte {remaining} z {total} príbehov dnes', limitReached: 'Denný limit dosiahnutý ({n}/{n})' },
+  uk: { remaining: 'Ще {remaining} з {total} історій сьогодні', limitReached: 'Денний ліміт досягнуто ({n}/{n})' },
+  ru: { remaining: 'Ещё {remaining} из {total} историй сегодня', limitReached: 'Дневной лимит достигнут ({n}/{n})' },
 };
 
 // Screen states for the wizard

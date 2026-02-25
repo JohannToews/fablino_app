@@ -60,14 +60,19 @@ const settingsLabels: Record<string, {
     large: "Grande",
     syllables: "Sillabe",
   },
-  bs: {
-    fontSize: "Veličina fonta",
-    lineSpacing: "Razmak redova",
-    small: "Malo",
-    medium: "Srednje",
-    large: "Veliko",
-    syllables: "Slogovi",
-  },
+  bs: { fontSize: "Veličina fonta", lineSpacing: "Razmak redova", small: "Malo", medium: "Srednje", large: "Veliko", syllables: "Slogovi" },
+  tr: { fontSize: "Yazı boyutu", lineSpacing: "Satır aralığı", small: "Küçük", medium: "Orta", large: "Büyük", syllables: "Heceler" },
+  bg: { fontSize: "Размер на шрифта", lineSpacing: "Разстояние между редове", small: "Малък", medium: "Среден", large: "Голям", syllables: "Срички" },
+  ro: { fontSize: "Dimensiune font", lineSpacing: "Spațiere rânduri", small: "Mic", medium: "Mediu", large: "Mare", syllables: "Silabe" },
+  pl: { fontSize: "Rozmiar czcionki", lineSpacing: "Odstęp między wierszami", small: "Mały", medium: "Średni", large: "Duży", syllables: "Sylaby" },
+  lt: { fontSize: "Šrifto dydis", lineSpacing: "Eilučių tarpas", small: "Mažas", medium: "Vidutinis", large: "Didelis", syllables: "Skiemenys" },
+  hu: { fontSize: "Betűméret", lineSpacing: "Sorköz", small: "Kicsi", medium: "Közepes", large: "Nagy", syllables: "Szótagok" },
+  ca: { fontSize: "Mida de lletra", lineSpacing: "Interlineat", small: "Petit", medium: "Mitjà", large: "Gran", syllables: "Síl·labes" },
+  sl: { fontSize: "Velikost pisave", lineSpacing: "Razmik vrstic", small: "Majhno", medium: "Srednje", large: "Veliko", syllables: "Zlogi" },
+  pt: { fontSize: "Tamanho da letra", lineSpacing: "Espaçamento", small: "Pequeno", medium: "Médio", large: "Grande", syllables: "Sílabas" },
+  sk: { fontSize: "Veľkosť písma", lineSpacing: "Riadkovanie", small: "Malé", medium: "Stredné", large: "Veľké", syllables: "Slabiky" },
+  uk: { fontSize: "Розмір шрифту", lineSpacing: "Міжрядковий інтервал", small: "Малий", medium: "Середній", large: "Великий", syllables: "Склади" },
+  ru: { fontSize: "Размер шрифта", lineSpacing: "Межстрочный интервал", small: "Маленький", medium: "Средний", large: "Большой", syllables: "Слоги" },
 };
 
 export type FontSizeLevel = 1 | 2 | 3 | 4;
