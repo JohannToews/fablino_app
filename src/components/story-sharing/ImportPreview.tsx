@@ -49,6 +49,8 @@
   ro: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
   sl: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
   tr: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  ru: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
+  uk: { addToLibrary: "Add to my library", adding: "Adding...", cancel: "Cancel", preview: "Preview" },
  };
  
  export default function ImportPreview({

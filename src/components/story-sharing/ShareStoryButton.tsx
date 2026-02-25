@@ -41,6 +41,8 @@
   ro: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
   sl: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
   tr: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  ru: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
+  uk: { share: "Share", generating: "Creating link...", error: "Error creating share link" },
  };
 
  export default function ShareStoryButton({ storyId, language }: ShareStoryButtonProps) {

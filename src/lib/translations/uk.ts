@@ -465,6 +465,11 @@ const uk: Translations = {
   adminImageGenConfigDesc: 'Керування моделями Imagen, вартістю та лімітами',
 
   stickerStoriesCollectedFallback: 'Зібрано {count} історій! Так тримати!',
+  onboardingDisplayName: 'Відображуване ім\'я',
+  onboardingDisplayNameHint: 'Ваше ім\'я, як воно відображається в додатку.',
+  onboardingDisplayNamePlaceholder: 'напр. Мама, Тато, Ліза…',
+  onboardingCategoryAdventure: 'Пригоди',
+  onboardingCategoryFantasy: 'Фентезі',
 };
 
 export default uk;
