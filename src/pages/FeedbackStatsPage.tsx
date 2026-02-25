@@ -590,13 +590,15 @@ const toMonBasedDay = (d: Date) => {
 interface UsageStatsProps {
   stories: StoryStats[];
   userProgressData: Array<{ kid_profile_id: string; total_stars: number | null; total_stories_read: number | null }>;
+  wordExplanationCounts: Map<string, number>;
+  markedWordsCounts: Map<string, number>;
   usageStartDate: Date;
   setUsageStartDate: (d: Date) => void;
 }
 
-const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsageStartDate }: UsageStatsProps) => {
+const UsageStatsContent = ({ stories, userProgressData, wordExplanationCounts, markedWordsCounts, usageStartDate, setUsageStartDate }: UsageStatsProps) => {
   // Sort state for user-kid table
-  type UserKidSortCol = 'username' | 'kidName' | 'generated' | 'read' | 'stars';
+  type UserKidSortCol = 'username' | 'kidName' | 'generated' | 'read' | 'stars' | 'wordsRequested' | 'wordsSaved';
   const [ukSortCol, setUkSortCol] = useState<UserKidSortCol>('generated');
   const [ukSortDir, setUkSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -614,12 +616,18 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
   const [pendingDate, setPendingDate] = useState<Date>(usageStartDate);
 
   const userKidStats = useMemo(() => {
-    const map = new Map<string, { username: string; kidName: string; kidProfileId: string | null; generated: number; read: number; stars: number }>();
+    const map = new Map<string, { username: string; kidName: string; kidProfileId: string | null; generated: number; read: number; stars: number; wordsRequested: number; wordsSaved: number }>();
     stories.forEach(s => {
       const key = `${s.username || '-'}__${s.kid_name || '-'}`;
       if (!map.has(key)) {
         const progress = userProgressData.find(p => p.kid_profile_id === s.kid_profile_id);
-        map.set(key, { username: s.username || '-', kidName: s.kid_name || '-', kidProfileId: s.kid_profile_id, generated: 0, read: 0, stars: progress?.total_stars || 0 });
+        const kidPid = s.kid_profile_id || '';
+        map.set(key, {
+          username: s.username || '-', kidName: s.kid_name || '-', kidProfileId: s.kid_profile_id,
+          generated: 0, read: 0, stars: progress?.total_stars || 0,
+          wordsRequested: wordExplanationCounts.get(kidPid) || 0,
+          wordsSaved: markedWordsCounts.get(kidPid) || 0,
+        });
       }
       const entry = map.get(key)!;
       entry.generated++;
@@ -633,7 +641,7 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
       return ukSortDir === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
     });
     return arr;
-  }, [stories, userProgressData, ukSortCol, ukSortDir]);
+  }, [stories, userProgressData, wordExplanationCounts, markedWordsCounts, ukSortCol, ukSortDir]);
 
   const weekdayStats = useMemo(() => {
     const startDay = startOfDay(usageStartDate);
@@ -692,6 +700,12 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
                   <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('stars')}>
                     <div className="flex items-center justify-end">⭐ Sterne<UkSortIcon column="stars" /></div>
                   </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('wordsRequested')}>
+                    <div className="flex items-center justify-end">📖 Wörter angefragt<UkSortIcon column="wordsRequested" /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right" onClick={() => handleUkSort('wordsSaved')}>
+                    <div className="flex items-center justify-end">💾 Wörter gespeichert<UkSortIcon column="wordsSaved" /></div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -702,10 +716,12 @@ const UsageStatsContent = ({ stories, userProgressData, usageStartDate, setUsage
                     <TableCell className="text-right font-mono">{row.generated}</TableCell>
                     <TableCell className="text-right font-mono">{row.read}</TableCell>
                     <TableCell className="text-right font-mono">{row.stars}</TableCell>
+                    <TableCell className="text-right font-mono">{row.wordsRequested}</TableCell>
+                    <TableCell className="text-right font-mono">{row.wordsSaved}</TableCell>
                   </TableRow>
                 ))}
                 {userKidStats.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Keine Daten</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Keine Daten</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -892,6 +908,8 @@ const FeedbackStatsPage = () => {
     total_stars: number | null;
     total_stories_read: number | null;
   }>>([]);
+  const [wordExplanationCounts, setWordExplanationCounts] = useState<Map<string, number>>(new Map());
+  const [markedWordsCounts, setMarkedWordsCounts] = useState<Map<string, number>>(new Map());
   const [totalKidProfiles, setTotalKidProfiles] = useState(0);
   
   const adminLang = (user?.adminLanguage || 'de') as Language;
@@ -1098,6 +1116,28 @@ const FeedbackStatsPage = () => {
       .from("user_progress")
       .select("kid_profile_id, total_stars, total_stories_read");
     setUserProgressData(progressData || []);
+
+    // Load word explanation counts per kid
+    const { data: wordExplData } = await supabase
+      .from("word_explanation_log")
+      .select("kid_profile_id");
+    const weMap = new Map<string, number>();
+    wordExplData?.forEach((w: any) => {
+      weMap.set(w.kid_profile_id, (weMap.get(w.kid_profile_id) || 0) + 1);
+    });
+    setWordExplanationCounts(weMap);
+
+    // Aggregate marked words per kid_profile_id (via story)
+    const storyToKid = new Map<string, string>();
+    storiesData?.forEach((s: any) => {
+      if (s.kid_profile_id) storyToKid.set(s.id, s.kid_profile_id);
+    });
+    const mwMap = new Map<string, number>();
+    markedWordsData?.forEach((w: any) => {
+      const kidId = storyToKid.get(w.story_id);
+      if (kidId) mwMap.set(kidId, (mwMap.get(kidId) || 0) + 1);
+    });
+    setMarkedWordsCounts(mwMap);
 
     // Count total kid profiles
     const { count: kidCount } = await supabase
@@ -2251,6 +2291,8 @@ const FeedbackStatsPage = () => {
             <UsageStatsContent
               stories={stories}
               userProgressData={userProgressData}
+              wordExplanationCounts={wordExplanationCounts}
+              markedWordsCounts={markedWordsCounts}
               usageStartDate={usageStartDate}
               setUsageStartDate={setUsageStartDate}
             />
