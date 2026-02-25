@@ -77,6 +77,8 @@ const translations: Record<string, {
   hu: { header: "Melyik képstílus tetszik? 🎨", recommended: "★ Ajánlott", loading: "Stílusok betöltése..." },
   ca: { header: "Quin estil d'imatges t'agrada? 🎨", recommended: "★ Recomanat", loading: "Carregant estils..." },
   sl: { header: "Kateri slog slik ti je všeč? 🎨", recommended: "★ Priporočeno", loading: "Nalaganje stilov..." },
+  uk: { header: "Який стиль малюнків тобі подобається? 🎨", recommended: "★ Рекомендовано", loading: "Завантаження стилів..." },
+  ru: { header: "Какой стиль картинок тебе нравится? 🎨", recommended: "★ Рекомендовано", loading: "Загрузка стилей..." },
 };
 
 const DEFAULT_STYLE_KEY = 'storybook_soft';
@@ -128,7 +130,7 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
         const fallbackStyle: ImageStyle = {
           id: 'default-fallback',
           style_key: DEFAULT_STYLE_KEY,
-          labels: { de: 'Standardstil', en: 'Default style', fr: 'Style par défaut' },
+          labels: { de: 'Standardstil', en: 'Default style', fr: 'Style par défaut', uk: 'Стандартний стиль', ru: 'Стандартный стиль' },
           description: {},
           preview_image_url: null,
           age_groups: [],

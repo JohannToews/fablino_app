@@ -314,6 +314,44 @@ const translations: Record<string, SpecialEffectsTranslations> = {
     specialEffectsToggle: "Posebni učinki",
     noEffects: "Brez posebnih učinkov",
   },
+  uk: {
+    header: "Спецефекти та деталі",
+    effectsHeader: "Особливі здібності?",
+    effectsHint: "Обери скільки хочеш",
+    superpowers: "Суперсили",
+    magic: "Чарівні сили",
+    heroesVillains: "Герої та лиходії",
+    transformations: "Перетворення",
+    talents: "Особливі таланти",
+    normal: "Ні, зовсім нормально",
+    descriptionHeader: "За бажанням: Побажання до історії?",
+    descriptionPlaceholder: "напр. «Історія про піратів на Місяці»",
+    continue: "Створити історію",
+    continueEpisode1: "Створити епізод 1",
+    seriesHint: "Ти починаєш серію з 5 епізодів.",
+    back: "Назад",
+    specialEffectsToggle: "Спецефекти",
+    noEffects: "Без спецефектів",
+  },
+  ru: {
+    header: "Спецэффекты и детали",
+    effectsHeader: "Особые способности?",
+    effectsHint: "Выбери сколько хочешь",
+    superpowers: "Суперсилы",
+    magic: "Волшебные силы",
+    heroesVillains: "Герои и злодеи",
+    transformations: "Превращения",
+    talents: "Особые таланты",
+    normal: "Нет, совсем обычный",
+    descriptionHeader: "По желанию: Пожелания к истории?",
+    descriptionPlaceholder: "напр. «История про пиратов на Луне»",
+    continue: "Создать историю",
+    continueEpisode1: "Создать эпизод 1",
+    seriesHint: "Ты начинаешь серию из 5 эпизодов.",
+    back: "Назад",
+    specialEffectsToggle: "Спецэффекты",
+    noEffects: "Без спецэффектов",
+  },
 };
 
 interface AttributeOption {
@@ -347,6 +385,8 @@ const settingsTranslations: Record<string, Record<string, string>> = {
   hu: { lengthLabel: 'Hossz', short: 'Rövid', medium: 'Közepes', long: 'Hosszú', extra_long: 'Extra hosszú', difficultyLabel: 'Nehézség', easy: 'Könnyű', hard: 'Nehéz', seriesLabel: 'Sorozat', seriesNo: 'Nem', seriesYes: 'Igen', languageLabel: 'Nyelv', seriesModeNormal: 'Normál sorozat', seriesModeNormalDesc: 'A történet epizódról epizódra halad', seriesModeInteractive: 'Együtt alkotás', seriesModeInteractiveDesc: 'A gyermeked eldönti hogyan folytatódik a történet' },
   ca: { lengthLabel: 'Llargada', short: 'Curta', medium: 'Mitjana', long: 'Llarga', extra_long: 'Extra llarga', difficultyLabel: 'Dificultat', easy: 'Fàcil', hard: 'Difícil', seriesLabel: 'Sèrie', seriesNo: 'No', seriesYes: 'Sí', languageLabel: 'Idioma', seriesModeNormal: 'Sèrie normal', seriesModeNormalDesc: "La història flueix d'episodi en episodi", seriesModeInteractive: 'Co-crear', seriesModeInteractiveDesc: 'El teu fill decideix com continua la història' },
   sl: { lengthLabel: 'Dolžina', short: 'Kratka', medium: 'Srednja', long: 'Dolga', extra_long: 'Zelo dolga', difficultyLabel: 'Težavnost', easy: 'Enostavno', hard: 'Težko', seriesLabel: 'Serija', seriesNo: 'Ne', seriesYes: 'Da', languageLabel: 'Jezik', seriesModeNormal: 'Normalna serija', seriesModeNormalDesc: 'Zgodba teče od epizode do epizode', seriesModeInteractive: 'Soustvarjanje', seriesModeInteractiveDesc: 'Otrok odloči kako se zgodba nadaljuje' },
+  uk: { lengthLabel: 'Довжина', short: 'Коротка', medium: 'Середня', long: 'Довга', extra_long: 'Дуже довга', difficultyLabel: 'Складність', easy: 'Легко', hard: 'Важко', seriesLabel: 'Серія', seriesNo: 'Ні', seriesYes: 'Так', languageLabel: 'Мова', seriesModeNormal: 'Звичайна серія', seriesModeNormalDesc: 'Історія йде від епізоду до епізоду', seriesModeInteractive: 'Разом створювати', seriesModeInteractiveDesc: 'Дитина вирішує, як продовжиться історія' },
+  ru: { lengthLabel: 'Длина', short: 'Короткая', medium: 'Средняя', long: 'Длинная', extra_long: 'Очень длинная', difficultyLabel: 'Сложность', easy: 'Легко', hard: 'Сложно', seriesLabel: 'Сериал', seriesNo: 'Нет', seriesYes: 'Да', languageLabel: 'Язык', seriesModeNormal: 'Обычный сериал', seriesModeNormalDesc: 'История течёт от эпизода к эпизоду', seriesModeInteractive: 'Создавать вместе', seriesModeInteractiveDesc: 'Ребёнок решает, как продолжится история' },
 };
 
 export interface StorySettingsFromEffects {

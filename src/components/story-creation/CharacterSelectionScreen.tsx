@@ -333,6 +333,8 @@ const CharacterSelectionScreen = ({
     nl: "Wie wordt de hoofdpersoon? 🌟",
     it: "Chi sarà il protagonista? 🌟",
     bs: "Ko će biti glavni lik? 🌟",
+    uk: "Хто буде головним героєм? 🌟",
+    ru: "Кто будет главным героем? 🌟",
   };
 
   // Modal title based on category

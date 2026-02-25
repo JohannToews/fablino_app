@@ -30,6 +30,7 @@ const progressSteps: ProgressStep[] = [
     id: "writing",
     icon: <Pencil className="w-5 h-5" />,
     label: {
+<<<<<<< HEAD
       de: "Geschichte wird geschrieben...", fr: "L'histoire est en cours d'écriture...",
       en: "Writing the story...", es: "Escribiendo la historia...",
       nl: "Het verhaal wordt geschreven...", it: "La storia è in fase di scrittura...",
@@ -38,6 +39,17 @@ const progressSteps: ProgressStep[] = [
       hu: "A történet íródik...", ca: "La història s'escriu...", sl: "Zgodba se piše...",
       pt: "A história está a ser escrita...", sk: "Príbeh sa píše...",
       uk: "Історія пишеться...", ru: "История пишется...",
+=======
+      de: "Geschichte wird geschrieben...",
+      fr: "L'histoire est en cours d'écriture...",
+      en: "Writing the story...",
+      es: "Escribiendo la historia...",
+      nl: "Het verhaal wordt geschreven...",
+      it: "La storia è in fase di scrittura...",
+      bs: "Priča se piše...",
+      uk: "Історію пишуть...",
+      ru: "Историю пишут...",
+>>>>>>> 1564590 (UK/RU translations: Story Wizard (SpecialEffects, ImageStyle, Character, StoryType, BranchDecision, GenerationProgress) + audit doc)
     },
     duration: 8000,
   },
@@ -45,6 +57,7 @@ const progressSteps: ProgressStep[] = [
     id: "checking",
     icon: <Search className="w-5 h-5" />,
     label: {
+<<<<<<< HEAD
       de: "Qualitätsprüfung läuft...", fr: "Vérification de la qualité...",
       en: "Quality check in progress...", es: "Control de calidad...",
       nl: "Kwaliteitscontrole...", it: "Controllo qualità...",
@@ -53,6 +66,17 @@ const progressSteps: ProgressStep[] = [
       hu: "Minőségellenőrzés...", ca: "Control de qualitat...", sl: "Preverjanje kakovosti...",
       pt: "Verificação de qualidade...", sk: "Kontrola kvality...",
       uk: "Перевірка якості...", ru: "Проверка качества...",
+=======
+      de: "Qualitätsprüfung läuft...",
+      fr: "Vérification de la qualité...",
+      en: "Quality check in progress...",
+      es: "Control de calidad...",
+      nl: "Kwaliteitscontrole...",
+      it: "Controllo qualità...",
+      bs: "Provjera kvaliteta...",
+      uk: "Перевірка якості...",
+      ru: "Проверка качества...",
+>>>>>>> 1564590 (UK/RU translations: Story Wizard (SpecialEffects, ImageStyle, Character, StoryType, BranchDecision, GenerationProgress) + audit doc)
     },
     duration: 6000,
   },
@@ -60,7 +84,7 @@ const progressSteps: ProgressStep[] = [
     id: "images",
     icon: <Palette className="w-5 h-5" />,
     label: {
-      de: "Bilder werden gemalt...", fr: "Les images sont en cours de création...",
+de: "Bilder werden gemalt...", fr: "Les images sont en cours de création...",
       en: "Creating images...", es: "Creando imágenes...",
       nl: "Afbeeldingen worden gemaakt...", it: "Creazione immagini...",
       bs: "Slike se crtaju...", tr: "Resimler çiziliyor...", bg: "Картините се рисуват...",
@@ -75,7 +99,7 @@ const progressSteps: ProgressStep[] = [
     id: "finishing",
     icon: <Sparkles className="w-5 h-5" />,
     label: {
-      de: "Fast fertig...", fr: "Presque terminé...",
+de: "Fast fertig...", fr: "Presque terminé...",
       en: "Almost done...", es: "Casi listo...",
       nl: "Bijna klaar...", it: "Quasi pronto...",
       bs: "Skoro gotovo...", tr: "Neredeyse bitti...", bg: "Почти готово...",
@@ -112,8 +136,13 @@ const DID_YOU_KNOW: Record<string, string> = {
   hu: "Tudtad, hogy",
   ca: "Sabies que",
   sl: "Ali si vedel/a, da",
+<<<<<<< HEAD
   uk: "Чи знаєш ти, що",
   ru: "А ты знал, что",
+=======
+  uk: "Ти знав/знала, що",
+  ru: "Ты знал/знала, что",
+>>>>>>> 1564590 (UK/RU translations: Story Wizard (SpecialEffects, ImageStyle, Character, StoryType, BranchDecision, GenerationProgress) + audit doc)
 };
 
 const SHOW_DURATION = 4500;

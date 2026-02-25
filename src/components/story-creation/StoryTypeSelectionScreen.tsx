@@ -204,7 +204,7 @@ const StoryTypeSelectionScreen = ({
     nl: "Welk avontuur wacht er? 🏰",
     it: "Quale avventura ti aspetta? 🏰",
     bs: "Koja te avantura čeka? 🏰",
-    tr: "Seni hangi macera bekliyor? 🏰",
+tr: "Seni hangi macera bekliyor? 🏰",
     bg: "Какво приключение те очаква? 🏰",
     ro: "Ce aventură te așteaptă? 🏰",
     pl: "Jaka przygoda czeka? 🏰",
