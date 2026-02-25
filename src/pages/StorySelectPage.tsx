@@ -359,17 +359,18 @@ const StorySelectPage = () => {
             </div>
           </div>
         ) : stories.length === 0 ? (
-          <div className="text-center py-20">
-            <BookOpen className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
-            <p className="text-xl text-muted-foreground mb-4">
-              {t.noStoriesForProfile}
-              {selectedProfile && ` ${appLang === 'fr' ? 'pour' : appLang === 'de' ? 'für' : 'for'} ${selectedProfile.name}`}
-            </p>
+          <div className="flex flex-col items-center justify-center py-12">
+            <FablinoPageHeader
+              mascotImage="/mascot/6_Onboarding.png"
+              message={t.emptyStateStories}
+              mascotSize="sm"
+              showBackButton={false}
+            />
             <Button
-              onClick={() => navigate("/admin")}
-              className="btn-primary-kid"
+              onClick={() => navigate("/create-story")}
+              className="mt-4 btn-primary-kid"
             >
-              {t.addStory}
+              {t.createStory}
             </Button>
           </div>
         ) : (

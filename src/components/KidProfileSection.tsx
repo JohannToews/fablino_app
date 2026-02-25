@@ -661,6 +661,11 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
   };
 
   const saveProfile = async () => {
+    const trimmedName = currentProfile.name.trim();
+    if (!trimmedName) {
+      toast.error(language === 'de' ? 'Bitte Namen eingeben.' : language === 'fr' ? 'Veuillez entrer un prénom.' : 'Please enter a name.');
+      return;
+    }
     setIsSaving(true);
     
     try {
@@ -691,7 +696,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
 
       const baseProfileData = {
         user_id: userId,
-        name: currentProfile.name,
+        name: trimmedName,
         school_system: currentProfile.school_system,
         school_class: currentProfile.school_class,
         hobbies: currentProfile.hobbies,
@@ -870,7 +875,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                     onChange={(e) => updateCurrentProfile({ name: e.target.value })}
                     placeholder={language === 'de' ? 'z.B. Emma' : language === 'es' ? 'ej. Emma' : language === 'nl' ? 'bijv. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
                     className="border-orange-200 focus:border-orange-400"
-                    maxLength={80}
+                    maxLength={50}
                   />
                 </div>
                 <div className="space-y-1.5">

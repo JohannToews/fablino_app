@@ -311,6 +311,12 @@ export interface Translations {
   stillLearning: string;
   nextStory: string;
 
+  // Empty states (Story Library, Vocabulary, Quiz, Results)
+  emptyStateStories: string;
+  emptyStateVocabulary: string;
+  emptyStateQuiz: string;
+  emptyStateResults: string;
+
   // Gamification UI
   stars: string;
   streak: string;

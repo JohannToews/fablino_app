@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import FablinoReaction from "@/components/FablinoReaction";
+import FablinoMascot from "@/components/FablinoMascot";
+import SpeechBubble from "@/components/SpeechBubble";
 import BadgeCelebrationModal, { EarnedBadge } from "@/components/BadgeCelebrationModal";
 import QuizCompletionResult from "@/components/QuizCompletionResult";
 import { getTranslations, Language } from "@/lib/translations";
@@ -703,18 +705,13 @@ const VocabularyQuizPage = () => {
     return (
       <div className="min-h-screen">
         <PageHeader title={t.title} backTo="/stories" />
-
-        <div className="container max-w-2xl p-8 text-center">
-          <div className="bg-card rounded-2xl p-12 shadow-card">
-            <Sparkles className="h-16 w-16 text-primary/40 mx-auto mb-6" />
-            <h2 className="text-2xl font-baloo mb-4">{t.noWordsTitle}</h2>
-            <p className="text-muted-foreground mb-8">
-              {t.noWordsText}
-            </p>
-            <Button
-              onClick={() => navigate("/stories")}
-              className="btn-primary-kid"
-            >
+        <div className="container max-w-2xl p-8">
+          <div className="flex flex-col items-center py-12">
+            <div className="flex items-center gap-3 mb-4">
+              <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" />
+              <SpeechBubble variant="hero">{tGlobal.emptyStateQuiz}</SpeechBubble>
+            </div>
+            <Button onClick={() => navigate("/stories")} className="btn-primary-kid mt-4">
               {t.toStories}
             </Button>
           </div>

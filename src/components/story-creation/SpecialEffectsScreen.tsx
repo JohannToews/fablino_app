@@ -475,14 +475,21 @@ const SpecialEffectsScreen = ({
             value={additionalDescription}
             onChange={(e) => setAdditionalDescription(e.target.value)}
             placeholder={t.descriptionPlaceholder}
+            maxLength={500}
             className="min-h-[48px] max-h-[120px] text-base resize-none rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-200/50 pr-14 bg-white"
             style={{ fontSize: '16px' }}
           />
+          {additionalDescription.length >= 400 && (
+            <p className="text-xs text-gray-400 text-right mt-0.5">{additionalDescription.length}/500</p>
+          )}
           <div className="absolute right-2 top-1/2 -translate-y-1/2">
             <VoiceRecordButton
               language={storyLanguage || kidReadingLanguage || 'de'}
               onTranscript={(text) => {
-                setAdditionalDescription((prev) => prev ? `${prev} ${text}` : text);
+                setAdditionalDescription((prev) => {
+                  const next = prev ? `${prev} ${text}` : text;
+                  return next.slice(0, 500);
+                });
               }}
               className="!gap-1"
             />

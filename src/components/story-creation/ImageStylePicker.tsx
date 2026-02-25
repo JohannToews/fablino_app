@@ -79,6 +79,8 @@ const translations: Record<string, {
   sl: { header: "Kateri slog slik ti je všeč? 🎨", recommended: "★ Priporočeno", loading: "Nalaganje stilov..." },
 };
 
+const DEFAULT_STYLE_KEY = 'storybook_soft';
+
 function getAgeGroup(age: number): string {
   if (age <= 7) return "6-7";
   if (age <= 9) return "8-9";
@@ -113,29 +115,45 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
         return;
       }
 
-      const filtered = (data || [])
-        .filter((s) => (s.age_groups as string[])?.includes(ageGroup))
-        .map((s) => ({
-          ...s,
-          labels: (s.labels ?? {}) as Record<string, string>,
-          description: (s.description ?? {}) as Record<string, string>,
-          age_groups: s.age_groups as string[],
-          default_for_ages: s.default_for_ages as string[] | null,
-        }));
+      const allActiveStyles = (data || []).map((s) => ({
+        ...s,
+        labels: (s.labels ?? {}) as Record<string, string>,
+        description: (s.description ?? {}) as Record<string, string>,
+        age_groups: s.age_groups as string[],
+        default_for_ages: s.default_for_ages as string[] | null,
+      }));
+      const filtered = allActiveStyles.filter((s) => (s.age_groups as string[])?.includes(ageGroup));
+      let stylesToShow = filtered.length > 0 ? filtered : allActiveStyles;
+      if (stylesToShow.length === 0) {
+        const fallbackStyle: ImageStyle = {
+          id: 'default-fallback',
+          style_key: DEFAULT_STYLE_KEY,
+          labels: { de: 'Standardstil', en: 'Default style', fr: 'Style par défaut' },
+          description: {},
+          preview_image_url: null,
+          age_groups: [],
+          default_for_ages: null,
+          sort_order: 0,
+        };
+        stylesToShow = [fallbackStyle];
+      }
 
-      setStyles(filtered);
+      setStyles(stylesToShow);
 
       const preferredMatch = kidProfileImageStyle
-        ? filtered.find((s: any) => s.style_key === kidProfileImageStyle)
+        ? stylesToShow.find((s: any) => s.style_key === kidProfileImageStyle)
         : null;
 
       if (preferredMatch) {
         setSelectedKey(preferredMatch.style_key);
       } else {
-        const defaultMatch = filtered.find((s: any) =>
+        const defaultMatch = stylesToShow.find((s: any) =>
           s.default_for_ages?.includes(ageGroup)
         );
-        setSelectedKey(defaultMatch?.style_key || filtered[0]?.style_key || null);
+        const fallbackKey = stylesToShow.length > 0
+          ? (defaultMatch?.style_key || stylesToShow[0]?.style_key)
+          : DEFAULT_STYLE_KEY;
+        setSelectedKey(fallbackKey || null);
       }
 
       setLoading(false);

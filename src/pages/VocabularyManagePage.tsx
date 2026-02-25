@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Plus, Trash2, CheckCircle2, XCircle, Minus, Save, Loader2, Users } from "lucide-react";
 import BackButton from "@/components/BackButton";
+import FablinoMascot from "@/components/FablinoMascot";
+import SpeechBubble from "@/components/SpeechBubble";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, Language } from "@/lib/translations";
@@ -276,10 +278,12 @@ const VocabularyManagePage = () => {
           </h2>
 
           {words.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              {t.vocabManageEmpty}
-              {selectedProfile && ` ${adminLang === 'de' ? 'für' : adminLang === 'fr' ? 'pour' : 'for'} ${selectedProfile.name}`}
-            </p>
+            <div className="flex flex-col items-center py-12">
+              <div className="flex items-center gap-3 mb-4">
+                <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" />
+                <SpeechBubble variant="hero">{t.emptyStateVocabulary}</SpeechBubble>
+              </div>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>

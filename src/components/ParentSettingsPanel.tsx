@@ -149,7 +149,8 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
       .single();
 
     if (profileData) {
-      setSafetyLevel((profileData as any).content_safety_level ?? 2);
+      const raw = (profileData as any).content_safety_level ?? 2;
+      setSafetyLevel(Math.min(4, Math.max(1, Number(raw) || 2)));
     }
   };
 
@@ -291,9 +292,10 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
         return;
       }
 
+      const clampedSafety = Math.min(4, Math.max(1, safetyLevel));
       const { error: profileError } = await supabase
         .from("kid_profiles")
-        .update({ content_safety_level: safetyLevel } as any)
+        .update({ content_safety_level: clampedSafety } as any)
         .eq("id", selectedProfileId);
 
       if (profileError) {

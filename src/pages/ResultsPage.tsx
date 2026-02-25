@@ -1160,6 +1160,24 @@ const ResultsPage = () => {
     );
   }
 
+  if (data.total_stars === 0) {
+    return (
+      <div className="min-h-screen pb-safe">
+        <div className="max-w-lg mx-auto px-4 pt-3 pb-8">
+          <div className="flex items-center gap-3 px-1 mb-4">
+            <BackButton to="/" />
+          </div>
+          <div className="flex flex-col items-center py-12">
+            <div className="flex items-center gap-3">
+              <FablinoMascot src="/mascot/6_Onboarding.png" size="sm" />
+              <SpeechBubble variant="hero">{t.emptyStateResults}</SpeechBubble>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const { current, next, sorted } = getLevelProgress(translatedLevels, data.total_stars);
   const fablinoMsg = getFablinoMessage(t, data.child_name, data.total_stars, data.current_streak, current, next);
 

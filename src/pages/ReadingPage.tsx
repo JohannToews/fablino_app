@@ -603,7 +603,7 @@ const ReadingPage = () => {
     }
     setSyllablesReady(false);
     let cancelled = false;
-    preloadSyllables(story.content, 'fr').then(() => {
+    preloadSyllables(storyContent, 'fr').then(() => {
       if (!cancelled) setSyllablesReady(true);
     });
     return () => { cancelled = true; };
@@ -871,7 +871,7 @@ const ReadingPage = () => {
       }
       
       // Create continuation prompt with previous story context
-      const continuationPrompt = `Fortsetzung von "${story.title}" (Episode ${story.episode_number || 1}):\n\nVorherige Geschichte (Zusammenfassung):\n${story.content.slice(0, 500)}...\n\nUrsprüngliche Idee: ${story.prompt || ""}`;
+      const continuationPrompt = `Fortsetzung von "${story.title}" (Episode ${story.episode_number || 1}):\n\nVorherige Geschichte (Zusammenfassung):\n${storyContent.slice(0, 500)}...\n\nUrsprüngliche Idee: ${story.prompt || ""}`;
 
       // Call generate-story with continuation context (120s timeout)
       abortControllerRef.current?.abort();
@@ -1198,7 +1198,7 @@ const ReadingPage = () => {
         return;
       }
 
-      const continuationPrompt = `Fortsetzung von "${story.title}" (Episode ${story.episode_number || 1}):\n\nVorherige Geschichte (Zusammenfassung):\n${story.content.slice(0, 500)}...\n\nUrsprüngliche Idee: ${story.prompt || ""}`;
+      const continuationPrompt = `Fortsetzung von "${story.title}" (Episode ${story.episode_number || 1}):\n\nVorherige Geschichte (Zusammenfassung):\n${storyContent.slice(0, 500)}...\n\nUrsprüngliche Idee: ${story.prompt || ""}`;
 
       // Resolve chosen title: from parameter, from story.branch_chosen, or reload from DB
       let branchTitle = chosenTitle || (story as any).branch_chosen;
@@ -1688,9 +1688,22 @@ const ReadingPage = () => {
 
   const renderFormattedText = () => {
     if (!story) return null;
+    if (storyContent === '') {
+      const msg: Record<string, string> = {
+        de: 'Diese Geschichte konnte nicht geladen werden.',
+        fr: 'Cette histoire n’a pas pu être chargée.',
+        en: 'This story could not be loaded.',
+        es: 'Esta historia no pudo cargarse.',
+        nl: 'Dit verhaal kon niet worden geladen.',
+        it: 'Questa storia non è stata caricata.',
+        bs: 'Ova priča nije mogla biti učitana.',
+      };
+      const text = msg[kidAppLanguage as string] || msg.en;
+      return <p className="text-muted-foreground py-8 text-center">{text}</p>;
+    }
 
     // Normalize escaped newlines and split into paragraphs
-    const normalizedContent = story.content
+    const normalizedContent = storyContent
       .replace(/\\n\\n/g, '\n\n')
       .replace(/\\n/g, '\n');
     const paragraphs = normalizedContent.split(/\n\n+/).filter(p => p.trim());
@@ -1973,6 +1986,8 @@ const ReadingPage = () => {
     return <Navigate to="/stories" replace />;
   }
 
+  const storyContent = story.content ?? '';
+
   // ── Immersive Reader Mode ─────────────────────────────────
   if (viewMode === 'immersive') {
     return (
@@ -1990,7 +2005,7 @@ const ReadingPage = () => {
         <BackButton to="/stories" className="fixed top-3 left-14 z-50" />
 
         <ImmersiveReader
-          story={story}
+          story={{ ...story, content: storyContent }}
           kidProfile={selectedProfile ? {
             id: selectedProfile.id,
             name: selectedProfile.name,
@@ -2244,7 +2259,7 @@ const ReadingPage = () => {
             {story && user?.username === 'papa' && (
               <div className="mb-6">
                 <StoryAudioPlayer
-                  storyContent={story.content}
+                  storyContent={storyContent}
                   storyTitle={story.title}
                   isListeningMode={isListeningMode}
                   onModeChange={setIsListeningMode}
