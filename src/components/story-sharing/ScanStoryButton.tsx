@@ -32,7 +32,9 @@
    pl: { scan: "Scan Story" },
    ro: { scan: "Scan Story" },
    sl: { scan: "Scan Story" },
-   tr: { scan: "Scan Story" },
+  tr: { scan: "Scan Story" },
+  ru: { scan: "Scan Story" },
+  uk: { scan: "Scan Story" },
  };
 
  export default function ScanStoryButton({ language, onImportSuccess }: ScanStoryButtonProps) {

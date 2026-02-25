@@ -465,6 +465,11 @@ const ru: Translations = {
   adminImageGenConfigDesc: 'Управление моделями Imagen, стоимостью и лимитами',
 
   stickerStoriesCollectedFallback: 'Собрано {count} историй! Так держать!',
+  onboardingDisplayName: 'Отображаемое имя',
+  onboardingDisplayNameHint: 'Ваше имя, как оно отображается в приложении.',
+  onboardingDisplayNamePlaceholder: 'напр. Мама, Папа, Лиза…',
+  onboardingCategoryAdventure: 'Приключения',
+  onboardingCategoryFantasy: 'Фэнтези',
 };
 
 export default ru;

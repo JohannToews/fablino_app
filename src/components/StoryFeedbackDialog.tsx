@@ -120,6 +120,8 @@ const translations: Record<Language, {
   ro: { title: "How was the story?", description: "Your feedback helps us create better stories!", qualityLabel: "Story quality", commentLabel: "Comment (optional)", commentPlaceholder: "What did you like or dislike?", skip: "Skip", submit: "Submit", thankYou: "Thanks for your feedback!", listening: "Listening..." },
   sl: { title: "How was the story?", description: "Your feedback helps us create better stories!", qualityLabel: "Story quality", commentLabel: "Comment (optional)", commentPlaceholder: "What did you like or dislike?", skip: "Skip", submit: "Submit", thankYou: "Thanks for your feedback!", listening: "Listening..." },
   tr: { title: "How was the story?", description: "Your feedback helps us create better stories!", qualityLabel: "Story quality", commentLabel: "Comment (optional)", commentPlaceholder: "What did you like or dislike?", skip: "Skip", submit: "Submit", thankYou: "Thanks for your feedback!", listening: "Listening..." },
+  ru: { title: "How was the story?", description: "Your feedback helps us create better stories!", qualityLabel: "Story quality", commentLabel: "Comment (optional)", commentPlaceholder: "What did you like or dislike?", skip: "Skip", submit: "Submit", thankYou: "Thanks for your feedback!", listening: "Listening..." },
+  uk: { title: "How was the story?", description: "Your feedback helps us create better stories!", qualityLabel: "Story quality", commentLabel: "Comment (optional)", commentPlaceholder: "What did you like or dislike?", skip: "Skip", submit: "Submit", thankYou: "Thanks for your feedback!", listening: "Listening..." },
 };
 
 // DEPRECATED — no longer used (STT now auto-detects language)

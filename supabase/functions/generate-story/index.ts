@@ -3240,7 +3240,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
               layout: comicLayout,
               stylePrompt: imageStyleData?.promptSnippet || '',
               ageModifier: imageStyleData?.ageModifier || '',
-              characterSeedAppearance: emotionFlowResult?.protagonistSeed?.appearance_en,
+              characterSeedAppearance: emotionFlowResult?.protagonistSeed?.appearance_en ?? undefined,
               seriesStylePrefix,
             });
             if (comicPrompts.length < 2) throw new Error('Comic 8-panel requires 2 prompts');
@@ -3281,7 +3281,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             layout: comicLayout,
             stylePrompt: imageStyleData?.promptSnippet || '',
             ageModifier: imageStyleData?.ageModifier || '',
-            characterSeedAppearance: emotionFlowResult?.protagonistSeed?.appearance_en,
+            characterSeedAppearance: emotionFlowResult?.protagonistSeed?.appearance_en ?? undefined,
             seriesStylePrefix,
           });
 

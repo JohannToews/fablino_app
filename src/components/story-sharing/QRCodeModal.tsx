@@ -85,6 +85,8 @@
   ro: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
   sl: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
   tr: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  ru: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
+  uk: { title: "Share Story", validUntil: "Valid until", close: "Close", scanInfo: "Scan this QR code to receive the story" },
  };
  
  export default function QRCodeModal({

@@ -112,6 +112,8 @@
   ro: { loading: "Loading story...", expired: "This share code has expired. Please ask for a new one!", notFound: "Story not found", error: "Error loading story", loginRequired: "Please log in to import this story", goToLogin: "Go to Login", importSuccess: "Story successfully added to your library!", backHome: "Back to Home" },
   sl: { loading: "Loading story...", expired: "This share code has expired. Please ask for a new one!", notFound: "Story not found", error: "Error loading story", loginRequired: "Please log in to import this story", goToLogin: "Go to Login", importSuccess: "Story successfully added to your library!", backHome: "Back to Home" },
   tr: { loading: "Loading story...", expired: "This share code has expired. Please ask for a new one!", notFound: "Story not found", error: "Error loading story", loginRequired: "Please log in to import this story", goToLogin: "Go to Login", importSuccess: "Story successfully added to your library!", backHome: "Back to Home" },
+  ru: { loading: "Loading story...", expired: "This share code has expired. Please ask for a new one!", notFound: "Story not found", error: "Error loading story", loginRequired: "Please log in to import this story", goToLogin: "Go to Login", importSuccess: "Story successfully added to your library!", backHome: "Back to Home" },
+  uk: { loading: "Loading story...", expired: "This share code has expired. Please ask for a new one!", notFound: "Story not found", error: "Error loading story", loginRequired: "Please log in to import this story", goToLogin: "Go to Login", importSuccess: "Story successfully added to your library!", backHome: "Back to Home" },
  };
  
  export default function ShareRedirectPage() {

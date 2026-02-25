@@ -106,7 +106,7 @@ function rowToCharacterSeed(r: SeedRow): CharacterSeed {
   return {
     id: String(r.id ?? ''),
     seed_key: r.seed_key,
-    seed_type: r.seed_type as SeedType,
+    seed_type: r.seed_type as import('../types.ts').SeedType,
     creature_type: (r.creature_type as 'human' | 'mythical') ?? 'human',
     labels: (r.labels as Record<string, string>) ?? {},
     appearance_en: (r.appearance_en as string | null) ?? null,
