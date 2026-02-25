@@ -190,7 +190,7 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
       <div className="flex-1 flex flex-col items-stretch px-4 max-w-[480px] mx-auto w-full gap-3 pb-4">
         {/* Fablino Header with inline back button */}
         <FablinoPageHeader
-          mascotImage="/mascot/5_Story_erstellen.png"
+          mascotImage="/mascot/5_new_story.png"
           message={t.header}
           mascotSize="md"
           showBackButton
