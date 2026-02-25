@@ -19,6 +19,18 @@ const GREETINGS: Record<string, { withName: (name: string) => string; withoutNam
   nl: { withName: (n) => `Hoi ${n}! 😊 Zin in een gaaf verhaal?`, withoutName: "Hoi! 😊 Zin in een gaaf verhaal?" },
   it: { withName: (n) => `Ciao ${n}! 😊 Voglia di una bella storia?`, withoutName: "Ciao! 😊 Voglia di una bella storia?" },
   bs: { withName: (n) => `Hej ${n}! 😊 Želiš li super priču?`, withoutName: "Hej! 😊 Želiš li super priču?" },
+  tr: { withName: (n) => `Merhaba ${n}! 😊 Harika bir hikâye ister misin?`, withoutName: "Merhaba! 😊 Harika bir hikâye ister misin?" },
+  bg: { withName: (n) => `Здравей ${n}! 😊 Искаш ли страхотна история?`, withoutName: "Здравей! 😊 Искаш ли страхотна история?" },
+  ro: { withName: (n) => `Salut ${n}! 😊 Vrei o poveste grozavă?`, withoutName: "Salut! 😊 Vrei o poveste grozavă?" },
+  pl: { withName: (n) => `Hej ${n}! 😊 Chcesz super historię?`, withoutName: "Hej! 😊 Chcesz super historię?" },
+  lt: { withName: (n) => `Sveikas ${n}! 😊 Nori nuostabios istorijos?`, withoutName: "Sveikas! 😊 Nori nuostabios istorijos?" },
+  hu: { withName: (n) => `Szia ${n}! 😊 Szeretnél egy klassz történetet?`, withoutName: "Szia! 😊 Szeretnél egy klassz történetet?" },
+  ca: { withName: (n) => `Hola ${n}! 😊 Vols una història genial?`, withoutName: "Hola! 😊 Vols una història genial?" },
+  sl: { withName: (n) => `Živjo ${n}! 😊 Bi rad/a super zgodbo?`, withoutName: "Živjo! 😊 Bi rad/a super zgodbo?" },
+  pt: { withName: (n) => `Olá ${n}! 😊 Queres uma história incrível?`, withoutName: "Olá! 😊 Queres uma história incrível?" },
+  sk: { withName: (n) => `Ahoj ${n}! 😊 Chceš super príbeh?`, withoutName: "Ahoj! 😊 Chceš super príbeh?" },
+  uk: { withName: (n) => `Привіт ${n}! 😊 Хочеш класну історію?`, withoutName: "Привіт! 😊 Хочеш класну історію?" },
+  ru: { withName: (n) => `Привет ${n}! 😊 Хочешь классную историю?`, withoutName: "Привет! 😊 Хочешь классную историю?" },
 };
 
 const UI_TEXTS: Record<string, {
@@ -36,6 +48,18 @@ const UI_TEXTS: Record<string, {
   nl: { newStory: '📖 Nieuw verhaal', myStories: '📚 Mijn verhalen', myWeek: 'Mijn week 🏆', seeAll: 'Alles bekijken →', stars: 'Sterren', daysInARow: 'Dagen op rij' },
   it: { newStory: '📖 Nuova storia', myStories: '📚 Le mie storie', myWeek: 'La mia settimana 🏆', seeAll: 'Vedi tutto →', stars: 'Stelle', daysInARow: 'Giorni di fila' },
   bs: { newStory: '📖 Nova priča', myStories: '📚 Moje priče', myWeek: 'Moja sedmica 🏆', seeAll: 'Pogledaj sve →', stars: 'Zvijezde', daysInARow: 'Dana zaredom' },
+  tr: { newStory: '📖 Yeni hikâye', myStories: '📚 Hikâyelerim', myWeek: 'Haftam 🏆', seeAll: 'Tümünü gör →', stars: 'Yıldızlar', daysInARow: 'Gün üst üste' },
+  bg: { newStory: '📖 Нова история', myStories: '📚 Моите истории', myWeek: 'Моята седмица 🏆', seeAll: 'Виж всичко →', stars: 'Звезди', daysInARow: 'Дни подред' },
+  ro: { newStory: '📖 Poveste nouă', myStories: '📚 Poveștile mele', myWeek: 'Săptămâna mea 🏆', seeAll: 'Vezi tot →', stars: 'Stele', daysInARow: 'Zile la rând' },
+  pl: { newStory: '📖 Nowa historia', myStories: '📚 Moje historie', myWeek: 'Mój tydzień 🏆', seeAll: 'Zobacz wszystko →', stars: 'Gwiazdki', daysInARow: 'Dni z rzędu' },
+  lt: { newStory: '📖 Nauja istorija', myStories: '📚 Mano istorijos', myWeek: 'Mano savaitė 🏆', seeAll: 'Žiūrėti viską →', stars: 'Žvaigždės', daysInARow: 'Dienos iš eilės' },
+  hu: { newStory: '📖 Új történet', myStories: '📚 Történeteim', myWeek: 'Hetem 🏆', seeAll: 'Összes →', stars: 'Csillagok', daysInARow: 'Nap egymás után' },
+  ca: { newStory: '📖 Nova història', myStories: '📚 Les meves històries', myWeek: 'La meva setmana 🏆', seeAll: 'Veure tot →', stars: 'Estrelles', daysInARow: 'Dies seguits' },
+  sl: { newStory: '📖 Nova zgodba', myStories: '📚 Moje zgodbe', myWeek: 'Moj teden 🏆', seeAll: 'Poglej vse →', stars: 'Zvezdice', daysInARow: 'Dni zapored' },
+  pt: { newStory: '📖 Nova história', myStories: '📚 As minhas histórias', myWeek: 'Minha semana 🏆', seeAll: 'Ver tudo →', stars: 'Estrelas', daysInARow: 'Dias seguidos' },
+  sk: { newStory: '📖 Nový príbeh', myStories: '📚 Moje príbehy', myWeek: 'Môj týždeň 🏆', seeAll: 'Zobraziť všetko →', stars: 'Hviezdičky', daysInARow: 'Dní v rade' },
+  uk: { newStory: '📖 Нова історія', myStories: '📚 Мої історії', myWeek: 'Мій тиждень 🏆', seeAll: 'Усі результати →', stars: 'Зірки', daysInARow: 'Днів поспіль' },
+  ru: { newStory: '📖 Новая история', myStories: '📚 Мои истории', myWeek: 'Моя неделя 🏆', seeAll: 'Все результаты →', stars: 'Звёзды', daysInARow: 'Дней подряд' },
 };
 
 // Weekday labels per language (Mon–Sun)
@@ -47,6 +71,18 @@ const WEEKDAY_LABELS: Record<string, string[]> = {
   nl: ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'],
   it: ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do'],
   bs: ['Po', 'Ut', 'Sr', 'Če', 'Pe', 'Su', 'Ne'],
+  tr: ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz'],
+  bg: ['По', 'Вт', 'Ср', 'Че', 'Пе', 'Съ', 'Не'],
+  ro: ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'],
+  pl: ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'],
+  lt: ['Pr', 'An', 'Tr', 'Kt', 'Pn', 'Št', 'Sk'],
+  hu: ['Hé', 'Ke', 'Sze', 'Cs', 'Pé', 'Szo', 'Va'],
+  ca: ['Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg'],
+  sl: ['Po', 'To', 'Sr', 'Če', 'Pe', 'So', 'Ne'],
+  pt: ['Se', 'Te', 'Qu', 'Qu', 'Se', 'Sá', 'Do'],
+  sk: ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne'],
+  uk: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+  ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
 };
 
 // ═══ Helper: Monday 00:00 of current week ═══
