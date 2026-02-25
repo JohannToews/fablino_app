@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
       // Nicht authentifiziert – das ist OK für diese Function
     }
 
-    const { word, context, language = 'fr', explanationLanguage } = await req.json();
+    const { word, context, language = 'fr', explanationLanguage, kidProfileId, storyId } = await req.json();
     
     // If explanationLanguage is provided, use it for the prompt language
     // This allows word explanations to be in a different language than the story text
@@ -355,6 +355,24 @@ Deno.serve(async (req) => {
     }
 
     const { explanation, correctedWord } = parseResponse(rawText, word);
+
+    // Fire-and-forget: log word explanation request
+    if (kidProfileId) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        supabase.from('word_explanation_log').insert({
+          kid_profile_id: kidProfileId,
+          story_id: storyId || null,
+          word: correctedWord || word,
+          word_language: language,
+          explanation_language: promptLanguage,
+        }).then(({ error }) => {
+          if (error) console.error('[word-log] insert failed:', error.message);
+        });
+      } catch (e) {
+        console.error('[word-log] error:', e);
+      }
+    }
 
     return new Response(
       JSON.stringify({ explanation, correctedWord }),

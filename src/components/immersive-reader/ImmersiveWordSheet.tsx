@@ -66,6 +66,8 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
             word: cleanWord,
             language: storyLanguage,
             explanationLanguage: explanationLanguage,
+            kidProfileId: kidProfileId || undefined,
+            storyId: storyId || undefined,
           },
         });
 
@@ -124,6 +126,8 @@ const ImmersiveWordSheet: React.FC<ImmersiveWordSheetProps> = ({
           word: cleanWord,
           language: storyLanguage,
           explanationLanguage: explanationLanguage,
+          kidProfileId: kidProfileId || undefined,
+          storyId: storyId || undefined,
         },
       });
 
