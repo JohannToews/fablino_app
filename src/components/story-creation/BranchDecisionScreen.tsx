@@ -55,11 +55,19 @@ const translations: Record<string, BranchDecisionTranslations> = {
     confirmButton: "Voglio questo! 🎉",
     loadingText: "Fablino scrive la tua avventura... 🦊✨",
   },
-  bs: {
-    header: "Kako priča nastavlja?",
-    confirmButton: "To želim! 🎉",
-    loadingText: "Fablino piše tvoju avanturu... 🦊✨",
-  },
+  bs: { header: "Kako priča nastavlja?", confirmButton: "To želim! 🎉", loadingText: "Fablino piše tvoju avanturu... 🦊✨" },
+  tr: { header: "Sonra ne olacak?", confirmButton: "Bunu istiyorum! 🎉", loadingText: "Fablino maceranı yazıyor... 🦊✨" },
+  bg: { header: "Какво се случва след това?", confirmButton: "Искам това! 🎉", loadingText: "Фаблино пише твоето приключение... 🦊✨" },
+  ro: { header: "Ce se întâmplă mai departe?", confirmButton: "Asta vreau! 🎉", loadingText: "Fablino scrie aventura ta... 🦊✨" },
+  pl: { header: "Co będzie dalej?", confirmButton: "Tego chcę! 🎉", loadingText: "Fablino pisze twoją przygodę... 🦊✨" },
+  lt: { header: "Kas bus toliau?", confirmButton: "To noriu! 🎉", loadingText: "Fablino rašo tavo nuotykį... 🦊✨" },
+  hu: { header: "Mi történik ezután?", confirmButton: "Ezt akarom! 🎉", loadingText: "Fablino írja a kalandodat... 🦊✨" },
+  ca: { header: "Què passa després?", confirmButton: "Vull això! 🎉", loadingText: "Fablino escriu la teva aventura... 🦊✨" },
+  sl: { header: "Kaj se zgodi potem?", confirmButton: "To hočem! 🎉", loadingText: "Fablino piše tvojo pustolovščino... 🦊✨" },
+  pt: { header: "O que acontece a seguir?", confirmButton: "Quero isto! 🎉", loadingText: "Fablino escreve a tua aventura... 🦊✨" },
+  sk: { header: "Čo sa stane ďalej?", confirmButton: "To chcem! 🎉", loadingText: "Fablino píše tvoje dobrodružstvo... 🦊✨" },
+  uk: { header: "Що буде далі?", confirmButton: "Я хочу це! 🎉", loadingText: "Фабліно пише твою пригоду... 🦊✨" },
+  ru: { header: "Что будет дальше?", confirmButton: "Я хочу это! 🎉", loadingText: "Фаблино пишет твоё приключение... 🦊✨" },
 };
 
 interface BranchDecisionScreenProps {

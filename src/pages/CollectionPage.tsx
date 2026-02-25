@@ -95,20 +95,19 @@ const collectionTranslations: Record<string, {
     stars: "Sterren",
     rarity: { common: "Gewoon", rare: "Zeldzaam", epic: "Episch", legendary: "Legendarisch" }
   },
-  bs: {
-    title: "Moj Album",
-    total: "Sakupljeno",
-    collected: "{n} predmeta",
-    empty: "Još nema kolekcije",
-    emptyHint: "Čitaj priče da sakupiš magične predmete!",
-    readStory: "Čitaj priču",
-    all: "Sve",
-    creatures: "Bića",
-    places: "Mjesta",
-    objects: "Predmeti",
-    stars: "Zvijezde",
-    rarity: { common: "Obično", rare: "Rijetko", epic: "Epsko", legendary: "Legendarno" }
-  }
+  bs: { title: "Moj Album", total: "Sakupljeno", collected: "{n} predmeta", empty: "Još nema kolekcije", emptyHint: "Čitaj priče da sakupiš magične predmete!", readStory: "Čitaj priču", all: "Sve", creatures: "Bića", places: "Mjesta", objects: "Predmeti", stars: "Zvijezde", rarity: { common: "Obično", rare: "Rijetko", epic: "Epsko", legendary: "Legendarno" } },
+  tr: { title: "Albümüm", total: "Toplanan", collected: "{n} nesne", empty: "Henüz koleksiyon yok", emptyHint: "Hikâye oku ve sihirli nesneler topla!", readStory: "Hikâye oku", all: "Tümü", creatures: "Yaratıklar", places: "Yerler", objects: "Nesneler", stars: "Yıldızlar", rarity: { common: "Yaygın", rare: "Nadir", epic: "Epik", legendary: "Efsanevi" } },
+  bg: { title: "Моят Албум", total: "Събрани", collected: "{n} предмета", empty: "Все още няма колекция", emptyHint: "Чети истории, за да събереш магически предмети!", readStory: "Чети история", all: "Всички", creatures: "Създания", places: "Места", objects: "Предмети", stars: "Звезди", rarity: { common: "Обикновен", rare: "Рядък", epic: "Епичен", legendary: "Легендарен" } },
+  ro: { title: "Albumul Meu", total: "Colecționate", collected: "{n} obiecte", empty: "Încă nu ai colecție", emptyHint: "Citește povești pentru a colecta obiecte magice!", readStory: "Citește", all: "Toate", creatures: "Creaturi", places: "Locuri", objects: "Obiecte", stars: "Stele", rarity: { common: "Comun", rare: "Rar", epic: "Epic", legendary: "Legendar" } },
+  pl: { title: "Mój Album", total: "Zebrane", collected: "{n} przedmiotów", empty: "Jeszcze brak kolekcji", emptyHint: "Czytaj historie, aby zbierać magiczne przedmioty!", readStory: "Czytaj", all: "Wszystko", creatures: "Stworzenia", places: "Miejsca", objects: "Przedmioty", stars: "Gwiazdki", rarity: { common: "Zwykły", rare: "Rzadki", epic: "Epicki", legendary: "Legendarny" } },
+  lt: { title: "Mano Albumas", total: "Surinkta", collected: "{n} daiktų", empty: "Kolekcijos dar nėra", emptyHint: "Skaityk istorijas ir rink magiškus daiktus!", readStory: "Skaityti", all: "Visi", creatures: "Būtybės", places: "Vietos", objects: "Daiktai", stars: "Žvaigždės", rarity: { common: "Įprastas", rare: "Retas", epic: "Epinis", legendary: "Legendinis" } },
+  hu: { title: "Az Albumom", total: "Összegyűjtve", collected: "{n} tárgy", empty: "Még nincs gyűjtemény", emptyHint: "Olvass meséket, hogy varázstárgyakat gyűjts!", readStory: "Olvasás", all: "Összes", creatures: "Lények", places: "Helyek", objects: "Tárgyak", stars: "Csillagok", rarity: { common: "Közönséges", rare: "Ritka", epic: "Epikus", legendary: "Legendás" } },
+  ca: { title: "El Meu Àlbum", total: "Recollits", collected: "{n} objectes", empty: "Encara sense col·lecció", emptyHint: "Llegeix històries per recollir objectes màgics!", readStory: "Llegir", all: "Tots", creatures: "Criatures", places: "Llocs", objects: "Objectes", stars: "Estrelles", rarity: { common: "Comú", rare: "Rar", epic: "Èpic", legendary: "Llegendari" } },
+  sl: { title: "Moj Album", total: "Zbranih", collected: "{n} predmetov", empty: "Še ni zbirke", emptyHint: "Beri zgodbe in zbiraj čarobne predmete!", readStory: "Beri", all: "Vse", creatures: "Bitja", places: "Kraji", objects: "Predmeti", stars: "Zvezdice", rarity: { common: "Običajen", rare: "Redek", epic: "Epski", legendary: "Legendarni" } },
+  pt: { title: "O Meu Álbum", total: "Colecionados", collected: "{n} objetos", empty: "Ainda sem coleção", emptyHint: "Lê histórias para colecionar objetos mágicos!", readStory: "Ler", all: "Todos", creatures: "Criaturas", places: "Lugares", objects: "Objetos", stars: "Estrelas", rarity: { common: "Comum", rare: "Raro", epic: "Épico", legendary: "Lendário" } },
+  sk: { title: "Môj Album", total: "Zozbierané", collected: "{n} predmetov", empty: "Ešte žiadna kolekcia", emptyHint: "Čítaj príbehy a zbieraj magické predmety!", readStory: "Čítať", all: "Všetko", creatures: "Bytosti", places: "Miesta", objects: "Predmety", stars: "Hviezdy", rarity: { common: "Bežný", rare: "Vzácny", epic: "Epický", legendary: "Legendárny" } },
+  uk: { title: "Мій Альбом", total: "Зібрано", collected: "{n} предметів", empty: "Ще немає колекції", emptyHint: "Читай історії, щоб збирати магічні предмети!", readStory: "Читати", all: "Усі", creatures: "Істоти", places: "Місця", objects: "Предмети", stars: "Зірки", rarity: { common: "Звичайний", rare: "Рідкісний", epic: "Епічний", legendary: "Легендарний" } },
+  ru: { title: "Мой Альбом", total: "Собрано", collected: "{n} предметов", empty: "Ещё нет коллекции", emptyHint: "Читай истории, чтобы собирать волшебные предметы!", readStory: "Читать", all: "Все", creatures: "Существа", places: "Места", objects: "Предметы", stars: "Звёзды", rarity: { common: "Обычный", rare: "Редкий", epic: "Эпический", legendary: "Легендарный" } },
 };
 
 const categoryIcons: Record<CollectibleCategory, string> = {

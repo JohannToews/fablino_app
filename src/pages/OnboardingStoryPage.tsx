@@ -45,6 +45,8 @@ const DID_YOU_KNOW: Record<string, string> = {
   hu: "Tudtad, hogy",
   ca: "Sabies que",
   sl: "Ali si vedel/a, da",
+  uk: "Чи знаєш ти, що",
+  ru: "А ты знал, что",
 };
 
 const SHOW_DURATION = 4500;

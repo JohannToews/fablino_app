@@ -204,6 +204,18 @@ const StoryTypeSelectionScreen = ({
     nl: "Welk avontuur wacht er? 🏰",
     it: "Quale avventura ti aspetta? 🏰",
     bs: "Koja te avantura čeka? 🏰",
+    tr: "Seni hangi macera bekliyor? 🏰",
+    bg: "Какво приключение те очаква? 🏰",
+    ro: "Ce aventură te așteaptă? 🏰",
+    pl: "Jaka przygoda czeka? 🏰",
+    lt: "Koks nuotykis laukia? 🏰",
+    hu: "Milyen kaland vár rád? 🏰",
+    ca: "Quina aventura t'espera? 🏰",
+    sl: "Kakšna pustolovščina te čaka? 🏰",
+    pt: "Que aventura te espera? 🏰",
+    sk: "Aké dobrodružstvo ťa čaká? 🏰",
+    uk: "Яка пригода чекає? 🏰",
+    ru: "Какое приключение ждёт? 🏰",
   };
 
   const resolvedFablinoMessage = fablinoMessage

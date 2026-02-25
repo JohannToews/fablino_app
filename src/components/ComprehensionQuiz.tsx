@@ -60,14 +60,19 @@ const quizLabels: Record<string, {
     noQuestions: "Nessuna domanda per questa storia",
     loading: "Caricamento domande...",
   },
-  bs: {
-    bravo: "Tačno! 🎉",
-    notQuite: "Ne baš 😊",
-    nextQuestion: "Sljedeće pitanje",
-    finish: "Završi",
-    noQuestions: "Nema pitanja za ovu priču",
-    loading: "Učitavanje pitanja...",
-  },
+  bs: { bravo: "Tačno! 🎉", notQuite: "Ne baš 😊", nextQuestion: "Sljedeće pitanje", finish: "Završi", noQuestions: "Nema pitanja za ovu priču", loading: "Učitavanje pitanja..." },
+  tr: { bravo: "Doğru! 🎉", notQuite: "Tam değil 😊", nextQuestion: "Sonraki soru", finish: "Bitir", noQuestions: "Bu hikâye için soru yok", loading: "Sorular yükleniyor..." },
+  bg: { bravo: "Вярно! 🎉", notQuite: "Не точно 😊", nextQuestion: "Следващ въпрос", finish: "Край", noQuestions: "Няма въпроси за тази история", loading: "Зареждане на въпроси..." },
+  ro: { bravo: "Corect! 🎉", notQuite: "Nu chiar 😊", nextQuestion: "Următoarea întrebare", finish: "Gata", noQuestions: "Nu există întrebări pentru această poveste", loading: "Se încarcă întrebările..." },
+  pl: { bravo: "Dobrze! 🎉", notQuite: "Nie do końca 😊", nextQuestion: "Następne pytanie", finish: "Koniec", noQuestions: "Brak pytań do tej historii", loading: "Ładowanie pytań..." },
+  lt: { bravo: "Teisingai! 🎉", notQuite: "Ne visai 😊", nextQuestion: "Kitas klausimas", finish: "Baigti", noQuestions: "Šiai istorijai klausimų nėra", loading: "Kraunami klausimai..." },
+  hu: { bravo: "Helyes! 🎉", notQuite: "Nem egészen 😊", nextQuestion: "Következő kérdés", finish: "Kész", noQuestions: "Nincs kérdés ehhez a történethez", loading: "Kérdések betöltése..." },
+  ca: { bravo: "Correcte! 🎉", notQuite: "No del tot 😊", nextQuestion: "Següent pregunta", finish: "Acabar", noQuestions: "No hi ha preguntes per a aquesta història", loading: "Carregant preguntes..." },
+  sl: { bravo: "Pravilno! 🎉", notQuite: "Ne povsem 😊", nextQuestion: "Naslednje vprašanje", finish: "Konec", noQuestions: "Za to zgodbo ni vprašanj", loading: "Nalaganje vprašanj..." },
+  pt: { bravo: "Correto! 🎉", notQuite: "Não exatamente 😊", nextQuestion: "Próxima pergunta", finish: "Terminar", noQuestions: "Sem perguntas para esta história", loading: "A carregar perguntas..." },
+  sk: { bravo: "Správne! 🎉", notQuite: "Nie celkom 😊", nextQuestion: "Ďalšia otázka", finish: "Koniec", noQuestions: "Pre tento príbeh nie sú otázky", loading: "Načítavanie otázok..." },
+  uk: { bravo: "Правильно! 🎉", notQuite: "Не зовсім 😊", nextQuestion: "Наступне питання", finish: "Готово", noQuestions: "Немає питань для цієї історії", loading: "Завантаження питань..." },
+  ru: { bravo: "Правильно! 🎉", notQuite: "Не совсем 😊", nextQuestion: "Следующий вопрос", finish: "Готово", noQuestions: "Нет вопросов для этой истории", loading: "Загрузка вопросов..." },
 };
 
 interface Question {

@@ -2063,6 +2063,8 @@ Deno.serve(async (req) => {
       SL: "Slowenisch",
       PT: "Portugiesisch",
       SK: "Slowakisch",
+      UK: "Ukrainisch",
+      RU: "Russisch",
     };
     const targetLanguage = languageNames[(textLanguage || '').toUpperCase()] || languageNames[effectiveStoryLanguage.toUpperCase()] || "Französisch";
 
