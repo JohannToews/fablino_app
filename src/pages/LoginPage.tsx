@@ -24,7 +24,7 @@ const LoginPage = () => {
     return localStorage.getItem('liremagie_remember') === 'true';
   });
   const [isLoading, setIsLoading] = useState(false);
-  const loginGuardIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loginGuardIntervalRef = useRef<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();

@@ -29,7 +29,7 @@ const WelcomePage = () => {
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loginInlineError, setLoginInlineError] = useState("");
-  const loginGuardIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loginGuardIntervalRef = useRef<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
