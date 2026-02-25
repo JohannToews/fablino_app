@@ -199,13 +199,16 @@ export interface EmotionFlowQueryChain {
   in(column: string, values: unknown[]): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
 }
 
+export interface EmotionFlowSelectResult {
+  eq(column: string, value: unknown): EmotionFlowQueryChain;
+  order(column: string, options?: { ascending?: boolean }): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
+  limit(n: number): Promise<{ data: unknown; error: unknown }>;
+  in(column: string, values: unknown[]): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
+  select(columns?: string): EmotionFlowSelectResult;
+}
+
 export interface EmotionFlowSupabase {
   from(table: string): {
-    select(columns?: string): {
-      eq(column: string, value: unknown): EmotionFlowQueryChain;
-      order(column: string, options?: { ascending?: boolean }): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
-      limit(n: number): Promise<{ data: unknown; error: unknown }>;
-      in(column: string, values: unknown[]): { limit(n: number): Promise<{ data: unknown; error: unknown }> };
-    };
+    select(columns?: string): EmotionFlowSelectResult;
   };
 }
