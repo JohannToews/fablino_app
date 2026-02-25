@@ -1,79 +1,67 @@
-# Fablino Translation Audit — UK/RU (Ukrainisch & Russisch)
+# RU/UA vs ES (IT, NL) – Übersetzungs-Review
 
-> Systematische Prüfung fehlender uk/ru-Übersetzungen. Kontext: Architecture.md, data_model.md.
+## Kurzfassung
 
----
+**Beobachtung:** Bei Schulsprache ES, IT oder NL sind alle Story-Wizard-Seiten korrekt in der gewählten Sprache (kein Deutsch). Bei RU und UA bleiben mehrere Seiten teilweise auf Deutsch.
 
-## Zusammenfassung
+**Ursachen (technisch):**
 
-| Metrik | Wert |
-|--------|------|
-| Geprüfte Dateien | 25+ (Story Wizard, Pages, Components) |
-| Gefundene Probleme | 8 |
-| Davon fehlende uk/ru Keys (Inline-Objekte) | 7 |
-| Davon DB-Übersetzungen (image_styles.labels etc.) | 1 (empfohlen) |
-| Behobene Fixes in diesem Durchgang | 7 |
+1. **Sprachquelle ist überall gleich:** Alle Screens nutzen `kidAppLanguage` aus `useKidProfile()` (abgeleitet aus `school_system`). Es gibt keinen anderen Code-Pfad für ES vs RU/UA.
+2. **Unterschied liegt bei Daten und Fallbacks:**
+   - **ES/IT/NL:** Entweder in allen Komponenten in den lokalen `translations`-Objekten vorhanden **oder** die DB-Tabellen (`image_styles.labels` etc.) enthalten diese Sprachen. Fallback `|| translations.de` wird nicht genutzt.
+   - **RU/UA:** Wenn die **Datenbank** für eine Tabelle (z. B. `image_styles`) noch keine `uk`/`ru`-Keys in den JSONB-Spalten hat, greift im Frontend der Fallback `style.labels?.de` → Anzeige auf Deutsch. Zusätzlich deckt die Migration `20260224120000_add_uk_ru_translations.sql` nur 6 von 8 Bildstilen ab (`3d_adventure`, `vintage_retro` fehlen für uk/ru).
 
----
-
-## Übersetzungssystem (Kurz)
-
-- **`src/lib/translations/`**: Pro-Sprache-Dateien (de, fr, en, es, nl, it, bs, uk, ru, …). Typ `Translations` erzwingt alle Keys; uk.ts und ru.ts sind vollständig.
-- **`useKidProfile`**: `kidAppLanguage` kommt aus `school_system` / `ui_language`; `getKidLanguage` und `toKidLanguage` unterstützen `uk` und `ru`.
-- **Story Wizard**: Viele Screens nutzen **lokale** `Record<string, T>`-Objekte (z. B. `translations`, `settingsTranslations`, `defaultFablinoMessages`). Diese hatten teils nur de/fr/en/es/nl/it/bs und keine uk/ru.
+3. **SpecialEffectsScreen:** Die Logik bevorzugt `kidAppLanguage`, wenn es `uk` oder `ru` ist; sonst wird die gewählte Story-Sprache (`storyLanguage`) genutzt. Wenn trotzdem Deutsch erscheint, liefert der Kontext für den **aktuell ausgewählten** Kinderprofil vermutlich `kidAppLanguage === 'de'` (z. B. anderes Kind ausgewählt oder Kontext nach Profil-Speichern noch nicht aktualisiert).
 
 ---
 
-## Detail-Tabelle (gefundene & behobene Stellen)
+## Vergleich: Wo kommt die Sprache her?
 
-| # | Datei | Bereich | Problem-Typ | Fix |
-|---|-------|---------|-------------|-----|
-| 1 | SpecialEffectsScreen.tsx | `translations` (Header, Placeholder, Buttons, Effekte) | uk/ru fehlten | uk + ru Einträge ergänzt |
-| 2 | SpecialEffectsScreen.tsx | `settingsTranslations` (Länge, Schwierigkeit, Serie, Sprache) | uk/ru fehlten | uk + ru Einträge ergänzt |
-| 3 | ImageStylePicker.tsx | `translations` (header, recommended, loading) | uk/ru fehlten | uk + ru ergänzt (bzw. bereits vorhanden, Fallback-Labels ergänzt) |
-| 4 | ImageStylePicker.tsx | Fallback-Style `labels` (DB leer) | nur de/en/fr | uk + ru für "Standardstil" ergänzt |
-| 5 | CharacterSelectionScreen.tsx | `defaultCharacterMessages` (Fablino-Sprechblase) | nur de/fr/en/es/nl/it/bs | uk + ru ergänzt |
-| 6 | StoryTypeSelectionScreen.tsx | `defaultFablinoMessages` (Fablino-Sprechblase) | nur de/fr/en/es/nl/it/bs | uk + ru ergänzt |
-| 7 | BranchDecisionScreen.tsx | `translations` (header, confirmButton, loadingText) | nur de/fr/en/es/nl/it/bs | uk + ru ergänzt |
-| 8 | StoryGenerationProgress.tsx | `progressSteps[].label` + `DID_YOU_KNOW` | uk/ru fehlten | uk + ru für alle 4 Schritte + DID_YOU_KNOW ergänzt |
+| Screen / Quelle | ES (funktioniert) | RU/UA (Problem) |
+|-----------------|-------------------|------------------|
+| **SpecialEffectsScreen** | `translations[uiLang]`, `settingsTranslations[uiLang]` – beide haben `es` | Gleiche Objekte haben `uk`/`ru`. Wenn UI trotzdem DE zeigt → `uiLang` ist dann `de` (Kontext = anderes Profil oder nicht aktualisiert). |
+| **ImageStylePicker** | Header/loading: lokales `translations[uiLanguage]` hat `es`. Karten-Labels: `style.labels?.[uiLanguage]` aus DB. | Header hat uk/ru. Karten-Labels: wenn DB keine `uk`/`ru` in `image_styles.labels` hat → Fallback `style.labels?.de` → **Deutsch**. Zusätzlich: Migration fügt uk/ru nur für 6 Stile hinzu; `3d_adventure`, `vintage_retro` fehlen. |
+| **CharacterSelectionScreen** | `defaultCharacterMessages[kidAppLanguage]` + ggf. lib/translations | uk/ru in `defaultCharacterMessages` vorhanden. |
+| **StoryTypeSelectionScreen** | `defaultFablinoMessages[kidAppLanguage]` | uk/ru vorhanden. |
+| **BranchDecisionScreen** | `translations[kidAppLanguage]` | uk/ru vorhanden. |
+| **StoryGenerationProgress** | `progressSteps[].label` pro Sprache | uk/ru vorhanden. |
 
 ---
 
-## Bereits vorhanden (kein Fix nötig)
+## Konkrete Unterschiede (warum ES geht, RU/UA nicht)
 
-- **types.ts**: `settingSelectionTranslations`, `characterSelectorTranslations`, `storyTypeSelectionTranslations`, `LANGUAGE_LABELS` etc. enthalten bereits uk/ru (Language-Typ inkl. uk | ru).
-- **VoiceRecordButton.tsx**: `VOICE_LABELS` hat uk/ru.
-- **ReadingPage.tsx**: `readingLabels` hat uk/ru (inkl. dismiss).
-- **lib/translations/uk.ts & ru.ts**: Vollständige UI-Übersetzungen für zentrale Keys.
+1. **DB-Migration nicht angewendet oder unvollständig**  
+   - Migration `20260224120000_add_uk_ru_translations.sql` fügt `uk`/`ru` für `image_styles` nur bei 6 `style_key`s hinzu.  
+   - `3d_adventure` und `vintage_retro` haben in der Migration **keine** uk/ru-Einträge → in der App erscheinen „3D Abenteuer“ und „Retro“ weiter auf Deutsch, sobald diese Stile angezeigt werden.
 
----
+2. **Kein clientseitiger Fallback für Bildstil-Labels**  
+   - In `ImageStylePicker` steht:  
+     `label = style.labels?.[uiLanguage] || style.labels?.de || style.style_key`  
+   - Wenn `image_styles.labels` für ein Style kein `uk`/`ru` hat (Migration fehlt oder Stil nicht in Migration), wird immer `de` genommen. Bei ES/IT/NL sind diese Keys oft schon in der DB oder in allen Stilen vorhanden.
 
-## DB-Übersetzungen (empfohlen, nicht im Code geändert)
-
-| Tabelle / Feld | Inhalt | Empfehlung |
-|----------------|--------|------------|
-| image_styles.labels (JSONB) | Style-Namen pro Sprache | Migration: für alle aktiven Styles `labels->>'uk'` und `labels->>'ru'` setzen (z. B. "Букварик (м’який)", "Стиль коміксу" etc.), damit das Grid nicht auf de/en zurückfällt. |
-| learning_themes.labels / descriptions | Themen-Labels | Falls Wizard/Admin diese anzeigt: uk/ru in JSONB ergänzen. |
-| content_themes_by_level.labels | ~19 Einträge | Analog uk/ru ergänzen, falls in UI genutzt. |
-| fun_facts.translations | Fakten pro Sprache | Bereits Record; Fallback im Code ist `translations?.[lang] \|\| translations?.en \|\| translations?.de` — DB-Einträge mit uk/ru befüllen für lokalisierte Fakten. |
+3. **Profil-Kontext**  
+   - Wenn das **aktuell ausgewählte** Kinderprofil in der App noch `school_system: 'de'` hat (z. B. anderes Kind gewählt oder Speichern ohne erneutes Laden), ist `kidAppLanguage === 'de'` und alle von `kidAppLanguage` abhängigen Texte (inkl. SpecialEffectsScreen, sofern nicht durch `storyLanguage` überschrieben) bleiben Deutsch.
 
 ---
 
-## Durchgeführte Änderungen (Übersicht)
+## Empfohlene Maßnahmen
 
-1. **SpecialEffectsScreen.tsx**: `translations` um uk/ru erweitert; `settingsTranslations` um uk/ru erweitert.
-2. **ImageStylePicker.tsx**: Fallback-Style `labels` um uk/ru erweitert. (Header/Recommended/Loading waren in der vorliegenden Version bereits uk/ru vorhanden.)
-3. **CharacterSelectionScreen.tsx**: `defaultCharacterMessages` um uk/ru erweitert.
-4. **StoryTypeSelectionScreen.tsx**: `defaultFablinoMessages` um uk/ru erweitert.
-5. **BranchDecisionScreen.tsx**: `translations` um uk/ru erweitert.
-6. **StoryGenerationProgress.tsx**: Alle `progressSteps[].label` und `DID_YOU_KNOW` um uk/ru erweitert.
-
-**Build**: `npm run build` erfolgreich.
+1. **ImageStylePicker:** Clientseitigen Fallback für uk/ru ergänzen: feste Map `style_key → { uk, ru }` für alle angezeigten Stile (inkl. `3d_adventure`, `vintage_retro`). Label-Logik:  
+   `style.labels?.[uiLanguage] || (Fallback[style.style_key]?.[uiLanguage]) || style.labels?.de || style.style_key`
+2. **Migration:** In `20260224120000_add_uk_ru_translations.sql` (oder neuer Migration) uk/ru für `image_styles` bei `3d_adventure` und `vintage_retro` ergänzen, damit die DB konsistent ist.
+3. **Profil-Speichern:** Bereits umgesetzt: nach Speichern wird `refreshGlobalProfiles()` aufgerufen, damit `kidAppLanguage` sich aktualisiert. Sicherstellen, dass Nutzer nach Ändern der Schulsprache auf RU/UA ggf. das richtige Kind ausgewählt haben und ein Mal die Seite wechseln oder neu laden, falls der Kontext einmal nicht sofort aktualisiert wurde.
 
 ---
 
-## Nächste Schritte (optional)
+## Dateien (Übersetzungen Story-Wizard)
 
-- SQL-Migration für `image_styles.labels` (uk/ru) ausführen.
-- Weitere Screens (Onboarding, Auth, Home, Reading, Results, Admin) stichprobenartig mit Sprache uk/ru durchklicken und verbleibende hardcodierte oder fehlende Keys nachpflegen.
-- `levelTranslations.ts` und Badge-/Level-Namen prüfen, ob uk/ru überall genutzt werden.
+| Datei | uk/ru in lokalem Objekt | Anmerkung |
+|-------|-------------------------|-----------|
+| SpecialEffectsScreen.tsx | ✅ translations, settingsTranslations | uiLang bevorzugt kidAppLanguage bei uk/ru. |
+| ImageStylePicker.tsx | ✅ translations (Header etc.) | Karten-Labels aus DB; Fallback de wenn DB kein uk/ru hat. |
+| CharacterSelectionScreen.tsx | ✅ defaultCharacterMessages | |
+| StoryTypeSelectionScreen.tsx | ✅ defaultFablinoMessages | |
+| BranchDecisionScreen.tsx | ✅ translations | |
+| StoryGenerationProgress.tsx | ✅ progressSteps, DID_YOU_KNOW | |
+
+Die Komponenten sind für RU/UA vorbereitet; das Verhalten „alles auf Deutsch“ entsteht durch DB-Fallbacks und ggf. falsches/veraltetes Profil im Kontext.

@@ -212,8 +212,9 @@ export function buildComicStripInstructions(
 
 // ─── Function 2: buildComicStripImagePrompt ───────────────────────
 
+const NO_PHYSICAL_BOOK = 'physical book, open book, book pages, book spread, book spine, page edges, white borders, grey background, frame around image';
 const NEGATIVE_PROMPT =
-  'text, words, letters, speech bubbles, captions, watermark, signature, blurry, low quality, different art styles between panels, inconsistent characters';
+  `${NO_PHYSICAL_BOOK}, text, words, letters, speech bubbles, captions, watermark, signature, blurry, low quality, different art styles between panels, inconsistent characters`;
 
 const NO_TEXT_RULE =
   'No text, speech bubbles, or readable writing in any panel.';
@@ -266,7 +267,7 @@ export function buildComicGridPrompt(
 
   return `${imageStylePrefix}
 
-Create a 2x2 grid of 4 children's book illustrations. Each panel MUST look visually DISTINCT — different framing, different part of the scene, different mood.
+Create a 2x2 grid of 4 children's illustrations. Each panel MUST look visually DISTINCT — different framing, different part of the scene, different mood. Full-bleed, no book frame or page borders.
 Setting: ${worldAnchor}
 
 ${GRID_LAYOUT_RULES}
@@ -370,7 +371,7 @@ export function buildComicStripImagePrompts(
 
     return [
       styleBlockParts.join('\n'),
-      'Create a 2x2 grid of 4 children\'s book illustrations. Each panel MUST look visually DISTINCT.',
+      'Create a 2x2 grid of 4 children\'s illustrations. Each panel MUST look visually DISTINCT. Full-bleed, no book frame or page borders.',
       gridRule,
       '',
       'Panel layout (left-to-right, top-to-bottom):',

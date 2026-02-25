@@ -83,6 +83,20 @@ const translations: Record<string, {
 
 const DEFAULT_STYLE_KEY = 'storybook_soft';
 
+/** Client-side fallback when DB image_styles.labels lack uk/ru (e.g. migration not applied or styles 3d_adventure/vintage_retro) */
+const FALLBACK_STYLE_LABELS_UK_RU: Record<string, { uk: string; ru: string }> = {
+  storybook_soft: { uk: "Книжка-картинка (м'яка)", ru: "Книжка-картинка (мягкая)" },
+  storybook_vibrant: { uk: "Книжка-картинка (яскрава)", ru: "Книжка-картинка (яркая)" },
+  manga_anime: { uk: "Манга / Аніме", ru: "Манга / Аниме" },
+  adventure_cartoon: { uk: "Пригодницький мультик", ru: "Приключенческий мультик" },
+  graphic_novel: { uk: "Графічний роман", ru: "Графический роман" },
+  semi_realistic: { uk: "Напівреалістичний", ru: "Полуреалистичный" },
+  "3d_adventure": { uk: "3D пригода", ru: "3D приключение" },
+  vintage_retro: { uk: "Ретро", ru: "Ретро" },
+  pixel_art: { uk: "Піксель", ru: "Пиксель" },
+  brick_block: { uk: "Блоки", ru: "Блоки" },
+};
+
 function getAgeGroup(age: number): string {
   if (age <= 7) return "6-7";
   if (age <= 9) return "8-9";
@@ -203,7 +217,8 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
           {styles.map((style) => {
             const isSelected = selectedKey === style.style_key;
             const isDefault = style.style_key === defaultStyleKey;
-            const label = style.labels?.[uiLanguage] || style.labels?.de || style.style_key;
+            const fallbackUkRu = (uiLanguage === 'uk' || uiLanguage === 'ru') ? FALLBACK_STYLE_LABELS_UK_RU[style.style_key]?.[uiLanguage] : undefined;
+            const label = style.labels?.[uiLanguage] || fallbackUkRu || style.labels?.de || style.style_key;
             const emoji = STYLE_EMOJIS[style.style_key] || "🖼️";
 
             return (

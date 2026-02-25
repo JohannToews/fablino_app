@@ -102,6 +102,9 @@ function buildSeriesStylePrefix(ctx: SeriesImageContext): string {
 
 const NO_TEXT_INSTRUCTION = 'NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO NUMBERS, NO SIGNS, NO LABELS, NO CAPTIONS, NO SPEECH BUBBLES anywhere in the image.';
 
+/** Appended to every image negative prompt so Imagen does not render a physical book (spine, pages, borders). */
+const NO_PHYSICAL_BOOK_NEGATIVE = 'Do NOT render as a physical book, open book, book pages, or book spread. No book spine, page edges, white borders, grey background, or any frame. Fill the entire square canvas edge-to-edge with no margins.';
+
 // ─── Age Modifier (fine-grained, per year) ───────────────────────
 
 /**
@@ -110,11 +113,11 @@ const NO_TEXT_INSTRUCTION = 'NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO NUMBE
  * should see different images than a 9-year-old.
  */
 function getAgeModifierFallback(age: number): string {
-  if (age <= 5) return 'Art style: soft picture book for very young children. Extremely cute, round, simple. Bright cheerful colors. Everything looks safe and friendly.';
-  if (age === 6) return 'Art style: colorful picture book illustration. Cute but not babyish. Friendly characters with big eyes. Warm bright colors.';
-  if (age === 7) return 'Art style: modern children book illustration. Characters look capable and curious. Slightly dynamic poses. Vibrant rich colors.';
+  if (age <= 5) return 'Art style: soft children\'s illustration for very young children. Extremely cute, round, simple. Bright cheerful colors. Everything looks safe and friendly.';
+  if (age === 6) return 'Art style: colorful children\'s illustration style. Cute but not babyish. Friendly characters with big eyes. Warm bright colors.';
+  if (age === 7) return 'Art style: modern digital illustration for children. Characters look capable and curious. Slightly dynamic poses. Vibrant rich colors.';
   if (age === 8) return 'Art style: adventure cartoon illustration. Characters look confident and cool. Action-ready poses. Bold dynamic colors with good contrast. NOT cute or babyish.';
-  if (age === 9) return 'Art style: detailed cartoon with comic book influence. Characters look brave and independent. Dynamic exciting compositions. Strong confident expressions. Cool factor high.';
+  if (age === 9) return 'Art style: detailed cartoon with comic influence. Characters look brave and independent. Dynamic exciting compositions. Strong confident expressions. Cool factor high.';
   if (age === 10) return 'Art style: graphic novel illustration. Characters look like real pre-teens with attitude and personality. Atmospheric moody lighting. Sophisticated color palette. Cinematic compositions.';
   if (age === 11) return 'Art style: young adult graphic novel. Semi-realistic characters with individual style. Dramatic lighting and angles. Complex emotions visible. Cool and mature aesthetic.';
   return 'Art style: young adult illustration. Realistic proportions, atmospheric, cinematic. Characters look like teenagers. Sophisticated visual storytelling.'; // 12+
@@ -244,6 +247,7 @@ export function buildImagePrompts(
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
+    NO_PHYSICAL_BOOK_NEGATIVE,                         // Global: prevent physical book / page frame
     imageStyleOverride?.negative_prompt,                // Style-specific (from image_styles DB)
     themeImageRules.image_negative_prompt,              // Theme-specific negatives (null until Phase 1.3)
     ageStyleRules.negative_prompt,                      // DB: image_style_rules.negative_prompt
@@ -277,7 +281,7 @@ export function buildImagePrompts(
     const sceneLines = [
       // Phase 3: Series prefix first (if available)
       seriesPrefix,
-      'Children book illustration, interior page.',
+      'Children\'s illustration, full-bleed interior scene. Single image filling the entire square frame, no borders or book frame.',
       `Characters: ${imagePlan.character_anchor}`,
       `Setting: ${imagePlan.world_anchor}`,
       `Scene: ${scene.description}`,
@@ -339,6 +343,7 @@ export function buildFallbackImagePrompt(
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
+    NO_PHYSICAL_BOOK_NEGATIVE,
     imageStyleOverride?.negative_prompt,
     themeImageRules.image_negative_prompt,
     ageStyleRules.negative_prompt,
@@ -349,7 +354,7 @@ export function buildFallbackImagePrompt(
 
   const prompt = [
     seriesPrefix,
-    'Children book cover illustration.',
+    'Children\'s illustration, full-bleed cover art. Single image filling the entire square frame, no borders or book frame.',
     characterDescription,
     `Title theme: ${storyTitle}`,
     seriesContext
