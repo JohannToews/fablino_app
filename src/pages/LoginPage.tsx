@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ const LoginPage = () => {
     return localStorage.getItem('liremagie_remember') === 'true';
   });
   const [isLoading, setIsLoading] = useState(false);
+  const loginGuardIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
@@ -44,10 +45,38 @@ const LoginPage = () => {
       return;
     }
 
+    const LOGIN_TIMEOUT_MS = 12000;
+    const start = Date.now();
+    let timedOut = false;
+
+    const hardStopTimer = window.setTimeout(() => {
+      timedOut = true;
+      setIsLoading(false);
+      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
+    }, LOGIN_TIMEOUT_MS + 3000);
+
+    if (loginGuardIntervalRef.current) window.clearInterval(loginGuardIntervalRef.current);
+    loginGuardIntervalRef.current = window.setInterval(() => {
+      if (Date.now() - start >= LOGIN_TIMEOUT_MS) {
+        if (loginGuardIntervalRef.current) {
+          window.clearInterval(loginGuardIntervalRef.current);
+          loginGuardIntervalRef.current = null;
+        }
+        timedOut = true;
+        setIsLoading(false);
+        toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
+      }
+    }, 1500);
+
     setIsLoading(true);
 
     try {
-      const result = await login(trimmedIdentifier, trimmedPassword);
+      const result = await Promise.race([
+        login(trimmedIdentifier, trimmedPassword),
+        new Promise<{ success: boolean; error?: string }>((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), LOGIN_TIMEOUT_MS)
+        ),
+      ]);
 
       if (result.success) {
         toast({
@@ -63,13 +92,20 @@ const LoginPage = () => {
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: t.authError,
-        description: t.authGenericError,
-        variant: "destructive",
-      });
+      if (!timedOut) {
+        console.error('Login error:', error);
+        toast({
+          title: t.authError,
+          description: t.authGenericError,
+          variant: "destructive",
+        });
+      }
     } finally {
+      window.clearTimeout(hardStopTimer);
+      if (loginGuardIntervalRef.current) {
+        window.clearInterval(loginGuardIntervalRef.current);
+        loginGuardIntervalRef.current = null;
+      }
       setIsLoading(false);
     }
   };

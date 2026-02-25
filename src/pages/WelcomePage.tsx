@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const WelcomePage = () => {
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loginInlineError, setLoginInlineError] = useState("");
+  const loginGuardIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -162,14 +163,33 @@ const WelcomePage = () => {
     if (isLoading) return;
 
     setLoginInlineError("");
+    const LOGIN_TIMEOUT_MS = 12000;
+    const GUARD_CHECK_MS = 1500;
     let timedOut = false;
+    const start = Date.now();
+    const timeoutMessage = t.authGenericError;
+
     const hardStopTimer = window.setTimeout(() => {
       timedOut = true;
-      const message = t.authGenericError;
       setIsLoading(false);
-      setLoginInlineError(message);
-      toast({ title: t.authError, description: message, variant: "destructive" });
-    }, 15000);
+      setLoginInlineError(timeoutMessage);
+      toast({ title: t.authError, description: timeoutMessage, variant: "destructive" });
+    }, LOGIN_TIMEOUT_MS + 3000);
+
+    // Wall-clock guard: works even when tab is in background (timer throttling)
+    if (loginGuardIntervalRef.current) window.clearInterval(loginGuardIntervalRef.current);
+    loginGuardIntervalRef.current = window.setInterval(() => {
+      if (Date.now() - start >= LOGIN_TIMEOUT_MS) {
+        if (loginGuardIntervalRef.current) {
+          window.clearInterval(loginGuardIntervalRef.current);
+          loginGuardIntervalRef.current = null;
+        }
+        timedOut = true;
+        setIsLoading(false);
+        setLoginInlineError(timeoutMessage);
+        toast({ title: t.authError, description: timeoutMessage, variant: "destructive" });
+      }
+    }, GUARD_CHECK_MS);
 
     setIsLoading(true);
     try {
@@ -178,7 +198,7 @@ const WelcomePage = () => {
           email: trimmedEmail,
           password: trimmedPassword,
         }),
-        12000
+        LOGIN_TIMEOUT_MS
       );
 
       if (error) {
@@ -188,7 +208,6 @@ const WelcomePage = () => {
       }
 
       if (data.user) {
-        // Redirect darf nicht unendlich hängen
         await withTimeout(handleAuthRedirect(), 8000);
       }
     } catch {
@@ -198,6 +217,10 @@ const WelcomePage = () => {
       }
     } finally {
       window.clearTimeout(hardStopTimer);
+      if (loginGuardIntervalRef.current) {
+        window.clearInterval(loginGuardIntervalRef.current);
+        loginGuardIntervalRef.current = null;
+      }
       setIsLoading(false);
     }
   };
