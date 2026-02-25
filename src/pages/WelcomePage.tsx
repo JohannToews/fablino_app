@@ -28,6 +28,7 @@ const WelcomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginInlineError, setLoginInlineError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -160,11 +161,14 @@ const WelcomePage = () => {
     }
     if (isLoading) return;
 
+    setLoginInlineError("");
     let timedOut = false;
     const hardStopTimer = window.setTimeout(() => {
       timedOut = true;
+      const message = t.authGenericError;
       setIsLoading(false);
-      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
+      setLoginInlineError(message);
+      toast({ title: t.authError, description: message, variant: "destructive" });
     }, 15000);
 
     setIsLoading(true);
@@ -178,6 +182,7 @@ const WelcomePage = () => {
       );
 
       if (error) {
+        setLoginInlineError(t.authWrongCredentials);
         toast({ title: t.authError, description: t.authWrongCredentials, variant: "destructive" });
         return;
       }
@@ -188,6 +193,7 @@ const WelcomePage = () => {
       }
     } catch {
       if (!timedOut) {
+        setLoginInlineError(t.authGenericError);
         toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
       }
     } finally {
@@ -255,7 +261,7 @@ const WelcomePage = () => {
           {/* Tab switcher */}
           <div className="flex rounded-2xl overflow-hidden border mb-4" style={{ borderColor: "rgba(232, 134, 58, 0.25)" }}>
             <button
-              onClick={() => setMode("register")}
+              onClick={() => { setMode("register"); setLoginInlineError(""); }}
               className="flex-1 py-2 text-sm font-semibold transition-all"
               style={{
                 background: mode === "register" ? "#E8863A" : "transparent",
@@ -265,7 +271,7 @@ const WelcomePage = () => {
               {t.authTabRegister}
             </button>
             <button
-              onClick={() => setMode("login")}
+              onClick={() => { setMode("login"); setLoginInlineError(""); }}
               className="flex-1 py-2 text-sm font-semibold transition-all"
               style={{
                 background: mode === "login" ? "#E8863A" : "transparent",
@@ -284,7 +290,7 @@ const WelcomePage = () => {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (loginInlineError) setLoginInlineError(""); }}
                 placeholder={t.authEmailPlaceholder}
                 className="h-11 rounded-xl border-2 text-base"
                 style={inputStyle}
@@ -299,7 +305,7 @@ const WelcomePage = () => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); if (loginInlineError) setLoginInlineError(""); }}
                   placeholder={mode === "register" ? t.authPasswordPlaceholderNew : t.authPasswordPlaceholderExisting}
                   className="h-11 rounded-xl border-2 pr-12 text-base"
                   style={inputStyle}
@@ -348,6 +354,10 @@ const WelcomePage = () => {
                 t.authSignInButton
               )}
             </Button>
+
+            {mode === "login" && loginInlineError && (
+              <p className="text-xs text-center text-destructive">{loginInlineError}</p>
+            )}
 
             {mode === "register" && (
               <p className="text-xs text-center" style={{ color: "rgba(45,24,16,0.45)" }}>
