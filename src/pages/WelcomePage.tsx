@@ -79,6 +79,15 @@ const WelcomePage = () => {
     }
   };
 
+  const withTimeout = async <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), ms)
+      ),
+    ]);
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedEmail = email.trim();
@@ -149,13 +158,24 @@ const WelcomePage = () => {
       toast({ title: t.authError, description: t.authFillAllFields, variant: "destructive" });
       return;
     }
+    if (isLoading) return;
+
+    let timedOut = false;
+    const hardStopTimer = window.setTimeout(() => {
+      timedOut = true;
+      setIsLoading(false);
+      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
+    }, 15000);
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password: trimmedPassword,
-      });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+        12000
+      );
 
       if (error) {
         toast({ title: t.authError, description: t.authWrongCredentials, variant: "destructive" });
@@ -163,11 +183,15 @@ const WelcomePage = () => {
       }
 
       if (data.user) {
-        await handleAuthRedirect();
+        // Redirect darf nicht unendlich hängen
+        await withTimeout(handleAuthRedirect(), 8000);
       }
     } catch {
-      toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
+      if (!timedOut) {
+        toast({ title: t.authError, description: t.authGenericError, variant: "destructive" });
+      }
     } finally {
+      window.clearTimeout(hardStopTimer);
       setIsLoading(false);
     }
   };
