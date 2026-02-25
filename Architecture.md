@@ -21,7 +21,8 @@
 13. [Immersive Reader](#immersive-reader)
 14. [Image Style System](#image-style-system)
 15. [Syllable Coloring](#syllable-coloring)
-16. [Technical Debt & Code Smells](#technical-debt--code-smells)
+16. [Feature Flags & Premium UI](#feature-flags--premium-ui)
+17. [Technical Debt & Code Smells](#technical-debt--code-smells)
 
 ---
 
@@ -77,7 +78,9 @@ kinder-wort-trainer/
 │   │   ├── LevelConfigSection.tsx     # Admin: level settings config
 │   │   ├── NavLink.tsx                # react-router NavLink wrapper
 │   │   ├── PageHeader.tsx             # Standard page header (title, back button)
-│   │   ├── ParentSettingsPanel.tsx     # Learning themes & content guardrails (Block 2.1)
+│   │   ├── ParentSettingsPanel.tsx     # Learning themes & content guardrails (Block 2.1); Premium UI toggle
+│   │   ├── PremiumUiBodyClass.tsx      # Sets body.premium-ui when premium_ui flag enabled (for CSS)
+│   │   ├── PremiumRouteTransition.tsx # Framer Motion route transitions when premium_ui enabled
 │   │   ├── PointsConfigSection.tsx    # Admin: configurable star values (point_settings table, 8 entries)
 │   │   ├── ProtectedRoute.tsx         # Route guard
 │   │   ├── QuizCompletionResult.tsx   # Result display after quiz
@@ -93,9 +96,9 @@ kinder-wort-trainer/
 │   │   ├── VoiceInputField.tsx        # Voice input via Web Speech API
 │   │   └── MigrationBanner.tsx        # Migration notification banner
 │   ├── config/
-│   │   └── features.ts                # Feature flags (NEW_FABLINO_HOME, SERIES_ENABLED, isSeriesEnabled())
+│   │   └── features.ts                # Static feature flags (NEW_FABLINO_HOME, SERIES_ENABLED, isSeriesEnabled())
 │   ├── constants/
-│   │   └── design-tokens.ts           # FABLINO_COLORS, FABLINO_SIZES, FABLINO_STYLES
+│   │   └── design-tokens.ts           # FABLINO_COLORS, FABLINO_SIZES, FABLINO_STYLES, FABLINO_SHADOWS, FABLINO_MOTION
 │   ├── hooks/
 │   │   ├── useAuth.tsx                # Auth context (login/logout, session)
 │   │   ├── useKidProfile.tsx          # Kid profile management (multi-profile, language derivation)
@@ -103,6 +106,7 @@ kinder-wort-trainer/
 │   │   ├── useResultsPage.tsx         # Results page data (calls get_results_page RPC)
 │   │   ├── useCollection.tsx          # Collectible items
 │   │   ├── useColorPalette.tsx        # Color themes per kid (ocean, sunset, forest, lavender, sunshine)
+│   │   ├── usePremiumUi.ts            # Premium UI feature flag (read/set via manage-users; refetch on nav/focus)
 │   │   ├── useEdgeFunctionHeaders.tsx # Headers for edge function requests
 │   │   ├── useStoryRealtime.tsx       # Supabase realtime subscriptions
 │   │   ├── useVoiceRecorder.ts        # MediaRecorder + Gladia STT (states: idle/recording/processing/result/error)
@@ -138,7 +142,7 @@ kinder-wort-trainer/
 │   │   ├── migrate-covers/            # Migrates cover images to story-images bucket
 │   │   ├── migrate-user-auth/         # Auth migration (called from MigrationBanner)
 │   │   └── …                          # 14 more Edge Functions
-│   └── migrations/                    # 80+ SQL migrations (incl. 7 Gamification Phase 1 + 3 performance/storage + Series Phase 1 + 2 Image Styles + 1 Immersive Reader)
+│   └── migrations/                    # 80+ SQL migrations (incl. Gamification Phase 1, Series Phase 1, Image Styles, Immersive Reader, premium_ui feature flag in app_settings)
 ├── Architecture.md                    # This file
 ├── package.json
 ├── vite.config.ts
@@ -167,6 +171,8 @@ kinder-wort-trainer/
 |-------|------|-------------|
 | `/` | HomeFablino (or HomeClassic) | Home with Fablino mascot via FablinoPageHeader (mascotSize="md"), profile switcher, action buttons (design tokens), weekly tracker card. Feature flag controlled. |
 | `/admin` | AdminPage | Admin dashboard (Profile, Erziehung, Stories, Settings, Account, System tabs) |
+| `/admin/feature-flags` | FeatureFlagsPage | Per-user feature toggles (Emotion-Flow, Comic-Strip, Premium UI) – admin only |
+| `/admin/config` | AdminConfigPage | Image model config, cost estimates – admin only |
 | `/stories` | StorySelectPage | Story browser (fiction/non-fiction/series) – React Query cached, RPC `get_my_stories_list` |
 | `/read/:id` | ReadingPage | Story reading (Classic default, Immersive admin-only). Word tap, audio, quiz, scene images. `?mode=immersive` admin param. |
 | `/quiz` | VocabularyQuizPage | Vocabulary quiz (multiple choice, awards stars) |
@@ -177,6 +183,8 @@ kinder-wort-trainer/
 | `/collection` | CollectionPage | Collectibles earned from stories |
 | `/sticker-buch` | StickerBookPage | Sticker book (story covers as collectibles) |
 | `*` | NotFound | 404 page |
+
+Protected routes are wrapped in a layout route with `PremiumRouteTransition`: when the Premium UI feature flag is enabled for the user, Framer Motion (fade + y) runs on route change.
 
 ---
 
@@ -224,7 +232,7 @@ kinder-wort-trainer/
 
 ## Authentication Flow
 
-Custom auth system (NOT Supabase Auth). Uses `user_profiles` table with username/password.
+Dual auth: **legacy** (username/password, token in sessionStorage) and **Supabase Auth** (user_profiles.auth_id, Bearer token). Edge Functions accept both via `getAuthenticatedUser` (_shared/auth.ts). Uses `user_profiles` and `user_roles`.
 
 ```
 User enters username + password
@@ -605,7 +613,7 @@ Current styles: `watercolor_storybook`, `paper_cut`, `cartoon_vibrant`, `whimsic
 
 | Table | Purpose |
 |-------|---------|
-| `app_settings` | Key-value config (system prompts, custom settings) |
+| `app_settings` | Key-value config: system prompts, custom settings; **per-user feature flags** (keys: `emotion_flow_enabled_users`, `comic_strip_enabled_users`, `premium_ui_enabled_users` — values: JSON array of user_profiles.id or `["*"]` for all) |
 | `story_ratings` | Story quality feedback (1-5 rating, weakest part) |
 | `consistency_check_results` | LLM consistency check logs |
 | `image_cache` | Generated image cache (by prompt hash) |
@@ -657,12 +665,13 @@ useKidProfile.tsx → getKidLanguage(school_system)
 
 | Hook | Purpose | Data Source |
 |------|---------|------------|
-| `useAuth` | Authentication context (login/logout, session) | sessionStorage |
+| `useAuth` | Authentication context (login/logout, session). Supports **Supabase Auth** (user_profiles.auth_id) and **legacy** (sessionStorage). Fetches role from user_roles. | sessionStorage / Supabase Auth |
 | `useKidProfile` | Kid profile selection, language derivation | React Context + Supabase kid_profiles |
 | `useGamification` | Star rewards from `point_settings` DB table, level computation, progress loading. **Phase 2 partial fix**: `total_points` → `total_stars` insert fixed. Lovable updated `loadProgress()` to read `total_stars`. Still uses local LEVELS + direct DB updates (not fully RPC-driven yet). | `point_settings` + Supabase `user_progress` |
 | `useResultsPage` | Results page data (level, badges, hints). **⚠️ NEEDS UPDATE**: interface doesn't match new `get_results_page` RPC response (new fields: total_stories_read, total_perfect_quizzes, languages_read, full badges array with times_earned). | Supabase RPC `get_results_page` |
 | `useCollection` | Collectible items | Supabase collected_items |
 | `useColorPalette` | Color theme per kid profile | Derived from kid_profiles.color_palette |
+| `usePremiumUi` | Premium UI feature flag for current user. Reads via `manage-users` action `getPremiumUi`; sets via `setPremiumUi`. Refetches on route change and window focus so toggles (e.g. on Feature Flags page) apply without full reload. | Edge Function `manage-users` (app_settings.premium_ui_enabled_users) |
 | `useEdgeFunctionHeaders` | Headers for edge function requests | Auth session |
 | `useStoryRealtime` | Live story generation status | Supabase Realtime subscription |
 | `useVoiceRecorder` | Audio recording + Gladia STT transcription. States: idle/recording/processing/result/error. MediaRecorder with 30s max. Exposes AnalyserNode for waveform visualization. Retry logic (2 attempts). | MediaRecorder API + `speech-to-text` Edge Function |
@@ -693,7 +702,7 @@ useKidProfile.tsx → getKidLanguage(school_system)
 | `speech-to-text` | Gladia V2 (EU) | — |
 | `verify-login` | — | reads: user_profiles |
 | `register-user` | — | reads/writes: user_profiles |
-| `manage-users` | — | reads/writes: user_profiles, user_roles, app_settings, kid_profiles, stories, marked_words, comprehension_questions, user_results |
+| `manage-users` | Auth (Supabase + legacy), list/create/delete users, update languages, update system prompts in app_settings. **Premium UI**: actions `getPremiumUi` (returns `{ enabled }` for current user) and `setPremiumUi` (add/remove current user id in app_settings.premium_ui_enabled_users). | reads/writes: user_profiles, user_roles, app_settings, kid_profiles, stories, marked_words, comprehension_questions, user_results |
 | `create-share` | — | reads: stories; writes: shared_stories |
 | `get-share` | — | reads: shared_stories, stories |
 | `import-story` | — | reads: shared_stories, stories; writes: stories |
@@ -711,7 +720,7 @@ useKidProfile.tsx → getKidLanguage(school_system)
 | `FablinoMascot` | `src/components/FablinoMascot.tsx` | Reusable mascot image with consistent sizing via design tokens. Sizes: `sm` (64px), `md` (100px, default), `lg` (130px) max-height. Optional bounce animation (`gentleBounce` from global CSS). |
 | `SpeechBubble` | `src/components/SpeechBubble.tsx` | Reusable speech bubble next to Fablino. Variants: `hero` (large white, left-pointing triangle) and `tip` (smaller orange-tinted, centered). min/max-width from design tokens (200/300px). Text color `#2D1810`. |
 | `FablinoPageHeader` | `src/components/FablinoPageHeader.tsx` | Combines FablinoMascot + SpeechBubble in a flex row. Used on ALL screens with Fablino (Home, Entry, Theme, Characters, Effects). Always `mascotSize="md"` for pixel-perfect consistency across screens. |
-| `design-tokens.ts` | `src/constants/design-tokens.ts` | Centralized design constants: `FABLINO_COLORS` (primary, text, speech bubble), `FABLINO_SIZES` (mascot sm/md/lg, speech bubble min/max-width, button height), `FABLINO_STYLES` (primary/secondary button Tailwind classes). |
+| `design-tokens.ts` | `src/constants/design-tokens.ts` | Centralized design constants: `FABLINO_COLORS`, `FABLINO_SIZES`, `FABLINO_STYLES` (primary/secondary button classes), `FABLINO_SHADOWS` (soft, card, cardHover, button, buttonHover, modal), `FABLINO_MOTION` (fast/normal/slow durations in ms). |
 | `BadgeCelebrationModal` | `src/components/BadgeCelebrationModal.tsx` | Fullscreen modal for new badges. CSS confetti/star animations, badge emoji, Fablino mascot, "Weiter" button. Supports multiple badges (cycles through). Scale-up entrance animation. |
 | `FablinoReaction` | `src/components/FablinoReaction.tsx` | Animated mascot reactions: celebrate, encourage, welcome, levelUp, perfect. |
 
@@ -1072,6 +1081,42 @@ Alternating blue (#2563EB) / red (#DC2626) syllable coloring. Continuous color o
 
 ---
 
+## Feature Flags & Premium UI
+
+### Static flags (config/features.ts)
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `NEW_FABLINO_HOME` | true | Use HomeFablino instead of HomeClassic on `/` |
+| `SERIES_ENABLED` | true | Allow series creation; `isSeriesEnabled(role)` also true for admin |
+
+### Per-user flags (app_settings)
+
+Stored in `app_settings` as JSON arrays of `user_profiles.id`. Value `["*"]` = enabled for all users; `[]` = none.
+
+| Key | Toggle location | Purpose |
+|-----|-----------------|---------|
+| `emotion_flow_enabled_users` | Admin → Feature Flags | Emotion-Flow story generation (backend) |
+| `comic_strip_enabled_users` | Admin → Feature Flags | Comic-strip layout (backend) |
+| `premium_ui_enabled_users` | Admin → Feature Flags, or Parent Settings (Eltern) | Premium UI styling (frontend) |
+
+### Premium UI flow
+
+1. **Read**: Frontend calls Edge Function `manage-users` with `action: "getPremiumUi"`. Function reads `app_settings.premium_ui_enabled_users` and returns `{ enabled: boolean }` for the authenticated user. Hook `usePremiumUi` refetches on route change and window focus so toggles apply without full reload.
+2. **Write**: Admin toggles on **Feature Flags** page (writes `app_settings` via client where RLS allows) or user toggles in **Parent Settings** (calls `manage-users` with `action: "setPremiumUi", enabled`).
+3. **Apply**: `PremiumUiBodyClass` (in App, under AuthProvider) adds or removes the CSS class `premium-ui` on `document.body` when `premiumUiEnabled` is true. All premium-only styles in `index.css` are scoped under `body.premium-ui` (button shadows, card elevation, radial background, input min-height, selected-state glow). Key CTAs use `data-premium-button="primary"` or `data-premium-card` so they receive these styles.
+4. **Route transitions**: When premium UI is on, `PremiumRouteTransition` wraps protected routes and applies Framer Motion (fade + slight y) on route change.
+
+### Components
+
+| Component | Role |
+|-----------|------|
+| `PremiumUiBodyClass` | Sets `body.premium-ui` from `usePremiumUi().premiumUiEnabled` |
+| `PremiumRouteTransition` | Layout route: wraps `<Outlet />` in AnimatePresence + motion.div when premium UI enabled |
+| `FeatureFlagsPage` | Admin UI: list users, toggle Emotion-Flow / Comic-Strip / Premium UI per user or globally |
+
+---
+
 ## Technical Debt & Code Smells
 
 ### Critical
@@ -1194,4 +1239,4 @@ Alternating blue (#2563EB) / red (#DC2626) syllable coloring. Continuous color o
 
 ---
 
-*Last updated: 2026-02-18. Covers: Block 1 (multilingual DB), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization complete (design-tokens.ts, FablinoMascot sm=64/md=100/lg=130, SpeechBubble, FablinoPageHeader on all screens, compact SpecialEffectsScreen, theme/character Vite imports), **Gamification Phase 1 backend complete** (7 migrations), **Gamification Phase 2 frontend fixes complete** (total_stars insert, activity types story_read/quiz_complete, allBadgeCount=23), **Performance optimizations** (React Query caching on StorySelectPage, server-side story list RPC, image thumbnails via getThumbnailUrl, lazy loading), **New infrastructure** (story-images storage bucket, edgeFunctionHelper with legacy auth, migrate-covers + migrate-user-auth edge functions, SavedCharactersModal, ConsistencyCheckStats, stories.is_favorite), **Series Feature Modus A complete** (Phase 0-5), **Voice Input** (useVoiceRecorder hook + VoiceRecordButton + WaveformVisualizer), **Speech-to-Text rewrite** (ElevenLabs → Gladia V2 API with custom vocabulary), **Immersive Reader** (admin-only book-style reader with pixel-based content splitting, landscape spreads, cover page with multi-paragraph fill, image deduplication, syllable coloring DE/FR, fullscreen mode, warm cream background #FFF9F0, 17 components in src/components/immersive-reader/), **Image Style System** (Phase 1: image_styles DB table with 10 styles + getStyleForAge() reads from DB; Phase 2: ImageStylePicker in Story Wizard Screen 4; Phase 3: ImageStylesSection CRUD in Admin Panel with preview upload), **Syllable Coloring** (hybrid approach: hypher sync for DE, hyphen async+cache for FR; SyllableText component; toggle restricted to DE/FR; live monitoring), **Classic Reader default** (all users default to classic, admin toggle for immersive via URL param or UI toggle).*
+*Last updated: 2026-02-24. Covers: Block 1 (multilingual DB), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization complete (design-tokens.ts including FABLINO_SHADOWS/FABLINO_MOTION, FablinoMascot, SpeechBubble, FablinoPageHeader, compact SpecialEffectsScreen, theme/character Vite imports), **Gamification Phase 1 backend complete** (7 migrations), **Gamification Phase 2 frontend fixes complete** (total_stars insert, activity types story_read/quiz_complete, allBadgeCount=23), **Performance optimizations** (React Query caching on StorySelectPage, server-side story list RPC, image thumbnails via getThumbnailUrl, lazy loading), **New infrastructure** (story-images storage bucket, edgeFunctionHelper with legacy auth, migrate-covers + migrate-user-auth edge functions, SavedCharactersModal, ConsistencyCheckStats, stories.is_favorite), **Series Feature Modus A complete** (Phase 0-5), **Voice Input** (useVoiceRecorder hook + VoiceRecordButton + WaveformVisualizer), **Speech-to-Text rewrite** (ElevenLabs → Gladia V2 API with custom vocabulary), **Immersive Reader** (admin-only book-style reader with pixel-based content splitting, landscape spreads, cover page with multi-paragraph fill, image deduplication, syllable coloring DE/FR, fullscreen mode, warm cream background #FFF9F0, 17 components in src/components/immersive-reader/), **Image Style System** (Phase 1: image_styles DB table with 10 styles + getStyleForAge() reads from DB; Phase 2: ImageStylePicker in Story Wizard Screen 4; Phase 3: ImageStylesSection CRUD in Admin Panel with preview upload), **Syllable Coloring** (hybrid approach: hypher sync for DE, hyphen async+cache for FR; SyllableText component; toggle restricted to DE/FR; live monitoring), **Classic Reader default** (all users default to classic, admin toggle for immersive via URL param or UI toggle), **Feature Flags & Premium UI** (per-user flags in app_settings: emotion_flow_enabled_users, comic_strip_enabled_users, premium_ui_enabled_users; FeatureFlagsPage for admin toggles; usePremiumUi hook + PremiumUiBodyClass for body.premium-ui; PremiumRouteTransition for route animations; manage-users getPremiumUi/setPremiumUi; design-tokens FABLINO_SHADOWS/FABLINO_MOTION).*

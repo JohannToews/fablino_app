@@ -1,6 +1,6 @@
 // i18n system — split into per-language files
 
-export type Language = 'de' | 'en' | 'fr' | 'es' | 'nl' | 'it' | 'bs' | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk';
+export type Language = 'de' | 'en' | 'fr' | 'es' | 'nl' | 'it' | 'bs' | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk' | 'uk' | 'ru';
 
 export interface Translations {
   // Common
@@ -564,6 +564,8 @@ import ca from './ca';
 import sl from './sl';
 import pt from './pt';
 import sk from './sk';
+import uk from './uk';
+import ru from './ru';
 
 const translations: Record<Language, Translations> = {
   de,
@@ -583,6 +585,8 @@ const translations: Record<Language, Translations> = {
   sl,
   pt,
   sk,
+  uk,
+  ru,
 };
 
 const FALLBACK_CHAIN: Language[] = ['en', 'de'];

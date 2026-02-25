@@ -29,6 +29,8 @@ export const LANGUAGES: AppLanguage[] = [
   { code: 'sl', nameNative: 'Slovenščina', nameEN: 'Slovenian',  flag: '🇸🇮', uiSupported: true, storySupported: true, tier: 'beta' },
   { code: 'pt', nameNative: 'Português',   nameEN: 'Portuguese', flag: '🇵🇹', uiSupported: true, storySupported: true, tier: 'beta' },
   { code: 'sk', nameNative: 'Slovenčina',  nameEN: 'Slovak',     flag: '🇸🇰', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'uk', nameNative: 'Українська', nameEN: 'Ukrainian',  flag: '🇺🇦', uiSupported: true, storySupported: true, tier: 'beta' },
+  { code: 'ru', nameNative: 'Русский',    nameEN: 'Russian',    flag: '🇷🇺', uiSupported: true, storySupported: true, tier: 'beta' },
 ];
 
 export const STORY_LANGUAGES = LANGUAGES.filter(l => l.storySupported);

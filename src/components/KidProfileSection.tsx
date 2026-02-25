@@ -870,6 +870,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                     onChange={(e) => updateCurrentProfile({ name: e.target.value })}
                     placeholder={language === 'de' ? 'z.B. Emma' : language === 'es' ? 'ej. Emma' : language === 'nl' ? 'bijv. Emma' : language === 'en' ? 'e.g. Emma' : 'ex. Emma'}
                     className="border-orange-200 focus:border-orange-400"
+                    maxLength={80}
                   />
                 </div>
                 <div className="space-y-1.5">

@@ -3,7 +3,7 @@
 > Complete database schema reference for Cursor and AI-assisted development.
 > Covers all Supabase PostgreSQL tables, enums, RPC functions, and planned extensions.
 
-**Last updated**: 2026-02-12
+**Last updated**: 2026-02-24
 
 ---
 
@@ -32,7 +32,7 @@
 - **Enums**: 3
 - **RPC functions**: 5
 - **Migrations**: 78+ SQL files
-- **Auth**: Custom (NOT Supabase Auth) — `user_profiles` table with username/password
+- **Auth**: Dual — legacy (username/password, sessionStorage) and Supabase Auth (`user_profiles.auth_id`). Edge Functions accept both.
 
 ---
 
@@ -92,17 +92,21 @@ difficulty_rules            ← 9 entries (3 levels × 3 langs)
 
 ### `user_profiles`
 
-User accounts (custom auth, NOT Supabase Auth).
+User accounts. Supports legacy login (username/password) and Supabase Auth (link via `auth_id`).
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
-| `username` | TEXT UNIQUE | Login credential |
-| `password_hash` | TEXT | ⚠️ Currently plain text (tech debt) |
+| `username` | TEXT UNIQUE | Login credential (legacy) |
+| `password_hash` | TEXT | ⚠️ Legacy; plain text (tech debt) |
 | `display_name` | TEXT | |
 | `admin_language` | TEXT | Admin UI language |
 | `app_language` | TEXT | Parent-facing app language |
 | `text_language` | TEXT | Default story language |
+| `auth_id` | UUID NULL | Supabase Auth user id (when migrated) |
+| `auth_migrated` | BOOLEAN NULL | True if account uses Supabase Auth |
+| `email` | TEXT NULL | Email (Supabase Auth) |
+| `system_prompt` | TEXT NULL | Optional per-user system prompt override |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | Auto-updated via trigger |
 
@@ -505,17 +509,25 @@ Per-kid learning preferences (set by parent in admin).
 
 ### `app_settings`
 
-Key-value configuration store.
+Key-value configuration store. RLS typically allows read for all; write via Edge Functions or admin-only policies.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
 | `key` | TEXT UNIQUE | Setting identifier |
-| `value` | TEXT | Setting value (often long prompt texts) |
+| `value` | TEXT | Setting value (JSON string or long prompt text) |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | |
 
-**Key entries**: System prompts (CORE Slim v2, modular prompts), custom settings.
+**Key categories**:
+- **System prompts**: CORE Slim v2, modular prompts per language, consistency check, etc.
+- **Per-user feature flags** (value = JSON array of `user_profiles.id`, or `["*"]` for all):
+
+| Key | Purpose | Toggle location |
+|-----|---------|-----------------|
+| `emotion_flow_enabled_users` | Emotion-Flow story generation (backend) | Admin → Feature Flags |
+| `comic_strip_enabled_users` | Comic-strip layout (backend) | Admin → Feature Flags |
+| `premium_ui_enabled_users` | Premium UI styling (frontend: body.premium-ui, shadows, route transitions) | Admin → Feature Flags, or Parent Settings (Eltern) |
 
 ### `story_ratings`
 

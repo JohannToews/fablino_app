@@ -1071,7 +1071,10 @@ export async function buildStoryPrompt(
   // ── 1. Load age_rules (with fallback to 'de') ──
   // Clamp to min 6 for DB lookup — age_rules starts at min_age=6.
   // The real age (e.g. 5) is still used in the prompt text itself.
-  const ageForRules = Math.max(request.kid_profile.age, 6);
+  // Guard against null/undefined/NaN to avoid broken DB query.
+  const rawAge = request.kid_profile?.age;
+  const ageNum = typeof rawAge === 'number' && !Number.isNaN(rawAge) ? rawAge : 6;
+  const ageForRules = Math.max(ageNum, 6);
 
   let ageRules: any = null;
   {

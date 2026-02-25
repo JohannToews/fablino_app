@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthOptional } from "./useAuth";
 
 export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs'
-  | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk';
+  | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk' | 'uk' | 'ru';
 
 export interface KidProfile {
   id: string;
@@ -27,7 +27,7 @@ export interface KidProfile {
 }
 
 // Derive app language from school_system (legacy fallback)
-const VALID_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl'];
+const VALID_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl', 'pt', 'sk', 'uk', 'ru'];
 
 export const getKidLanguage = (schoolSystem: string | undefined): KidLanguage => {
   if (!schoolSystem) return 'fr';

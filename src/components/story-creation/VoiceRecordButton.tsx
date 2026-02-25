@@ -68,6 +68,24 @@ const VOICE_LABELS: Record<string, {
     empty: 'Hmm, Fablino non ha capito. Riprova!',
     failed: 'Qualcosa è andato storto. Riprova!',
   },
+  uk: {
+    speak: 'Скажи своє бажання!',
+    listening: 'Фабліно слухає...',
+    retry: 'Ще раз',
+    confirm: 'Прийняти!',
+    mic_denied: 'Фабліно потрібен мікрофон! Попроси батьків про допомогу.',
+    empty: 'Хм, Фабліно не зрозумів. Спробуй ще раз!',
+    failed: 'Щось пішло не так. Спробуй ще раз!',
+  },
+  ru: {
+    speak: 'Скажи своё желание!',
+    listening: 'Фабліно слушает...',
+    retry: 'Ещё раз',
+    confirm: 'Принять!',
+    mic_denied: 'Фабліно нужен микрофон! Попроси родителей о помощи.',
+    empty: 'Хм, Фабліно не понял. Попробуй ещё раз!',
+    failed: 'Что-то пошло не так. Попробуй ещё раз!',
+  },
 };
 
 const getLabels = (lang: string) => VOICE_LABELS[lang] || VOICE_LABELS.de;

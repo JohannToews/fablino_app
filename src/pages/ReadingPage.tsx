@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"; // rebuild trigger
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -405,6 +405,48 @@ const readingLabels: Record<string, {
     seriesCompleted: "Serija zaključena! 🦊🎉",
     backToLibrary: "Nazaj v knjižnico",
     episode: "Epizoda",
+  },
+  uk: {
+    thinking: "Думаю...",
+    noExplanation: "Пояснення не знайдено.",
+    retry: "Спробувати знову",
+    save: "Зберегти",
+    saved: "Збережено!",
+    explain: "Пояснити",
+    dismiss: "Закрити",
+    touchWord: "Натисни на слово, щоб дізнатися його значення",
+    finishedReading: "Прочитав/ла",
+    alreadyRead: "Вже прочитано ✓",
+    listeningMode: "Слухай історію...",
+    comprehensionQuestions: "Питання на розуміння",
+    storyCompleted: "Супер! Ти прочитав/ла!",
+    continueStory: "Що далі?",
+    generatingContinuation: "Створення продовження...",
+    generatingSeriesContinuation: "Фабліно пише наступний розділ...",
+    seriesCompleted: "Серію завершено! 🦊🎉",
+    backToLibrary: "Назад до бібліотеки",
+    episode: "Серія",
+  },
+  ru: {
+    thinking: "Думаю...",
+    noExplanation: "Объяснение не найдено.",
+    retry: "Попробовать снова",
+    save: "Сохранить",
+    saved: "Сохранено!",
+    explain: "Объяснить",
+    dismiss: "Закрыть",
+    touchWord: "Нажми на слово, чтобы узнать его значение",
+    finishedReading: "Прочитал/а",
+    alreadyRead: "Уже прочитано ✓",
+    listeningMode: "Слушай историю...",
+    comprehensionQuestions: "Вопросы на понимание",
+    storyCompleted: "Супер! Ты прочитал/а!",
+    continueStory: "Что дальше?",
+    generatingContinuation: "Создание продолжения...",
+    generatingSeriesContinuation: "Фабліно пишет следующую главу...",
+    seriesCompleted: "Серия завершена! 🦊🎉",
+    backToLibrary: "Назад в библиотеку",
+    episode: "Серия",
   },
 };
 
@@ -1926,8 +1968,13 @@ const ReadingPage = () => {
     );
   }
 
+  // Story not found (e.g. invalid id or load error) — avoid rendering content with null story
+  if (!story) {
+    return <Navigate to="/stories" replace />;
+  }
+
   // ── Immersive Reader Mode ─────────────────────────────────
-  if (viewMode === 'immersive' && story) {
+  if (viewMode === 'immersive') {
     return (
       <div className="min-h-screen relative">
         {/* Mode toggle: switch back to classic */}
