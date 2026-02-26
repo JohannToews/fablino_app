@@ -1420,6 +1420,7 @@ export type Database = {
           updated_at: string
           used_emotion_flow: boolean | null
           user_id: string | null
+          user_prompt_text: string | null
           visual_style_sheet: Json | null
         }
         Insert: {
@@ -1477,6 +1478,7 @@ export type Database = {
           updated_at?: string
           used_emotion_flow?: boolean | null
           user_id?: string | null
+          user_prompt_text?: string | null
           visual_style_sheet?: Json | null
         }
         Update: {
@@ -1534,6 +1536,7 @@ export type Database = {
           updated_at?: string
           used_emotion_flow?: boolean | null
           user_id?: string | null
+          user_prompt_text?: string | null
           visual_style_sheet?: Json | null
         }
         Relationships: [
@@ -2327,6 +2330,7 @@ export type Database = {
           updated_at: string
           used_emotion_flow: boolean | null
           user_id: string | null
+          user_prompt_text: string | null
           visual_style_sheet: Json | null
         }[]
         SetofOptions: {
