@@ -210,7 +210,7 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
         >
           "{transcript}"
         </p>
-        <div className="flex items-center gap-4">
+        <div className="relative z-10 flex items-center gap-4">
           <button
             type="button"
             onClick={retry}
