@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 
-const ALL_LANGS = ["de","fr","en","es","nl","it","bs","pt","sk","tr","bg","ro","pl","lt","hu","ca","sl"];
+const ALL_LANGS = ["de","fr","en","es","nl","it","bs","pt","sk","tr","bg","ro","pl","lt","hu","ca","sl","uk","ru"];
 
 const LANG_NAMES: Record<string, string> = {
   de: "German", fr: "French", en: "English", es: "Spanish",
@@ -9,6 +9,8 @@ const LANG_NAMES: Record<string, string> = {
   sk: "Slovak", tr: "Turkish", bg: "Bulgarian", ro: "Romanian",
   pl: "Polish", lt: "Lithuanian", hu: "Hungarian", ca: "Catalan",
   sl: "Slovenian",
+  uk: "Ukrainian",
+  ru: "Russian",
 };
 
 Deno.serve(async (req) => {

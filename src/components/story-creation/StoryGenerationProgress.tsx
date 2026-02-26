@@ -116,7 +116,7 @@ const DID_YOU_KNOW: Record<string, string> = {
   ru: "А ты знал, что",
 };
 
-const SHOW_DURATION = 4500;
+const SHOW_DURATION = 5500;
 const HIDE_DURATION = 800;
 
 const shuffle = (arr: string[]) => {
