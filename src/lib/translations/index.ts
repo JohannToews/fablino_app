@@ -551,6 +551,15 @@ export interface Translations {
   // StickerBookPage
   stickerStoriesCollectedFallback: string;
 
+  // Install Prompt
+  installBannerTitle: string;
+  installBannerSubtitle: string;
+  installBannerButton: string;
+  installModalTitle: string;
+  installModalDescription: string;
+  installModalYes: string;
+  installModalLater: string;
+
 }
 
 import de from './de';

@@ -8,6 +8,10 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import { FABLINO_STYLES } from "@/constants/design-tokens";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { getTranslations } from "@/lib/translations";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 // ═══ Localized texts ═══
 
@@ -126,12 +130,46 @@ const HomeFablino = () => {
   const location = useLocation();
   const { state: gamificationState, refreshProgress } = useGamification();
 
+  const {
+    isInstalled,
+    triggerInstall,
+    bannerDismissed,
+    dismissBanner,
+    modalShown,
+    markModalShown,
+  } = useInstallPrompt();
+
+  const t = getTranslations(kidAppLanguage);
+
+  // Install modal state
+  const [showInstallModal, setShowInstallModal] = useState(false);
+
   // Refresh gamification data every time we navigate to this page
   useEffect(() => {
     if (location.pathname === '/') {
       refreshProgress();
     }
   }, [location.key]); // location.key changes on every navigation
+
+  // One-time install modal: show after first story exists
+  useEffect(() => {
+    if (isInstalled || modalShown || !selectedProfileId) return;
+
+    const checkStories = async () => {
+      const { count } = await supabase
+        .from("stories")
+        .select("id", { count: "exact", head: true })
+        .eq("kid_profile_id", selectedProfileId)
+        .eq("is_deleted", false);
+
+      if (count && count > 0) {
+        setShowInstallModal(true);
+        markModalShown();
+      }
+    };
+
+    checkStories();
+  }, [isInstalled, modalShown, selectedProfileId, markModalShown]);
 
   // Profile switcher dropdown
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -290,6 +328,25 @@ const HomeFablino = () => {
           </div>
         )}
 
+        {/* ═══ INSTALL BANNER (soft, dismissable) ═══ */}
+        {!isInstalled && !bannerDismissed && (
+          <div className="mx-0 mt-1 mb-2 p-3 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/20 shadow-sm flex items-center gap-3">
+            <img src="/mascot/1_happy_success.png" className="w-10 h-10" alt="" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: '#2D1810' }}>
+                {t.installBannerTitle}
+              </p>
+              <p className="text-xs" style={{ color: 'rgba(45,24,16,0.6)' }}>
+                {t.installBannerSubtitle}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={dismissBanner} className="text-muted-foreground/40 px-1.5">✕</Button>
+            <Button size="sm" onClick={triggerInstall} className="bg-primary text-primary-foreground rounded-xl px-4">
+              {t.installBannerButton}
+            </Button>
+          </div>
+        )}
+
         {/* ═══ 1. FABLINO GREETING (Hero) — uses shared FablinoPageHeader ═══ */}
         <FablinoPageHeader
           mascotImage="/mascot/6_Onboarding.png"
@@ -424,6 +481,38 @@ const HomeFablino = () => {
             </div>
           </div>
         </div>
+
+        {/* ═══ INSTALL MODAL (one-time after first story) ═══ */}
+        <Dialog open={showInstallModal} onOpenChange={setShowInstallModal}>
+          <DialogContent className="max-w-sm rounded-3xl p-6 text-center">
+            <img
+              src="/mascot/1_happy_success.png"
+              className="w-24 h-24 mx-auto mb-4 drop-shadow-md"
+              alt=""
+            />
+            <h2 className="text-xl font-baloo font-bold mb-2" style={{ color: '#2D1810' }}>
+              {t.installModalTitle}
+            </h2>
+            <p className="text-sm mb-6" style={{ color: 'rgba(45,24,16,0.7)' }}>
+              {t.installModalDescription}
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => { setShowInstallModal(false); triggerInstall(); }}
+                className="w-full h-14 rounded-2xl bg-primary text-primary-foreground text-lg font-semibold shadow-md"
+              >
+                {t.installModalYes}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowInstallModal(false)}
+                className="text-muted-foreground/50"
+              >
+                {t.installModalLater}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </div>
 

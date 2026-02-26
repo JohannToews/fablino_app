@@ -474,6 +474,14 @@ const hu: Translations = {
   stickerStoriesCollectedFallback: '{count} történet gyűjtve! Így tovább! 🌟',
   onboardingCategoryAdventure: 'Kaland',
   onboardingCategoryFantasy: 'Fantázia',
+
+  installBannerTitle: 'Telepítsd a Fablinót?',
+  installBannerSubtitle: 'Mint egy igazi alkalmazás az eszközödön',
+  installBannerButton: 'OK!',
+  installModalTitle: 'Fablino az eszközödön?',
+  installModalDescription: 'Telepítsd a Fablinót mint egy igazi alkalmazást — saját ikonnal a kezdőképernyőn!',
+  installModalYes: 'Igen, telepítsd! 🦊',
+  installModalLater: 'Később',
 };
 
 export default hu;

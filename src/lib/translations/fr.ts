@@ -474,6 +474,14 @@ const fr: Translations = {
   stickerStoriesCollectedFallback: '{count} histoires collectées ! Continue !',
   onboardingCategoryAdventure: 'Aventure',
   onboardingCategoryFantasy: 'Fantaisie',
+
+  installBannerTitle: 'Installer Fablino ?',
+  installBannerSubtitle: 'Comme une vraie application sur ton appareil',
+  installBannerButton: 'OK !',
+  installModalTitle: 'Fablino sur ton appareil ?',
+  installModalDescription: 'Installe Fablino comme une vraie app — avec sa propre icône sur ton écran d\'accueil !',
+  installModalYes: 'Oui, installer ! 🦊',
+  installModalLater: 'Plus tard',
 };
 
 export default fr;

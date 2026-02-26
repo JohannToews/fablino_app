@@ -474,6 +474,14 @@ const sk: Translations = {
   stickerStoriesCollectedFallback: '{count} stories collected! Keep going!',
   onboardingCategoryAdventure: 'Dobrodružstvo',
   onboardingCategoryFantasy: 'Fantázia',
+
+  installBannerTitle: 'Nainštalovať Fablino?',
+  installBannerSubtitle: 'Ako skutočná aplikácia na tvojom zariadení',
+  installBannerButton: 'OK!',
+  installModalTitle: 'Fablino na tvojom zariadení?',
+  installModalDescription: 'Nainštaluj Fablino ako skutočnú aplikáciu — s vlastnou ikonou na domovskej obrazovke!',
+  installModalYes: 'Áno, nainštalovať! 🦊',
+  installModalLater: 'Neskôr',
 };
 
 export default sk;
