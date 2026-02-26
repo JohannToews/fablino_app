@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown, Flag } from "lucide-react";
+import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown, Flag, RefreshCw } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, type PlanKey } from "@/config/plans";
@@ -50,6 +50,8 @@ const AdminPage = () => {
   const [updatingLang, setUpdatingLang] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "read" | "unread">("all");
+  const [inspirationPromptsLoading, setInspirationPromptsLoading] = useState(false);
+  const [inspirationPromptsResult, setInspirationPromptsResult] = useState<{ processed: number; errors: number; details?: string[] } | null>(null);
 
   const languages: { value: Language; label: string; flag: string }[] = [
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
@@ -813,6 +815,74 @@ const AdminPage = () => {
                         language={adminLang}
                         currentUserId={user.id}
                       />
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Inspiration Prompts (admin) */}
+                  <AccordionItem value="inspiration-prompts" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">Inspiration Prompts</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Generate inspiration prompts from 5-star stories with user prompts. Runs Gemini to anonymize and translate into all supported languages.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={inspirationPromptsLoading}
+                        onClick={async () => {
+                          setInspirationPromptsResult(null);
+                          setInspirationPromptsLoading(true);
+                          try {
+                            const { data, error } = await invokeEdgeFunction("generate-inspiration-prompts", {});
+                            if (error) {
+                              setInspirationPromptsResult({ processed: 0, errors: 1, details: [error.message || "Unknown error"] });
+                              toast.error("Generate inspiration prompts failed");
+                            } else {
+                              const result = data as { processed?: number; errors?: number; details?: string[] } | null;
+                              const processed = result?.processed ?? 0;
+                              const errCount = result?.errors ?? 0;
+                              setInspirationPromptsResult({
+                                processed,
+                                errors: errCount,
+                                details: result?.details,
+                              });
+                              toast.success(`${processed} prompts processed${errCount > 0 ? `, ${errCount} errors` : ""}`);
+                            }
+                          } catch (e) {
+                            const msg = e instanceof Error ? e.message : String(e);
+                            setInspirationPromptsResult({ processed: 0, errors: 1, details: [msg] });
+                            toast.error("Generate inspiration prompts failed");
+                          }
+                          setInspirationPromptsLoading(false);
+                        }}
+                      >
+                        {inspirationPromptsLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Generate Inspiration Prompts
+                      </Button>
+                      {inspirationPromptsResult != null && (
+                        <div className="mt-3 text-sm text-muted-foreground">
+                          <p>{inspirationPromptsResult.processed} prompts processed, {inspirationPromptsResult.errors} errors.</p>
+                          {inspirationPromptsResult.details && inspirationPromptsResult.details.length > 0 && (
+                            <ul className="mt-1 list-disc list-inside text-xs">
+                              {inspirationPromptsResult.details.slice(0, 5).map((d, i) => (
+                                <li key={i}>{d}</li>
+                              ))}
+                              {inspirationPromptsResult.details.length > 5 && (
+                                <li>… and {inspirationPromptsResult.details.length - 5} more</li>
+                              )}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                     </AccordionContent>
                   </AccordionItem>
 
