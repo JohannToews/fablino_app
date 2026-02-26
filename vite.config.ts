@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["icons/icon-192x192.png", "icons/icon-512x512.png", "icons/apple-touch-icon.png"],
       manifest: {
         name: "Fablino",
