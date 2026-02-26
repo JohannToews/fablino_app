@@ -43,6 +43,10 @@ export function useInstallPrompt() {
   }, []);
 
   const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  const isSamsungBrowser =
+    typeof navigator !== "undefined" && /samsungbrowser/i.test(navigator.userAgent);
+  const isFirefox = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent);
 
   const triggerInstall = useCallback(async () => {
     if (deferredPrompt) {
@@ -51,11 +55,23 @@ export function useInstallPrompt() {
       if (outcome === "accepted") setIsInstalled(true);
       setDeferredPrompt(null);
     } else if (isIOS) {
-      toast("Tippe auf das Teilen-Symbol und dann auf 'Zum Home-Bildschirm'", { duration: 6000 });
+      toast("Tippe auf das Teilen-Symbol und dann auf 'Zum Home-Bildschirm'", { duration: 7000 });
+    } else if (isSamsungBrowser) {
+      toast("Samsung Browser: Menü (☰) → 'Seite hinzufügen zu' → 'Startbildschirm'", {
+        duration: 8000,
+      });
+    } else if (isFirefox) {
+      toast("Firefox: Menü (⋮) → 'Zum Startbildschirm hinzufügen'", { duration: 8000 });
+    } else if (isAndroid) {
+      toast("Suche im Menü nach 'Zum Startbildschirm hinzufügen' (nicht immer 'App installieren').", {
+        duration: 8000,
+      });
     } else {
-      toast("Tippe auf das Browser-Menu (⋮) und dann auf 'App installieren'", { duration: 6000 });
+      toast("Öffne das Browser-Menü und füge die Seite zum Startbildschirm hinzu.", {
+        duration: 7000,
+      });
     }
-  }, [deferredPrompt, isIOS]);
+  }, [deferredPrompt, isIOS, isAndroid, isSamsungBrowser, isFirefox]);
 
   const dismissBanner = useCallback(() => {
     setBannerDismissed(true);
