@@ -507,7 +507,7 @@ const SpecialEffectsScreen = ({
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#FFF8F0]">
-      <div className="flex-1 flex flex-col items-stretch px-4 max-w-[600px] mx-auto w-full gap-2 pb-24">
+        <div className="flex-1 flex flex-col items-stretch px-4 max-w-[600px] mx-auto w-full gap-2 pb-24 relative z-0">
         {/* Fablino Header with inline back button — saves ~50px */}
         <FablinoPageHeader
           mascotImage="/mascot/5_new_story.png"
@@ -518,7 +518,7 @@ const SpecialEffectsScreen = ({
         />
 
         {/* Text input with inline microphone (WhatsApp-style) */}
-        <div className="w-full relative">
+        <div className="w-full relative z-10">
           <Textarea
             value={additionalDescription}
             onChange={(e) => setAdditionalDescription(e.target.value)}
@@ -754,7 +754,7 @@ const SpecialEffectsScreen = ({
       </div>
 
       {/* Create Story Button — fixed at bottom, always visible */}
-      <div className="fixed bottom-0 left-0 right-0 z-10 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 z-30 pb-safe">
         <div className="max-w-[600px] mx-auto px-4 pt-3 pb-3 bg-gradient-to-t from-[#FFF8F0] via-[#FFF8F0]/95 to-transparent">
           <button
             onClick={handleContinue}
