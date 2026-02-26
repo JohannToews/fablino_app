@@ -2189,8 +2189,8 @@ const FeedbackStatsPage = () => {
                     <SelectContent>
                       <SelectItem value="all">{t.all}</SelectItem>
                       <SelectItem value="N">N (Normal)</SelectItem>
-                      <SelectItem value="S">S (Serie)</SelectItem>
-                      <SelectItem value="SX">SX (Mitgestalten)</SelectItem>
+                      <SelectItem value="S">S (Kapitel-Abenteuer)</SelectItem>
+                      <SelectItem value="SX">SX (Du entscheidest!)</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={perfFilterAge} onValueChange={setPerfFilterAge}>

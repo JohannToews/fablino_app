@@ -125,7 +125,7 @@ const SeriesGrid = ({
                   </h3>
                   {firstEpisode?.series_mode === 'interactive' && (
                     <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white">
-                      ✨ Mitgestalten
+                      ✨ {t.coCreate}
                     </span>
                   )}
                 </div>
