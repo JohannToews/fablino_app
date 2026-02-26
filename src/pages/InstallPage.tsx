@@ -23,6 +23,9 @@ const installLabels = {
     androidInstructions: "Auf Android-Geräten",
     androidStep1: "Tippe auf die drei Punkte oben rechts",
     androidStep2: 'Wähle "App installieren" oder "Zum Startbildschirm"',
+    desktopInstructions: "Im Browser installieren",
+    desktopStep1: 'Klicke auf das Install-Symbol in der Adressleiste (⊕) oder öffne das Browser-Menü (⋮)',
+    desktopStep2: 'Wähle "App installieren" oder "Zum Startbildschirm hinzufügen"',
     benefits: [
       "Schnellerer Zugriff",
       "Funktioniert auch offline",
@@ -43,6 +46,9 @@ const installLabels = {
     androidInstructions: "Sur les appareils Android",
     androidStep1: "Appuyez sur les trois points en haut",
     androidStep2: '"Installer l\'application" ou "Ajouter à l\'écran d\'accueil"',
+    desktopInstructions: "Installer dans le navigateur",
+    desktopStep1: 'Cliquez sur l\'icône d\'installation dans la barre d\'adresse (⊕) ou ouvrez le menu du navigateur (⋮)',
+    desktopStep2: '"Installer l\'application" ou "Ajouter à l\'écran d\'accueil"',
     benefits: [
       "Accès plus rapide",
       "Fonctionne hors ligne",
@@ -63,6 +69,9 @@ const installLabels = {
     androidInstructions: "On Android devices",
     androidStep1: "Tap the three dots menu",
     androidStep2: 'Select "Install app" or "Add to Home Screen"',
+    desktopInstructions: "Install in your browser",
+    desktopStep1: 'Click the install icon in the address bar (⊕) or open the browser menu (⋮)',
+    desktopStep2: 'Select "Install app" or "Add to Home Screen"',
     benefits: [
       "Faster access",
       "Works offline",
@@ -204,6 +213,27 @@ const InstallPage = () => {
                   2
                 </div>
                 <p className="text-sm pt-1.5">{t.androidStep2}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop/Other browser fallback instructions */}
+        {!isInstalled && !isIOS && !isAndroid && !deferredPrompt && (
+          <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
+            <h3 className="font-baloo font-semibold text-lg">{t.desktopInstructions}</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">
+                  1
+                </div>
+                <p className="text-sm pt-1.5">{t.desktopStep1}</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">
+                  2
+                </div>
+                <p className="text-sm pt-1.5">{t.desktopStep2}</p>
               </div>
             </div>
           </div>
