@@ -200,7 +200,7 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
   // ── RESULT ───────────────────────────────────────────────────────
   if (state === 'result') {
     return (
-      <div className={`flex flex-col items-center gap-3 ${className}`}>
+      <div className={`flex flex-col items-center gap-4 ${className}`}>
         <p
           className="text-sm text-center max-w-[280px] leading-relaxed rounded-xl py-2 px-3"
           style={{
@@ -210,11 +210,11 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
         >
           "{transcript}"
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={retry}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 hover:scale-105 active:scale-95"
             style={{
               backgroundColor: '#F3F4F6',
               color: FABLINO_COLORS.textMuted,
@@ -226,10 +226,10 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
           <button
             type="button"
             onClick={handleConfirm}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150 hover:scale-105 active:scale-95 shadow-md"
-            style={{ backgroundColor: '#22C55E' }}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl text-base font-bold text-white transition-all duration-150 hover:scale-105 active:scale-95 shadow-lg"
+            style={{ backgroundColor: '#22C55E', minHeight: '48px' }}
           >
-            <Check className="h-4 w-4" />
+            <Check className="h-5 w-5" />
             {labels.confirm}
           </button>
         </div>
