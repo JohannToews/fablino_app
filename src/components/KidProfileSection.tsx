@@ -895,7 +895,6 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                     <SelectContent>
                       <SelectItem value="male">{t.genderMale}</SelectItem>
                       <SelectItem value="female">{t.genderFemale}</SelectItem>
-                      <SelectItem value="diverse">{t.genderDiverse}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

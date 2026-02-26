@@ -215,7 +215,6 @@ const OnboardingKindPage = () => {
   const GENDERS_TRANSLATED = [
     { value: "girl", label: t.onboardingGenderGirl, emoji: "👧" },
     { value: "boy", label: t.onboardingGenderBoy, emoji: "👦" },
-    { value: "other", label: t.onboardingGenderOther, emoji: "🧒" },
   ];
 
   // Guard: not logged in → /welcome
