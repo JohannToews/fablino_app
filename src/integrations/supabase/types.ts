@@ -841,6 +841,47 @@ export type Database = {
         }
         Relationships: []
       }
+      inspiration_prompts: {
+        Row: {
+          active: boolean
+          batch_date: string
+          created_at: string | null
+          full_prompt: string
+          id: string
+          language: string
+          source_story_id: string | null
+          teaser: string
+        }
+        Insert: {
+          active?: boolean
+          batch_date?: string
+          created_at?: string | null
+          full_prompt: string
+          id?: string
+          language: string
+          source_story_id?: string | null
+          teaser: string
+        }
+        Update: {
+          active?: boolean
+          batch_date?: string
+          created_at?: string | null
+          full_prompt?: string
+          id?: string
+          language?: string
+          source_story_id?: string | null
+          teaser?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_prompts_source_story_id_fkey"
+            columns: ["source_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kid_characters: {
         Row: {
           age: number | null
