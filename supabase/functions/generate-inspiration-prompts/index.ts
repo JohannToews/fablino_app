@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     .not("source_story_id", "is", null);
   const existingIds = new Set((existing || []).map((r: { source_story_id: string | null }) => r.source_story_id).filter(Boolean));
 
-  // Stories with 5-star rating and non-empty parent_prompt_text
+  // Stories with 5-star rating and non-empty user_prompt_text
   const { data: rated } = await supabase
     .from("story_ratings")
     .select("story_id")
@@ -106,18 +106,18 @@ Deno.serve(async (req) => {
 
   const { data: stories } = await supabase
     .from("stories")
-    .select("id, parent_prompt_text")
+    .select("id, user_prompt_text")
     .in("id", candidateIds)
-    .not("parent_prompt_text", "is", null)
+    .not("user_prompt_text", "is", null)
     .order("created_at", { ascending: false })
     .limit(10);
 
   const toProcess = (stories || []).filter(
-    (s: { parent_prompt_text: string | null }) => s.parent_prompt_text != null && (s.parent_prompt_text as string).trim().length > 20
+    (s: { user_prompt_text: string | null }) => s.user_prompt_text != null && (s.user_prompt_text as string).trim().length > 20
   );
 
   for (const story of toProcess) {
-    const promptText = (story.parent_prompt_text as string).trim();
+    const promptText = (story.user_prompt_text as string).trim();
     const userMessage = `Process this children's story prompt (anonymize and translate as instructed):\n\n${promptText}`;
 
     try {
