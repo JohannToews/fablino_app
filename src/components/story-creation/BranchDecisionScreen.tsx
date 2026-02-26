@@ -133,10 +133,10 @@ const BranchDecisionScreen = ({
               <div className="flex items-start gap-3">
                 <span className="text-2xl mt-0.5 shrink-0">{icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-[#2D1810] leading-snug">
+                  <p className="text-base sm:text-lg font-bold text-[#2D1810] leading-snug">
                     {option.title}
                   </p>
-                  <p className="text-xs text-[#2D1810]/60 mt-1 leading-relaxed">
+                  <p className="text-sm sm:text-base text-[#2D1810]/60 mt-1 leading-relaxed">
                     {option.preview}
                   </p>
                 </div>
