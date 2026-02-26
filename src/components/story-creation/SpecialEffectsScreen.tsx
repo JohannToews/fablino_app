@@ -545,7 +545,7 @@ const SpecialEffectsScreen = ({
         </div>
 
         {/* Settings panel — larger touch targets, tighter vertical spacing */}
-        <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2.5 space-y-2">
+        <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2.5 space-y-2 relative z-10">
           {/* Length — chips with min 44px height */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[#92400E] w-18 sm:w-20 shrink-0">{st.lengthLabel}</span>
