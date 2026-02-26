@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
 
 const BANNER_KEY = "fablino_install_banner_dismissed";
 const MODAL_KEY = "fablino_install_modal_shown";
@@ -42,20 +41,13 @@ export function useInstallPrompt() {
     };
   }, []);
 
-  const isIOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
-
   const triggerInstall = useCallback(async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") setIsInstalled(true);
-      setDeferredPrompt(null);
-    } else if (isIOS) {
-      toast("Tippe auf das Teilen-Symbol und dann auf 'Zum Home-Bildschirm'", { duration: 6000 });
-    } else {
-      toast("Oeffne das Browser-Menu und waehle 'App installieren'", { duration: 6000 });
-    }
-  }, [deferredPrompt, isIOS]);
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") setIsInstalled(true);
+    setDeferredPrompt(null);
+  }, [deferredPrompt]);
 
   const dismissBanner = useCallback(() => {
     setBannerDismissed(true);
