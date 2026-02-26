@@ -474,6 +474,14 @@ const bs: Translations = {
   stickerStoriesCollectedFallback: '{count} priča sakupljeno! Samo nastavi!',
   onboardingCategoryAdventure: 'Avantura',
   onboardingCategoryFantasy: 'Fantazija',
+
+  installBannerTitle: 'Instalirati Fablino?',
+  installBannerSubtitle: 'Kao prava aplikacija na tvom uređaju',
+  installBannerButton: 'OK!',
+  installModalTitle: 'Fablino na tvom uređaju?',
+  installModalDescription: 'Instaliraj Fablino kao pravu aplikaciju — sa vlastitom ikonom na početnom ekranu!',
+  installModalYes: 'Da, instaliraj! 🦊',
+  installModalLater: 'Kasnije',
 };
 
 export default bs;

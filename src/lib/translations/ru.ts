@@ -474,6 +474,14 @@ const ru: Translations = {
   onboardingDisplayNamePlaceholder: 'напр. Мама, Папа, Лиза…',
   onboardingCategoryAdventure: 'Приключения',
   onboardingCategoryFantasy: 'Фэнтези',
+
+  installBannerTitle: 'Установить Fablino?',
+  installBannerSubtitle: 'Как настоящее приложение на твоём устройстве',
+  installBannerButton: 'OK!',
+  installModalTitle: 'Fablino на твоём устройстве?',
+  installModalDescription: 'Установи Fablino как настоящее приложение — с собственной иконкой на главном экране!',
+  installModalYes: 'Да, установить! 🦊',
+  installModalLater: 'Позже',
 };
 
 export default ru;

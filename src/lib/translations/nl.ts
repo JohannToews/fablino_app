@@ -474,6 +474,14 @@ const nl: Translations = {
   stickerStoriesCollectedFallback: '{count} verhalen verzameld! Ga zo door!',
   onboardingCategoryAdventure: 'Avontuur',
   onboardingCategoryFantasy: 'Fantasie',
+
+  installBannerTitle: 'Fablino installeren?',
+  installBannerSubtitle: 'Als een echte app op je apparaat',
+  installBannerButton: 'OK!',
+  installModalTitle: 'Fablino op je apparaat?',
+  installModalDescription: 'Installeer Fablino als een echte app — met een eigen icoon op je startscherm!',
+  installModalYes: 'Ja, installeren! 🦊',
+  installModalLater: 'Later',
 };
 
 export default nl;

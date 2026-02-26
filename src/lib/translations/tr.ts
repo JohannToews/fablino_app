@@ -474,6 +474,14 @@ const tr: Translations = {
   stickerStoriesCollectedFallback: '{count} hikaye toplandı! Harika gidiyorsun! 🌟',
   onboardingCategoryAdventure: 'Macera',
   onboardingCategoryFantasy: 'Fantezi',
+
+  installBannerTitle: 'Fablino\'yu yükle?',
+  installBannerSubtitle: 'Cihazında gerçek bir uygulama gibi',
+  installBannerButton: 'Tamam!',
+  installModalTitle: 'Fablino cihazında?',
+  installModalDescription: 'Fablino\'yu gerçek bir uygulama gibi yükle — ana ekranında kendi simgesiyle!',
+  installModalYes: 'Evet, yükle! 🦊',
+  installModalLater: 'Sonra',
 };
 
 export default tr;

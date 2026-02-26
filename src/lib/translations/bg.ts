@@ -474,6 +474,14 @@ const bg: Translations = {
   stickerStoriesCollectedFallback: '{count} истории събрани! Продължавай така! 🌟',
   onboardingCategoryAdventure: 'Приключение',
   onboardingCategoryFantasy: 'Фантазия',
+
+  installBannerTitle: 'Инсталирай Fablino?',
+  installBannerSubtitle: 'Като истинско приложение на устройството ти',
+  installBannerButton: 'ОК!',
+  installModalTitle: 'Fablino на устройството ти?',
+  installModalDescription: 'Инсталирай Fablino като истинско приложение — с икона на началния екран!',
+  installModalYes: 'Да, инсталирай! 🦊',
+  installModalLater: 'По-късно',
 };
 
 export default bg;

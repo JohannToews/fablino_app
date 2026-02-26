@@ -474,6 +474,14 @@ const ro: Translations = {
   stickerStoriesCollectedFallback: '{count} povești colectate! Continuă așa! 🌟',
   onboardingCategoryAdventure: 'Aventură',
   onboardingCategoryFantasy: 'Fantezie',
+
+  installBannerTitle: 'Instalezi Fablino?',
+  installBannerSubtitle: 'Ca o aplicație reală pe dispozitivul tău',
+  installBannerButton: 'OK!',
+  installModalTitle: 'Fablino pe dispozitivul tău?',
+  installModalDescription: 'Instalează Fablino ca o aplicație reală — cu pictograma proprie pe ecranul de start!',
+  installModalYes: 'Da, instalează! 🦊',
+  installModalLater: 'Mai târziu',
 };
 
 export default ro;

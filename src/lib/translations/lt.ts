@@ -474,6 +474,14 @@ const lt: Translations = {
   stickerStoriesCollectedFallback: '{count} istorijų surinkta! Taip ir toliau! 🌟',
   onboardingCategoryAdventure: 'Nuotykis',
   onboardingCategoryFantasy: 'Fantazija',
+
+  installBannerTitle: 'Įdiegti Fablino?',
+  installBannerSubtitle: 'Kaip tikra programėlė tavo įrenginyje',
+  installBannerButton: 'Gerai!',
+  installModalTitle: 'Fablino tavo įrenginyje?',
+  installModalDescription: 'Įdiek Fablino kaip tikrą programėlę — su sava piktograma pagrindiniame ekrane!',
+  installModalYes: 'Taip, įdiegti! 🦊',
+  installModalLater: 'Vėliau',
 };
 
 export default lt;
