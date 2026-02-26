@@ -1679,47 +1679,6 @@ export type Database = {
           },
         ]
       }
-      inspiration_prompts: {
-        Row: {
-          id: string
-          source_story_id: string | null
-          language: string
-          teaser: string
-          full_prompt: string
-          batch_date: string
-          active: boolean
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          source_story_id?: string | null
-          language: string
-          teaser: string
-          full_prompt: string
-          batch_date?: string
-          active?: boolean
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          source_story_id?: string | null
-          language?: string
-          teaser?: string
-          full_prompt?: string
-          batch_date?: string
-          active?: boolean
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "inspiration_prompts_source_story_id_fkey"
-            columns: ["source_story_id"]
-            isOneToOne: false
-            referencedRelation: "stories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       story_subtype_history: {
         Row: {
           created_at: string | null

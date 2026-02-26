@@ -496,3 +496,5 @@ body.premium-ui h2 {
   0%, 100% { box-shadow: 0 0 0 0 hsla(25, 85%, 55%, 0); }
   50% { box-shadow: 0 0 0 4px hsla(25, 85%, 55%, 0.15); }
 }
+
+/* Note: pulse-soft is used in SpecialEffectsScreen with 4s duration */
