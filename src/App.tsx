@@ -29,7 +29,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import CreateStoryPage from "./pages/CreateStoryPage";
-import InstallPage from "./pages/InstallPage";
+// InstallPage removed – install handled inline via useInstallPrompt
 import ShareRedirectPage from "./pages/ShareRedirectPage";
 import StickerBookPage from "./pages/StickerBookPage";
 import WelcomePage from "./pages/WelcomePage";
@@ -55,7 +55,7 @@ const App = () => (
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/update-password" element={<UpdatePasswordPage />} />
-            <Route path="/install" element={<InstallPage />} />
+            {/* /install route removed – handled inline */}
             <Route path="/s/:token" element={<ShareRedirectPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
             <Route path="/onboarding/child" element={<OnboardingKindPage />} />
