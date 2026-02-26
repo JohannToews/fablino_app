@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Image, Trash2, LogOut, User, Settings, Library, Star, TrendingUp, Wrench, Users, BookHeart, Mail, Lock, UserX, Loader2, Search, Filter, Check, Crown, Flag, RefreshCw } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { PLANS, type PlanKey } from "@/config/plans";
 import BackButton from "@/components/BackButton";
 import { getThumbnailUrl } from "@/lib/imageUtils";
@@ -52,6 +53,8 @@ const AdminPage = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "read" | "unread">("all");
   const [inspirationPromptsLoading, setInspirationPromptsLoading] = useState(false);
   const [inspirationPromptsResult, setInspirationPromptsResult] = useState<{ processed: number; errors: number; details?: string[] } | null>(null);
+  const [inspirationPromptsList, setInspirationPromptsList] = useState<{ id: string; teaser: string; full_prompt: string; batch_date: string; active: boolean }[]>([]);
+  const [inspirationPromptsListLoading, setInspirationPromptsListLoading] = useState(false);
 
   const languages: { value: Language; label: string; flag: string }[] = [
     { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
@@ -119,6 +122,12 @@ const AdminPage = () => {
       loadStories();
     }
   }, [user, selectedProfileId]);
+
+  useEffect(() => {
+    if (activeTab === "system" && user?.role === "admin") {
+      loadInspirationPrompts();
+    }
+  }, [activeTab, user?.role, adminLang]);
 
   const loadStories = async () => {
     if (!user) return;
@@ -205,6 +214,22 @@ const AdminPage = () => {
       toast.success(t.storyDeleted);
       loadStories();
     }
+  };
+
+  const loadInspirationPrompts = async () => {
+    if (user?.role !== "admin" || !adminLang) return;
+    setInspirationPromptsListLoading(true);
+    try {
+      const { data, error } = await invokeEdgeFunction("get-inspiration-prompts", { language: adminLang });
+      if (error) {
+        setInspirationPromptsList([]);
+      } else {
+        setInspirationPromptsList(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      setInspirationPromptsList([]);
+    }
+    setInspirationPromptsListLoading(false);
   };
 
   const handleLogout = () => {
@@ -818,21 +843,35 @@ const AdminPage = () => {
                     </AccordionContent>
                   </AccordionItem>
 
-                  {/* Inspiration Prompts (admin) */}
+                  {/* Feature Flags */}
+                  <AccordionItem value="feature-flags" className="border rounded-lg bg-card shadow-sm">
+                    <AccordionTrigger className="px-4">
+                      <div className="flex items-center gap-2">
+                        <Flag className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-sm">Feature Flags</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <p className="text-xs text-muted-foreground mb-3">Features wie Emotion-Flow und Comic-Strip pro User oder global aktivieren.</p>
+                      <Button size="sm" variant="outline" onClick={() => navigate('/admin/feature-flags')}>Feature Flags öffnen</Button>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Inspiration Prompts — after Feature Flags, collapsed by default */}
                   <AccordionItem value="inspiration-prompts" className="border rounded-lg bg-card shadow-sm">
                     <AccordionTrigger className="px-4">
                       <div className="flex items-center gap-2">
-                        <RefreshCw className="h-5 w-5 text-orange-500" />
+                        <span className="text-orange-500">✨</span>
                         <span className="font-semibold text-sm">Inspiration Prompts</span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
                       <p className="text-xs text-muted-foreground mb-3">
-                        Generate inspiration prompts from 5-star stories with user prompts. Runs Gemini to anonymize and translate into all supported languages.
+                        Generates anonymized & translated inspiration prompts from the latest 5-star stories. Results appear in the table below after generation.
                       </p>
                       <Button
                         size="sm"
-                        variant="outline"
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
                         disabled={inspirationPromptsLoading}
                         onClick={async () => {
                           setInspirationPromptsResult(null);
@@ -851,7 +890,8 @@ const AdminPage = () => {
                                 errors: errCount,
                                 details: result?.details,
                               });
-                              toast.success(`${processed} prompts processed${errCount > 0 ? `, ${errCount} errors` : ""}`);
+                              toast.success(`✅ ${processed} prompts processed, ${errCount} errors`);
+                              loadInspirationPrompts();
                             }
                           } catch (e) {
                             const msg = e instanceof Error ? e.message : String(e);
@@ -866,7 +906,7 @@ const AdminPage = () => {
                         ) : (
                           <RefreshCw className="h-4 w-4 mr-2" />
                         )}
-                        Generate Inspiration Prompts
+                        🔄 Generate Inspiration Prompts
                       </Button>
                       {inspirationPromptsResult != null && (
                         <div className="mt-3 text-sm text-muted-foreground">
@@ -883,20 +923,54 @@ const AdminPage = () => {
                           )}
                         </div>
                       )}
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* Feature Flags */}
-                  <AccordionItem value="feature-flags" className="border rounded-lg bg-card shadow-sm">
-                    <AccordionTrigger className="px-4">
-                      <div className="flex items-center gap-2">
-                        <Flag className="h-5 w-5 text-orange-500" />
-                        <span className="font-semibold text-sm">Feature Flags</span>
+                      <div className="mt-4">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">
+                          {inspirationPromptsListLoading ? "Loading…" : `${inspirationPromptsList.filter((p) => p.active).length} active prompts`}
+                        </p>
+                        {inspirationPromptsListLoading ? (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                          </div>
+                        ) : inspirationPromptsList.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2">No inspiration prompts for this language yet.</p>
+                        ) : (
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-muted/50 border-b">
+                                  <th className="text-left p-2 font-medium">Teaser</th>
+                                  <th className="text-left p-2 font-medium">Full prompt</th>
+                                  <th className="text-left p-2 font-medium">Batch date</th>
+                                  <th className="text-left p-2 font-medium w-20">Active</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {inspirationPromptsList.map((row) => (
+                                  <tr key={row.id} className="border-b last:border-0">
+                                    <td className="p-2 max-w-[140px] truncate" title={row.teaser}>{row.teaser}</td>
+                                    <td className="p-2 max-w-[240px] truncate" title={row.full_prompt}>{row.full_prompt}</td>
+                                    <td className="p-2 whitespace-nowrap">{row.batch_date}</td>
+                                    <td className="p-2">
+                                      <Switch
+                                        checked={row.active}
+                                        onCheckedChange={async (checked) => {
+                                          const { error: err } = await invokeEdgeFunction("manage-users", {
+                                            action: "setInspirationPromptActive",
+                                            id: row.id,
+                                            active: checked,
+                                          });
+                                          if (err) toast.error(err.message || "Update failed");
+                                          else loadInspirationPrompts();
+                                        }}
+                                      />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-4">
-                      <p className="text-xs text-muted-foreground mb-3">Features wie Emotion-Flow und Comic-Strip pro User oder global aktivieren.</p>
-                      <Button size="sm" variant="outline" onClick={() => navigate('/admin/feature-flags')}>Feature Flags öffnen</Button>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

@@ -44,6 +44,27 @@ Deno.serve(async (req) => {
 
   const lang = language.trim().toLowerCase();
 
+  // Admin: full list with id, batch_date, active for management UI
+  if (auth.isAdmin) {
+    const { data: adminData, error: adminError } = await supabase
+      .from("inspiration_prompts")
+      .select("id, teaser, full_prompt, batch_date, active")
+      .eq("language", lang)
+      .order("batch_date", { ascending: false })
+      .limit(50);
+
+    if (adminError) {
+      return new Response(
+        JSON.stringify({ error: adminError.message }),
+        { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+      );
+    }
+    return new Response(
+      JSON.stringify(adminData ?? []),
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
   const { data, error } = await supabase
     .from("inspiration_prompts")
     .select("teaser, full_prompt")

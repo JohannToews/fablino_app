@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage, appLanguage, enabled } = body;
+    const { action, userId, promptKey, promptValue, username, displayName, password, role, adminLanguage, appLanguage, enabled, id: inspirationPromptId, active: inspirationPromptActive } = body;
 
     // Premium UI flag: any authenticated user can read or toggle for themselves
     if (action === "getPremiumUi") {
@@ -186,6 +186,18 @@ Deno.serve(async (req) => {
     if (action === "deleteAuthUser" && body.authId) {
       const { error } = await supabase.auth.admin.deleteUser(body.authId);
       if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "setInspirationPromptActive" && inspirationPromptId && typeof inspirationPromptActive === "boolean") {
+      const { error: updateError } = await supabase
+        .from("inspiration_prompts")
+        .update({ active: inspirationPromptActive })
+        .eq("id", inspirationPromptId);
+
+      if (updateError) throw updateError;
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
