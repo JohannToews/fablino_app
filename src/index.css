@@ -490,3 +490,9 @@ body.premium-ui h1,
 body.premium-ui h2 {
   text-shadow: 0 1px 2px hsla(25, 30%, 20%, 0.06);
 }
+
+/* Soft pulse for interactive mode button */
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 hsla(25, 85%, 55%, 0); }
+  50% { box-shadow: 0 0 0 4px hsla(25, 85%, 55%, 0.15); }
+}
