@@ -692,7 +692,7 @@ const SpecialEffectsScreen = ({
                 "flex-1 text-left p-3 rounded-xl border-2 transition-all duration-200 min-h-[56px]",
                 seriesMode === 'interactive'
                   ? "border-[#E8863A] bg-white shadow-md"
-                  : "border-orange-100 bg-white/70 hover:border-orange-200 animate-[pulse-soft_2.5s_ease-in-out_infinite]"
+                  : "border-orange-100 bg-white/70 hover:border-orange-200 animate-[pulse-soft_4s_ease-in-out_infinite]"
               )}
             >
               <p className="text-sm font-semibold text-[#2D1810]">
