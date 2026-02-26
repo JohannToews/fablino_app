@@ -154,7 +154,7 @@ const HomeFablino = () => {
 
   // One-time install modal: show after first story exists
   useEffect(() => {
-    if (isInstalled || modalShown || !canPromptNatively || !selectedProfileId) return;
+    if (isInstalled || modalShown || !selectedProfileId) return;
 
     const checkStories = async () => {
       const { count } = await supabase
@@ -330,7 +330,7 @@ const HomeFablino = () => {
         )}
 
         {/* ═══ INSTALL BANNER (soft, dismissable) ═══ */}
-        {!isInstalled && !bannerDismissed && canPromptNatively && (
+        {!isInstalled && !bannerDismissed && (
           <div className="mx-0 mt-1 mb-2 p-3 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/20 shadow-sm flex items-center gap-3">
             <img src="/mascot/1_happy_success.png" className="w-10 h-10" alt="" />
             <div className="flex-1 min-w-0">
