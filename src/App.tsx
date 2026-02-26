@@ -10,6 +10,7 @@ import PremiumRouteTransition from "@/components/PremiumRouteTransition";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
+import PwaUpdateBanner from "@/components/PwaUpdateBanner";
 import HomeClassic from "./pages/HomeClassic";
 import HomeFablino from "./pages/HomeFablino";
 import { FEATURES } from "./config/features";
@@ -47,6 +48,7 @@ const App = () => (
           <Toaster />
         <Sonner />
         <OfflineBanner />
+        <PwaUpdateBanner />
         <ErrorBoundary>
         <BrowserRouter>
           <PremiumUiBodyClass />

@@ -361,7 +361,7 @@ const HomeFablino = () => {
           <button
             onClick={() => navigate("/create-story")}
             data-premium-button="primary"
-            className={FABLINO_STYLES.primaryButton}
+            className={FABLINO_STYLES.primaryButton + " !bg-blue-500 !hover:bg-blue-600"}
           >
             {ui.newStory}
           </button>
