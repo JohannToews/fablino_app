@@ -254,7 +254,14 @@ const HomeFablino = () => {
               )}
             </div>
           ) : (
-            <div /> /* empty spacer */
+            <div
+              className="flex items-center px-3.5 py-1.5 rounded-[20px] bg-white border border-orange-100"
+              style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
+            >
+              <span className="font-nunito text-[14px] font-bold" style={{ color: "#92400E" }}>
+                {selectedProfile?.name || ""}
+              </span>
+            </div>
           )}
 
           {/* Admin Controls */}
