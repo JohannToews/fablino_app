@@ -1,1 +1,8 @@
 project_id = "bafzwrvgffyxbiqfbitm"
+
+# Edge Functions (must be listed so Lovable/Supabase deploys them)
+[functions.generate-inspiration-prompts]
+verify_jwt = false
+
+[functions.get-inspiration-prompts]
+verify_jwt = false
