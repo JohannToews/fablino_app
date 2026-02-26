@@ -684,7 +684,7 @@ const SpecialEffectsScreen = ({
               )}
             >
               <p className="text-sm font-semibold text-[#2D1810]">📖 {st.seriesModeNormal}</p>
-              <p className="text-xs text-[#2D1810]/50 mt-0.5">{st.seriesModeNormalDesc}</p>
+              <p className="text-[13px] text-[#2D1810]/50 mt-0.5">{st.seriesModeNormalDesc}</p>
             </button>
             <button
               onClick={() => setSeriesMode('interactive')}
@@ -692,14 +692,14 @@ const SpecialEffectsScreen = ({
                 "flex-1 text-left p-3 rounded-xl border-2 transition-all duration-200 min-h-[56px]",
                 seriesMode === 'interactive'
                   ? "border-[#E8863A] bg-white shadow-md"
-                  : "border-orange-100 bg-white/70 hover:border-orange-200"
+                  : "border-orange-100 bg-white/70 hover:border-orange-200 animate-[pulse-soft_2.5s_ease-in-out_infinite]"
               )}
             >
               <p className="text-sm font-semibold text-[#2D1810]">
                 ✨ {st.seriesModeInteractive}
                 <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white">Premium</span>
               </p>
-              <p className="text-xs text-[#2D1810]/50 mt-0.5">{st.seriesModeInteractiveDesc}</p>
+              <p className="text-[13px] text-[#2D1810]/50 mt-0.5">{st.seriesModeInteractiveDesc}</p>
             </button>
           </div>
         )}
