@@ -882,6 +882,53 @@ export type Database = {
           },
         ]
       }
+      kid_appearance: {
+        Row: {
+          created_at: string | null
+          glasses: boolean
+          hair_color: string
+          hair_length: string
+          hair_style: string
+          hair_type: string
+          id: string
+          kid_profile_id: string
+          skin_tone: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          glasses?: boolean
+          hair_color?: string
+          hair_length?: string
+          hair_style?: string
+          hair_type?: string
+          id?: string
+          kid_profile_id: string
+          skin_tone?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          glasses?: boolean
+          hair_color?: string
+          hair_length?: string
+          hair_style?: string
+          hair_type?: string
+          id?: string
+          kid_profile_id?: string
+          skin_tone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kid_appearance_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: true
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kid_characters: {
         Row: {
           age: number | null
