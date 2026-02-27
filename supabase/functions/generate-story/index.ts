@@ -1722,6 +1722,14 @@ Deno.serve(async (req) => {
     let selectedSubtype: SelectedSubtype | null = null;
     let isEpisode1OrStandalone = true;
 
+    // ── Hoisted kid profile variables (needed after try/catch scope) ──
+    let resolvedKidAge = kidAge;
+    let resolvedKidName = kidName;
+    let resolvedKidGender: string = '';
+    let resolvedDifficultyLevel = difficultyLevel;
+    let resolvedContentSafetyLevel = contentSafetyLevel;
+    let kidAppearance: { skin_tone: string; hair_length: string; hair_type: string; hair_style: string; hair_color: string; glasses: boolean } | null = null;
+
     try {
       // 1. Load CORE Slim v2
       const coreSlimData = await loadPrompt('system_prompt_core_v2');
@@ -1783,12 +1791,6 @@ Deno.serve(async (req) => {
       const resolvedLength = storyLength || lengthMapping[length] || 'medium';
 
       // ── Load kid profile from DB if we have kidProfileId but missing details ──
-      let resolvedKidAge = kidAge;
-      let resolvedKidName = kidName;
-      let resolvedKidGender: string = '';
-      let resolvedDifficultyLevel = difficultyLevel;
-      let resolvedContentSafetyLevel = contentSafetyLevel;
-      let kidAppearance: { skin_tone: string; hair_length: string; hair_type: string; hair_style: string; hair_color: string; glasses: boolean } | null = null;
 
       if (kidProfileId) {
         try {
