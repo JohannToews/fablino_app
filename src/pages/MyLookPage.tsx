@@ -52,7 +52,7 @@ export default function MyLookPage() {
 
   const saveAppearance = useCallback(
     async (kidProfileId: string, data: KidAppearance) => {
-      const { error } = await supabase.from("kid_appearance").upsert(
+      const { error } = await (supabase as any).from("kid_appearance").upsert(
         {
           kid_profile_id: kidProfileId,
           skin_tone: data.skinTone,
@@ -84,7 +84,7 @@ export default function MyLookPage() {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("kid_appearance")
         .select("*")
         .eq("kid_profile_id", selectedProfileId)
@@ -192,7 +192,7 @@ export default function MyLookPage() {
                     <span className="text-2xl">{opt.icon}</span>
                     <span className="text-xs font-medium text-[#2D1810]">
                       {(
-                        t as Record<string, string>
+                        (t as unknown as Record<string, string>)
                       )[`appearanceHair${opt.key === "very_short" ? "VeryShort" : opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
                     </span>
                   </motion.button>
@@ -216,7 +216,7 @@ export default function MyLookPage() {
                     }`}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {(t as Record<string, string>)[`appearanceHair${opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
+                    {(t as unknown as Record<string, string>)[`appearanceHair${opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
                   </motion.button>
                 ))}
               </div>
@@ -238,7 +238,7 @@ export default function MyLookPage() {
                     }`}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {(t as Record<string, string>)[`appearanceStyle${opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
+                    {(t as unknown as Record<string, string>)[`appearanceStyle${opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
                   </motion.button>
                 ))}
               </div>

@@ -130,6 +130,7 @@ const HomeFablino = () => {
   } = useKidProfile();
   const location = useLocation();
   const { state: gamificationState, refreshProgress } = useGamification();
+  const isAvatarBuilderEnabled = useAvatarBuilderEnabled();
 
   const {
     isInstalled,
