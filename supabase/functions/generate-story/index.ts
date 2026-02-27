@@ -2793,32 +2793,61 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }));
       imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData);
     } else {
-      // ═══ FALLBACK: Simple cover prompt (previous behavior) ═══
-      console.log('[generate-story] Using FALLBACK image path: simple cover prompt');
-      try {
-        const characterDescriptionPrompt = `Analysiere diese Geschichte und erstelle eine kurze, präzise visuelle Beschreibung der Hauptcharaktere (Aussehen, Kleidung, besondere Merkmale). Maximal 100 Wörter. Antwort auf Englisch für den Bildgenerator.`;
-        const characterContext = `Geschichte: "${story.title}"\n${story.content.substring(0, 500)}...`;
-        characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
-        console.log("Character description generated:", characterDescription.substring(0, 100));
-      } catch (err) {
-        console.error("Error generating character description:", err);
-      }
+      // ═══ FALLBACK: Generate image_plan via separate LLM call ═══
+      console.log('[generate-story] No image_plan in LLM response, using fallback');
+      console.log('[generate-story] Generating image_plan via separate LLM call...');
 
-      console.log('[IMAGE-PIPELINE] Calling buildFallbackImagePrompt:', JSON.stringify({
-        hasSeriesContext: !!seriesImageCtx,
-        episodeNumber: seriesImageCtx?.episodeNumber ?? null,
-        hasStyleSheet: !!seriesImageCtx?.visualStyleSheet
-      }));
-      const fallbackPrompt = buildFallbackImagePrompt(
-        story.title,
-        characterDescription,
-        imageAgeRules,
-        imageThemeRules,
-        childAge,
-        seriesImageCtx,
-        imageStyleData,
-      );
-      imagePrompts = [fallbackPrompt];
+      const targetSceneCount = genConfig.scene_image_count || 3;
+
+      try {
+        const imagePlanPrompt = `You are a visual director for a children's illustrated story. Analyze the story below and create a JSON image_plan.
+
+RULES:
+- character_anchor: A concise English description of the main character(s) — appearance, clothing, distinctive features. Max 80 words.
+- world_anchor: A concise English description of the world/setting. Max 40 words.
+- scenes: EXACTLY ${targetSceneCount} scene objects distributed across the story arc (beginning, middle, end).
+  Each scene: { "scene_id": <1-${targetSceneCount}>, "story_position": "beginning|middle|end", "description": "<what happens visually, in English, max 30 words>", "emotion": "<character emotion>", "key_elements": ["element1", "element2"] }
+
+Pick the most VISUALLY INTERESTING moments (transformations, discoveries, dramatic action). Avoid static establishing shots.
+
+Respond with ONLY valid JSON, no markdown:
+{"character_anchor": "...", "world_anchor": "...", "scenes": [...]}`;
+
+        const storyExcerpt = story.content.length > 2000 ? story.content.substring(0, 2000) + '...' : story.content;
+        const imagePlanContext = `Story title: "${story.title}"\n\n${storyExcerpt}`;
+
+        const imagePlanResponse = await callLovableAI(LOVABLE_API_KEY, imagePlanPrompt, imagePlanContext, 0.4);
+
+        // Parse the image plan
+        const cleanedResponse = imagePlanResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const fallbackPlan = JSON.parse(cleanedResponse);
+
+        if (fallbackPlan?.character_anchor && fallbackPlan?.scenes?.length > 0) {
+          console.log(`[generate-story] Fallback image_plan generated: ${fallbackPlan.scenes.length} scenes`);
+          imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData);
+        } else {
+          throw new Error('Invalid fallback image_plan structure');
+        }
+      } catch (err) {
+        // Last resort: simple cover only
+        console.error('[generate-story] Fallback image_plan generation failed, using cover-only:', err);
+        try {
+          const characterDescriptionPrompt = `Analyze this story and create a short, precise visual description of the main characters (appearance, clothing, distinctive features). Max 100 words. Answer in English.`;
+          const characterContext = `Story: "${story.title}"\n${story.content.substring(0, 500)}...`;
+          characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
+        } catch { /* ignore */ }
+
+        const fallbackPrompt = buildFallbackImagePrompt(
+          story.title,
+          characterDescription,
+          imageAgeRules,
+          imageThemeRules,
+          childAge,
+          seriesImageCtx,
+          imageStyleData,
+        );
+        imagePrompts = [fallbackPrompt];
+      }
     }
 
     console.log('[generate-story] Image prompts built:', imagePrompts.length,
