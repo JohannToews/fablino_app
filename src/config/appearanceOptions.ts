@@ -36,13 +36,11 @@ export const HAIR_STYLES = [
 
 export const HAIR_COLORS = [
   { key: 'black', color: '#1a1a1a' },
-  { key: 'dark_brown', color: '#3b2314' },
   { key: 'brown', color: '#6a3e1e' },
   { key: 'light_brown', color: '#a67b5b' },
   { key: 'blonde', color: '#d4a843' },
   { key: 'light_blonde', color: '#f0d58c' },
   { key: 'red', color: '#a52a2a' },
-  { key: 'auburn', color: '#7c3a1a' },
   { key: 'ginger', color: '#c45e28' },
 ] as const;
 
