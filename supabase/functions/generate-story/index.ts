@@ -2649,8 +2649,9 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       console.error('[generate-story] Error parsing image_plan:', e);
     }
 
-    // Override character_anchor with kid "Mein Look" when kid is protagonist and has appearance set
+    // Override character_anchor with kid "Mein Look" when kid is protagonist and has appearance set (AFTER LLM parse so we overwrite LLM value)
     if (imagePlan && includeSelf && kidAppearance) {
+      const discardedLlmAnchor = imagePlan.character_anchor;
       const appearanceAnchor = buildAppearanceAnchor(
         resolvedKidName || 'Child',
         resolvedKidAge || 8,
@@ -2658,7 +2659,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         kidAppearance
       );
       imagePlan.character_anchor = appearanceAnchor;
-      console.log('[generate-story] Using kid appearance anchor:', appearanceAnchor);
+      console.log('[generate-story] ✅ Appearance anchor OVERRIDE:', appearanceAnchor);
+      console.log('[generate-story] ❌ Discarded LLM anchor:', discardedLlmAnchor ?? '(none)');
+    } else if (imagePlan?.character_anchor != null) {
+      console.log('[generate-story] No appearance override (include_self=', includeSelf, ', kidAppearance=', !!kidAppearance, '), using LLM anchor');
     }
 
     // Parse grid-based comic image plan when comic strip is active (grid_1 / grid_2 format)
@@ -2783,6 +2787,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         imagePlan.character_anchor = emotionFlowResult.protagonistSeed.appearance_en;
       }
 
+      console.log('[image-prompt] character_anchor used:', JSON.stringify(imagePlan.character_anchor?.substring(0, 120)), 'source:', kidAppearance ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
       console.log('[IMAGE-PIPELINE] Calling buildImagePrompts:', JSON.stringify({
         hasSeriesContext: !!seriesImageCtx,
         episodeNumber: seriesImageCtx?.episodeNumber ?? null,
@@ -2824,6 +2829,16 @@ Respond with ONLY valid JSON, no markdown:
 
         if (fallbackPlan?.character_anchor && fallbackPlan?.scenes?.length > 0) {
           console.log(`[generate-story] Fallback image_plan generated: ${fallbackPlan.scenes.length} scenes`);
+          if (includeSelf && kidAppearance) {
+            const appearanceAnchor = buildAppearanceAnchor(
+              resolvedKidName || 'Child',
+              resolvedKidAge || 8,
+              resolvedKidGender || 'child',
+              kidAppearance
+            );
+            fallbackPlan.character_anchor = appearanceAnchor;
+            console.log('[generate-story] ✅ Fallback path: appearance anchor OVERRIDE:', appearanceAnchor);
+          }
           imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData);
         } else {
           throw new Error('Invalid fallback image_plan structure');
@@ -3196,7 +3211,10 @@ Respond with ONLY valid JSON, no markdown:
       // ── NEW PATH: LLM grid_1 / grid_2 format → 2 Vertex calls, partial success allowed ──
       if (comicImagePlan) {
         try {
-          const characterAnchor = emotionFlowResult?.protagonistSeed?.appearance_en ?? comicImagePlan.character_anchor;
+          const characterAnchor = (includeSelf && kidAppearance)
+            ? buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance)
+            : (emotionFlowResult?.protagonistSeed?.appearance_en ?? comicImagePlan.character_anchor);
+          console.log('[image-prompt] comic character_anchor used:', JSON.stringify(characterAnchor?.substring(0, 120)), 'source:', (includeSelf && kidAppearance) ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
           const imageStylePrefix = [
             seriesImageCtx?.visualStyleSheet ? `SERIES VISUAL CONSISTENCY (Episode ${seriesImageCtx?.episodeNumber}): ${JSON.stringify(seriesImageCtx.visualStyleSheet)}` : '',
             imageStyleData?.promptSnippet || '',
@@ -3285,7 +3303,10 @@ Respond with ONLY valid JSON, no markdown:
           const comicPlan = parseComicStripPlan(imagePlan, comicLayout);
           if (!comicPlan) throw new Error('Comic strip plan parsing failed');
 
-          if (emotionFlowResult?.protagonistSeed?.appearance_en && comicPlan) {
+          if (includeSelf && kidAppearance && comicPlan) {
+            comicPlan.characterAnchor = buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance);
+            console.log('[generate-story] ✅ Kid appearance anchor applied to comic fallback plan');
+          } else if (emotionFlowResult?.protagonistSeed?.appearance_en && comicPlan) {
             comicPlan.characterAnchor = emotionFlowResult.protagonistSeed.appearance_en;
             console.log('[EmotionFlow] Injected character seed into comicPlan');
           }
