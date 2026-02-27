@@ -165,7 +165,33 @@ ESEMPI PERFETTI:
 - "magnifico" → "Molto molto bello"
 
 RISPONDI SOLO con JSON valido:
-{"correctedWord": "parola_corretta_o_originale", "explanation": "spiegazione breve"}`
+{"correctedWord": "parola_corretta_o_originale", "explanation": "spiegazione breve"}`,
+
+  fa: (word: string, context?: string) => `تو یک فرهنگ‌لغت زنده برای کودکان ۸ ساله هستی.
+
+کلمه یا عبارتی که باید توضیح داده شود: "${word}"
+${context ? `زمینه جمله: "${context}"` : ''}
+
+وظیفه:
+۱. اگر کلمه اشتباه نوشته شده، آن را تصحیح کن
+۲. یک توضیح ساده و واضح در حداکثر ۸ کلمه بده
+
+قوانین سختگیرانه:
+۱. حداکثر ۸ کلمه برای توضیح، نه بیشتر
+۲. از کلمات بسیار ساده که یک کودک ۸ ساله می‌فهمد استفاده کن
+۳. بدون نقطه‌گذاری در انتها
+۴. کلمه مورد توضیح را تکرار نکن
+۵. برای فعل‌ها: عمل را توضیح بده
+۶. برای اسم‌ها: بگو دقیقاً چیست
+۷. برای صفت‌ها: یک مترادف ساده بده
+
+نمونه‌های عالی:
+- "شجاع" → "کسی که نمی‌ترسد"
+- "بلعیدن" → "خیلی سریع و با ولع خوردن"
+- "باشکوه" → "خیلی خیلی زیبا"
+
+فقط با JSON معتبر پاسخ بده:
+{"correctedWord": "کلمه_تصحیح_شده_یا_اصلی", "explanation": "توضیح کوتاه"}`
 };
 
 // Helper: sleep for exponential backoff
@@ -325,12 +351,12 @@ Deno.serve(async (req) => {
         prompt = buildPromptFromTemplate(customPrompt.value, word, context);
       } else {
         // Fallback to built-in prompts
-        const promptFn = PROMPTS[promptLanguage] || PROMPTS.fr;
+        const promptFn = PROMPTS[promptLanguage] || PROMPTS.en;
         prompt = promptFn(word, context);
       }
     } catch (dbError) {
       console.log('Could not fetch custom prompt, using fallback:', dbError);
-      const promptFn = PROMPTS[promptLanguage] || PROMPTS.fr;
+      const promptFn = PROMPTS[promptLanguage] || PROMPTS.en;
       prompt = promptFn(word, context);
     }
 
