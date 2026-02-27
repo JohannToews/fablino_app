@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
@@ -38,8 +38,6 @@ const DEFAULT_APPEARANCE: KidAppearance = {
   glasses: false,
 };
 
-const DEBOUNCE_MS = 500;
-
 export default function MyLookPage() {
   const navigate = useNavigate();
   const { selectedProfile, selectedProfileId, kidAppLanguage } = useKidProfile();
@@ -47,34 +45,35 @@ export default function MyLookPage() {
 
   const [appearance, setAppearance] = useState<KidAppearance>(DEFAULT_APPEARANCE);
   const [loading, setLoading] = useState(true);
-  const [savedToast, setSavedToast] = useState(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [savedAppearance, setSavedAppearance] = useState<KidAppearance>(DEFAULT_APPEARANCE);
 
-  const saveAppearance = useCallback(
-    async (kidProfileId: string, data: KidAppearance) => {
-      const { error } = await (supabase as any).from("kid_appearance").upsert(
-        {
-          kid_profile_id: kidProfileId,
-          skin_tone: data.skinTone,
-          hair_length: data.hairLength,
-          hair_type: data.hairType,
-          hair_style: data.hairStyle,
-          hair_color: data.hairColor,
-          glasses: data.glasses,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "kid_profile_id" }
-      );
-      if (error) {
-        console.error("[MyLookPage] Save error:", error.message);
-        return;
-      }
-      setSavedToast(true);
-      toast.success(t.appearanceSaved);
-      setTimeout(() => setSavedToast(false), 2000);
-    },
-    [t.appearanceSaved]
-  );
+  const handleSave = useCallback(async () => {
+    if (!selectedProfileId) return;
+    setSaving(true);
+    const { error } = await (supabase as any).from("kid_appearance").upsert(
+      {
+        kid_profile_id: selectedProfileId,
+        skin_tone: appearance.skinTone,
+        hair_length: appearance.hairLength,
+        hair_type: appearance.hairType,
+        hair_style: appearance.hairStyle,
+        hair_color: appearance.hairColor,
+        glasses: appearance.glasses,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "kid_profile_id" }
+    );
+    setSaving(false);
+    if (error) {
+      console.error("[MyLookPage] Save error:", error.message);
+      return;
+    }
+    setSavedAppearance(appearance);
+    setHasChanges(false);
+    toast.success(t.appearanceSaved);
+  }, [selectedProfileId, appearance, t.appearanceSaved]);
 
   useEffect(() => {
     if (!selectedProfileId) {
@@ -90,38 +89,33 @@ export default function MyLookPage() {
         .eq("kid_profile_id", selectedProfileId)
         .maybeSingle();
       if (!cancelled && data) {
-        setAppearance({
+        const loaded: KidAppearance = {
           skinTone: (data.skin_tone as SkinToneKey) || "medium",
           hairLength: (data.hair_length as HairLengthKey) || "medium",
           hairType: (data.hair_type as HairTypeKey) || "straight",
           hairStyle: (data.hair_style as HairStyleKey) || "loose",
           hairColor: (data.hair_color as HairColorKey) || "brown",
           glasses: !!data.glasses,
-        });
+        };
+        setAppearance(loaded);
+        setSavedAppearance(loaded);
       } else if (!cancelled) {
         setAppearance(DEFAULT_APPEARANCE);
+        setSavedAppearance(DEFAULT_APPEARANCE);
       }
-      if (!cancelled) setLoading(false);
+      if (!cancelled) {
+        setLoading(false);
+        setHasChanges(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [selectedProfileId]);
 
-  useEffect(() => {
-    if (!selectedProfileId || loading) return;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      saveTimeoutRef.current = null;
-      saveAppearance(selectedProfileId, appearance);
-    }, DEBOUNCE_MS);
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    };
-  }, [selectedProfileId, appearance, loading, saveAppearance]);
-
   const update = useCallback(<K extends keyof KidAppearance>(key: K, value: KidAppearance[K]) => {
     setAppearance((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
   }, []);
 
   if (!selectedProfile) {
@@ -289,9 +283,22 @@ export default function MyLookPage() {
               </div>
             </section>
 
-            {savedToast && (
-              <p className="text-center text-sm text-green-600 font-medium mt-2">{t.appearanceSaved}</p>
-            )}
+            {/* Save button */}
+            <div className="sticky bottom-4 pt-4">
+              <motion.button
+                type="button"
+                onClick={handleSave}
+                disabled={!hasChanges || saving}
+                className={`w-full py-3.5 rounded-2xl text-base font-bold shadow-md transition-all ${
+                  hasChanges
+                    ? "bg-[#E8863A] text-white hover:bg-[#D47730]"
+                    : "bg-[#E0E0E0] text-[#999] cursor-not-allowed"
+                }`}
+                whileTap={hasChanges ? { scale: 0.97 } : {}}
+              >
+                {saving ? "..." : "💾 Speichern"}
+              </motion.button>
+            </div>
           </>
         )}
       </div>
