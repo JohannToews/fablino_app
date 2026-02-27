@@ -10,7 +10,7 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Max-Age': '86400',
 };
 
-const ALLOWED_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it'];
+const ALLOWED_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it', 'fa'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const POLL_INTERVAL_MS = 500;
 const MAX_POLL_ATTEMPTS = 30;
@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
       const jsonBody = await req.json();
       const base64Audio = jsonBody.audio as string;
       const mimeType = jsonBody.mimeType as string || 'audio/webm';
-      language = (jsonBody.language as string || 'de').toLowerCase();
+      const rawLang = ((jsonBody.language as string) || 'de').toLowerCase();
+      language = ALLOWED_LANGUAGES.includes(rawLang) ? rawLang : 'de';
       
       if (!base64Audio) {
         return new Response(

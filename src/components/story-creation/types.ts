@@ -605,6 +605,7 @@ export const LANGUAGE_FLAGS: Record<string, string> = {
   hu: '\u{1F1ED}\u{1F1FA}', pt: '\u{1F1F5}\u{1F1F9}', tr: '\u{1F1F9}\u{1F1F7}', bg: '\u{1F1E7}\u{1F1EC}',
   lt: '\u{1F1F1}\u{1F1F9}', ca: '\u{1F3F4}', pl: '\u{1F1F5}\u{1F1F1}', sk: '\u{1F1F8}\u{1F1F0}',
   uk: '\u{1F1FA}\u{1F1E6}', ru: '\u{1F1F7}\u{1F1FA}',
+  fa: '\u{1F1EE}\u{1F1F7}', // Farsi (Iran flag)
 };
 
 export const LANGUAGE_LABELS: Record<string, Record<string, string>> = {
@@ -626,6 +627,7 @@ export const LANGUAGE_LABELS: Record<string, Record<string, string>> = {
   sk: { fr: 'Slovaque', de: 'Slowakisch', en: 'Slovak', es: 'Eslovaco', it: 'Slovacco', bs: 'Slova\u010dki', nl: 'Slowaaks' },
   uk: { fr: 'Ukrainien', de: 'Ukrainisch', en: 'Ukrainian', es: 'Ucraniano', it: 'Ucraino', bs: 'Ukrajinski', nl: 'Oekraïens', uk: 'Українська', ru: 'Украинский' },
   ru: { fr: 'Russe', de: 'Russisch', en: 'Russian', es: 'Ruso', it: 'Russo', bs: 'Ruski', nl: 'Russisch', uk: 'Російська', ru: 'Русский' },
+  fa: { fr: 'Persan', de: 'Persisch', en: 'Persian (Farsi)', es: 'Persa', it: 'Persiano', bs: 'Perzijski', nl: 'Perzisch' },
 };
 
 export interface StoryTypeSelectionTranslations {

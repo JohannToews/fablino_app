@@ -170,12 +170,25 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     respondJson: 'Antwoord ALLEEN met de JSON van het outputformaat.',
     allowed: 'Toegestaan', notAllowed: 'Niet toegestaan',
   },
+  fa: {
+    child: 'کودک', language: 'زبان و سطح', vocabulary: 'واژگان',
+    length: 'طول متن', category: 'دسته‌بندی', characters: 'شخصیت‌ها',
+    specialEffects: 'جلوه‌های ویژه', guardrails: 'محدودیت‌های محتوا',
+    learningTheme: 'موضوع آموزشی', variety: 'تنوع',
+    specialRequest: 'درخواست ویژه', series: 'زمینه سریال',
+    primaryDirective: 'دستور اصلی داستان', prominentElement: 'عنصر مهم',
+    instruction: 'یک داستان با مشخصات زیر بنویس:',
+    chooseTheme: 'خودت یک موضوع مشخص در این دسته‌بندی انتخاب کن.',
+    respondJson: 'فقط با JSON خروجی پاسخ بده.',
+    allowed: 'مجاز', notAllowed: 'غیرمجاز',
+  },
 };
 
 // Language name mapping (for display in prompt)
 const LANGUAGE_NAMES: Record<string, string> = {
   fr: 'Français', de: 'Deutsch', en: 'English',
   es: 'Español', it: 'Italiano', bs: 'Bosanski', nl: 'Nederlands',
+  fa: 'فارسی',
   // Beta languages
   hu: 'Magyar', pt: 'Português', tr: 'Türkçe', bg: 'Български',
   lt: 'Lietuvių', ca: 'Català', pl: 'Polski', sk: 'Slovenčina',
@@ -247,6 +260,13 @@ const SPECIAL_ABILITIES_DESC: Record<string, Record<string, string>> = {
     transformations: 'Personages kunnen zich transformeren (in dieren, objecten, van grootte veranderen...)',
     special_talents: 'Personages hebben buitengewone talenten (muzikaal genie, uitvinder, met dieren praten...)',
   },
+  fa: {
+    superpowers: 'شخصیت‌ها می‌توانند ابرقدرت داشته باشند (پرواز، نیروی فوق‌العاده، نامرئی شدن...)',
+    magic: 'جادو در این دنیا وجود دارد (چوب جادو، افسون‌ها، معجون‌ها...)',
+    heroes_villains: 'قهرمانان و شرورانی با انگیزه‌های روشن وجود دارند',
+    transformations: 'شخصیت‌ها می‌توانند تغییر شکل دهند (به حیوان، شیء، تغییر اندازه...)',
+    special_talents: 'شخصیت‌ها استعدادهای خارق‌العاده دارند (نابغه موسیقی، مخترع، صحبت با حیوانات...)',
+  },
 };
 
 // ─── Character Relationship Helpers (Block 2.3d) ────────────────
@@ -258,52 +278,52 @@ function fmtChar(c: { name: string; age?: number }): string {
 }
 
 function mainCharLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'Personnage principal', de: 'Hauptfigur', en: 'Main character', es: 'Personaje principal', it: 'Protagonista', bs: 'Glavni lik', nl: 'Hoofdpersoon' };
+  const map: Record<string, string> = { fr: 'Personnage principal', de: 'Hauptfigur', en: 'Main character', es: 'Personaje principal', it: 'Protagonista', bs: 'Glavni lik', nl: 'Hoofdpersoon', fa: 'شخصیت اصلی' };
   return map[l] || 'Main character';
 }
 
 function ofWord(l: string): string {
-  const map: Record<string, string> = { fr: 'de', de: 'von', en: 'of', es: 'de', it: 'di', bs: 'od', nl: 'van' };
+  const map: Record<string, string> = { fr: 'de', de: 'von', en: 'of', es: 'de', it: 'di', bs: 'od', nl: 'van', fa: 'از' };
   return map[l] || 'of';
 }
 
 function andWord(l: string): string {
-  const map: Record<string, string> = { fr: 'et', de: 'und', en: 'and', es: 'y', it: 'e', bs: 'i', nl: 'en' };
+  const map: Record<string, string> = { fr: 'et', de: 'und', en: 'and', es: 'y', it: 'e', bs: 'i', nl: 'en', fa: 'و' };
   return map[l] || 'and';
 }
 
 function coupleLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'sont un couple / les parents', de: 'sind ein Paar / die Eltern', en: 'are a couple / the parents', es: 'son pareja / los padres', it: 'sono una coppia / i genitori', bs: 'su par / roditelji', nl: 'zijn een koppel / de ouders' };
+  const map: Record<string, string> = { fr: 'sont un couple / les parents', de: 'sind ein Paar / die Eltern', en: 'are a couple / the parents', es: 'son pareja / los padres', it: 'sono una coppia / i genitori', bs: 'su par / roditelji', nl: 'zijn een koppel / de ouders', fa: 'زوج / والدین هستند' };
   return map[l] || 'are a couple / the parents';
 }
 
 function siblingsLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'sont frères et sœurs', de: 'sind Geschwister', en: 'are siblings', es: 'son hermanos', it: 'sono fratelli', bs: 'su braća i sestre', nl: 'zijn broers en zussen' };
+  const map: Record<string, string> = { fr: 'sont frères et sœurs', de: 'sind Geschwister', en: 'are siblings', es: 'son hermanos', it: 'sono fratelli', bs: 'su braća i sestre', nl: 'zijn broers en zussen', fa: 'خواهر و برادر هستند' };
   return map[l] || 'are siblings';
 }
 
 function familyHint(l: string): string {
-  const map: Record<string, string> = { fr: '→ Ceci est une histoire de famille.', de: '→ Dies ist eine Familiengeschichte.', en: '→ This is a family story.', es: '→ Esta es una historia familiar.', it: '→ Questa è una storia di famiglia.', bs: '→ Ovo je porodična priča.', nl: '→ Dit is een familieverhaal.' };
+  const map: Record<string, string> = { fr: '→ Ceci est une histoire de famille.', de: '→ Dies ist eine Familiengeschichte.', en: '→ This is a family story.', es: '→ Esta es una historia familiar.', it: '→ Questa è una storia di famiglia.', bs: '→ Ovo je porodična priča.', nl: '→ Dit is een familieverhaal.', fa: '→ این یک داستان خانوادگی است.' };
   return map[l] || '→ This is a family story.';
 }
 
 function friendsLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'sont amis entre eux', de: 'sind miteinander befreundet', en: 'are friends with each other', es: 'son amigos entre sí', it: 'sono amici tra loro', bs: 'su međusobni prijatelji', nl: 'zijn vrienden van elkaar' };
+  const map: Record<string, string> = { fr: 'sont amis entre eux', de: 'sind miteinander befreundet', en: 'are friends with each other', es: 'son amigos entre sí', it: 'sono amici tra loro', bs: 'su međusobni prijatelji', nl: 'zijn vrienden van elkaar', fa: 'با هم دوست هستند' };
   return map[l] || 'are friends with each other';
 }
 
 function friendOfLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'ami(e) de', de: 'Freund(in) von', en: 'friend of', es: 'amigo/a de', it: 'amico/a di', bs: 'prijatelj/ica od', nl: 'vriend(in) van' };
+  const map: Record<string, string> = { fr: 'ami(e) de', de: 'Freund(in) von', en: 'friend of', es: 'amigo/a de', it: 'amico/a di', bs: 'prijatelj/ica od', nl: 'vriend(in) van', fa: 'دوست' };
   return map[l] || 'friend of';
 }
 
 function singleFriendLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'un(e) ami(e)', de: 'ein(e) Freund(in)', en: 'a friend', es: 'un(a) amigo/a', it: 'un(a) amico/a', bs: 'prijatelj/ica', nl: 'een vriend(in)' };
+  const map: Record<string, string> = { fr: 'un(e) ami(e)', de: 'ein(e) Freund(in)', en: 'a friend', es: 'un(a) amigo/a', it: 'un(a) amico/a', bs: 'prijatelj/ica', nl: 'een vriend(in)', fa: 'یک دوست' };
   return map[l] || 'a friend';
 }
 
 function knownFigureLabel(l: string): string {
-  const map: Record<string, string> = { fr: 'personnage connu', de: 'bekannte Figur', en: 'known character', es: 'personaje conocido', it: 'personaggio noto', bs: 'poznati lik', nl: 'bekend personage' };
+  const map: Record<string, string> = { fr: 'personnage connu', de: 'bekannte Figur', en: 'known character', es: 'personaje conocido', it: 'personaggio noto', bs: 'poznati lik', nl: 'bekend personage', fa: 'شخصیت شناخته‌شده' };
   return map[l] || 'known character';
 }
 
@@ -316,13 +336,14 @@ function notMainCharHint(l: string): string {
     it: 'Nota: Il bambino NON è un personaggio. Le seguenti persone sono i personaggi della storia.',
     bs: 'Napomena: Dijete NIJE lik. Sljedeće osobe su likovi priče.',
     nl: 'Opmerking: Het kind is GEEN personage. De volgende personen zijn de personages van het verhaal.',
+    fa: 'توجه: کودک خودش یک شخصیت نیست. افراد زیر شخصیت‌های داستان هستند.',
   };
   return map[l] || 'Note: The child is NOT a character. The following people are the story characters.';
 }
 
 // Known parent and sibling relation names across supported languages
-const PARENT_RELATIONS = ['Mama', 'Papa', 'Maman', 'Mom', 'Dad', 'Mamá', 'Papá', 'Mamma', 'Papà', 'Tata', 'Oma', 'Opa', 'Grand-mère', 'Grand-père', 'Grandma', 'Grandpa', 'Abuela', 'Abuelo', 'Nonna', 'Nonno', 'Baka', 'Djed'];
-const SIBLING_RELATIONS = ['Bruder', 'Schwester', 'Frère', 'Sœur', 'Brother', 'Sister', 'Hermano', 'Hermana', 'Fratello', 'Sorella', 'Brat', 'Sestra'];
+const PARENT_RELATIONS = ['Mama', 'Papa', 'Maman', 'Mom', 'Dad', 'Mamá', 'Papá', 'Mamma', 'Papà', 'Tata', 'Oma', 'Opa', 'Grand-mère', 'Grand-père', 'Grandma', 'Grandpa', 'Abuela', 'Abuelo', 'Nonna', 'Nonno', 'Baka', 'Djed', 'مامان', 'بابا', 'مادربزرگ', 'پدربزرگ'];
+const SIBLING_RELATIONS = ['Bruder', 'Schwester', 'Frère', 'Sœur', 'Brother', 'Sister', 'Hermano', 'Hermana', 'Fratello', 'Sorella', 'Brat', 'Sestra', 'برادر', 'خواهر'];
 
 /**
  * Build the CHARACTERS section with intelligent relationship logic.
@@ -1407,12 +1428,24 @@ export async function buildStoryPrompt(
         `De categorie hieronder dient alleen als SFEER-achtergrond,`,
         `NIET als alternatieve setting of plot.`,
       ].join('\n'),
+      fa: [
+        `## ⚡ ${headers.primaryDirective} (بالاترین اولویت)`,
+        `کودک این داستان را توصیف کرده:`,
+        `"${userText}"`,
+        ``,
+        `این پیرنگ اصلی است. جهان داستان، تعارض و کنش`,
+        `باید حول این توصیف ساخته شوند.`,
+        `دسته‌بندی پایین فقط به‌عنوان پس‌زمینهٔ فضایی است،`,
+        `نه به‌عنوان صحنه یا پیرنگ جایگزین.`,
+        `اگر ورودی مکانی، فعالیتی یا سناریویی را توصیف می‌کند،`,
+        `داستان آن‌جا اتفاق می‌افتد و دربارهٔ آن است.`,
+      ].join('\n'),
     };
     sections.push(richDirective[lang] || richDirective.en);
   }
 
   // Explicit language instruction for beta languages (no UI translations)
-  const BETA_LANG_CODES = new Set(['hu','pt','tr','bg','lt','ca','pl','sk']);
+  const BETA_LANG_CODES = new Set(['hu','pt','tr','bg','lt','ca','pl','sk','fa']);
   if (BETA_LANG_CODES.has(lang)) {
     sections.push(
       `## CRITICAL LANGUAGE INSTRUCTION\n` +
@@ -1472,6 +1505,7 @@ export async function buildStoryPrompt(
       it: 'TIPO DI STORIA CONCRETO',
       bs: 'KONKRETAN TIP PRIČE',
       nl: 'CONCREET VERHAALTYPE',
+      fa: 'نوع مشخص داستان',
     };
     const subtypeWarning: Record<string, string> = {
       de: 'WICHTIG: Folge der Story-Art. Schreibe KEINE generische Abenteuergeschichte.',
@@ -1481,6 +1515,7 @@ export async function buildStoryPrompt(
       it: 'IMPORTANTE: Segui il tipo di storia. NON scrivere un\'avventura generica.',
       bs: 'VAŽNO: Prati tip priče. NEMOJ pisati generičku avanturu.',
       nl: 'BELANGRIJK: Volg het verhaaltype. Schrijf GEEN generiek avontuurverhaal.',
+      fa: 'مهم: به نوع داستان پایبند باش. داستان ماجراجویی کلیشه‌ای ننویس.',
     };
     const titleSeedHint: Record<string, string> = {
       de: 'Titel-Impuls: Orientiere dich an Titeln wie',
@@ -1490,6 +1525,7 @@ export async function buildStoryPrompt(
       it: 'Ispirazione titolo: Orientati a titoli come',
       bs: 'Inspiracija za naslov: Orijentiši se na naslove poput',
       nl: 'Titel-inspiratie: Oriënteer je op titels zoals',
+      fa: 'ایده عنوان: خودت را به عنوان‌هایی مثل این نزدیک کن',
     };
     const settingHint: Record<string, string> = {
       de: 'Setting-Inspiration',
@@ -1499,6 +1535,7 @@ export async function buildStoryPrompt(
       it: 'Ispirazione ambientazione',
       bs: 'Inspiracija za mjesto radnje',
       nl: 'Setting-inspiratie',
+      fa: 'ایدهٔ صحنه و فضای داستان',
     };
 
     let subtypeSection = [
@@ -1520,6 +1557,7 @@ export async function buildStoryPrompt(
         it: '\nNOTA: Il tipo di storia sopra serve solo come ispirazione d\'atmosfera. La ⚡ DIRETTIVA PRINCIPALE (sopra) ha la priorità assoluta.',
         bs: '\nNAPOMENA: Tip priče iznad služi samo kao inspiracija za atmosferu. ⚡ PRIMARNA DIREKTIVA (iznad) ima apsolutni prioritet.',
         nl: '\nOPMERKING: Het verhaaltype hierboven dient alleen als sfeer-inspiratie. De ⚡ PRIMAIRE VERHAALLIJN (hierboven) heeft absolute voorrang.',
+        fa: '\nتوجه: نوع داستان بالا فقط برای الهام فضایی است. ⚡ دستور اصلی داستان (بالا) برای پیرنگ، صحنه و جهان اولویت مطلق دارد.',
       };
       subtypeSection += subtypeDowngrade[lang] || subtypeDowngrade.en;
     }
@@ -1536,6 +1574,7 @@ export async function buildStoryPrompt(
     it: `## ${headers.category}\nScegli tu un tema creativo e sorprendente per questa storia. Sii originale!`,
     bs: `## ${headers.category}\nSam/a odaberi kreativnu i iznenađujuću temu za ovu priču. Budi originalan/na!`,
     nl: `## ${headers.category}\nKies zelf een creatief en verrassend thema voor dit verhaal. Wees origineel!`,
+    fa: `## ${headers.category}\nخودت یک موضوع خلاق و غافلگیرکننده برای این داستان انتخاب کن. اصیل باش!`,
   };
 
   if (isSurpriseTheme) {
@@ -1564,6 +1603,7 @@ export async function buildStoryPrompt(
         it: '⚠️ NOTA: Questa categoria serve SOLO come ispirazione d\'atmosfera. Trama, ambientazione e mondo sono determinati dalla ⚡ DIRETTIVA PRINCIPALE (sopra).',
         bs: '⚠️ NAPOMENA: Ova kategorija služi SAMO kao inspiracija za atmosferu. Radnja, okruženje i svijet su određeni ⚡ PRIMARNOM DIREKTIVOM (iznad).',
         nl: '⚠️ OPMERKING: Deze categorie dient ALLEEN als sfeer-inspiratie. Plot, setting en wereld worden bepaald door de ⚡ PRIMAIRE VERHAALLIJN (hierboven).',
+        fa: '⚠️ توجه: این دسته فقط برای الهام فضایی است. پیرنگ، صحنه و جهان با ⚡ دستور اصلی داستان (بالا) تعیین می‌شوند.',
       };
       categoryLines.push(categoryDowngrade[lang] || categoryDowngrade.en);
     }
@@ -1586,6 +1626,7 @@ export async function buildStoryPrompt(
       it: `## ${headers.characters}\nInventa personaggi 100% di fantasia per questa storia.\nUsa animali, creature fantastiche, robot, fate o altri esseri immaginari.\nNON usare nomi umani realistici.\nNON includere bambini umani come personaggi principali.\nI personaggi devono essere originali e sorprendenti.`,
       bs: `## ${headers.characters}\nIzmisli 100% izmišljene likove za ovu priču.\nKoristi životinje, bajkovita bića, robote, vile ili druga maštovita bića.\nNE koristi realistična ljudska imena.\nNE uključuj ljudsku djecu kao glavne likove.\nLikovi trebaju biti originalni i iznenađujući.`,
       nl: `## ${headers.characters}\nVerzin 100% fictieve personages voor dit verhaal.\nGebruik dieren, mythische wezens, robots, feeën of andere denkbeeldige wezens.\nGebruik GEEN realistische menselijke voornamen.\nNeem GEEN menselijke kinderen op als hoofdpersonen.\nDe personages moeten origineel en verrassend zijn.`,
+      fa: `## ${headers.characters}\nشخصیت‌های صددرصد تخیلی برای این داستان بساز.\nاز حیوانات، موجودات افسانه‌ای، ربات‌ها، پری‌ها یا موجودات خیالی دیگر استفاده کن.\nاسم‌های واقعی انسانی به کار نبر.\nکودک انسانی به عنوان شخصیت اصلی قرار نده.\nشخصیت‌ها باید اصیل و غافلگیرکننده باشند.`,
     };
     sections.push(fictionalHint[lang] || fictionalHint.en);
   } else {
@@ -1608,6 +1649,7 @@ export async function buildStoryPrompt(
           it: 'IMPORTANTE: Tutti i personaggi elencati sopra DEVONO apparire attivamente nella storia. NON inventare nuovi personaggi con nome. Puoi aggiungere comparse anonime (un negoziante, passanti) ma nessun nuovo personaggio con nome.',
           bs: 'VAŽNO: Svi likovi navedeni iznad MORAJU se aktivno pojaviti u priči. NE izmišljaj nove imenovane likove. Možeš dodati anonimne sporedne likove (prodavač, prolaznici) ali nijedan novi lik s imenom.',
           nl: 'BELANGRIJK: Alle hierboven genoemde personages MOETEN actief in het verhaal voorkomen. Verzin GEEN nieuwe personages met namen. Je mag anonieme bijfiguren toevoegen (een winkelier, voorbijgangers) maar geen nieuwe personages met namen.',
+          fa: 'مهم: همهٔ شخصیت‌های فهرست‌شده بالا باید در داستان به‌طور فعال حضور داشته باشند. شخصیت نام‌دار جدید اختراع نکن. می‌توانی سیاهی‌لشکر بی‌نام (مثلاً مغازه‌دار، رهگذران) اضافه کنی ولی شخصیت جدید با اسم نه.',
         };
         sections.push(`${charactersSection}\n${restrictedHint[lang] || restrictedHint.en}`);
       } else {
@@ -1620,6 +1662,7 @@ export async function buildStoryPrompt(
           it: 'Puoi arricchire la storia con personaggi secondari inventati (animali, creature, ecc.) oltre ai personaggi elencati sopra.',
           bs: 'Možeš obogatiti priču izmišljenim sporednim likovima (životinje, bića, itd.) uz likove navedene iznad.',
           nl: 'Je mag het verhaal verrijken met verzonnen bijfiguren (dieren, wezens, enz.) naast de hierboven genoemde personages.',
+          fa: 'می‌توانی داستان را با شخصیت‌های فرعی تخیلی (حیوانات، موجودات و غیره) علاوه بر شخصیت‌های بالا غنی کنی.',
         };
         sections.push(`${charactersSection}\n${enrichmentHint[lang] || enrichmentHint.en}`);
       }
@@ -1837,6 +1880,36 @@ export async function buildStoryPrompt(
       `- ❌ Bijvoeglijk naamwoord-ophoping`,
       `- ❌ Overhaaste oplossing`,
     ].join('\n'),
+
+    fa: [
+      `## قوانین داستان‌نویسی`,
+      ``,
+      `شخصیت‌ها:`,
+      `- حداکثر ${maxChars} شخصیت در کل داستان (شخصیت اصلی + شخصیت‌های فرعی)`,
+      `- هر شخصیت باید در ۲ پاراگراف اول معرفی شود`,
+      `- هیچ شخصیت جدیدی بعد از صحنه معرفی نباید ظاهر شود`,
+      `- هر شخصیت فرعی یک ویژگی مشخص و یک نقش دارد`,
+      `- شخصیت اصلی باید برای کودک ${age} ساله قابل همذات‌پنداری باشد`,
+      ``,
+      `داستان:`,
+      `- ${plotComplexity}`,
+      `- حداکثر ${maxTwists} نقطه عطف`,
+      `- هر پاراگراف یک کار انجام می‌دهد: معرفی، ایجاد تنش، یا حل مسئله`,
+      `- هرگز شخصیت جدید و مشکل جدید در یک پاراگراف نباشد`,
+      ``,
+      `زبان:`,
+      `- حداکثر طول جمله: ${maxSentLen} کلمه`,
+      `- فقط از کلماتی استفاده کن که کودک ${age} ساله می‌شناسد`,
+      `- حداکثر ۲ صفت در هر جمله`,
+      `- گفتگو داستان را پیش ببرد`,
+      ``,
+      `ممنوع:`,
+      `- ❌ بیش از ${maxChars} شخصیت`,
+      `- ❌ شخصیت جدید بعد از معرفی`,
+      `- ❌ مأموریت‌های چندگانه یا موانع پشت سر هم`,
+      `- ❌ انباشت صفت`,
+      `- ❌ حل عجولانه در پاراگراف آخر`,
+    ].join('\n'),
   };
 
   sections.push(storytellingRulesBlock[lang] || storytellingRulesBlock.en);
@@ -1915,6 +1988,12 @@ export async function buildStoryPrompt(
         `"${userText}"`,
         `Dit element moet een BELANGRIJKE rol spelen in het plot.`,
         `Het moet niet alleen worden genoemd, maar het verhaal actief beïnvloeden.`,
+      ].join('\n'),
+      fa: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `این عنصر باید نقشی مهم در پیرنگ داشته باشد.`,
+        `نباید فقط ذکر شود، بلکه باید فعالانه بر داستان تأثیر بگذارد.`,
       ].join('\n'),
     };
     sections.push(hintBlock[lang] || hintBlock.en);

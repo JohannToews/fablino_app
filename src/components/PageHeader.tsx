@@ -12,7 +12,7 @@ const PageHeader = ({ title, backTo = "/", rightContent }: PageHeaderProps) => {
       <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <BackButton to={backTo} />
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-baloo text-foreground line-clamp-2 min-w-0">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-baloo text-foreground line-clamp-2 min-w-0" dir="auto">
             {title}
           </h1>
         </div>

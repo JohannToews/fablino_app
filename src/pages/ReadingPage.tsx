@@ -26,6 +26,7 @@ import type { BranchOption as BranchOptionType } from "@/components/story-creati
 import ImmersiveReader from "@/components/immersive-reader/ImmersiveReader";
 import WordListPanel from "@/components/WordListPanel";
 import { cropComicGrids, cropComicPanels, type CroppedPanel } from "@/utils/cropComicPanels";
+import { isRTL, rtlProps, rtlClasses } from "@/lib/rtlUtils";
 
 // UI labels for word explanation popup in different languages
 const readingLabels: Record<string, {
@@ -588,6 +589,18 @@ const ReadingPage = () => {
       checkForQuestions();
     }
   }, [id]);
+
+  // Optional: load Farsi (Vazirmatn) font when story is RTL
+  useEffect(() => {
+    if (!isRTL(story?.text_language)) return;
+    const id = 'vazirmatn-font';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.href = 'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, [story?.text_language]);
 
   // FR syllable preload: cache words when syllable mode is enabled for a French story
   useEffect(() => {
@@ -2333,8 +2346,8 @@ const ReadingPage = () => {
                   className="xl:hidden fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-border/50 max-w-sm w-full pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
-                    <h3 className="font-baloo text-xl font-bold break-words mb-3">
+                  <div className="bg-card rounded-2xl p-5 shadow-xl border-2 border-border/50 max-w-sm w-full pointer-events-auto animate-in fade-in zoom-in-95 duration-200" {...rtlProps(story?.text_language)}>
+                    <h3 className={`font-baloo text-xl font-bold break-words mb-3 ${rtlClasses(story?.text_language)}`}>
                       {selectedWord}
                     </h3>
                     
@@ -2357,7 +2370,7 @@ const ReadingPage = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className={`space-y-3 ${rtlClasses(story?.text_language)}`}>
                         <p className="text-lg leading-relaxed">{explanation}</p>
                         
                         <div className="flex gap-2">
@@ -2392,9 +2405,10 @@ const ReadingPage = () => {
                 </div>
               )}
               
-              <div 
+<div
                 ref={textContainerRef}
-                className={`reading-text select-text ${getReadingTextClasses(fontSize)}`}
+                className={`reading-text select-text story-text-container ${getReadingTextClasses(fontSize)} ${rtlClasses(story?.text_language)}`}
+                {...rtlProps(story?.text_language)}
               >
                 {renderFormattedText()}
               </div>
@@ -2745,9 +2759,9 @@ const ReadingPage = () => {
           <div className="hidden xl:block xl:col-span-1">
             <div className="sticky top-24">
               {selectedWord ? (
-                <div className="explanation-panel animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="explanation-panel animate-in fade-in slide-in-from-right-4 duration-300" {...rtlProps(story?.text_language)}>
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-baloo text-2xl font-bold break-words max-w-[200px]">
+                    <h3 className={`font-baloo text-2xl font-bold break-words max-w-[200px] ${rtlClasses(story?.text_language)}`}>
                       {selectedWord}
                     </h3>
                     <Button
@@ -2778,7 +2792,7 @@ const ReadingPage = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className={`space-y-4 ${rtlClasses(story?.text_language)}`}>
                       <p className="text-xl leading-relaxed">{explanation}</p>
                       
                       {!isSaved && explanation && (

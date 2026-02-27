@@ -507,7 +507,7 @@ const StoryCard = ({
           </Badge>
         )}
       </div>
-      <h3 className="font-baloo text-base sm:text-xl font-bold text-center group-hover:text-primary transition-colors line-clamp-2">
+      <h3 className="font-baloo text-base sm:text-xl font-bold text-center group-hover:text-primary transition-colors line-clamp-2" dir="auto">
         {story.title}
       </h3>
     </div>

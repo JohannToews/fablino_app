@@ -498,3 +498,9 @@ body.premium-ui h2 {
 }
 
 /* Note: pulse-soft is used in SpecialEffectsScreen with 4s duration */
+
+/* Farsi/RTL: Vazirmatn for story and quiz when dir=rtl (font loaded lazily in ReadingPage) */
+[dir="rtl"] .story-text-container,
+[dir="rtl"].quiz-container {
+  font-family: 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif;
+}

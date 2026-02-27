@@ -13,6 +13,7 @@ import { User, Palette, Save, Loader2, Sparkles, Plus, Trash2, X } from "lucide-
 import { useTranslations, Language } from "@/lib/translations";
 import { DEFAULT_SCHOOL_SYSTEMS, SchoolSystems, SchoolSystem } from "@/lib/schoolSystems";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { useFarsiEnabled } from "@/hooks/useFarsiEnabled";
 import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
 import { STORY_LANGUAGES } from "@/lib/languages";
 
@@ -75,8 +76,11 @@ const IMAGE_STYLES = [
 
 const PROFILE_LANGUAGES: Language[] = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl', 'pt', 'sk', 'uk', 'ru'];
 
+const FARSI_SCHOOL_KEYS = new Set(['iran', 'afghanistan']);
+
 const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSectionProps) => {
   const { refreshProfiles: refreshGlobalProfiles, setSelectedProfileId: setGlobalSelectedProfileId, selectedProfileId: globalSelectedProfileId } = useKidProfile();
+  const farsiEnabled = useFarsiEnabled();
   const [profiles, setProfiles] = useState<KidProfile[]>([]);
   const [selectedProfileIndex, setSelectedProfileIndex] = useState<number>(0);
   const [schoolSystems, setSchoolSystems] = useState<SchoolSystems>(DEFAULT_SCHOOL_SYSTEMS);
@@ -819,6 +823,9 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
   }
 
   const availableClasses = schoolSystems[currentProfile.school_system]?.classes || [];
+  const visibleSchoolSystems = Object.entries(schoolSystems).filter(([key]) => !FARSI_SCHOOL_KEYS.has(key) || farsiEnabled);
+  const visibleStoryLanguagesCore = STORY_LANGUAGES.filter((l) => l.tier === 'core' && (l.code !== 'fa' || farsiEnabled));
+  const visibleStoryLanguagesBeta = STORY_LANGUAGES.filter((l) => l.tier === 'beta' && (l.code !== 'fa' || farsiEnabled));
 
   return (
     <div className="space-y-4 pb-24">
@@ -924,7 +931,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(schoolSystems).map(([key, system]) => (
+                      {visibleSchoolSystems.map(([key, system]) => (
                         <SelectItem key={key} value={key}>{system.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -962,7 +969,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 <Label className="text-xs text-[#2D1810]/60">{t.storyLanguagesLabel}</Label>
                 <p className="text-[11px] text-[#2D1810]/40 mb-2">{t.storyLanguagesHint}</p>
                 <div className="flex flex-wrap gap-2">
-                  {STORY_LANGUAGES.filter(l => l.tier === 'core').map((sl) => {
+                  {visibleStoryLanguagesCore.map((sl) => {
                     const isSelected = (currentProfile.story_languages || []).includes(sl.code);
                     return (
                       <button
@@ -991,7 +998,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               <div>
                 <p className="text-[11px] text-[#2D1810]/40 mb-1.5">Beta</p>
                 <div className="flex flex-wrap gap-2">
-                  {STORY_LANGUAGES.filter(l => l.tier === 'beta').map((sl) => {
+                  {visibleStoryLanguagesBeta.map((sl) => {
                     const isSelected = (currentProfile.story_languages || []).includes(sl.code);
                     return (
                       <button

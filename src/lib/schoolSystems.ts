@@ -135,4 +135,27 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
       "6 класс",
     ],
   },
+  // Farsi — only shown when farsi_enabled_users feature flag is active
+  iran: {
+    name: "فارسی (ایران)",
+    classes: [
+      "کلاس اول",
+      "کلاس دوم",
+      "کلاس سوم",
+      "کلاس چهارم",
+      "کلاس پنجم",
+      "کلاس ششم",
+    ],
+  },
+  afghanistan: {
+    name: "فارسی (افغانستان)",
+    classes: [
+      "صنف اول",
+      "صنف دوم",
+      "صنف سوم",
+      "صنف چهارم",
+      "صنف پنجم",
+      "صنف ششم",
+    ],
+  },
 };

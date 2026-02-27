@@ -31,6 +31,8 @@ export const LANGUAGES: AppLanguage[] = [
   { code: 'sk', nameNative: 'Slovenčina',  nameEN: 'Slovak',     flag: '🇸🇰', uiSupported: true, storySupported: true, tier: 'beta' },
   { code: 'uk', nameNative: 'Українська', nameEN: 'Ukrainian',  flag: '🇺🇦', uiSupported: true, storySupported: true, tier: 'beta' },
   { code: 'ru', nameNative: 'Русский',    nameEN: 'Russian',    flag: '🇷🇺', uiSupported: true, storySupported: true, tier: 'beta' },
+  // Farsi — story-only, shown in picker only when farsi_enabled_users feature flag is active
+  { code: 'fa', nameNative: 'فارسی',     nameEN: 'Persian (Farsi)', flag: '🇮🇷', uiSupported: false, storySupported: true, tier: 'beta' },
 ];
 
 export const STORY_LANGUAGES = LANGUAGES.filter(l => l.storySupported);

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, CircleDot, ChevronRight, Loader2 } from "lucide-react";
+import { isRTL, rtlProps, rtlClasses } from "@/lib/rtlUtils";
 
 // Localized labels for comprehension quiz
 const quizLabels: Record<string, {
@@ -190,7 +191,7 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
   const isCorrect = selectedAnswer === currentQuestion.expected_answer;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isRTL(storyLanguage) ? 'quiz-container' : ''}`} {...rtlProps(storyLanguage)}>
       {/* Progress dots */}
       <div className="flex justify-center gap-2">
         {questions.map((_, idx) => {
@@ -227,7 +228,8 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
           const isCorrectOption = option === currentQuestion.expected_answer;
           
           let buttonVariant: "outline" | "default" | "destructive" = "outline";
-          let extraClasses = "text-left justify-start h-auto min-h-[48px] py-3 sm:py-4 px-4 text-sm sm:text-base w-full";
+          const rtlClass = isRTL(storyLanguage) ? "text-right justify-end" : "text-left justify-start";
+          let extraClasses = `${rtlClass} h-auto min-h-[48px] py-3 sm:py-4 px-4 text-sm sm:text-base w-full`;
           
           if (showFeedback) {
             if (isSelected && isCorrectOption) {
@@ -248,10 +250,11 @@ const ComprehensionQuiz = ({ storyId, storyDifficulty = "medium", storyLanguage 
               key={idx}
               variant={buttonVariant}
               className={extraClasses}
+              {...rtlProps(storyLanguage)}
               onClick={() => handleSelectAnswer(option)}
               disabled={showFeedback}
             >
-              <span className="font-medium mr-2 text-muted-foreground">
+              <span className={`font-medium text-muted-foreground ${isRTL(storyLanguage) ? 'ml-2' : 'mr-2'}`}>
                 {String.fromCharCode(65 + idx)}.
               </span>
               {option}

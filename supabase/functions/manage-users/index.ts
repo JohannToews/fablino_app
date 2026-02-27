@@ -72,6 +72,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Farsi (fa) story language: any authenticated user can read their own flag
+    if (action === "getFarsiEnabled") {
+      const auth = await getAuthenticatedUser(req);
+      const { data: row } = await auth.supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "farsi_enabled_users")
+        .maybeSingle();
+
+      let ids: string[] = [];
+      if (row?.value) {
+        try {
+          ids = JSON.parse(row.value);
+          if (!Array.isArray(ids)) ids = [];
+        } catch {
+          ids = [];
+        }
+      }
+      const enabled = ids.includes("*") || ids.includes(auth.userId);
+      return new Response(JSON.stringify({ enabled }), {
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     // For language updates on own profile, allow any authenticated user
     if (action === "updateLanguages" || action === "updateLanguage") {
       const auth = await getAuthenticatedUser(req);
