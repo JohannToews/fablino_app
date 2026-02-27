@@ -18,13 +18,14 @@ interface UserRow {
   username: string;
 }
 
-type FeatureKey = "emotion_flow_enabled_users" | "comic_strip_enabled_users" | "premium_ui_enabled_users" | "farsi_enabled_users";
+type FeatureKey = "emotion_flow_enabled_users" | "comic_strip_enabled_users" | "premium_ui_enabled_users" | "farsi_enabled_users" | "avatar_builder_enabled_users";
 
 const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string }[] = [
   { key: "emotion_flow_enabled_users", label: "Emotion-Flow", globalLabel: "Emotion-Flow für ALLE aktivieren" },
   { key: "comic_strip_enabled_users", label: "Comic-Strip", globalLabel: "Comic-Strip für ALLE aktivieren" },
   { key: "premium_ui_enabled_users", label: "Premium UI", globalLabel: "Premium UI für ALLE aktivieren" },
   { key: "farsi_enabled_users", label: "Farsi (فارسی)", globalLabel: "Farsi für ALLE aktivieren" },
+  { key: "avatar_builder_enabled_users", label: "Avatar Builder (Mein Look)", globalLabel: "Avatar Builder für ALLE aktivieren" },
 ];
 
 const FeatureFlagsPage = () => {
@@ -37,6 +38,7 @@ const FeatureFlagsPage = () => {
     comic_strip_enabled_users: [],
     premium_ui_enabled_users: [],
     farsi_enabled_users: [],
+    avatar_builder_enabled_users: [],
   });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,6 +62,7 @@ const FeatureFlagsPage = () => {
           "comic_strip_enabled_users",
           "premium_ui_enabled_users",
           "farsi_enabled_users",
+          "avatar_builder_enabled_users",
         ]),
         (supabase as any).from("user_profiles").select("id, display_name, email, username").order("display_name"),
       ]);
@@ -78,6 +81,7 @@ const FeatureFlagsPage = () => {
           comic_strip_enabled_users: parsed.comic_strip_enabled_users || [],
           premium_ui_enabled_users: parsed.premium_ui_enabled_users || [],
           farsi_enabled_users: parsed.farsi_enabled_users || [],
+          avatar_builder_enabled_users: parsed.avatar_builder_enabled_users || [],
         });
       }
 

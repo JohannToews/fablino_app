@@ -33,6 +33,7 @@ import CreateStoryPage from "./pages/CreateStoryPage";
 // InstallPage removed – install handled inline via useInstallPrompt
 import ShareRedirectPage from "./pages/ShareRedirectPage";
 import StickerBookPage from "./pages/StickerBookPage";
+import MyLookPage from "./pages/MyLookPage";
 import WelcomePage from "./pages/WelcomePage";
 import OnboardingKindPage from "./pages/OnboardingKindPage";
 import OnboardingStoryPage from "./pages/OnboardingStoryPage";
@@ -86,6 +87,11 @@ const App = () => (
               <Route path="/stories" element={
                 <ProtectedRoute>
                   <StorySelectPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-look" element={
+                <ProtectedRoute>
+                  <MyLookPage />
                 </ProtectedRoute>
               } />
               <Route path="/read/:id" element={

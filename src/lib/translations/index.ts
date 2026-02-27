@@ -560,6 +560,42 @@ export interface Translations {
   installModalYes: string;
   installModalLater: string;
 
+  // Home — Mein Look (Avatar Builder)
+  myLook: string;
+
+  // Appearance (Mein Look page)
+  appearanceTitle: string;
+  appearanceSubtitle: string;
+  appearanceMascotMessage: string;
+  appearanceSkin: string;
+  appearanceHairLengthLabel: string;
+  appearanceHairTypeLabel: string;
+  appearanceHairStyleLabel: string;
+  appearanceHairColorLabel: string;
+  appearanceGlassesLabel: string;
+  appearanceGlassesYes: string;
+  appearanceGlassesNo: string;
+  appearanceSaved: string;
+  appearanceSkinLight: string;
+  appearanceSkinMediumLight: string;
+  appearanceSkinMedium: string;
+  appearanceSkinMediumDark: string;
+  appearanceSkinDark: string;
+  appearanceHairVeryShort: string;
+  appearanceHairShort: string;
+  appearanceHairMedium: string;
+  appearanceHairLong: string;
+  appearanceHairStraight: string;
+  appearanceHairWavy: string;
+  appearanceHairCurly: string;
+  appearanceHairCoily: string;
+  appearanceStyleLoose: string;
+  appearanceStylePonytail: string;
+  appearanceStyleBraids: string;
+  appearanceStylePigtails: string;
+  appearanceStyleBun: string;
+  appearanceStyleBangs: string;
+
 }
 
 import de from './de';

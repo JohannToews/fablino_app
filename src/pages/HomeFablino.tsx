@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
+import { useAvatarBuilderEnabled } from "@/hooks/useAvatarBuilderEnabled";
 import MigrationBanner from "@/components/MigrationBanner";
 import { Settings, BarChart3 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -374,6 +375,17 @@ const HomeFablino = () => {
           >
             {ui.myStories}
           </button>
+
+          {/* Mein Look - only when feature flag on */}
+          {isAvatarBuilderEnabled && (
+            <button
+              onClick={() => navigate("/my-look")}
+              data-premium-button="secondary"
+              className={FABLINO_STYLES.secondaryButton}
+            >
+              ✨ {t.myLook}
+            </button>
+          )}
         </div>
 
         {/* ═══ 3. WEEKLY TRACKER CARD (Redesigned) ═══ */}

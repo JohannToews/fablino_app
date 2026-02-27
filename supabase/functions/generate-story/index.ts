@@ -11,6 +11,7 @@ import type { ComicLayout, ComicImagePlan } from '../_shared/comicStrip/types.ts
 import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
 import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
 import type { EmotionFlowResult } from '../_shared/emotionFlow/types.ts';
+import { buildAppearanceAnchor } from '../_shared/appearanceAnchor.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1784,25 +1785,42 @@ Deno.serve(async (req) => {
       // ── Load kid profile from DB if we have kidProfileId but missing details ──
       let resolvedKidAge = kidAge;
       let resolvedKidName = kidName;
+      let resolvedKidGender: string = '';
       let resolvedDifficultyLevel = difficultyLevel;
       let resolvedContentSafetyLevel = contentSafetyLevel;
+      let kidAppearance: { skin_tone: string; hair_length: string; hair_type: string; hair_style: string; hair_color: string; glasses: boolean } | null = null;
 
-      if (kidProfileId && (!kidAge || !kidName)) {
+      if (kidProfileId) {
         try {
           const { data: kidProfile } = await supabase
             .from('kid_profiles')
-            .select('first_name, age, difficulty_level, content_safety_level')
+            .select('first_name, age, gender, difficulty_level, content_safety_level')
             .eq('id', kidProfileId)
             .maybeSingle();
           if (kidProfile) {
-            resolvedKidAge = kidAge || kidProfile.age;
-            resolvedKidName = kidName || kidProfile.first_name;
-            resolvedDifficultyLevel = difficultyLevel || kidProfile.difficulty_level;
-            resolvedContentSafetyLevel = contentSafetyLevel || kidProfile.content_safety_level;
+            resolvedKidAge = kidAge ?? kidProfile.age;
+            resolvedKidName = kidName ?? kidProfile.first_name;
+            resolvedKidGender = (kidProfile as any).gender ?? '';
+            if (!kidAge || !kidName) {
+              resolvedDifficultyLevel = difficultyLevel || kidProfile.difficulty_level;
+              resolvedContentSafetyLevel = contentSafetyLevel || kidProfile.content_safety_level;
+            }
             console.log(`[generate-story] Loaded kid profile: ${resolvedKidName}, age=${resolvedKidAge}, diff=${resolvedDifficultyLevel}`);
           }
         } catch (profileErr: any) {
           console.warn('[generate-story] Could not load kid profile:', profileErr.message);
+        }
+      }
+      if (kidProfileId) {
+        try {
+          const { data: appearance } = await supabase
+            .from('kid_appearance')
+            .select('skin_tone, hair_length, hair_type, hair_style, hair_color, glasses')
+            .eq('kid_profile_id', kidProfileId)
+            .maybeSingle();
+          if (appearance) kidAppearance = appearance;
+        } catch (_) {
+          // optional: kid may not have set "Mein Look"
         }
       }
 
@@ -1882,6 +1900,7 @@ Deno.serve(async (req) => {
           settingIdea: selectedSubtype.settingIdea,
           label: selectedSubtype.label,
         } : undefined,
+        appearance: kidAppearance ?? undefined,
         // ── Granular generation config (from generation_config table) ──
         // Comic 8-panel (2×(2x2)) uses 7 scenes + cover
         word_count_override: {
@@ -2521,6 +2540,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           visualStyleSheet = safeParseJson(rawVss);
           if (visualStyleSheet) {
             console.log(`[generate-story] [SERIES-DEBUG] Parsed visual_style_sheet (from ${typeof rawVss}): characters=${Object.keys(visualStyleSheet?.characters || {}).length}, world_style=${!!visualStyleSheet?.world_style}`);
+            if (includeSelf && kidAppearance && visualStyleSheet.characters != null && resolvedKidName) {
+              visualStyleSheet.characters[resolvedKidName] = buildAppearanceAnchor(
+                resolvedKidName,
+                resolvedKidAge || 8,
+                resolvedKidGender || 'child',
+                kidAppearance
+              );
+              console.log('[generate-story] Injected kid appearance into visual_style_sheet.characters for protagonist');
+            }
           } else {
             console.log(`[generate-story] [SERIES-DEBUG] visual_style_sheet present but unparseable: type=${typeof rawVss}, value=${String(rawVss).substring(0, 200)}`);
           }
@@ -2619,6 +2647,18 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     } catch (e) {
       console.error('[generate-story] Error parsing image_plan:', e);
+    }
+
+    // Override character_anchor with kid "Mein Look" when kid is protagonist and has appearance set
+    if (imagePlan && includeSelf && kidAppearance) {
+      const appearanceAnchor = buildAppearanceAnchor(
+        resolvedKidName || 'Child',
+        resolvedKidAge || 8,
+        resolvedKidGender || 'child',
+        kidAppearance
+      );
+      imagePlan.character_anchor = appearanceAnchor;
+      console.log('[generate-story] Using kid appearance anchor:', appearanceAnchor);
     }
 
     // Parse grid-based comic image plan when comic strip is active (grid_1 / grid_2 format)
@@ -2738,7 +2778,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       // ═══ NEW PATH: Structured image_plan from LLM ═══
       console.log('[generate-story] Using NEW image path: structured image_plan');
 
-      if (emotionFlowResult?.protagonistSeed?.appearance_en && imagePlan) {
+      if (emotionFlowResult?.protagonistSeed?.appearance_en && imagePlan && !(includeSelf && kidAppearance)) {
         console.log('[EmotionFlow] Injecting character seed into imagePlan.character_anchor');
         imagePlan.character_anchor = emotionFlowResult.protagonistSeed.appearance_en;
       }

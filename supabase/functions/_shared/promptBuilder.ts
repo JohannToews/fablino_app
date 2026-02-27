@@ -81,6 +81,15 @@ export interface StoryRequest {
     max_words: number;
     scene_image_count: number;
   };
+  // ── Mein Look: kid appearance for text-image consistency ──
+  appearance?: {
+    skin_tone: string;
+    hair_length: string;
+    hair_type: string;
+    hair_style: string;
+    hair_color: string;
+    glasses: boolean;
+  } | null;
 }
 
 // ─── Section Headers (translated) ───────────────────────────────
@@ -1107,6 +1116,96 @@ export interface PromptBuildResult {
   warnings: string[];
 }
 
+/** Build appearance description in the story language for the CHILD section (text-image consistency). */
+function buildPromptAppearanceDesc(
+  appearance: NonNullable<StoryRequest['appearance']>,
+  lang: string
+): string {
+  const parts: string[] = [];
+
+  const skinDesc: Record<string, Record<string, string>> = {
+    light: { de: 'helle Haut', fr: 'peau claire', en: 'light skin', es: 'piel clara', it: 'pelle chiara', bs: 'svijetla koža', nl: 'lichte huid' },
+    medium_light: { de: 'hell-mittlere Haut', fr: 'peau claire-moyenne', en: 'light-medium skin', es: 'piel clara-media', it: 'pelle chiara-media', bs: 'svijetlo-srednja koža', nl: 'licht-medium huid' },
+    medium: { de: 'mittlere Hautfarbe', fr: 'peau mate', en: 'medium skin tone', es: 'piel media', it: 'pelle media', bs: 'srednja boja kože', nl: 'medium huidskleur' },
+    medium_dark: { de: 'dunklere Hautfarbe', fr: 'peau foncée', en: 'medium-dark skin', es: 'piel morena', it: 'pelle scura', bs: 'tamnija koža', nl: 'donkerder huidskleur' },
+    dark: { de: 'dunkle Haut', fr: 'peau foncée', en: 'dark skin', es: 'piel oscura', it: 'pelle scura', bs: 'tamna koža', nl: 'donkere huid' },
+  };
+
+  const lengthDesc: Record<string, Record<string, string>> = {
+    very_short: { de: 'sehr kurze', fr: 'très courts', en: 'very short', es: 'muy corto', it: 'molto corti', bs: 'vrlo kratka', nl: 'zeer kort' },
+    short: { de: 'kurze', fr: 'courts', en: 'short', es: 'corto', it: 'corti', bs: 'kratka', nl: 'kort' },
+    medium: { de: 'mittellange', fr: 'mi-longs', en: 'medium-length', es: 'medio', it: 'medi', bs: 'srednje duga', nl: 'halflang' },
+    long: { de: 'lange', fr: 'longs', en: 'long', es: 'largo', it: 'lunghi', bs: 'duga', nl: 'lang' },
+  };
+
+  const typeDesc: Record<string, Record<string, string>> = {
+    straight: { de: 'glatte', fr: 'lisses', en: 'straight', es: 'liso', it: 'lisci', bs: 'ravna', nl: 'steil' },
+    wavy: { de: 'wellige', fr: 'ondulés', en: 'wavy', es: 'ondulado', it: 'mossi', bs: 'valovita', nl: 'golvend' },
+    curly: { de: 'lockige', fr: 'bouclés', en: 'curly', es: 'rizado', it: 'ricci', bs: 'kovrčava', nl: 'krullend' },
+    coily: { de: 'Afro-', fr: 'crépus', en: 'coily', es: 'afro', it: 'afro', bs: 'afro', nl: 'kroezend' },
+  };
+
+  const colorDesc: Record<string, Record<string, string>> = {
+    black: { de: 'schwarze', fr: 'noirs', en: 'black', es: 'negro', it: 'neri', bs: 'crna', nl: 'zwart' },
+    dark_brown: { de: 'dunkelbraune', fr: 'brun foncé', en: 'dark brown', es: 'castaño oscuro', it: 'castano scuro', bs: 'tamnosmeđa', nl: 'donkerbruin' },
+    brown: { de: 'braune', fr: 'bruns', en: 'brown', es: 'castaño', it: 'castani', bs: 'smeđa', nl: 'bruin' },
+    light_brown: { de: 'hellbraune', fr: 'châtains', en: 'light brown', es: 'castaño claro', it: 'castano chiaro', bs: 'svijetlosmeđa', nl: 'lichtbruin' },
+    blonde: { de: 'blonde', fr: 'blonds', en: 'blonde', es: 'rubio', it: 'biondi', bs: 'plava', nl: 'blond' },
+    light_blonde: { de: 'hellblonde', fr: 'blond clair', en: 'light blonde', es: 'rubio claro', it: 'biondo chiaro', bs: 'svijetloplava', nl: 'lichtblond' },
+    red: { de: 'rote', fr: 'roux', en: 'red', es: 'pelirrojo', it: 'rossi', bs: 'crvena', nl: 'rood' },
+    auburn: { de: 'kastanienbraune', fr: 'auburn', en: 'auburn', es: 'caoba', it: 'ramati', bs: 'kestenjasta', nl: 'kastanjebruin' },
+    ginger: { de: 'kupferfarbene', fr: 'roux cuivré', en: 'ginger', es: 'cobrizo', it: 'rame', bs: 'bakrena', nl: 'rossig' },
+  };
+
+  const styleDesc: Record<string, Record<string, string>> = {
+    loose: { de: '', fr: '', en: '', es: '', it: '', bs: '', nl: '' },
+    ponytail: { de: 'zu einem Pferdeschwanz gebunden', fr: 'attachés en queue de cheval', en: 'in a ponytail', es: 'recogido en coleta', it: 'raccolti in coda', bs: 'svezana u rep', nl: 'in een paardenstaart' },
+    braids: { de: 'zu Zöpfen geflochten', fr: 'tressés', en: 'in braids', es: 'trenzado', it: 'intrecciati', bs: 'u pletenicama', nl: 'in vlechten' },
+    pigtails: { de: 'zu zwei Zöpfchen gebunden', fr: 'en couettes', en: 'in pigtails', es: 'en coletas', it: 'a codini', bs: 'u repićima', nl: 'in staartjes' },
+    bun: { de: 'zu einem Dutt gebunden', fr: 'en chignon', en: 'in a bun', es: 'en moño', it: 'raccolti in chignon', bs: 'u punđi', nl: 'in een knot' },
+    bangs: { de: 'mit Pony', fr: 'avec une frange', en: 'with bangs', es: 'con flequillo', it: 'con la frangetta', bs: 'sa šiškama', nl: 'met een pony' },
+  };
+
+  const glassesDesc: Record<string, string> = {
+    de: 'trägt eine Brille', fr: 'porte des lunettes', en: 'wears glasses', es: 'lleva gafas', it: 'porta gli occhiali', bs: 'nosi naočale', nl: 'draagt een bril',
+  };
+
+  const labelMap: Record<string, string> = {
+    de: 'Aussehen', fr: 'Apparence', en: 'Appearance', es: 'Apariencia', it: 'Aspetto', bs: 'Izgled', nl: 'Uiterlijk',
+  };
+
+  const l = lang;
+  const fallback = 'en';
+  const gl = (map: Record<string, Record<string, string>>, key: string) =>
+    map[key]?.[l] || map[key]?.[fallback] || '';
+
+  const skin = gl(skinDesc, appearance.skin_tone);
+  if (skin) parts.push(skin);
+
+  const hairParts = [
+    gl(lengthDesc, appearance.hair_length),
+    gl(typeDesc, appearance.hair_type),
+    gl(colorDesc, appearance.hair_color),
+  ].filter(Boolean);
+
+  const hairWord: Record<string, string> = {
+    de: 'Haare', fr: 'cheveux', en: 'hair', es: 'pelo', it: 'capelli', bs: 'kosa', nl: 'haar',
+  };
+  if (hairParts.length > 0) {
+    let hairStr = hairParts.join(' ') + ' ' + (hairWord[l] || hairWord[fallback]);
+    const style = gl(styleDesc, appearance.hair_style);
+    if (style) hairStr += ' ' + style;
+    parts.push(hairStr);
+  }
+
+  if (appearance.glasses) {
+    parts.push(glassesDesc[l] || glassesDesc[fallback]);
+  }
+
+  const label = labelMap[l] || labelMap[fallback];
+  return `- ${label}: ${parts.join(', ')}`;
+}
+
 export async function buildStoryPrompt(
   request: StoryRequest,
   supabaseClient: any
@@ -1346,7 +1445,14 @@ export async function buildStoryPrompt(
   sections.push(headers.instruction);
 
   // CHILD
-  sections.push(`## ${headers.child}\nName: ${request.kid_profile.first_name}, Age: ${request.kid_profile.age}`);
+  const childLines: string[] = [
+    `## ${headers.child}`,
+    `Name: ${request.kid_profile.first_name}, Age: ${request.kid_profile.age}`,
+  ];
+  if (request.appearance && request.protagonists?.include_self) {
+    childLines.push(buildPromptAppearanceDesc(request.appearance, lang));
+  }
+  sections.push(childLines.join('\n'));
 
   // ═══ PRIMARY DIRECTIVE: Rich user input gets highest priority position ═══
   if (userInputLevel === 'rich' && request.user_prompt) {
