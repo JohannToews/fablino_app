@@ -205,7 +205,7 @@ const FeatureFlagsPage = () => {
             <Separator />
 
             {/* Header */}
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-xs font-medium text-muted-foreground px-1">
+            <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-2 text-xs font-medium text-muted-foreground px-1">
               <span>Name / Email</span>
               {FEATURES_CONFIG.map((f) => (
                 <span key={f.key} className="w-20 text-center">{f.label}</span>
@@ -214,7 +214,7 @@ const FeatureFlagsPage = () => {
 
             <div className="space-y-1 max-h-[60vh] overflow-y-auto">
               {filteredUsers.map((u) => (
-                <div key={u.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center py-1.5 px-1 rounded hover:bg-muted/50">
+                <div key={u.id} className="grid grid-cols-[1fr_repeat(4,auto)] gap-2 items-center py-1.5 px-1 rounded hover:bg-muted/50">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{u.display_name || u.username}</p>
                     {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
