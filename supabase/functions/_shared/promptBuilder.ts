@@ -92,6 +92,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'EFFETS SPÉCIAUX', guardrails: 'GARDE-FOUS',
     learningTheme: 'THÈME ÉDUCATIF', variety: 'VARIÉTÉ',
     specialRequest: 'DEMANDE SPÉCIALE', series: 'CONTEXTE DE SÉRIE',
+    primaryDirective: 'DIRECTIVE PRINCIPALE', prominentElement: 'ÉLÉMENT IMPORTANT',
     instruction: 'Écris une histoire avec les consignes suivantes :',
     chooseTheme: 'Choisis toi-même un thème concret dans cette catégorie.',
     respondJson: 'Réponds UNIQUEMENT avec le JSON du format de sortie.',
@@ -103,6 +104,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'SPEZIALEFFEKTE', guardrails: 'GUARDRAILS',
     learningTheme: 'LERNTHEMA', variety: 'VARIETÄT',
     specialRequest: 'BESONDERER WUNSCH', series: 'SERIEN-KONTEXT',
+    primaryDirective: 'PRIMÄRE HANDLUNGSVORGABE', prominentElement: 'WICHTIGES ELEMENT',
     instruction: 'Schreibe eine Geschichte mit folgenden Vorgaben:',
     chooseTheme: 'Wähle selbst ein konkretes Thema innerhalb dieser Kategorie.',
     respondJson: 'Antworte NUR mit dem JSON aus dem Output-Format.',
@@ -114,6 +116,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'SPECIAL EFFECTS', guardrails: 'GUARDRAILS',
     learningTheme: 'LEARNING THEME', variety: 'VARIETY',
     specialRequest: 'SPECIAL REQUEST', series: 'SERIES CONTEXT',
+    primaryDirective: 'PRIMARY STORY DIRECTIVE', prominentElement: 'IMPORTANT ELEMENT',
     instruction: 'Write a story with the following specifications:',
     chooseTheme: 'Choose a specific theme within this category.',
     respondJson: 'Respond ONLY with the JSON from the output format.',
@@ -125,6 +128,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'EFECTOS ESPECIALES', guardrails: 'LÍMITES DE CONTENIDO',
     learningTheme: 'TEMA EDUCATIVO', variety: 'VARIEDAD',
     specialRequest: 'PETICIÓN ESPECIAL', series: 'CONTEXTO DE SERIE',
+    primaryDirective: 'DIRECTIVA PRINCIPAL', prominentElement: 'ELEMENTO IMPORTANTE',
     instruction: 'Escribe una historia con las siguientes pautas:',
     chooseTheme: 'Elige tú mismo un tema concreto dentro de esta categoría.',
     respondJson: 'Responde ÚNICAMENTE con el JSON del formato de salida.',
@@ -136,6 +140,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'EFFETTI SPECIALI', guardrails: 'LIMITI DI CONTENUTO',
     learningTheme: 'TEMA EDUCATIVO', variety: 'VARIETÀ',
     specialRequest: 'RICHIESTA SPECIALE', series: 'CONTESTO DI SERIE',
+    primaryDirective: 'DIRETTIVA PRINCIPALE', prominentElement: 'ELEMENTO IMPORTANTE',
     instruction: 'Scrivi una storia con le seguenti indicazioni:',
     chooseTheme: 'Scegli tu stesso un tema concreto all\'interno di questa categoria.',
     respondJson: 'Rispondi SOLO con il JSON del formato di output.',
@@ -147,6 +152,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'SPECIJALNI EFEKTI', guardrails: 'ZAŠTITNE MJERE',
     learningTheme: 'OBRAZOVNA TEMA', variety: 'RAZNOLIKOST',
     specialRequest: 'POSEBAN ZAHTJEV', series: 'KONTEKST SERIJE',
+    primaryDirective: 'PRIMARNA DIREKTIVA', prominentElement: 'VAŽAN ELEMENT',
     instruction: 'Napiši priču sa sljedećim uputama:',
     chooseTheme: 'Sam/a izaberi konkretnu temu unutar ove kategorije.',
     respondJson: 'Odgovori SAMO sa JSON-om iz formata izlaza.',
@@ -158,6 +164,7 @@ const SECTION_HEADERS: Record<string, Record<string, string>> = {
     specialEffects: 'SPECIALE EFFECTEN', guardrails: 'VEILIGHEIDSREGELS',
     learningTheme: 'LEER THEMA', variety: 'VARIËTEIT',
     specialRequest: 'SPECIAAL VERZOEK', series: 'SERIE CONTEXT',
+    primaryDirective: 'PRIMAIRE VERHAALLIJN', prominentElement: 'BELANGRIJK ELEMENT',
     instruction: 'Schrijf een verhaal met de volgende richtlijnen:',
     chooseTheme: 'Kies zelf een concreet thema binnen deze categorie.',
     respondJson: 'Antwoord ALLEEN met de JSON van het outputformaat.',
@@ -425,6 +432,27 @@ function getSceneCount(length: string): number {
     case 'long': return 3;    // 3 scenes + cover
     default: return 2;        // 2 scenes + cover (medium)
   }
+}
+
+// ─── User Input Classification ───────────────────────────────────
+
+type UserInputLevel = 'none' | 'hint' | 'rich';
+
+/**
+ * Classify user free-text input by richness.
+ * - 'none': empty or trivial (< 2 words)
+ * - 'hint': short addition (2-5 words), e.g. "mit Dinosauriern"
+ * - 'rich': detailed scenario (6+ words), e.g. "ich gewinne mit meinem Team gegen Monster"
+ *
+ * When 'rich', the user input becomes the PRIMARY story directive and
+ * theme/subtype are downgraded to mood background.
+ */
+function classifyUserInput(text: string | undefined): UserInputLevel {
+  if (!text || text.trim().length < 3) return 'none';
+  const words = text.trim().split(/\s+/).length;
+  if (words >= 6) return 'rich';
+  if (words >= 2) return 'hint';
+  return 'hint'; // even 1 meaningful word = hint
 }
 
 // ─── Variety Block Builder ──────────────────────────────────────
@@ -1068,6 +1096,12 @@ export async function buildStoryPrompt(
   const questionCount = request.question_count || 5;
   const warnings: string[] = [];
 
+  // ── Classify user input richness ──
+  const userInputLevel = classifyUserInput(request.user_prompt);
+  if (userInputLevel !== 'none') {
+    console.log(`[promptBuilder] User input classified as: ${userInputLevel} (${request.user_prompt?.trim().split(/\s+/).length} words)`);
+  }
+
   // ── 1. Load age_rules (with fallback to 'de') ──
   // Clamp to min 6 for DB lookup — age_rules starts at min_age=6.
   // The real age (e.g. 5) is still used in the prompt text itself.
@@ -1293,6 +1327,90 @@ export async function buildStoryPrompt(
   // CHILD
   sections.push(`## ${headers.child}\nName: ${request.kid_profile.first_name}, Age: ${request.kid_profile.age}`);
 
+  // ═══ PRIMARY DIRECTIVE: Rich user input gets highest priority position ═══
+  if (userInputLevel === 'rich' && request.user_prompt) {
+    const userText = request.user_prompt.trim();
+    const richDirective: Record<string, string> = {
+      de: [
+        `## ⚡ ${headers.primaryDirective} (HÖCHSTE PRIORITÄT)`,
+        `Das Kind hat folgende Geschichte beschrieben:`,
+        `"${userText}"`,
+        ``,
+        `Dies ist die ZENTRALE Handlung. Die gesamte Story-Welt, der Konflikt`,
+        `und die Handlung MÜSSEN sich darauf aufbauen.`,
+        `Die unten genannte Kategorie dient nur als STIMMUNGS-Hintergrund,`,
+        `NICHT als alternatives Setting oder alternative Handlung.`,
+        `Wenn die Eingabe einen Ort, eine Aktivität oder ein Szenario beschreibt,`,
+        `dann spielt die Geschichte DORT und handelt DAVON.`,
+      ].join('\n'),
+      fr: [
+        `## ⚡ ${headers.primaryDirective} (PRIORITÉ MAXIMALE)`,
+        `L'enfant a décrit l'histoire suivante :`,
+        `"${userText}"`,
+        ``,
+        `C'est l'intrigue CENTRALE. Le monde, le conflit et l'action`,
+        `DOIVENT être construits autour de cette description.`,
+        `La catégorie ci-dessous ne sert que de TOILE DE FOND,`,
+        `PAS comme setting ou intrigue alternative.`,
+        `Si la description mentionne un lieu, une activité ou un scénario,`,
+        `l'histoire se déroule LÀ et parle de CELA.`,
+      ].join('\n'),
+      en: [
+        `## ⚡ ${headers.primaryDirective} (HIGHEST PRIORITY)`,
+        `The child described this story:`,
+        `"${userText}"`,
+        ``,
+        `This is the CENTRAL plot. The entire story world, conflict,`,
+        `and action MUST be built around this description.`,
+        `The category below serves only as MOOD background,`,
+        `NOT as an alternative setting or plot.`,
+        `If the input describes a place, activity, or scenario,`,
+        `the story takes place THERE and is ABOUT THAT.`,
+      ].join('\n'),
+      es: [
+        `## ⚡ ${headers.primaryDirective} (MÁXIMA PRIORIDAD)`,
+        `El niño/a ha descrito la siguiente historia:`,
+        `"${userText}"`,
+        ``,
+        `Esta es la trama CENTRAL. El mundo, el conflicto y la acción`,
+        `DEBEN construirse alrededor de esta descripción.`,
+        `La categoría de abajo sirve solo como FONDO DE AMBIENTE,`,
+        `NO como setting o trama alternativa.`,
+      ].join('\n'),
+      it: [
+        `## ⚡ ${headers.primaryDirective} (MASSIMA PRIORITÀ)`,
+        `Il bambino/a ha descritto la seguente storia:`,
+        `"${userText}"`,
+        ``,
+        `Questa è la trama CENTRALE. Il mondo, il conflitto e l'azione`,
+        `DEVONO essere costruiti attorno a questa descrizione.`,
+        `La categoria sotto serve solo come SFONDO D'ATMOSFERA,`,
+        `NON come setting o trama alternativa.`,
+      ].join('\n'),
+      bs: [
+        `## ⚡ ${headers.primaryDirective} (NAJVIŠI PRIORITET)`,
+        `Dijete je opisalo sljedeću priču:`,
+        `"${userText}"`,
+        ``,
+        `Ovo je CENTRALNA radnja. Svijet priče, konflikt i radnja`,
+        `MORAJU biti izgrađeni oko ovog opisa.`,
+        `Kategorija ispod služi samo kao POZADINA RASPOLOŽENJA,`,
+        `NE kao alternativno okruženje ili radnja.`,
+      ].join('\n'),
+      nl: [
+        `## ⚡ ${headers.primaryDirective} (HOOGSTE PRIORITEIT)`,
+        `Het kind heeft het volgende verhaal beschreven:`,
+        `"${userText}"`,
+        ``,
+        `Dit is de CENTRALE plot. De hele verhaalwereld, het conflict`,
+        `en de actie MOETEN hierop gebouwd worden.`,
+        `De categorie hieronder dient alleen als SFEER-achtergrond,`,
+        `NIET als alternatieve setting of plot.`,
+      ].join('\n'),
+    };
+    sections.push(richDirective[lang] || richDirective.en);
+  }
+
   // Explicit language instruction for beta languages (no UI translations)
   const BETA_LANG_CODES = new Set(['hu','pt','tr','bg','lt','ca','pl','sk']);
   if (BETA_LANG_CODES.has(lang)) {
@@ -1383,7 +1501,7 @@ export async function buildStoryPrompt(
       nl: 'Setting-inspiratie',
     };
 
-    const subtypeSection = [
+    let subtypeSection = [
       `## ${subtypeIntro[lang] || subtypeIntro.en}`,
       `Story-Art: ${st.label}`,
       `Anweisung: ${st.promptHint}`,
@@ -1392,8 +1510,21 @@ export async function buildStoryPrompt(
       '',
       subtypeWarning[lang] || subtypeWarning.en,
     ].filter(s => s !== null).join('\n');
+    // Downgrade subtype when rich user input exists
+    if (userInputLevel === 'rich') {
+      const subtypeDowngrade: Record<string, string> = {
+        de: '\nHINWEIS: Die obige Story-Art dient nur als Stimmungs-Inspiration. Die ⚡ PRIMÄRE HANDLUNGSVORGABE (oben) hat absoluten Vorrang für Handlung, Setting und Welt.',
+        fr: '\nNOTE : Le type d\'histoire ci-dessus sert uniquement d\'inspiration d\'ambiance. La ⚡ DIRECTIVE PRINCIPALE (ci-dessus) a la priorité absolue pour l\'intrigue, le setting et le monde.',
+        en: '\nNOTE: The story type above serves only as mood inspiration. The ⚡ PRIMARY STORY DIRECTIVE (above) takes absolute precedence for plot, setting, and world.',
+        es: '\nNOTA: El tipo de historia arriba sirve solo como inspiración de ambiente. La ⚡ DIRECTIVA PRINCIPAL (arriba) tiene prioridad absoluta.',
+        it: '\nNOTA: Il tipo di storia sopra serve solo come ispirazione d\'atmosfera. La ⚡ DIRETTIVA PRINCIPALE (sopra) ha la priorità assoluta.',
+        bs: '\nNAPOMENA: Tip priče iznad služi samo kao inspiracija za atmosferu. ⚡ PRIMARNA DIREKTIVA (iznad) ima apsolutni prioritet.',
+        nl: '\nOPMERKING: Het verhaaltype hierboven dient alleen als sfeer-inspiratie. De ⚡ PRIMAIRE VERHAALLIJN (hierboven) heeft absolute voorrang.',
+      };
+      subtypeSection += subtypeDowngrade[lang] || subtypeDowngrade.en;
+    }
     sections.push(subtypeSection);
-    console.log(`[promptBuilder] Added STORY SUBTYPE section: ${st.subtypeKey} (${st.label})`);
+    console.log(`[promptBuilder] Added STORY SUBTYPE section: ${st.subtypeKey} (${st.label})${userInputLevel === 'rich' ? ' [DOWNGRADED: rich user input has priority]' : ''}`);
   }
 
   // CATEGORY (or surprise theme hint)
@@ -1412,7 +1543,7 @@ export async function buildStoryPrompt(
   } else if (themeRules) {
     // Theme rules loaded (or fallback succeeded)
     const themeLabel = label(themeRules.labels, lang);
-    const categorySection = [
+    const categoryLines = [
       `## ${headers.category}`,
       themeLabel,
       `Plots: ${arrJoin(themeRules.plot_templates)}`,
@@ -1421,8 +1552,23 @@ export async function buildStoryPrompt(
       themeRules.sensory_details ? `Sensory: ${themeRules.sensory_details}` : null,
       themeRules.setting_descriptions ? `Setting/Atmosphere: ${themeRules.setting_descriptions}` : null,
       `→ ${headers.chooseTheme}`,
-    ].filter(Boolean).join('\n');
-    sections.push(categorySection);
+    ].filter(Boolean);
+
+    // Downgrade category when rich user input defines the world
+    if (userInputLevel === 'rich') {
+      const categoryDowngrade: Record<string, string> = {
+        de: '⚠️ ACHTUNG: Diese Kategorie dient NUR als Stimmungs-Inspiration. Handlung, Setting und Welt werden durch die ⚡ PRIMÄRE HANDLUNGSVORGABE (oben) bestimmt.',
+        fr: '⚠️ ATTENTION : Cette catégorie sert UNIQUEMENT d\'inspiration d\'ambiance. L\'intrigue, le setting et le monde sont déterminés par la ⚡ DIRECTIVE PRINCIPALE (ci-dessus).',
+        en: '⚠️ NOTE: This category serves ONLY as mood inspiration. Plot, setting, and world are determined by the ⚡ PRIMARY STORY DIRECTIVE (above).',
+        es: '⚠️ NOTA: Esta categoría sirve SOLO como inspiración de ambiente. La trama, el escenario y el mundo están determinados por la ⚡ DIRECTIVA PRINCIPAL (arriba).',
+        it: '⚠️ NOTA: Questa categoria serve SOLO come ispirazione d\'atmosfera. Trama, ambientazione e mondo sono determinati dalla ⚡ DIRETTIVA PRINCIPALE (sopra).',
+        bs: '⚠️ NAPOMENA: Ova kategorija služi SAMO kao inspiracija za atmosferu. Radnja, okruženje i svijet su određeni ⚡ PRIMARNOM DIREKTIVOM (iznad).',
+        nl: '⚠️ OPMERKING: Deze categorie dient ALLEEN als sfeer-inspiratie. Plot, setting en wereld worden bepaald door de ⚡ PRIMAIRE VERHAALLIJN (hierboven).',
+      };
+      categoryLines.push(categoryDowngrade[lang] || categoryDowngrade.en);
+    }
+
+    sections.push(categoryLines.join('\n'));
   } else {
     // themeRules is null even after all fallbacks – treat like surprise theme
     console.warn(`[promptBuilder] themeRules null after all fallbacks for key=${request.theme_key}. Using generic prompt.`);
@@ -1724,10 +1870,57 @@ export async function buildStoryPrompt(
     sections.push(varietyBlock);
   }
 
-  // SPECIAL REQUEST (only if user_prompt)
-  if (request.user_prompt && request.user_prompt.trim()) {
-    sections.push(`## ${headers.specialRequest}\n${request.user_prompt.trim()}`);
+  // SPECIAL REQUEST — only for 'hint' level (rich is already at top, none = nothing)
+  if (userInputLevel === 'hint' && request.user_prompt) {
+    const userText = request.user_prompt.trim();
+    const hintBlock: Record<string, string> = {
+      de: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `Dieses Element soll eine WICHTIGE Rolle in der Handlung spielen.`,
+        `Es soll nicht nur erwähnt werden, sondern aktiv die Geschichte beeinflussen.`,
+      ].join('\n'),
+      fr: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `Cet élément doit jouer un rôle IMPORTANT dans l'intrigue.`,
+        `Il ne doit pas être simplement mentionné, mais influencer activement l'histoire.`,
+      ].join('\n'),
+      en: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `This element must play an IMPORTANT role in the plot.`,
+        `It should not just be mentioned but actively influence the story.`,
+      ].join('\n'),
+      es: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `Este elemento debe jugar un papel IMPORTANTE en la trama.`,
+        `No debe solo mencionarse, sino influir activamente en la historia.`,
+      ].join('\n'),
+      it: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `Questo elemento deve avere un ruolo IMPORTANTE nella trama.`,
+        `Non deve essere solo menzionato, ma influenzare attivamente la storia.`,
+      ].join('\n'),
+      bs: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `Ovaj element mora igrati VAŽNU ulogu u radnji.`,
+        `Ne treba samo biti spomenut, već aktivno utjecati na priču.`,
+      ].join('\n'),
+      nl: [
+        `## ${headers.prominentElement}`,
+        `"${userText}"`,
+        `Dit element moet een BELANGRIJKE rol spelen in het plot.`,
+        `Het moet niet alleen worden genoemd, maar het verhaal actief beïnvloeden.`,
+      ].join('\n'),
+    };
+    sections.push(hintBlock[lang] || hintBlock.en);
   }
+  // Note: 'rich' input is already inserted at the top (after CHILD section).
+  // Note: 'none' = no user input = nothing added (same as before).
 
   // SERIES CONTEXT – Phase 2: structured episode context block
   if (request.is_series && request.series_episode_number) {
