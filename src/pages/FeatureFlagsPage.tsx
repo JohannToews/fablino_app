@@ -104,8 +104,10 @@ const FeatureFlagsPage = () => {
 
     const { error } = await (supabase as any)
       .from("app_settings")
-      .update({ value: JSON.stringify(value), updated_at: new Date().toISOString() })
-      .eq("key", key);
+      .upsert(
+        { key, value: JSON.stringify(value), updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
 
     if (error) {
       toast.error("Fehler beim Speichern: " + error.message);
