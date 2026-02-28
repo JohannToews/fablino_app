@@ -2229,10 +2229,8 @@ const FeedbackStatsPage = () => {
                           <div className="flex items-center">{t.user}<PerfSortIcon column="username" /></div>
                         </TableHead>
                         <TableHead>{t.language}</TableHead>
-                        <TableHead>{t.textType}</TableHead>
                         <TableHead>Alter</TableHead>
                         <TableHead>{t.length}</TableHead>
-                        <TableHead>Episode</TableHead>
                         <TableHead className="text-center">✓ Text</TableHead>
                         <TableHead className="text-center">✓ Bilder</TableHead>
                         <TableHead className="cursor-pointer text-right" onClick={() => handlePerfSort("story_generation_ms")}>
@@ -2257,15 +2255,9 @@ const FeedbackStatsPage = () => {
                           </TableCell>
                           <TableCell className="text-xs">{item.username || '-'}</TableCell>
                           <TableCell className="text-xs uppercase">{item.text_language}</TableCell>
-                          <TableCell className="text-xs">
-                            <Badge variant="outline" className="text-xs">{getTextartCode(item)}</Badge>
-                          </TableCell>
                           <TableCell className="text-xs">{item.kid_age ?? '-'}</TableCell>
                           <TableCell className="text-xs">
                             <Badge variant="outline" className="text-xs">{getLengthCode(item.story_length)}</Badge>
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {item.episode_number ?? '-'}
                           </TableCell>
                           <TableCell className="text-xs text-center">
                             {item.generation_status === 'verified' ? '✅' : item.generation_status === 'images_partial' ? '⚠️' : item.generation_status === 'images_failed' ? '🖼️❌' : item.generation_status === 'generating' ? '⏳' : '❌'}
