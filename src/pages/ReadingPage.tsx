@@ -2206,7 +2206,7 @@ const ReadingPage = () => {
             >
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">
-                {kidAppLanguage === 'fr' ? 'Mots' : kidAppLanguage === 'en' ? 'Words' : kidAppLanguage === 'es' ? 'Palabras' : 'Wörter'}
+                {t.wordsButton}
               </span>
               {totalMarkedCount > 0 && (
                 <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
