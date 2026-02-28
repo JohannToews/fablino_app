@@ -114,9 +114,23 @@ Respond ONLY as JSON with translations in ALL of these languages: de, fr, en, es
       throw new Error('Empty response from Gemini');
     }
 
-    const parsed = JSON.parse(rawText);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (e) {
+      console.error('[prepare-custom-theme] Raw text from Gemini:', rawText.substring(0, 500));
+      throw new Error('Failed to parse Gemini JSON response');
+    }
+
+    console.log('[prepare-custom-theme] Parsed keys:', Object.keys(parsed));
+
+    // Handle nested structure: Gemini sometimes wraps in an extra object
+    if (parsed.theme && typeof parsed.theme === 'object') {
+      parsed = parsed.theme;
+    }
 
     if (!parsed.name || !parsed.description || !parsed.category || !parsed.story_guidance) {
+      console.error('[prepare-custom-theme] Missing fields. Got:', JSON.stringify(parsed).substring(0, 300));
       throw new Error('Invalid response structure from Gemini');
     }
 
