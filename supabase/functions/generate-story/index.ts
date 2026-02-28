@@ -1371,6 +1371,8 @@ Deno.serve(async (req) => {
   }
 
   const startTime = Date.now();
+  let storyId: string | null = null;
+  let lastCompletedPhase: string | undefined;
 
   try {
     const { 
@@ -1419,7 +1421,11 @@ Deno.serve(async (req) => {
       image_style_key: imageStyleKeyParam,
       // Chapter story model — variable episode count
       series_episode_count: seriesEpisodeCountParam,
+      // B-14: Optional story row ID for incremental status/metrics writes
+      story_id: storyIdParam,
     } = await req.json();
+
+    storyId = storyIdParam ?? null;
 
     // Block 2.3d/e: Debug logging for character data from frontend
     console.log('[generate-story] Request body characters:', JSON.stringify(characters, null, 2));
@@ -2622,6 +2628,25 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     const storyGenerationTime = Date.now() - startTime;
     console.log(`[PERF] Story text generated in ${storyGenerationTime}ms`);
 
+    // B-14: Phase 2 — incremental status/metrics write after text generation
+    if (storyId) {
+      try {
+        const { error: updateErr } = await supabase
+          .from('stories')
+          .update({
+            title: story.title ?? null,
+            content: story.content ?? null,
+            story_generation_ms: storyGenerationTime,
+            generation_status: 'text_complete',
+          })
+          .eq('id', storyId);
+        if (updateErr) console.warn('[generate-story] Phase 2 status update failed:', updateErr.message);
+        else lastCompletedPhase = 'text_complete';
+      } catch (phaseErr: any) {
+        console.warn('[generate-story] Phase 2 update error:', phaseErr?.message);
+      }
+    }
+
     // ================== Block 2.4: PARSE image_plan FROM LLM RESPONSE ==================
     let imagePlan: any = null;
     try {
@@ -3517,6 +3542,28 @@ Respond with ONLY valid JSON, no markdown:
 
     } // ── END if (!comicStripHandled) ──
 
+    // B-14: Phase 3 — incremental status/metrics write after image generation (both comic and non-comic)
+    if (storyId) {
+      try {
+        const imagesComplete = !!(coverImageUrl || (storyImageUrls && storyImageUrls.length > 0));
+        const { error: updateErr } = await supabase
+          .from('stories')
+          .update({
+            cover_image_url: coverImageUrl ?? null,
+            story_images: storyImageUrls ?? [],
+            image_generation_ms: imageGenerationMs || null,
+            cover_image_status: coverImageUrl ? 'complete' : 'error',
+            story_images_status: storyImageUrls?.length ? 'complete' : 'error',
+            generation_status: imagesComplete ? 'images_complete' : 'images_failed',
+          })
+          .eq('id', storyId);
+        if (updateErr) console.warn('[generate-story] Phase 3 status update failed:', updateErr.message);
+        else if (imagesComplete) lastCompletedPhase = 'images_complete';
+      } catch (phaseErr: any) {
+        console.warn('[generate-story] Phase 3 update error:', phaseErr?.message);
+      }
+    }
+
     const totalTime = Date.now() - startTime;
     console.log(`[PERF] TOTAL generation time: ${totalTime}ms (story: ${storyGenerationTime}ms, parallel: ${totalTime - storyGenerationTime}ms)`);
 
@@ -3564,6 +3611,22 @@ Respond with ONLY valid JSON, no markdown:
         coverImageUrl = comicFullImageUrl;
         storyImageUrls = comicFullImageUrl2 ? [comicFullImageUrl2] : [];
         console.log('[COMIC] Legacy fields mapped: cover_image_url = comic_full_image, story_images = [comic_full_image_2]');
+      }
+    }
+
+    // B-14: Phase 4 — final status/metrics write after consistency check (always set verified)
+    if (storyId) {
+      try {
+        const { error: updateErr } = await supabase
+          .from('stories')
+          .update({
+            consistency_check_ms: consistencyCheckMs ?? null,
+            generation_status: 'verified',
+          })
+          .eq('id', storyId);
+        if (updateErr) console.warn('[generate-story] Phase 4 status update failed:', updateErr.message);
+      } catch (phaseErr: any) {
+        console.warn('[generate-story] Phase 4 update error:', phaseErr?.message);
       }
     }
 
@@ -3638,12 +3701,27 @@ Respond with ONLY valid JSON, no markdown:
       series_episode_count: seriesEpisodeCount || null,
       // Prompt builder warnings (for debugging — stored in stories table)
       prompt_warnings: promptWarnings.length > 0 ? promptWarnings : null,
+      // B-14: Echo story_id so frontend can UPDATE existing row
+      story_id: storyId ?? undefined,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error("Error generating story:", msg);
+
+    // B-14: Incremental status — mark last phase as failed when we have a story row
+    if (storyId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const generation_status = lastCompletedPhase === "text_complete" ? "images_failed" : "text_failed";
+        await supabase.from("stories").update({ generation_status }).eq("id", storyId);
+      } catch (updateErr: any) {
+        console.warn("[generate-story] Error-status update failed:", updateErr?.message);
+      }
+    }
 
     const status = msg === "Rate limited" ? 429 : (msg === "Payment required" ? 402 : 500);
 

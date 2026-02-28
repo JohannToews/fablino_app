@@ -172,6 +172,30 @@ const StorySelectPage = () => {
       // Determine ending type based on episode number (max 5 episodes typically)
       // Episode 5 should be final (ending type A), others are cliffhangers (C)
       const endingType = nextEpisodeNumber >= 5 ? 'A' : 'C';
+
+      // B-14: Placeholder story row for incremental status/metrics
+      let placeholderStoryIdSelect: string | null = null;
+      const { data: placeholderRowSelect, error: placeholderErrSelect } = await supabase
+        .from("stories")
+        .insert({
+          title: "Generating...",
+          content: "",
+          user_id: user.id,
+          kid_profile_id: selectedProfile.id,
+          generation_status: "generating",
+          difficulty: lastEpisode.difficulty || "medium",
+          text_type: lastEpisode.text_type || "fiction",
+          text_language: lastEpisode.text_language || appLang,
+          prompt: fullSeriesContext.slice(0, 500),
+          ending_type: endingType,
+          episode_number: nextEpisodeNumber,
+          story_length: lastEpisode.story_length || 'medium',
+          series_id: series.seriesId,
+          series_mode: lastEpisode.series_mode || null,
+        })
+        .select("id")
+        .single();
+      if (!placeholderErrSelect && placeholderRowSelect?.id) placeholderStoryIdSelect = placeholderRowSelect.id;
       
       // Call generate-story function with 120s timeout
       abortControllerRef.current?.abort();
@@ -200,6 +224,7 @@ const StorySelectPage = () => {
           // Phase 2: Pass kid profile ID + language for new prompt path & series context
           kidProfileId: selectedProfile.id,
           storyLanguage: lastEpisode.text_language || appLang,
+          ...(placeholderStoryIdSelect ? { story_id: placeholderStoryIdSelect } : {}),
         },
       });
       clearTimeout(timeoutId);
@@ -259,34 +284,34 @@ const StorySelectPage = () => {
         usedNewPromptPath: data.usedNewPromptPath,
       });
 
-      // Save the new episode
-      const { data: newStory, error: insertError } = await supabase
-        .from("stories")
-        .insert({
-          user_id: user.id,
-          kid_profile_id: selectedProfile.id,
-          title: data.title,
-          content: data.content,
-          cover_image_url: coverImageUrl,
-          cover_image_status: coverImageUrl ? 'complete' : 'pending',
-          story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
-          story_images_status: storyImageUrls.length > 0 ? 'complete' : 'pending',
-          difficulty: lastEpisode.difficulty || "medium",
-          text_type: lastEpisode.text_type || "fiction",
-          text_language: lastEpisode.text_language || appLang,
-          ending_type: endingType,
-          episode_number: nextEpisodeNumber,
-          story_length: lastEpisode.story_length || 'medium',
-          series_id: series.seriesId,
-          series_mode: data.series_mode || lastEpisode.series_mode || null,
-          // Phase 2: Series context fields from generate-story response
-          episode_summary: data.episode_summary ?? null,
-          continuity_state: data.continuity_state ?? null,
-          visual_style_sheet: data.visual_style_sheet ?? null,
-          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-        })
-        .select()
-        .single();
+      // Save the new episode (B-14: update placeholder if we created one, else insert)
+      const useUpdateSelect = !!(placeholderStoryIdSelect && (data.story_id ?? placeholderStoryIdSelect));
+      const storyPayloadSelect = {
+        user_id: user.id,
+        kid_profile_id: selectedProfile.id,
+        title: data.title,
+        content: data.content,
+        cover_image_url: coverImageUrl,
+        cover_image_status: coverImageUrl ? 'complete' : 'pending',
+        story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
+        story_images_status: storyImageUrls.length > 0 ? 'complete' : 'pending',
+        difficulty: lastEpisode.difficulty || "medium",
+        text_type: lastEpisode.text_type || "fiction",
+        text_language: lastEpisode.text_language || appLang,
+        ending_type: endingType,
+        episode_number: nextEpisodeNumber,
+        story_length: lastEpisode.story_length || 'medium',
+        series_id: series.seriesId,
+        series_mode: data.series_mode || lastEpisode.series_mode || null,
+        episode_summary: data.episode_summary ?? null,
+        continuity_state: data.continuity_state ?? null,
+        visual_style_sheet: data.visual_style_sheet ?? null,
+        generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
+      };
+      const storyIdToUseSelect = (data.story_id ?? placeholderStoryIdSelect) as string | null;
+      const { data: newStory, error: insertError } = useUpdateSelect && storyIdToUseSelect
+        ? await supabase.from("stories").update(storyPayloadSelect).eq("id", storyIdToUseSelect).select().single()
+        : await supabase.from("stories").insert(storyPayloadSelect).select().single();
       
       if (insertError) throw insertError;
       

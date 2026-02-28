@@ -209,6 +209,31 @@ const CreateStoryPage = () => {
       // Use story settings from wizard if available, otherwise defaults
       const storyLength = storySettings?.length || "medium";
       const storyDifficulty = storySettings?.difficulty || difficulty;
+      const isSeries = storySettings?.isSeries || false;
+
+      // B-14: Create placeholder story row so Edge Function can write status/metrics incrementally
+      let placeholderStoryId: string | null = null;
+      const { data: placeholderRow, error: placeholderErr } = await supabase
+        .from("stories")
+        .insert({
+          title: "Generating...",
+          content: "",
+          user_id: user.id,
+          kid_profile_id: selectedProfile?.id,
+          generation_status: "generating",
+          difficulty: storyDifficulty,
+          text_type: "non-fiction",
+          text_language: effectiveLanguage.toLowerCase(),
+          prompt: description,
+          ending_type: isSeries ? "C" : "A",
+          episode_number: isSeries ? 1 : null,
+          story_length: storyLength,
+          series_id: null,
+          series_mode: isSeries ? (storySettings?.seriesMode || "normal") : null,
+        })
+        .select("id")
+        .single();
+      if (!placeholderErr && placeholderRow?.id) placeholderStoryId = placeholderRow.id;
 
       // Abort any previous request + set 150s timeout
       abortControllerRef.current?.abort();
@@ -225,7 +250,7 @@ const CreateStoryPage = () => {
           globalLanguage: kidAppLanguage,
           userId: user.id,
           source: 'kid',
-          isSeries: storySettings?.isSeries || false,
+          isSeries: isSeries || false,
           storyType: "educational",
           kidName: selectedProfile?.name,
           kidHobbies: selectedProfile?.hobbies,
@@ -235,6 +260,7 @@ const CreateStoryPage = () => {
           difficultyLevel: selectedProfile?.difficulty_level,
           contentSafetyLevel: selectedProfile?.content_safety_level,
           image_style_key: imageStyleKey || undefined,
+          ...(placeholderStoryId ? { story_id: placeholderStoryId } : {}),
         },
       });
       clearTimeout(timeoutId);
@@ -269,6 +295,7 @@ const CreateStoryPage = () => {
         const storyLength = storySettings?.length || "medium";
         const storyDifficulty = storySettings?.difficulty || difficulty;
         const isSeries = storySettings?.isSeries || false;
+        const useUpdate = !!(placeholderStoryId && (data.story_id ?? placeholderStoryId));
 
         // Helper: if already a URL (from backend Storage upload), use directly; else upload base64
         const resolveImageUrl = async (imgData: string | undefined | null, prefix: string): Promise<string | null> => {
@@ -316,61 +343,56 @@ const CreateStoryPage = () => {
           if (urls.length > 0) storyImageUrls = urls;
         }
         
-        // Save the story to database
-        // For series: first episode has series_id = null, episode_number = 1
-        const { data: savedStory, error: saveError } = await supabase
-          .from("stories")
-          .insert({
-            title: data.title,
-            content: data.content,
-            cover_image_url: coverImageUrl,
-            cover_image_status: coverImageUrl ? 'complete' : 'pending',
-            story_images: storyImageUrls,
-            story_images_status: storyImageUrls ? 'complete' : 'pending',
-            image_count: data.image_count || 1,
-            difficulty: storyDifficulty,
-            text_type: "non-fiction",
-            text_language: textLanguage.toLowerCase(),
-            prompt: description,
-            user_id: user.id,
-            kid_profile_id: selectedProfile?.id,
-            generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-            ending_type: isSeries ? 'C' : 'A',
-            episode_number: isSeries ? 1 : null,
-            story_length: storyLength,
-            series_id: null, // Will self-reference after insert for series
-            series_mode: isSeries ? (storySettings?.seriesMode || 'normal') : null,
-            image_style_key: imageStyleKey || data.image_style_key || null,
-            // Block 2.3c: Story classification metadata
-            structure_beginning: data.structure_beginning ?? null,
-            structure_middle: data.structure_middle ?? null,
-            structure_ending: data.structure_ending ?? null,
-            emotional_coloring: data.emotional_coloring ?? null,
-            emotional_secondary: data.emotional_secondary ?? null,
-            humor_level: data.humor_level ?? null,
-            emotional_depth: data.emotional_depth ?? null,
-            moral_topic: data.moral_topic ?? null,
-            concrete_theme: data.concrete_theme ?? null,
-            learning_theme_applied: data.learning_theme_applied ?? null,
-            parent_prompt_text: data.parent_prompt_text ?? null,
-            // Phase 2: Series context fields
-            episode_summary: data.episode_summary ?? null,
-            continuity_state: data.continuity_state ?? null,
-            visual_style_sheet: data.visual_style_sheet ?? null,
-            // Performance tracking
-            generation_time_ms: data.performance?.total_ms ?? null,
-            story_generation_ms: data.performance?.story_generation_ms ?? null,
-            image_generation_ms: data.performance?.image_generation_ms ?? null,
-            consistency_check_ms: data.performance?.consistency_check_ms ?? null,
-            // Comic-Strip fields
-            comic_layout_key: data.comic_layout_key ?? null,
-            comic_full_image: data.comic_full_image ?? null,
-            comic_full_image_2: data.comic_full_image_2 ?? null,
-            comic_panel_count: data.comic_panel_count ?? null,
-            comic_grid_plan: data.comic_grid_plan ?? null,
-          })
-          .select()
-          .single();
+        // Save the story to database (B-14: update placeholder if we created one, else insert)
+        const storyPayload = {
+          title: data.title,
+          content: data.content,
+          cover_image_url: coverImageUrl,
+          cover_image_status: coverImageUrl ? 'complete' : 'pending',
+          story_images: storyImageUrls,
+          story_images_status: storyImageUrls ? 'complete' : 'pending',
+          image_count: data.image_count || 1,
+          difficulty: storyDifficulty,
+          text_type: "non-fiction",
+          text_language: textLanguage.toLowerCase(),
+          prompt: description,
+          user_id: user.id,
+          kid_profile_id: selectedProfile?.id,
+          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
+          ending_type: isSeries ? 'C' : 'A',
+          episode_number: isSeries ? 1 : null,
+          story_length: storyLength,
+          series_id: null, // Will self-reference after for series
+          series_mode: isSeries ? (storySettings?.seriesMode || 'normal') : null,
+          image_style_key: imageStyleKey || data.image_style_key || null,
+          structure_beginning: data.structure_beginning ?? null,
+          structure_middle: data.structure_middle ?? null,
+          structure_ending: data.structure_ending ?? null,
+          emotional_coloring: data.emotional_coloring ?? null,
+          emotional_secondary: data.emotional_secondary ?? null,
+          humor_level: data.humor_level ?? null,
+          emotional_depth: data.emotional_depth ?? null,
+          moral_topic: data.moral_topic ?? null,
+          concrete_theme: data.concrete_theme ?? null,
+          learning_theme_applied: data.learning_theme_applied ?? null,
+          parent_prompt_text: data.parent_prompt_text ?? null,
+          episode_summary: data.episode_summary ?? null,
+          continuity_state: data.continuity_state ?? null,
+          visual_style_sheet: data.visual_style_sheet ?? null,
+          generation_time_ms: data.performance?.total_ms ?? null,
+          story_generation_ms: data.performance?.story_generation_ms ?? null,
+          image_generation_ms: data.performance?.image_generation_ms ?? null,
+          consistency_check_ms: data.performance?.consistency_check_ms ?? null,
+          comic_layout_key: data.comic_layout_key ?? null,
+          comic_full_image: data.comic_full_image ?? null,
+          comic_full_image_2: data.comic_full_image_2 ?? null,
+          comic_panel_count: data.comic_panel_count ?? null,
+          comic_grid_plan: data.comic_grid_plan ?? null,
+        };
+        const storyIdToUse = (data.story_id ?? placeholderStoryId) as string | null;
+        const { data: savedStory, error: saveError } = useUpdate && storyIdToUse
+          ? await supabase.from("stories").update(storyPayload).eq("id", storyIdToUse).select().single()
+          : await supabase.from("stories").insert(storyPayload).select().single();
 
         if (saveError) {
           console.error("Save error:", saveError);
@@ -609,6 +631,30 @@ const CreateStoryPage = () => {
       // Determine include_self from character selection
       const includeSelf = selectedCharacters.some(c => c.type === "me");
 
+      // B-14: Create placeholder story row for incremental status/metrics
+      let placeholderStoryIdFiction: string | null = null;
+      const { data: placeholderRowFiction, error: placeholderErrFiction } = await supabase
+        .from("stories")
+        .insert({
+          title: "Generating...",
+          content: "",
+          user_id: user.id,
+          kid_profile_id: selectedProfile?.id,
+          generation_status: "generating",
+          difficulty: storyDifficulty,
+          text_type: "fiction",
+          text_language: effectiveLanguage.toLowerCase(),
+          prompt: description,
+          ending_type: isSeries ? "C" : "A",
+          episode_number: isSeries ? 1 : null,
+          story_length: storyLength,
+          series_id: null,
+          series_mode: isSeries ? seriesMode : null,
+        })
+        .select("id")
+        .single();
+      if (!placeholderErrFiction && placeholderRowFiction?.id) placeholderStoryIdFiction = placeholderRowFiction.id;
+
       // Abort any previous request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -660,6 +706,7 @@ const CreateStoryPage = () => {
               difficultyLevel: selectedProfile?.difficulty_level,
               contentSafetyLevel: selectedProfile?.content_safety_level,
               image_style_key: imageStyleKey || undefined,
+              ...(placeholderStoryIdFiction ? { story_id: placeholderStoryIdFiction } : {}),
             },
           }),
           timeoutPromise,
@@ -739,62 +786,57 @@ const CreateStoryPage = () => {
           }
           if (urls.length > 0) storyImageUrlsFiction = urls;
         }
-        // Save the story to database
-        // For series: first episode has series_id = null, episode_number = 1
-        // Subsequent episodes will reference this story's id as series_id
-        const { data: savedStory, error: saveError } = await supabase
-          .from("stories")
-          .insert({
-            title: data.title,
-            content: data.content,
-            cover_image_url: coverImageUrlFiction,
-            cover_image_status: coverImageUrlFiction ? 'complete' : 'pending',
-            story_images: storyImageUrlsFiction,
-            story_images_status: storyImageUrlsFiction ? 'complete' : 'pending',
-            image_count: data.image_count || 1,
-            difficulty: storyDifficulty,
-            text_type: "fiction",
-            text_language: textLanguage.toLowerCase(),
-            prompt: description,
-            user_id: user.id,
-            kid_profile_id: selectedProfile?.id,
-            generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-            ending_type: isSeries ? 'C' : 'A',
-            episode_number: isSeries ? 1 : null,
-            story_length: storyLength,
-            series_id: null, // Will self-reference after insert for series
-            series_mode: isSeries ? seriesMode : null,
-            image_style_key: imageStyleKey || data.image_style_key || null,
-            // Block 2.3c: Story classification metadata
-            structure_beginning: data.structure_beginning ?? null,
-            structure_middle: data.structure_middle ?? null,
-            structure_ending: data.structure_ending ?? null,
-            emotional_coloring: data.emotional_coloring ?? null,
-            emotional_secondary: data.emotional_secondary ?? null,
-            humor_level: data.humor_level ?? null,
-            emotional_depth: data.emotional_depth ?? null,
-            moral_topic: data.moral_topic ?? null,
-            concrete_theme: data.concrete_theme ?? null,
-            learning_theme_applied: data.learning_theme_applied ?? null,
-            parent_prompt_text: data.parent_prompt_text ?? null,
-            // Phase 2: Series context fields
-            episode_summary: data.episode_summary ?? null,
-            continuity_state: data.continuity_state ?? null,
-            visual_style_sheet: data.visual_style_sheet ?? null,
-            // Performance tracking
-            generation_time_ms: data.performance?.total_ms ?? null,
-            story_generation_ms: data.performance?.story_generation_ms ?? null,
-            image_generation_ms: data.performance?.image_generation_ms ?? null,
-            consistency_check_ms: data.performance?.consistency_check_ms ?? null,
-            // Comic-Strip fields
-            comic_layout_key: data.comic_layout_key ?? null,
-            comic_full_image: data.comic_full_image ?? null,
-            comic_full_image_2: data.comic_full_image_2 ?? null,
-            comic_panel_count: data.comic_panel_count ?? null,
-            comic_grid_plan: data.comic_grid_plan ?? null,
-          })
-          .select()
-          .single();
+        // Save the story to database (B-14: update placeholder if we created one, else insert)
+        const useUpdateFiction = !!(placeholderStoryIdFiction && (data.story_id ?? placeholderStoryIdFiction));
+        const storyPayloadFiction = {
+          title: data.title,
+          content: data.content,
+          cover_image_url: coverImageUrlFiction,
+          cover_image_status: coverImageUrlFiction ? 'complete' : 'pending',
+          story_images: storyImageUrlsFiction,
+          story_images_status: storyImageUrlsFiction ? 'complete' : 'pending',
+          image_count: data.image_count || 1,
+          difficulty: storyDifficulty,
+          text_type: "fiction",
+          text_language: textLanguage.toLowerCase(),
+          prompt: description,
+          user_id: user.id,
+          kid_profile_id: selectedProfile?.id,
+          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
+          ending_type: isSeries ? 'C' : 'A',
+          episode_number: isSeries ? 1 : null,
+          story_length: storyLength,
+          series_id: null,
+          series_mode: isSeries ? seriesMode : null,
+          image_style_key: imageStyleKey || data.image_style_key || null,
+          structure_beginning: data.structure_beginning ?? null,
+          structure_middle: data.structure_middle ?? null,
+          structure_ending: data.structure_ending ?? null,
+          emotional_coloring: data.emotional_coloring ?? null,
+          emotional_secondary: data.emotional_secondary ?? null,
+          humor_level: data.humor_level ?? null,
+          emotional_depth: data.emotional_depth ?? null,
+          moral_topic: data.moral_topic ?? null,
+          concrete_theme: data.concrete_theme ?? null,
+          learning_theme_applied: data.learning_theme_applied ?? null,
+          parent_prompt_text: data.parent_prompt_text ?? null,
+          episode_summary: data.episode_summary ?? null,
+          continuity_state: data.continuity_state ?? null,
+          visual_style_sheet: data.visual_style_sheet ?? null,
+          generation_time_ms: data.performance?.total_ms ?? null,
+          story_generation_ms: data.performance?.story_generation_ms ?? null,
+          image_generation_ms: data.performance?.image_generation_ms ?? null,
+          consistency_check_ms: data.performance?.consistency_check_ms ?? null,
+          comic_layout_key: data.comic_layout_key ?? null,
+          comic_full_image: data.comic_full_image ?? null,
+          comic_full_image_2: data.comic_full_image_2 ?? null,
+          comic_panel_count: data.comic_panel_count ?? null,
+          comic_grid_plan: data.comic_grid_plan ?? null,
+        };
+        const storyIdToUseFiction = (data.story_id ?? placeholderStoryIdFiction) as string | null;
+        const { data: savedStory, error: saveError } = useUpdateFiction && storyIdToUseFiction
+          ? await supabase.from("stories").update(storyPayloadFiction).eq("id", storyIdToUseFiction).select().single()
+          : await supabase.from("stories").insert(storyPayloadFiction).select().single();
 
         if (saveError) {
           console.error("Save error:", saveError);

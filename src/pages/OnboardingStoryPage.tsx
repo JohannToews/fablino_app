@@ -207,6 +207,27 @@ const OnboardingStoryPage = () => {
     const difficulty = getDifficultyForAge(age);
 
     try {
+      // B-14: Placeholder story row for incremental status/metrics
+      let placeholderStoryIdOnboarding: string | null = null;
+      const { data: placeholderRowOnboarding, error: placeholderErrOnboarding } = await supabase
+        .from("stories")
+        .insert({
+          title: "Generating...",
+          content: "",
+          user_id: user.id,
+          kid_profile_id: kidId,
+          generation_status: "generating",
+          difficulty,
+          text_type: "fiction",
+          text_language: readingLang,
+          prompt: detailParam || resolvedStoryType,
+          ending_type: "A",
+          story_length: "short",
+        })
+        .select("id")
+        .single();
+      if (!placeholderErrOnboarding && placeholderRowOnboarding?.id) placeholderStoryIdOnboarding = placeholderRowOnboarding.id;
+
       const { data, error } = await supabase.functions.invoke("generate-story", {
         body: {
           length: "short",
@@ -228,6 +249,7 @@ const OnboardingStoryPage = () => {
           contentSafetyLevel: kid.content_safety_level || 2,
           image_style_key: imageStyle,
           storyLength: "short",
+          ...(placeholderStoryIdOnboarding ? { story_id: placeholderStoryIdOnboarding } : {}),
         },
       });
 
@@ -278,43 +300,44 @@ const OnboardingStoryPage = () => {
         if (urls.length > 0) storyImageUrls = urls;
       }
 
-      // Save story
-      const { data: saved, error: saveErr } = await supabase
-        .from("stories")
-        .insert({
-          title: data.title,
-          content: data.content,
-          cover_image_url: coverImageUrl,
-          cover_image_status: coverImageUrl ? "complete" : "pending",
-          story_images: storyImageUrls,
-          story_images_status: storyImageUrls ? "complete" : "pending",
-          image_count: data.image_count || 1,
-          difficulty,
-          text_type: "fiction",
-          text_language: readingLang,
-          prompt: detailParam || resolvedStoryType,
-          user_id: user.id,
-          kid_profile_id: kidId,
-          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-          ending_type: "A",
-          story_length: "short",
-          image_style_key: imageStyle,
-          structure_beginning: data.structure_beginning ?? null,
-          structure_middle: data.structure_middle ?? null,
-          structure_ending: data.structure_ending ?? null,
-          emotional_coloring: data.emotional_coloring ?? null,
-          emotional_secondary: data.emotional_secondary ?? null,
-          humor_level: data.humor_level ?? null,
-          emotional_depth: data.emotional_depth ?? null,
-          moral_topic: data.moral_topic ?? null,
-          concrete_theme: data.concrete_theme ?? null,
-          learning_theme_applied: data.learning_theme_applied ?? null,
-          generation_time_ms: data.performance?.total_ms ?? null,
-          story_generation_ms: data.performance?.story_generation_ms ?? null,
-          image_generation_ms: data.performance?.image_generation_ms ?? null,
-        })
-        .select()
-        .single();
+      // Save story (B-14: update placeholder if we created one, else insert)
+      const useUpdateOnboarding = !!(placeholderStoryIdOnboarding && (data.story_id ?? placeholderStoryIdOnboarding));
+      const storyPayloadOnboarding = {
+        title: data.title,
+        content: data.content,
+        cover_image_url: coverImageUrl,
+        cover_image_status: coverImageUrl ? "complete" : "pending",
+        story_images: storyImageUrls,
+        story_images_status: storyImageUrls ? "complete" : "pending",
+        image_count: data.image_count || 1,
+        difficulty,
+        text_type: "fiction",
+        text_language: readingLang,
+        prompt: detailParam || resolvedStoryType,
+        user_id: user.id,
+        kid_profile_id: kidId,
+        generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
+        ending_type: "A",
+        story_length: "short",
+        image_style_key: imageStyle,
+        structure_beginning: data.structure_beginning ?? null,
+        structure_middle: data.structure_middle ?? null,
+        structure_ending: data.structure_ending ?? null,
+        emotional_coloring: data.emotional_coloring ?? null,
+        emotional_secondary: data.emotional_secondary ?? null,
+        humor_level: data.humor_level ?? null,
+        emotional_depth: data.emotional_depth ?? null,
+        moral_topic: data.moral_topic ?? null,
+        concrete_theme: data.concrete_theme ?? null,
+        learning_theme_applied: data.learning_theme_applied ?? null,
+        generation_time_ms: data.performance?.total_ms ?? null,
+        story_generation_ms: data.performance?.story_generation_ms ?? null,
+        image_generation_ms: data.performance?.image_generation_ms ?? null,
+      };
+      const storyIdToUseOnboarding = (data.story_id ?? placeholderStoryIdOnboarding) as string | null;
+      const { data: saved, error: saveErr } = useUpdateOnboarding && storyIdToUseOnboarding
+        ? await supabase.from("stories").update(storyPayloadOnboarding).eq("id", storyIdToUseOnboarding).select().single()
+        : await supabase.from("stories").insert(storyPayloadOnboarding).select().single();
 
       if (saveErr || !saved) {
         console.error("Save error:", saveErr);
