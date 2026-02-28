@@ -431,6 +431,56 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_learning_themes: {
+        Row: {
+          category: string
+          created_at: string
+          description: Json
+          id: string
+          is_active: boolean
+          kid_profile_id: string
+          name: Json
+          original_input: string | null
+          story_guidance: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: Json
+          id?: string
+          is_active?: boolean
+          kid_profile_id: string
+          name?: Json
+          original_input?: string | null
+          story_guidance?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: Json
+          id?: string
+          is_active?: boolean
+          kid_profile_id?: string
+          name?: Json
+          original_input?: string | null
+          story_guidance?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_learning_themes_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       difficulty_rules: {
         Row: {
           created_at: string | null
