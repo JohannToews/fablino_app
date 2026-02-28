@@ -5,6 +5,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useColorPalette } from "@/hooks/useColorPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { isSeriesEnabled } from "@/config/features";
+import { useFarsiEnabled } from "@/hooks/useFarsiEnabled";
 import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
@@ -115,6 +116,7 @@ const CreateStoryPage = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { kidAppLanguage, kidReadingLanguage, kidExplanationLanguage, kidHomeLanguages, kidStoryLanguages, selectedProfile } = useKidProfile();
+  const farsiEnabled = useFarsiEnabled();
   const { colors: paletteColors } = useColorPalette();
   const { remaining: storiesRemaining, limitReached, limit: dailyLimit, refresh: refreshStoryLimit } = useDailyStoryLimit(selectedProfile?.id);
 
@@ -158,11 +160,21 @@ const CreateStoryPage = () => {
   const storyTypeTranslations = storyTypeSelectionTranslations[kidAppLanguage] || storyTypeSelectionTranslations.de;
   const characterTranslations = characterSelectionTranslations[kidAppLanguage] || characterSelectionTranslations.de;
 
-  // Compute available languages for story generation from story_languages (Block 2.3d+)
-  const availableLanguages = kidStoryLanguages.length > 0
-    ? kidStoryLanguages
-    : [kidReadingLanguage];
-
+  const availableLanguages = (() => {
+    let langs = kidStoryLanguages.length > 0
+      ? [...kidStoryLanguages]
+      : [kidReadingLanguage];
+    // Always include the school/reading language
+    if (!langs.includes(kidReadingLanguage)) {
+      langs.unshift(kidReadingLanguage);
+    }
+    // Filter out Farsi if feature flag is disabled
+    if (!farsiEnabled) {
+      langs = langs.filter(l => l !== 'fa');
+    }
+    // Deduplicate
+    return [...new Set(langs)];
+  })();
   // Generate educational story directly
   const generateEducationalStory = async (
     topic: EducationalTopic,
