@@ -595,13 +595,37 @@ export interface Translations {
   appearanceHairStraight: string;
   appearanceHairWavy: string;
   appearanceHairCurly: string;
+  appearanceHairTightCurly: string;
   appearanceHairCoily: string;
+  appearanceEyeColorLabel: string;
+  appearanceEyeBrown: string;
+  appearanceEyeDarkBrown: string;
+  appearanceEyeGreen: string;
+  appearanceEyeBlue: string;
+  appearanceEyeGray: string;
   appearanceStyleLoose: string;
   appearanceStylePonytail: string;
   appearanceStyleBraids: string;
   appearanceStylePigtails: string;
   appearanceStyleBun: string;
   appearanceStyleBangs: string;
+  appearanceStyleBraid: string;
+  appearanceStyleBob: string;
+  appearanceStyleHalfUp: string;
+  appearanceStyleTwoBraids: string;
+  appearanceStyleUpdo: string;
+  appearanceStyleShortAfro: string;
+  appearanceStyleAfro: string;
+  appearanceStyleAfroPuffs: string;
+  appearanceStyleBoyShort: string;
+  appearanceStyleSidePart: string;
+  appearanceStyleUndercut: string;
+  appearanceStyleBuzzCut: string;
+  appearanceStyleMediumLength: string;
+  appearanceStyleSurfer: string;
+  appearanceStyleCurlsLoose: string;
+  appearanceStyleTwistOut: string;
+  appearanceStyleTapered: string;
 
 }
 

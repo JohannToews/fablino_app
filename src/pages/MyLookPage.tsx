@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import { useKidProfile } from "@/hooks/useKidProfile";
@@ -7,15 +6,17 @@ import { getTranslations } from "@/lib/translations";
 import { Language } from "@/lib/translations";
 import {
   SKIN_TONES,
-  HAIR_LENGTHS,
   HAIR_TYPES,
-  HAIR_STYLES,
   HAIR_COLORS,
+  EYE_COLORS,
+  getHairStyles,
+  getHairLengths,
   type SkinToneKey,
   type HairLengthKey,
   type HairTypeKey,
   type HairStyleKey,
   type HairColorKey,
+  type EyeColorKey,
 } from "@/config/appearanceOptions";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -26,6 +27,7 @@ type KidAppearance = {
   hairType: HairTypeKey;
   hairStyle: HairStyleKey;
   hairColor: HairColorKey;
+  eyeColor: EyeColorKey;
   glasses: boolean;
 };
 
@@ -35,11 +37,11 @@ const DEFAULT_APPEARANCE: KidAppearance = {
   hairType: "straight",
   hairStyle: "loose",
   hairColor: "brown",
+  eyeColor: "brown",
   glasses: false,
 };
 
 export default function MyLookPage() {
-  const navigate = useNavigate();
   const { selectedProfile, selectedProfileId, kidAppLanguage } = useKidProfile();
   const t = getTranslations((kidAppLanguage || "de") as Language);
 
@@ -48,6 +50,8 @@ export default function MyLookPage() {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [savedAppearance, setSavedAppearance] = useState<KidAppearance>(DEFAULT_APPEARANCE);
+
+  const gender = selectedProfile?.gender || null;
 
   const handleSave = useCallback(async () => {
     if (!selectedProfileId) return;
@@ -60,6 +64,7 @@ export default function MyLookPage() {
         hair_type: appearance.hairType,
         hair_style: appearance.hairStyle,
         hair_color: appearance.hairColor,
+        eye_color: appearance.eyeColor,
         glasses: appearance.glasses,
         updated_at: new Date().toISOString(),
       },
@@ -95,6 +100,7 @@ export default function MyLookPage() {
           hairType: (data.hair_type as HairTypeKey) || "straight",
           hairStyle: (data.hair_style as HairStyleKey) || "loose",
           hairColor: (data.hair_color as HairColorKey) || "brown",
+          eyeColor: (data.eye_color as EyeColorKey) || "brown",
           glasses: !!data.glasses,
         };
         setAppearance(loaded);
@@ -114,9 +120,41 @@ export default function MyLookPage() {
   }, [selectedProfileId]);
 
   const update = useCallback(<K extends keyof KidAppearance>(key: K, value: KidAppearance[K]) => {
-    setAppearance((prev) => ({ ...prev, [key]: value }));
+    setAppearance((prev) => {
+      const next = { ...prev, [key]: value };
+      // When hair type changes → reset hair style to first available option
+      if (key === 'hairType') {
+        const styles = getHairStyles(gender, value as string);
+        if (styles.length > 0 && !styles.some(s => s.key === prev.hairStyle)) {
+          next.hairStyle = styles[0].key;
+        }
+      }
+      // When hair length is "long" and gender switches to boy, clamp to "medium"
+      if (key === 'hairLength' && gender === 'male' && value === 'long') {
+        next.hairLength = 'medium' as HairLengthKey;
+      }
+      return next;
+    });
     setHasChanges(true);
-  }, []);
+  }, [gender]);
+
+  // Reset hair style when gender changes (profile switch)
+  useEffect(() => {
+    if (!loading) {
+      setAppearance((prev) => {
+        const styles = getHairStyles(gender, prev.hairType);
+        const lengths = getHairLengths(gender);
+        const next = { ...prev };
+        if (styles.length > 0 && !styles.some(s => s.key === prev.hairStyle)) {
+          next.hairStyle = styles[0].key;
+        }
+        if (!lengths.some(l => l.key === prev.hairLength)) {
+          next.hairLength = 'medium';
+        }
+        return next;
+      });
+    }
+  }, [gender, loading]);
 
   if (!selectedProfile) {
     return (
@@ -128,6 +166,21 @@ export default function MyLookPage() {
 
   const pickerRing = "ring-2 ring-[#E8863A] ring-offset-2";
   const sectionClass = "rounded-2xl p-4 bg-white border border-[#F0E8E0] shadow-sm mb-4";
+  const tAny = t as unknown as Record<string, string>;
+
+  const currentHairStyles = getHairStyles(gender, appearance.hairType);
+  const currentHairLengths = getHairLengths(gender);
+
+  const getLabel = (labelKey: string, fallback: string) => {
+    // label_key format: "appearance.style_loose" → translation key "appearanceStyleLoose"
+    const parts = labelKey.split('.');
+    if (parts.length === 2) {
+      const [, suffix] = parts;
+      const tKey = `appearance${suffix.split('_').map((w, i) => w.charAt(0).toUpperCase() + w.slice(1)).join('')}`;
+      return tAny[tKey] ?? fallback;
+    }
+    return fallback;
+  };
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -167,15 +220,33 @@ export default function MyLookPage() {
               </div>
             </section>
 
+            {/* Eye color */}
+            <section className={sectionClass}>
+              <h2 className="text-sm font-semibold text-[#2D1810] mb-3">{tAny.appearanceEyeColorLabel ?? 'Augenfarbe'}</h2>
+              <div className="flex flex-wrap gap-3 justify-center">
+                {EYE_COLORS.map((opt) => (
+                  <motion.button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => update("eyeColor", opt.key as EyeColorKey)}
+                    className={`w-10 h-10 rounded-full border-2 border-[#E0E0E0] transition-all ${appearance.eyeColor === opt.key ? pickerRing : ""}`}
+                    style={{ backgroundColor: opt.color }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label={opt.key}
+                  />
+                ))}
+              </div>
+            </section>
+
             {/* Hair length */}
             <section className={sectionClass}>
               <h2 className="text-sm font-semibold text-[#2D1810] mb-3">{t.appearanceHairLengthLabel}</h2>
               <div className="flex flex-wrap gap-3 justify-center">
-                {HAIR_LENGTHS.map((opt) => (
+                {currentHairLengths.map((opt) => (
                   <motion.button
                     key={opt.key}
                     type="button"
-                    onClick={() => update("hairLength", opt.key)}
+                    onClick={() => update("hairLength", opt.key as HairLengthKey)}
                     className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all min-w-[72px] ${
                       appearance.hairLength === opt.key
                         ? "border-[#E8863A] bg-orange-50"
@@ -185,9 +256,7 @@ export default function MyLookPage() {
                   >
                     <span className="text-2xl">{opt.icon}</span>
                     <span className="text-xs font-medium text-[#2D1810]">
-                      {(
-                        (t as unknown as Record<string, string>)
-                      )[`appearanceHair${opt.key === "very_short" ? "VeryShort" : opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
+                      {tAny[`appearanceHair${opt.key === "very_short" ? "VeryShort" : opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
                     </span>
                   </motion.button>
                 ))}
@@ -202,7 +271,7 @@ export default function MyLookPage() {
                   <motion.button
                     key={opt.key}
                     type="button"
-                    onClick={() => update("hairType", opt.key)}
+                    onClick={() => update("hairType", opt.key as HairTypeKey)}
                     className={`px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
                       appearance.hairType === opt.key
                         ? "border-[#E8863A] bg-orange-50 text-[#92400E]"
@@ -210,17 +279,17 @@ export default function MyLookPage() {
                     }`}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {(t as unknown as Record<string, string>)[`appearanceHair${opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
+                    {tAny[`appearanceHair${opt.key === 'tight_curly' ? 'TightCurly' : opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
                   </motion.button>
                 ))}
               </div>
             </section>
 
-            {/* Hair style */}
+            {/* Hair style (dynamic) */}
             <section className={sectionClass}>
               <h2 className="text-sm font-semibold text-[#2D1810] mb-3">{t.appearanceHairStyleLabel}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {HAIR_STYLES.map((opt) => (
+                {currentHairStyles.map((opt) => (
                   <motion.button
                     key={opt.key}
                     type="button"
@@ -232,7 +301,7 @@ export default function MyLookPage() {
                     }`}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {(t as unknown as Record<string, string>)[`appearanceStyle${opt.key.charAt(0).toUpperCase() + opt.key.slice(1)}`] ?? opt.key}
+                    {getLabel(opt.label_key, opt.key)}
                   </motion.button>
                 ))}
               </div>
