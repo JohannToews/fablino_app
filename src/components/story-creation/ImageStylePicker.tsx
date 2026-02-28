@@ -3,6 +3,7 @@ import { Star, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import { cn } from "@/lib/utils";
+import { getDbLabel } from "@/lib/getDbLabel";
 
 // Style preview images
 import previewStorybookSoft from "@/assets/style-previews/storybook_soft.jpg";
@@ -218,7 +219,7 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
             const isSelected = selectedKey === style.style_key;
             const isDefault = style.style_key === defaultStyleKey;
             const fallbackUkRu = (uiLanguage === 'uk' || uiLanguage === 'ru') ? FALLBACK_STYLE_LABELS_UK_RU[style.style_key]?.[uiLanguage] : undefined;
-            const label = style.labels?.[uiLanguage] || fallbackUkRu || style.labels?.de || style.style_key;
+            const label = fallbackUkRu || getDbLabel(style.labels, uiLanguage, style.style_key);
             const emoji = STYLE_EMOJIS[style.style_key] || "🖼️";
 
             return (
