@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthOptional } from "./useAuth";
 
 export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs'
-  | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk' | 'uk' | 'ru';
+  | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk' | 'uk' | 'ru'
+  | 'ar' | 'fa';
 
 export interface KidProfile {
   id: string;
@@ -27,7 +28,12 @@ export interface KidProfile {
 }
 
 // Derive app language from school_system (legacy fallback)
-const VALID_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl', 'pt', 'sk', 'uk', 'ru'];
+const VALID_LANGUAGES = ['de', 'fr', 'en', 'es', 'nl', 'it', 'bs', 'tr', 'bg', 'ro', 'pl', 'lt', 'hu', 'ca', 'sl', 'pt', 'sk', 'uk', 'ru', 'ar', 'fa'];
+
+const SCHOOL_SYSTEM_TO_LANG: Record<string, KidLanguage> = {
+  iran: 'fa',
+  afghanistan: 'fa',
+};
 
 export const getKidLanguage = (schoolSystem: string | undefined): KidLanguage => {
   if (!schoolSystem) return 'fr';
@@ -39,12 +45,11 @@ export const getKidLanguage = (schoolSystem: string | undefined): KidLanguage =>
 };
 
 const toKidLanguage = (lang: string | undefined): KidLanguage => {
-  if (!lang) return 'fr';
+  if (!lang) return 'en';
   const lower = lang.toLowerCase();
-  if (VALID_LANGUAGES.includes(lower)) {
-    return lower as KidLanguage;
-  }
-  return 'fr';
+  if (SCHOOL_SYSTEM_TO_LANG[lower]) return SCHOOL_SYSTEM_TO_LANG[lower];
+  if (VALID_LANGUAGES.includes(lower)) return lower as KidLanguage;
+  return 'en';
 };
 
 interface KidProfileContextType {
