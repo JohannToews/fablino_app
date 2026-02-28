@@ -516,6 +516,10 @@ const uk: Translations = {
   appearanceStylePigtails: 'Хвостики',
   appearanceStyleBun: 'Пучок',
   appearanceStyleBangs: 'Чубчик',
+  deleteProfileTitle: 'Видалити профіль?',
+  deleteProfileMessage: 'Видалення профілю {name} також видалить усі {count} історій. Цю дію не можна скасувати.',
+  deleteProfileButton: 'Видалити профіль',
+  siblingBadge: 'Профіль',
 };
 
 export default uk;

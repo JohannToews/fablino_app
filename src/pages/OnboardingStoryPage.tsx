@@ -317,7 +317,7 @@ const OnboardingStoryPage = () => {
         user_id: user.id,
         kid_profile_id: kidId,
         generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-        ending_type: "A",
+        ending_type: "A" as "A" | "B" | "C",
         story_length: "short",
         image_style_key: imageStyle,
         structure_beginning: data.structure_beginning ?? null,

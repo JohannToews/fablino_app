@@ -27,6 +27,7 @@ interface KidCharacterDB {
   description: string | null;
   is_active: boolean;
   sort_order: number;
+  linked_kid_profile_id?: string | null;
 }
 
 interface KidProfile {
@@ -160,6 +161,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       .from("kid_profiles")
       .select("*")
       .eq("user_id", userId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: true });
 
     if (data && data.length > 0) {
@@ -247,27 +249,64 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     setCoverPreview(null);
   };
 
-  const deleteProfile = async (index: number) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteStoryCount, setDeleteStoryCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const openDeleteDialog = async (index: number) => {
     const profile = profiles[index];
-    if (profile.id) {
-      const { error } = await supabase
-        .from("kid_profiles")
-        .delete()
-        .eq("id", profile.id);
-      
-      if (error) {
-        toast.error(t.errorSaving);
-        return;
-      }
-      // Refresh global context after deletion
+    if (!profile.id) return;
+    // Count stories for this profile
+    const { count } = await supabase
+      .from('stories')
+      .select('id', { count: 'exact', head: true })
+      .eq('kid_profile_id', profile.id)
+      .eq('is_deleted', false);
+    setDeleteStoryCount(count || 0);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteProfile = async () => {
+    const profile = profiles[selectedProfileIndex];
+    if (!profile.id) return;
+    setIsDeleting(true);
+
+    try {
+      // 1. Soft-delete stories
+      await supabase
+        .from('stories')
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
+        .eq('kid_profile_id', profile.id);
+
+      // 2. Remove linked sibling characters from other profiles
+      await supabase
+        .from('kid_characters')
+        .update({ is_active: false } as any)
+        .eq('linked_kid_profile_id', profile.id);
+
+      // 3. Deactivate all characters belonging to this profile
+      await supabase
+        .from('kid_characters')
+        .update({ is_active: false } as any)
+        .eq('kid_profile_id', profile.id);
+
+      // 4. Soft-delete the profile itself
+      await supabase
+        .from('kid_profiles')
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
+        .eq('id', profile.id);
+
+      // 5. Refresh
       await refreshGlobalProfiles();
+      setProfiles(prev => prev.filter((_, i) => i !== selectedProfileIndex));
+      setSelectedProfileIndex(0);
+      setDeleteDialogOpen(false);
+      toast.success(t.delete + " ✓");
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      toast.error(t.errorSaving);
     }
-    
-    setProfiles(prev => prev.filter((_, i) => i !== index));
-    if (selectedProfileIndex >= profiles.length - 1) {
-      setSelectedProfileIndex(Math.max(0, profiles.length - 2));
-    }
-    toast.success(t.delete + " ✓");
+    setIsDeleting(false);
   };
 
   const selectProfile = (index: number) => {
@@ -850,7 +889,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                  onClick={(e) => { e.stopPropagation(); deleteProfile(index); }}
+                  onClick={(e) => { e.stopPropagation(); openDeleteDialog(index); }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -1045,23 +1084,33 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   <div>
                     <p className="text-xs font-semibold text-[#2D1810]/50 mb-1.5">👨‍👩‍👧 {t.typeFamily}</p>
                     <div className="space-y-1">
-                      {familyChars.map((char) => (
-                        <div key={char.id} className="flex items-center justify-between bg-orange-50/50 rounded-lg px-3 py-2">
-                          <span className="text-sm text-[#2D1810]">
-                            <span className="font-medium">{char.name}</span>
-                            {char.relation && <span className="text-[#2D1810]/50"> — {char.relation}</span>}
-                            {char.age && <span className="text-[#2D1810]/50">, {char.age} J.</span>}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-[#2D1810]/30 hover:text-red-500 hover:bg-red-50"
-                            onClick={() => deleteCharacter(char)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                      {familyChars.map((char) => {
+                        const isLinked = !!(char as any).linked_kid_profile_id;
+                        return (
+                          <div key={char.id} className="flex items-center justify-between bg-orange-50/50 rounded-lg px-3 py-2">
+                            <span className="text-sm text-[#2D1810]">
+                              <span className="font-medium">{char.name}</span>
+                              {char.relation && <span className="text-[#2D1810]/50"> — {char.relation}</span>}
+                              {char.age && <span className="text-[#2D1810]/50">, {char.age} J.</span>}
+                              {isLinked && (
+                                <span className="ml-2 inline-flex items-center text-[10px] bg-orange-200 text-orange-700 px-1.5 py-0.5 rounded-full font-semibold">
+                                  {t.siblingBadge || 'Profil'}
+                                </span>
+                              )}
+                            </span>
+                            {!isLinked && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-[#2D1810]/30 hover:text-red-500 hover:bg-red-50"
+                                onClick={() => deleteCharacter(char)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1228,7 +1277,35 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         </DialogContent>
       </Dialog>
 
-      {/* Save Button — sticky at bottom */}
+      {/* Delete Profile Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">{t.deleteProfileTitle}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-[#2D1810]/70">
+            {t.deleteProfileMessage
+              .replace('{name}', currentProfile.name || '')
+              .replace('{name}', currentProfile.name || '')
+              .replace('{count}', String(deleteStoryCount))}
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              {t.cancel}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteProfile}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              {t.deleteProfileButton}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFF8F0] via-[#FFF8F0] to-transparent">
         <div className="max-w-3xl mx-auto">
           <Button

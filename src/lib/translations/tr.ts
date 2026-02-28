@@ -515,7 +515,10 @@ const tr: Translations = {
   appearanceStylePigtails: 'Kuyruklar',
   appearanceStyleBun: 'Topuz',
   appearanceStyleBangs: 'Kâkül',
-
+  deleteProfileTitle: 'Profili sil?',
+  deleteProfileMessage: '{name} profilini silersen, {count} hikâye de silinecek. Bu işlem geri alınamaz.',
+  deleteProfileButton: 'Profili sil',
+  siblingBadge: 'Profil',
 };
 
 export default tr;

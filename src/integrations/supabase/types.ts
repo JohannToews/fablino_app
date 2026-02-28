@@ -987,6 +987,7 @@ export type Database = {
           id: string
           is_active: boolean
           kid_profile_id: string
+          linked_kid_profile_id: string | null
           name: string
           relation: string | null
           role: string
@@ -1000,6 +1001,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kid_profile_id: string
+          linked_kid_profile_id?: string | null
           name: string
           relation?: string | null
           role: string
@@ -1013,6 +1015,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kid_profile_id?: string
+          linked_kid_profile_id?: string | null
           name?: string
           relation?: string | null
           role?: string
@@ -1027,6 +1030,13 @@ export type Database = {
             referencedRelation: "kid_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "kid_characters_linked_kid_profile_id_fkey"
+            columns: ["linked_kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       kid_profiles: {
@@ -1036,6 +1046,7 @@ export type Database = {
           content_safety_level: number
           cover_image_url: string | null
           created_at: string
+          deleted_at: string | null
           difficulty_level: number
           explanation_language: string
           gender: string | null
@@ -1043,6 +1054,7 @@ export type Database = {
           home_languages: string[]
           id: string
           image_style: string | null
+          is_deleted: boolean
           name: string
           reading_language: string
           school_class: string
@@ -1058,6 +1070,7 @@ export type Database = {
           content_safety_level?: number
           cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           difficulty_level?: number
           explanation_language?: string
           gender?: string | null
@@ -1065,6 +1078,7 @@ export type Database = {
           home_languages?: string[]
           id?: string
           image_style?: string | null
+          is_deleted?: boolean
           name?: string
           reading_language?: string
           school_class?: string
@@ -1080,6 +1094,7 @@ export type Database = {
           content_safety_level?: number
           cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           difficulty_level?: number
           explanation_language?: string
           gender?: string | null
@@ -1087,6 +1102,7 @@ export type Database = {
           home_languages?: string[]
           id?: string
           image_style?: string | null
+          is_deleted?: boolean
           name?: string
           reading_language?: string
           school_class?: string
@@ -1479,6 +1495,7 @@ export type Database = {
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
+          deleted_at: string | null
           difficulty: string | null
           emotional_coloring: string | null
           emotional_depth: number | null
@@ -1537,6 +1554,7 @@ export type Database = {
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           difficulty?: string | null
           emotional_coloring?: string | null
           emotional_depth?: number | null
@@ -1595,6 +1613,7 @@ export type Database = {
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           difficulty?: string | null
           emotional_coloring?: string | null
           emotional_depth?: number | null
@@ -2389,6 +2408,7 @@ export type Database = {
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
+          deleted_at: string | null
           difficulty: string | null
           emotional_coloring: string | null
           emotional_depth: number | null

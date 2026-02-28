@@ -516,6 +516,10 @@ const hu: Translations = {
   appearanceStylePigtails: 'Copfok',
   appearanceStyleBun: 'Konty',
   appearanceStyleBangs: 'Frufru',
+  deleteProfileTitle: 'Profil törlése?',
+  deleteProfileMessage: '{name} profiljának törlése a(z) {count} történetet is törli. Ez a művelet nem vonható vissza.',
+  deleteProfileButton: 'Profil törlése',
+  siblingBadge: 'Profil',
 };
 
 export default hu;

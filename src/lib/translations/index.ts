@@ -551,6 +551,12 @@ export interface Translations {
   // StickerBookPage
   stickerStoriesCollectedFallback: string;
 
+  // Profile deletion & sibling
+  deleteProfileTitle: string;
+  deleteProfileMessage: string;
+  deleteProfileButton: string;
+  siblingBadge: string;
+
   // Install Prompt
   installBannerTitle: string;
   installBannerSubtitle: string;

@@ -515,7 +515,10 @@ const pl: Translations = {
   appearanceStylePigtails: 'Kucyki',
   appearanceStyleBun: 'Kok',
   appearanceStyleBangs: 'Grzywka',
-
+  deleteProfileTitle: 'Usunąć profil?',
+  deleteProfileMessage: 'Usunięcie profilu {name} spowoduje również usunięcie wszystkich {count} historii. Tej operacji nie można cofnąć.',
+  deleteProfileButton: 'Usuń profil',
+  siblingBadge: 'Profil',
 };
 
 export default pl;

@@ -516,6 +516,10 @@ const en: Translations = {
   appearanceStylePigtails: 'Pigtails',
   appearanceStyleBun: 'Bun',
   appearanceStyleBangs: 'Bangs',
+  deleteProfileTitle: 'Delete profile?',
+  deleteProfileMessage: 'Deleting {name}\'s profile will also delete all {count} stories. This cannot be undone.',
+  deleteProfileButton: 'Delete profile',
+  siblingBadge: 'Profile',
 };
 
 export default en;

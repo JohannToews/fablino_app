@@ -516,6 +516,10 @@ const bg: Translations = {
   appearanceStylePigtails: 'Опашки',
   appearanceStyleBun: 'Кок',
   appearanceStyleBangs: 'Бретон',
+  deleteProfileTitle: 'Изтриване на профил?',
+  deleteProfileMessage: 'Изтриването на профила на {name} ще изтрие и всичките {count} истории. Това не може да бъде отменено.',
+  deleteProfileButton: 'Изтрий профил',
+  siblingBadge: 'Профил',
 };
 
 export default bg;
