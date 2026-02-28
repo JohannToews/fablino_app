@@ -201,6 +201,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   // Beta languages
   hu: 'Magyar', pt: 'Português', tr: 'Türkçe', bg: 'Български',
   lt: 'Lietuvių', ca: 'Català', pl: 'Polski', sk: 'Slovenčina',
+  uk: 'Ukrainian', ru: 'Russian', sl: 'Slovenian', ro: 'Romanian',
 };
 
 // ─── Helper: extract JSONB label ────────────────────────────────
@@ -1585,7 +1586,7 @@ export async function buildStoryPrompt(
   }
 
   // Explicit language instruction for beta languages (no UI translations)
-  const BETA_LANG_CODES = new Set(['hu','pt','tr','bg','lt','ca','pl','sk','fa']);
+  const BETA_LANG_CODES = new Set(['hu','pt','tr','bg','lt','ca','pl','sk','fa','uk','ru','sl','ro','bs']);
   if (BETA_LANG_CODES.has(lang)) {
     sections.push(
       `## CRITICAL LANGUAGE INSTRUCTION\n` +
