@@ -99,6 +99,35 @@ export const DEFAULT_SCHOOL_SYSTEMS: SchoolSystems = {
       "2ª Superiore",
     ] 
   },
+  pt: {
+    name: "Português",
+    classes: [
+      "1º ano",
+      "2º ano",
+      "3º ano",
+      "4º ano",
+      "5º ano",
+      "6º ano",
+    ],
+  },
+  tr: {
+    name: "Türkçe",
+    classes: [
+      "1. sınıf",
+      "2. sınıf",
+      "3. sınıf",
+      "4. sınıf",
+    ],
+  },
+  pl: {
+    name: "Polski",
+    classes: [
+      "Klasa 1",
+      "Klasa 2",
+      "Klasa 3",
+      "Klasa 4",
+    ],
+  },
   bs: { 
     name: "Bosanski", 
     classes: [
