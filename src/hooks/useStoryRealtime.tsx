@@ -33,7 +33,7 @@ export function useStoryRealtime(storyId: string | null): UseStoryRealtimeResult
   const [error, setError] = useState<string | null>(null);
 
   const isFullyLoaded = story 
-    ? story.generation_status === 'verified' &&
+    ? ['verified', 'images_partial', 'images_failed'].includes(story.generation_status || '') &&
       story.cover_image_status === 'complete' &&
       story.story_images_status === 'complete'
     : false;

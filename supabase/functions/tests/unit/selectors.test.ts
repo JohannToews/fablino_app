@@ -59,11 +59,18 @@ function createMockSupabase(overrides: {
       }
       if (table === 'emotion_flow_history') {
         const blueprintKeys = (overrides.historyBlueprintKeys ?? []).map((k: string) => ({ selected_key: k }));
-        const chainSelf = {
-          eq: () => chainSelf,
-          order: () => ({ limit: () => Promise.resolve({ data: blueprintKeys, error: null }) }),
+        return {
+          select: () => {
+            const chain: any = {
+              eq: () => chain,
+              order: () => ({ limit: () => Promise.resolve({ data: blueprintKeys, error: null }) }),
+              limit: () => Promise.resolve({ data: blueprintKeys, error: null }),
+              in: () => ({ limit: () => Promise.resolve({ data: blueprintKeys, error: null }) }),
+              select: () => chain,
+            };
+            return chain;
+          },
         };
-        return { select: () => chainSelf };
       }
       if (table === 'emotion_blueprints') {
         if (overrides.throwOnBlueprints) {
