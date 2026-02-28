@@ -496,6 +496,7 @@ const en: Translations = {
   appearanceGlassesYes: 'With glasses',
   appearanceGlassesNo: 'Without glasses',
   appearanceSaved: 'Saved! ✨',
+  appearanceSave: 'Save',
   appearanceSkinLight: 'Light',
   appearanceSkinMediumLight: 'Light-medium',
   appearanceSkinMedium: 'Medium',
