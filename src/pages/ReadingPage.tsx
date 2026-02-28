@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react"; // rebuild trigger
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams, Navigate } from "react-router-dom";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
+import LeaveReadingDialog from "@/components/LeaveReadingDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -556,6 +558,7 @@ const ReadingPage = () => {
   const [pendingBadges, setPendingBadges] = useState<EarnedBadge[]>([]);
   // Track if story is already marked as read
   const [isMarkedAsRead, setIsMarkedAsRead] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   // Series continuation state
   const [isGeneratingContinuation, setIsGeneratingContinuation] = useState(false);
   // AbortController for continuation generation — prevents orphaned requests
@@ -581,6 +584,10 @@ const ReadingPage = () => {
   // Get text language from story for UI labels and explanations
   const textLang = story?.text_language || 'fr';
   const t = getTranslations(kidAppLanguage as Language);
+
+  // ── Navigation Guard: prevent accidental exits while reading ──
+  const shouldBlockNavigation = !!story && !isMarkedAsRead && !isGeneratingContinuation;
+  const blocker = useNavigationGuard(shouldBlockNavigation);
 
   useEffect(() => {
     if (id) {
@@ -2014,8 +2021,12 @@ const ReadingPage = () => {
           <ScrollText className="h-4 w-4 text-muted-foreground" />
         </button>
 
-        {/* Back button */}
-        <BackButton to="/stories" className="fixed top-3 left-14 z-50" />
+        {/* Back button — triggers confirmation if story not finished */}
+        <BackButton
+          onClick={shouldBlockNavigation ? () => setShowLeaveDialog(true) : undefined}
+          to={shouldBlockNavigation ? undefined : "/stories"}
+          className="fixed top-3 left-14 z-50"
+        />
 
         <ImmersiveReader
           story={{ ...story, content: storyContent }}
@@ -2166,6 +2177,24 @@ const ReadingPage = () => {
             onClose={clearPendingLevelUp}
           />
         )}
+
+        {/* Navigation guard dialog (blocker) */}
+        <LeaveReadingDialog
+          open={blocker.state === 'blocked' || showLeaveDialog}
+          language={kidAppLanguage}
+          onStay={() => {
+            if (blocker.state === 'blocked') blocker.reset?.();
+            setShowLeaveDialog(false);
+          }}
+          onLeave={() => {
+            if (blocker.state === 'blocked') {
+              blocker.proceed?.();
+            } else {
+              setShowLeaveDialog(false);
+              navigate('/stories');
+            }
+          }}
+        />
       </div>
     );
   }
@@ -2176,6 +2205,7 @@ const ReadingPage = () => {
       <PageHeader 
         title={story?.title || ""}
         backTo="/stories"
+        onBack={shouldBlockNavigation ? () => setShowLeaveDialog(true) : undefined}
         rightContent={
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Mode toggle: switch to immersive (admin only) */}
@@ -2886,6 +2916,24 @@ const ReadingPage = () => {
         language={kidAppLanguage}
         open={showWordPanel}
         onClose={() => setShowWordPanel(false)}
+      />
+
+      {/* Navigation guard dialog (blocker) */}
+      <LeaveReadingDialog
+        open={blocker.state === 'blocked' || showLeaveDialog}
+        language={kidAppLanguage}
+        onStay={() => {
+          if (blocker.state === 'blocked') blocker.reset?.();
+          setShowLeaveDialog(false);
+        }}
+        onLeave={() => {
+          if (blocker.state === 'blocked') {
+            blocker.proceed?.();
+          } else {
+            setShowLeaveDialog(false);
+            navigate('/stories');
+          }
+        }}
       />
     </div>
   );
