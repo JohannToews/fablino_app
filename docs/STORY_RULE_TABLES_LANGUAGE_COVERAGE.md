@@ -10,13 +10,13 @@
 
 | Table             | Distinct languages in migrations | Row count (inferred) | Notes |
 |------------------|----------------------------------|----------------------|--------|
-| **age_rules**    | 11                               | 4 age bands × 11     | de, fr, en + hu, pt, tr, bg, lt, ca, pl, sk. **No es, it, bs, nl.** |
-| **theme_rules**  | 11                               | 6 themes × 11        | Same 11. **No es, it, bs, nl.** |
-| **emotion_rules**| 11                               | 6 emotions × 11     | Same 11. **No es, it, bs, nl.** |
-| **difficulty_rules** | 11 (if base seed exists)      | 3 levels × 11        | Base de/en/fr seeded elsewhere; 20260217 copies EN to 8. **No es, it, bs, nl.** |
+| **age_rules**    | 16                               | 4 age bands × 16     | de, fr, en, hu, pt, tr, bg, lt, ca, pl, sk + **es, it, nl, bs, sl** (20260228). |
+| **theme_rules**  | 16                               | 6 themes × 16        | Same 16. **es, it, nl, bs, sl** in 20260228. |
+| **emotion_rules**| 11                               | 6 emotions × 11     | No es, it, bs, nl, sl. |
+| **difficulty_rules** | 16 (if base seed exists)     | 3 levels × 16        | 11 + **es, it, nl, bs, sl** (20260228). |
 
 **Conclusion:** The data model doc saying “only DE/FR/EN” is **outdated**. Migrations define **11 languages**: **de, fr, en, hu, pt, tr, bg, lt, ca, pl, sk**.  
-**Spanish (es), Italian (it), Bosnian (bs), Dutch (nl)** have **no rows** in any of these four tables in the migrations.
+After **20260228_language_rules_es_it_nl_bs_sl.sql**, **age_rules**, **theme_rules**, and **difficulty_rules** cover **16 languages** (including es, it, nl, bs, sl) with language-specific rules. **emotion_rules** still has only 11 languages.
 
 ---
 
@@ -28,16 +28,19 @@
 - **Adjusted:** `20260207_block2_2b_difficulty_rules_and_age_adjustments.sql` — 4–5 removed; 10–12 → 10–11; 12–13 added. So **4 bands**: 6–7, 8–9, 10–11, 12–13.
 - **Expanded:** `20260217_language_expansion_beta.sql` — copies all **EN** rows to: **hu, pt, tr, bg, lt, ca, pl, sk** (8 languages). ON CONFLICT DO NOTHING.
 
-**Distinct `language` in migrations:** de, fr, en, hu, pt, tr, bg, lt, ca, pl, sk → **11**.  
-**Row count:** 4 × 11 = **44** (if all migrations applied in order).
+**Expanded (es, it, nl, bs, sl):** `20260228_language_rules_es_it_nl_bs_sl.sql` — **language-specific** rows for **es, it, nl, bs, sl** (not copied from EN): pro-drop guidance for es/it/bs/sl, V2/SOV and subject pronouns for nl, compound-word caution for sl, ser/estar and ¿¡ for es, passato prossimo/imperfetto for it, aspect for bs, dual for sl. ON CONFLICT DO NOTHING. Complexity fields (max_characters, max_plot_twists, plot_complexity) set per band.
+
+**Distinct `language` in migrations:** de, fr, en, hu, pt, tr, bg, lt, ca, pl, sk, **es, it, nl, bs, sl** → **16**.  
+**Row count:** 4 × 16 = **64** (if all migrations applied in order).
 
 ### 2.2 theme_rules
 
 - **Created:** `20260207_block2_2_rule_tables.sql` — 6 themes × **fr, de, en** (fantasy, action, animals, everyday, humor, educational).
 - **Expanded:** `20260217_language_expansion_beta.sql` — copies all **EN** theme_rules to the same 8 languages.
+- **Expanded (es, it, nl, bs, sl):** `20260228_language_rules_es_it_nl_bs_sl.sql` — 6 themes × 5 languages, content in target language. ON CONFLICT DO NOTHING.
 
-**Distinct `language`:** same **11**.  
-**Row count:** 6 × 11 = **66**.
+**Distinct `language`:** **16**.  
+**Row count:** 6 × 16 = **96**.
 
 ### 2.3 emotion_rules
 
@@ -54,8 +57,10 @@
 - **Expanded:** `20260217_language_expansion_beta.sql` — `INSERT ... SELECT ... FROM difficulty_rules dr WHERE dr.language = 'en'` into 8 new languages. So **EN** rows must already exist.
 - **Translations:** `20260223_translations_difficulty_rules.sql` — **UPDATE** only (adds tr, bg, ro, pl, lt, hu, ca, sl to `label` / `description`). Comment says “9 rows: 1,2,3 × de, en, fr”.
 
-**Inferred:** Some seed (not found in the migrations searched) must insert difficulty_rules for **de, en, fr** (3 levels × 3 = 9 rows). Then 20260217 adds 3 × 8 = 24 rows → **33** total for **11** languages.  
-**Distinct `language`:** **11** (de, fr, en, hu, pt, tr, bg, lt, ca, pl, sk). **No es, it, bs, nl.**
+**Expanded (es, it, nl, bs, sl):** `20260228_language_rules_es_it_nl_bs_sl.sql` — 3 levels × 5 languages with language-specific label/description (jsonb), vocabulary_scope, figurative_language, idiom_usage, repetition_strategy, humor_types, example_vocabulary. ON CONFLICT DO NOTHING.
+
+**Inferred:** Base seed inserts difficulty_rules for **de, en, fr**. Then 20260217 adds 8 languages; 20260228 adds **es, it, nl, bs, sl** → **16** languages.  
+**Distinct `language`:** **16**. **Row count:** 3 × 16 = **48**.
 
 ---
 
@@ -109,15 +114,15 @@ So for a given `story_language`:
 
 ## 4. B-05 (Spanish pronoun repetition) — missing rules vs prompt wording
 
-- **Spanish (es)** has **no** rows in `age_rules`, `theme_rules`, `emotion_rules`, or `difficulty_rules` in the migrations.
+- **Spanish (es)** now **has** rows in `age_rules`, `theme_rules`, and `difficulty_rules` (migration 20260228); **no** rows in `emotion_rules`.
 - For `story_language = 'es'` the code therefore:
   - Uses **English** age_rules, difficulty_rules, theme_rules (after fallback).
   - Injects **English** wording (sentence structures, tenses, narrative guidelines, vocabulary scope, **repetition_strategy**, etc.) into the prompt, while the model is asked to write the **story** in Spanish.
 
 So:
 
-1. **Missing-rules:** Yes. There are **no Spanish rule rows**. Adding `es` (and optionally it, bs, nl) to these tables would allow Spanish-specific instructions (e.g. “In Spanish, avoid redundant subject pronouns; prefer null subjects where natural”) to be included in the prompt.
-2. **Prompt-wording:** Even with only EN fallback, the **repetition_strategy** and **narrative_guidelines** are in English and not tailored to Spanish. So B-05 is **both** a missing-rules issue (no es in DB) **and** a prompt-wording issue (no Spanish-specific repetition/pronoun guidance when falling back).
+1. **Missing-rules:** Addressed by **20260228_language_rules_es_it_nl_bs_sl.sql**: `es` (and it, nl, bs, sl) now have rows in `age_rules`, `theme_rules`, and `difficulty_rules` with language-specific instructions (e.g. Spanish: pro-drop, no redundant subject pronouns, ¿¡, ser/estar).
+2. **Prompt-wording:** With the new rules, the prompt receives Spanish **narrative_guidelines**, **repetition_strategy**, and vocabulary/idiom guidance in Spanish, so B-05 is largely addressed for story generation.
 
 ---
 
