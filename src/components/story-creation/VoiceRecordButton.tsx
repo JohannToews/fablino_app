@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Mic, Square, RotateCcw, Check, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FABLINO_COLORS } from '@/constants/design-tokens';
@@ -245,82 +246,86 @@ const VoiceRecordButton = ({ language, onTranscript, className = '' }: VoiceReco
           <div className="w-11 h-11" />
         </div>
 
-        {/* Modal overlay */}
-        <AnimatePresence>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={handleDismiss}
-            />
-
-            {/* Modal card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="relative w-full max-w-[400px] bg-white rounded-2xl shadow-2xl p-6 z-10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button */}
-              <button
-                type="button"
+        {/* Modal overlay — rendered via portal so no parent can clip it */}
+        {createPortal(
+          <AnimatePresence>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                 onClick={handleDismiss}
-                className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5 text-gray-400" />
-              </button>
-
-              {/* Header with mascot */}
-              <div className="flex items-center gap-3 mb-4">
-                <FablinoMascot src="/mascot/1_happy_success.png" size="sm" />
-                <p className="text-base font-bold" style={{ color: FABLINO_COLORS.text }}>
-                  {labels.modalHeader}
-                </p>
-              </div>
-
-              {/* Editable text */}
-              <Textarea
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                className="w-full min-h-[80px] max-h-[200px] text-lg leading-relaxed rounded-xl border-2 border-amber-200 focus:border-amber-400 resize-none"
-                autoFocus
               />
 
-              {/* Actions */}
-              <div className="mt-5 space-y-2">
-                {/* Primary: Accept */}
+              {/* Modal card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="relative z-10 bg-white rounded-2xl shadow-2xl p-6"
+                style={{ width: '90vw', maxWidth: '400px' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
                 <button
                   type="button"
-                  onClick={handleConfirm}
-                  disabled={!editedText.trim()}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-base font-bold text-white transition-all duration-150 hover:scale-[1.02] active:scale-95 shadow-lg disabled:opacity-40 disabled:pointer-events-none"
-                  style={{ backgroundColor: FABLINO_COLORS.primary }}
+                  onClick={handleDismiss}
+                  className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Close"
                 >
-                  <Check className="h-5 w-5" />
-                  {labels.confirm}
+                  <X className="h-5 w-5 text-gray-400" />
                 </button>
 
-                {/* Secondary: Try again */}
-                <button
-                  type="button"
-                  onClick={handleRetry}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:bg-gray-100 active:scale-95"
-                  style={{ color: FABLINO_COLORS.textMuted }}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  {labels.retry}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </AnimatePresence>
+                {/* Header with mascot */}
+                <div className="flex items-center gap-3 mb-4">
+                  <FablinoMascot src="/mascot/1_happy_success.png" size="sm" />
+                  <p className="text-base font-bold" style={{ color: FABLINO_COLORS.text }}>
+                    {labels.modalHeader}
+                  </p>
+                </div>
+
+                {/* Editable text */}
+                <Textarea
+                  value={editedText}
+                  onChange={(e) => setEditedText(e.target.value)}
+                  className="w-full text-lg leading-relaxed rounded-xl border-2 border-amber-200 focus:border-amber-400 resize-none"
+                  style={{ minHeight: '100px', maxHeight: '200px' }}
+                  autoFocus
+                />
+
+                {/* Actions — always visible */}
+                <div className="mt-5 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={!editedText.trim()}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl text-base font-bold text-white transition-all duration-150 hover:scale-[1.02] active:scale-95 shadow-lg disabled:opacity-40 disabled:pointer-events-none"
+                    style={{ backgroundColor: FABLINO_COLORS.primary, minHeight: '48px' }}
+                  >
+                    <Check className="h-5 w-5" />
+                    {labels.confirm}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRetry}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:bg-gray-100 active:scale-95"
+                    style={{ color: FABLINO_COLORS.textMuted }}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {labels.retry}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </AnimatePresence>,
+          document.body
+        )}
       </>
     );
   }
