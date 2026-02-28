@@ -23,7 +23,8 @@ export function buildAppearanceAnchor(
   const parts: string[] = [];
 
   const genderWord = kidGender === "female" ? "girl" : kidGender === "male" ? "boy" : "child";
-  parts.push(`${kidAge}-year-old ${genderWord}`);
+  const genderAdj = kidGender === "female" ? "girlish" : kidGender === "male" ? "boyish" : "";
+  parts.push(genderAdj ? `${kidAge}-year-old ${genderWord} with a ${genderAdj} face` : `${kidAge}-year-old ${genderWord}`);
 
   const skinMap: Record<string, string> = {
     light: "light skin",
@@ -122,6 +123,13 @@ export function buildAppearanceAnchor(
 
   if (appearance.glasses) {
     parts.push("wearing glasses");
+  }
+
+  // Gender-appropriate clothing hint for visual reinforcement
+  if (kidGender === "male") {
+    parts.push("wearing a casual t-shirt");
+  } else if (kidGender === "female") {
+    parts.push("wearing a colorful top");
   }
 
   return parts.join(", ");

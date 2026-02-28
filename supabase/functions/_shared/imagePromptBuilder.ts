@@ -259,9 +259,10 @@ export function buildImagePrompts(
     // Phase 3: Series prefix first (if available)
     seriesPrefix,
     'Children book cover illustration.',
-    `Characters: ${imagePlan.character_anchor}`,
-    `Setting: ${imagePlan.world_anchor}`,
-    'The character(s) in a calm, inviting pose in their environment. Atmospheric and welcoming.',
+      `Characters: ${imagePlan.character_anchor}`,
+      `IMPORTANT: The child must be clearly recognizable as the described gender regardless of hair length or hairstyle. Maintain gender-typical facial features, body shape, and overall appearance.`,
+      `Setting: ${imagePlan.world_anchor}`,
+      'The character(s) in a calm, inviting pose in their environment. Atmospheric and welcoming.',
     // Phase 3: Series cover hint
     seriesContext
       ? `This is the Episode ${seriesContext.episodeNumber} cover of a 5-episode series. Maintain exact same visual style as all other episode covers.`
@@ -283,6 +284,7 @@ export function buildImagePrompts(
       seriesPrefix,
       'Children\'s illustration, full-bleed interior scene. Single image filling the entire square frame, no borders or book frame.',
       `Characters: ${imagePlan.character_anchor}`,
+      `IMPORTANT: The child must be clearly recognizable as the described gender regardless of hair length or hairstyle. Maintain gender-typical facial features, body shape, and overall appearance.`,
       `Setting: ${imagePlan.world_anchor}`,
       `Scene: ${scene.description}`,
       `Emotional expression: ${scene.emotion}`,

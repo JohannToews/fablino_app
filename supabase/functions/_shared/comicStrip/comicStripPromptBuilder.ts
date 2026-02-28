@@ -279,6 +279,7 @@ Panel layout (reading order: left-to-right, top-to-bottom):
 ${panelDescriptions}
 
 Character reference (same character(s) in all 4 panels): ${characterAnchor}
+IMPORTANT: The child must be clearly recognizable as the described gender regardless of hair length or hairstyle. Maintain gender-typical facial features, body shape, and overall appearance.
 No text, signs, numbers, or readable writing in any panel.
 ${suffix}`;
 }
@@ -380,6 +381,7 @@ export function buildComicStripImagePrompts(
       // Character anchor ONCE at the end — not per panel
       characterAnchor ? `Character reference (same character(s) in all 4 panels): ${characterAnchor}` : '',
       'IMPORTANT: Same character(s) must look identical in all panels. Vary the camera angle and framing as specified per panel.',
+      'IMPORTANT: The child must be clearly recognizable as the described gender regardless of hair length or hairstyle. Maintain gender-typical facial features, body shape, and overall appearance.',
       NO_TEXT_RULE,
     ].filter(Boolean).join('\n');
   };
