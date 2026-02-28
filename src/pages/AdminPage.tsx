@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { PLANS, type PlanKey } from "@/config/plans";
 import BackButton from "@/components/BackButton";
 import { getThumbnailUrl } from "@/lib/imageUtils";
+import StoryImage from "@/components/StoryImage";
 import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import PointsConfigSection from "@/components/PointsConfigSection";
 import LevelConfigSection from "@/components/LevelConfigSection";
@@ -451,18 +452,14 @@ const AdminPage = () => {
                           className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border/50 shadow-sm"
                         >
                           {/* Cover */}
-                          {story.cover_image_url ? (
-                            <img
-                              src={getThumbnailUrl(story.cover_image_url, 112, 50)}
-                              alt={story.title}
-                              loading="lazy"
-                              className="h-16 w-16 object-cover rounded-xl flex-none"
-                            />
-                          ) : (
-                            <div className="h-16 w-16 bg-muted rounded-xl flex items-center justify-center flex-none">
-                              <Image className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
+                          <StoryImage
+                            src={story.cover_image_url}
+                            thumbnailWidth={112}
+                            thumbnailQuality={50}
+                            alt={story.title}
+                            loading="lazy"
+                            className="h-16 w-16 object-cover rounded-xl flex-none"
+                          />
                           {/* Info */}
                           <div className="flex-1 min-w-0 space-y-1.5">
                             <h3 className="font-baloo font-bold text-base truncate">{story.title}</h3>

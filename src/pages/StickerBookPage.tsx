@@ -5,6 +5,7 @@ import { getTranslations } from "@/lib/translations";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Star } from "lucide-react";
 import BackButton from "@/components/BackButton";
+import StoryImage from "@/components/StoryImage";
 import { Progress } from "@/components/ui/progress";
 import FablinoMascot from "@/components/FablinoMascot";
 import SpeechBubble from "@/components/SpeechBubble";
@@ -190,17 +191,13 @@ const StickerBookPage = () => {
                     ${getRotation(index)}
                   `}
                 >
-                  {story.cover_image_url ? (
-                    <img
-                      src={story.cover_image_url}
-                      alt={story.title}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
-                      <span className="text-4xl">📖</span>
-                    </div>
-                  )}
+                  <StoryImage
+                    src={story.cover_image_url}
+                    thumbnailWidth={200}
+                    thumbnailQuality={60}
+                    alt={story.title}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
                   
                   {/* Star badge */}
                   <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-1 shadow-sm">

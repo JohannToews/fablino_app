@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import StoryImage from "@/components/StoryImage";
 interface StoryRating {
   id: string;
   story_id: string | null;
@@ -2341,14 +2342,12 @@ const FeedbackStatsPage = () => {
               </div>
             ) : previewStory ? (
               <div className="space-y-4">
-                {previewStory.cover_image_url && (
-                  <img
-                    src={previewStory.cover_image_url}
-                    alt="Cover"
-                    className="rounded-md mx-auto block"
-                    style={{ maxWidth: 400 }}
-                  />
-                )}
+                <StoryImage
+                  src={previewStory.cover_image_url}
+                  alt="Cover"
+                  className="rounded-md mx-auto block"
+                  style={{ maxWidth: 400 }}
+                />
                 <div className="prose prose-sm max-w-none whitespace-pre-line text-foreground">
                   {previewStory.content}
                 </div>
@@ -2356,7 +2355,7 @@ const FeedbackStatsPage = () => {
                   <div className="space-y-3 pt-4 border-t">
                     <h4 className="text-sm font-medium text-muted-foreground">Bilder</h4>
                     {previewStory.story_images.map((img, i) => (
-                      <img
+                      <StoryImage
                         key={i}
                         src={img}
                         alt={`Scene ${i + 1}`}
