@@ -66,9 +66,19 @@ function SingleSelect({
 }) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.code === value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -123,7 +133,17 @@ function MultiSelect({
   excludeCode?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const available = options.filter((o) => o.code !== excludeCode);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   const toggle = (code: string) => {
     if (values.includes(code)) {
@@ -139,7 +159,7 @@ function MultiSelect({
     .join(", ");
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -204,8 +224,12 @@ const OnboardingKindPage = () => {
   const [selectedStoryLang, setSelectedStoryLang] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [genderOpen, setGenderOpen] = useState(false);
+  const [ageOpen, setAgeOpen] = useState(false);
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef(false);
+  const genderRef = useRef<HTMLDivElement>(null);
+  const ageRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -216,6 +240,26 @@ const OnboardingKindPage = () => {
     { value: "girl", label: t.onboardingGenderGirl, emoji: "👧" },
     { value: "boy", label: t.onboardingGenderBoy, emoji: "👦" },
   ];
+
+  // Click-outside for gender dropdown
+  useEffect(() => {
+    if (!genderOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (genderRef.current && !genderRef.current.contains(e.target as Node)) setGenderOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [genderOpen]);
+
+  // Click-outside for age dropdown
+  useEffect(() => {
+    if (!ageOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (ageRef.current && !ageRef.current.contains(e.target as Node)) setAgeOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [ageOpen]);
 
   // Guard: not logged in → /welcome
   useEffect(() => {
@@ -488,13 +532,10 @@ const OnboardingKindPage = () => {
             {/* Geschlecht – dropdown */}
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingGender}</Label>
-              <div className="relative">
+              <div className="relative" ref={genderRef}>
                 <button
                   type="button"
-                  onClick={() => {
-                    const el = document.getElementById('gender-dropdown');
-                    if (el) el.classList.toggle('hidden');
-                  }}
+                  onClick={() => setGenderOpen(!genderOpen)}
                   className="w-full flex items-center justify-between h-12 rounded-xl border-2 px-4 text-sm bg-white"
                   style={{
                     borderColor: gender ? "#E8863A" : "rgba(232,134,58,0.3)",
@@ -508,28 +549,29 @@ const OnboardingKindPage = () => {
                   </span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </button>
-                <div
-                  id="gender-dropdown"
-                  className="hidden absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
-                  style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
-                >
-                  {GENDERS_TRANSLATED.map((g) => (
-                    <button
-                      key={g.value}
-                      type="button"
-                      onClick={() => {
-                        setGender(g.value);
-                        document.getElementById('gender-dropdown')?.classList.add('hidden');
-                      }}
-                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
-                      style={{ color: "rgba(45,24,16,0.85)" }}
-                    >
-                      <span className="text-lg">{g.emoji}</span>
-                      <span>{g.label}</span>
-                      {g.value === gender && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
-                    </button>
-                  ))}
-                </div>
+                {genderOpen && (
+                  <div
+                    className="absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
+                    style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
+                  >
+                    {GENDERS_TRANSLATED.map((g) => (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() => {
+                          setGender(g.value);
+                          setGenderOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
+                        style={{ color: "rgba(45,24,16,0.85)" }}
+                      >
+                        <span className="text-lg">{g.emoji}</span>
+                        <span>{g.label}</span>
+                        {g.value === gender && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -537,13 +579,10 @@ const OnboardingKindPage = () => {
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold">{t.onboardingAge}</Label>
               <p className="text-xs invisible" aria-hidden="true">&nbsp;</p>
-              <div className="relative">
+              <div className="relative" ref={ageRef}>
                 <button
                   type="button"
-                  onClick={() => {
-                    const el = document.getElementById('age-dropdown');
-                    if (el) el.classList.toggle('hidden');
-                  }}
+                  onClick={() => setAgeOpen(!ageOpen)}
                   className="w-full flex items-center justify-between h-12 rounded-xl border-2 px-4 text-sm bg-white"
                   style={{
                     borderColor: selectedAge ? "#E8863A" : "rgba(232,134,58,0.3)",
@@ -553,27 +592,28 @@ const OnboardingKindPage = () => {
                   <span>{selectedAge ? `${selectedAge} ${t.years}` : t.onboardingAge}</span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </button>
-                <div
-                  id="age-dropdown"
-                  className="hidden absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
-                  style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
-                >
-                  {AGES.map((age) => (
-                    <button
-                      key={age}
-                      type="button"
-                      onClick={() => {
-                        setSelectedAge(age);
-                        document.getElementById('age-dropdown')?.classList.add('hidden');
-                      }}
-                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
-                      style={{ color: "rgba(45,24,16,0.85)" }}
-                    >
-                      <span className="font-medium">{age} {t.years}</span>
-                      {age === selectedAge && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
-                    </button>
-                  ))}
-                </div>
+                {ageOpen && (
+                  <div
+                    className="absolute z-50 w-full mt-1 bg-white rounded-xl border shadow-lg overflow-y-auto"
+                    style={{ borderColor: "rgba(232,134,58,0.25)", maxHeight: "220px" }}
+                  >
+                    {AGES.map((age) => (
+                      <button
+                        key={age}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAge(age);
+                          setAgeOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left hover:bg-orange-50 transition-colors"
+                        style={{ color: "rgba(45,24,16,0.85)" }}
+                      >
+                        <span className="font-medium">{age} {t.years}</span>
+                        {age === selectedAge && <Check className="h-4 w-4 ml-auto" style={{ color: "#E8863A" }} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
