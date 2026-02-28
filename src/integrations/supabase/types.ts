@@ -935,6 +935,7 @@ export type Database = {
       kid_appearance: {
         Row: {
           created_at: string | null
+          eye_color: string
           glasses: boolean
           hair_color: string
           hair_length: string
@@ -947,6 +948,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          eye_color?: string
           glasses?: boolean
           hair_color?: string
           hair_length?: string
@@ -959,6 +961,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          eye_color?: string
           glasses?: boolean
           hair_color?: string
           hair_length?: string

@@ -1,0 +1,1 @@
+ALTER TABLE kid_appearance ADD COLUMN IF NOT EXISTS eye_color TEXT NOT NULL DEFAULT 'brown';

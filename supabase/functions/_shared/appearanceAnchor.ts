@@ -13,6 +13,7 @@ export function buildAppearanceAnchor(
     hair_style: string;
     hair_color: string;
     glasses: boolean;
+    eye_color?: string;
   } | null
 ): string {
   if (!appearance) {
@@ -32,7 +33,19 @@ export function buildAppearanceAnchor(
     dark: "dark skin",
   };
   if (appearance.skin_tone && skinMap[appearance.skin_tone]) {
-    parts.push(`with ${skinMap[appearance.skin_tone]}`);
+    parts.push(`${skinMap[appearance.skin_tone]}`);
+  }
+
+  // Eye color
+  const eyeMap: Record<string, string> = {
+    brown: "brown eyes",
+    dark_brown: "dark brown eyes",
+    green: "green eyes",
+    blue: "blue eyes",
+    gray: "gray eyes",
+  };
+  if (appearance.eye_color && eyeMap[appearance.eye_color]) {
+    parts.push(eyeMap[appearance.eye_color]);
   }
 
   const lengthMap: Record<string, string> = {
@@ -45,7 +58,8 @@ export function buildAppearanceAnchor(
     straight: "straight",
     wavy: "wavy",
     curly: "curly",
-    coily: "coily",
+    tight_curly: "tight curly",
+    coily: "afro-textured",
   };
   const colorMap: Record<string, string> = {
     black: "black",
@@ -58,24 +72,53 @@ export function buildAppearanceAnchor(
     auburn: "auburn",
     ginger: "ginger",
   };
-  const styleMap: Record<string, string> = {
-    loose: "",
-    ponytail: "in a ponytail",
-    braids: "in braids",
-    pigtails: "in pigtails",
-    bun: "in a bun",
-    bangs: "with bangs",
-  };
 
   const hairLength = lengthMap[appearance.hair_length] || "";
   const hairType = typeMap[appearance.hair_type] || "";
   const hairColor = colorMap[appearance.hair_color] || "";
-  const hairStyle = styleMap[appearance.hair_style] || "";
 
-  const hairParts = [hairLength, hairType, hairColor, "hair"].filter(Boolean);
-  let hairDesc = hairParts.join(" ");
-  if (hairStyle) hairDesc += ` ${hairStyle}`;
-  parts.push(hairDesc);
+  // Build hair description using style anchor templates
+  // Import style mapping for anchor generation
+  const styleAnchors: Record<string, string> = {
+    // Girl styles
+    loose: `loose ${hairType}`,
+    braid: `braided ${hairType}`,
+    ponytail: `${hairType} in a ponytail`,
+    bob: `bob cut with ${hairType}`,
+    half_up: `half-up ${hairType}`,
+    two_braids: `${hairType} in two braids`,
+    updo: `${hairType} in an updo`,
+    short_afro: "short afro",
+    afro: "afro hairstyle",
+    afro_puffs: "afro puffs",
+    braids: "braided hair",
+    // Boy styles
+    short: `short ${hairType}`,
+    side_part: `side-parted ${hairType}`,
+    undercut: `undercut with ${hairType} on top`,
+    buzz_cut: "buzz cut",
+    medium_length: `medium-length ${hairType}`,
+    surfer: "medium-length tousled wavy hair",
+    curls_loose: "loose curly hair",
+    twist_out: "twist-out curly hair",
+    tapered: "tapered curly hair",
+  };
+
+  const stylePhrase = styleAnchors[appearance.hair_style];
+
+  if (stylePhrase) {
+    // For styles that already describe length (like buzz cut, short afro), skip length prefix
+    const skipLength = ["short_afro", "afro", "afro_puffs", "braids", "buzz_cut", "surfer", "curls_loose", "twist_out", "tapered"].includes(appearance.hair_style);
+    if (skipLength) {
+      parts.push(`${hairColor} hair, ${stylePhrase}`);
+    } else {
+      parts.push(`${hairLength} ${hairColor} hair, ${stylePhrase}`);
+    }
+  } else {
+    // Fallback: just describe hair without style
+    const hairParts = [hairLength, hairType, hairColor, "hair"].filter(Boolean);
+    parts.push(hairParts.join(" "));
+  }
 
   if (appearance.glasses) {
     parts.push("wearing glasses");
