@@ -124,9 +124,17 @@ Respond ONLY as JSON with translations in ALL of these languages: de, fr, en, es
 
     console.log('[prepare-custom-theme] Parsed keys:', Object.keys(parsed));
 
-    // Handle nested structure: Gemini sometimes wraps in an extra object
+    // Normalize different Gemini response shapes
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      parsed = parsed[0];
+    }
+
     if (parsed.theme && typeof parsed.theme === 'object') {
       parsed = parsed.theme;
+    }
+
+    if (parsed.data && typeof parsed.data === 'object') {
+      parsed = parsed.data;
     }
 
     if (!parsed.name || !parsed.description || !parsed.category || !parsed.story_guidance) {
