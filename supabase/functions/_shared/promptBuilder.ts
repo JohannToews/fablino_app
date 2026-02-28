@@ -25,7 +25,7 @@ export interface StoryRequest {
       age?: number;
       relation?: string;
       description?: string;
-      role?: string;  // 'family' | 'friend' | 'known_figure'
+      role?: string;  // 'family' | 'friend' | 'known_figure' | 'villain' | 'antagonist'
     }>;
   };
   special_abilities: string[];
@@ -282,6 +282,32 @@ const SPECIAL_ABILITIES_DESC: Record<string, Record<string, string>> = {
 
 type CharacterEntry = { name: string; age?: number; relation?: string; description?: string; role?: string };
 
+/** True if the story request implies a villain/antagonist (special effect heroes_villains or a character marked as villain/antagonist). */
+function hasAntagonistRequest(request: StoryRequest): boolean {
+  if (request.special_abilities?.includes('heroes_villains')) return true;
+  const chars = request.protagonists?.characters ?? [];
+  const villainLike = /villain|antagonist|bad guy|böse|schurke|vilain|antagonista|negativc|enemy|feind/i;
+  return chars.some(
+    (c) =>
+      c.role === 'villain' ||
+      c.role === 'antagonist' ||
+      villainLike.test(c.role ?? '') ||
+      villainLike.test(c.description ?? '') ||
+      villainLike.test(c.name ?? '')
+  );
+}
+
+const ANTAGONIST_GUIDELINES = `## ANTAGONIST GUIDELINES
+- If the user has included a villain or antagonist character (or requested heroes & villains), that character MUST act as a genuine obstacle to the protagonist.
+- The villain must have clear opposing goals and take concrete actions against the protagonist.
+- The villain should feel like a real challenge — not immediately friendly, not secretly nice, not a simple misunderstanding.
+- Tension and conflict must be present in at least the first two-thirds of the story.
+- A redemption arc or change of heart MAY happen near the end, but ONLY after the villain has been a credible threat.
+- The villain's actions should be age-appropriate but genuinely create stakes (blocking the hero's path, taking something important, outsmarting the hero temporarily).
+- Do NOT sanitize the villain into a "misunderstood friend" — kids want real heroes, and heroes need real villains.
+- Examples of good age-appropriate villain behavior: tricking, blocking, competing unfairly, being selfish, hoarding, excluding, breaking promises.
+- Content safety (guardrails) means age-appropriate conflict, not no conflict. Antagonists may remain credible threats within the allowed themes.`;
+
 function fmtChar(c: { name: string; age?: number }): string {
   return c.age ? `${c.name}, ${c.age}` : c.name;
 }
@@ -383,6 +409,8 @@ function buildCharactersSection(
         entry += ` — ${friendOfLabel(lang)} ${kidName}`;
       } else if (char.role === 'known_figure') {
         entry += ` — ${knownFigureLabel(lang)}`;
+      } else if (char.role === 'villain' || char.role === 'antagonist') {
+        entry += ' — villain/antagonist (MUST act as a real obstacle to the protagonist)';
       }
       lines.push(entry);
     }
@@ -394,6 +422,7 @@ function buildCharactersSection(
     const family = chars.filter(c => c.role === 'family');
     const friends = chars.filter(c => c.role === 'friend');
     const known = chars.filter(c => c.role === 'known_figure');
+    const villains = chars.filter(c => c.role === 'villain' || c.role === 'antagonist');
     // Characters without a role get listed individually
     const unclassified = chars.filter(c => !c.role);
 
@@ -439,6 +468,11 @@ function buildCharactersSection(
     // -- Known figures --
     for (const c of known) {
       lines.push(`${c.name} — ${knownFigureLabel(lang)}`);
+    }
+
+    // -- Villains / antagonists (must act as real obstacles) --
+    for (const c of villains) {
+      lines.push(`${fmtChar(c)} — villain/antagonist (MUST act as a real obstacle to the protagonist)`);
     }
 
     // -- Unclassified --
@@ -1773,6 +1807,11 @@ export async function buildStoryPrompt(
         sections.push(`${charactersSection}\n${enrichmentHint[lang] || enrichmentHint.en}`);
       }
     }
+  }
+
+  // ANTAGONIST GUIDELINES — when user requested villain/heroes_villains or included an antagonist character
+  if (hasAntagonistRequest(request)) {
+    sections.push(ANTAGONIST_GUIDELINES);
   }
 
   // STORYTELLING RULES (age-dependent complexity constraints)
