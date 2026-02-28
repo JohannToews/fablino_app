@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTranslations, Language } from "@/lib/translations";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { usePremiumUi } from "@/hooks/usePremiumUi";
+import { getDbLabel } from "@/lib/getDbLabel";
 import { invokeEdgeFunction } from "@/lib/edgeFunctionHelper";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -324,7 +325,7 @@ const ParentSettingsPanel = ({ language }: ParentSettingsPanelProps) => {
   };
 
   const getLabel = (labels: Record<string, string>): string => {
-    return labels[displayLang] || labels.de || labels.en || Object.values(labels)[0] || '';
+    return getDbLabel(labels, displayLang);
   };
 
   const frequencyLabels = [t.frequencyOccasional, t.frequencyRegular, t.frequencyFrequent];

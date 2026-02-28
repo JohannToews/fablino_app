@@ -99,6 +99,16 @@ const VOICE_LABELS: Record<string, {
     failed: 'Что-то пошло не так. Попробуй ещё раз!',
     modalHeader: 'Вот что я понял:',
   },
+  bs: {
+    speak: 'Govori svoju želju',
+    listening: 'Slušam...',
+    retry: 'Pokušaj ponovo',
+    confirm: 'Prihvati',
+    mic_denied: 'Mikrofon nije dozvoljen',
+    empty: 'Nisam ništa čuo/čula. Pokušaj ponovo.',
+    failed: 'Greška. Pokušaj ponovo.',
+    modalHeader: 'Evo šta sam razumio/razumjela:',
+  },
 };
 
 const getLabels = (lang: string) => VOICE_LABELS[lang] || VOICE_LABELS.de;
