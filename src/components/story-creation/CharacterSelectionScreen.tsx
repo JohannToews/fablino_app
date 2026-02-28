@@ -454,7 +454,11 @@ const CharacterSelectionScreen = ({
         ageLabel={translations.characterAge}
         saveLabel={translations.save}
         cancelLabel={translations.cancel}
+        deleteConfirmLabel={`${t.delete}?`}
+        deleteConfirmYes={t.delete}
+        deleteConfirmNo={t.cancel}
         onCharacterAdded={() => setCharLoadKey(k => k + 1)}
+        onCharacterDeleted={() => setCharLoadKey(k => k + 1)}
       />
 
       {/* Name Input Modal (for me, friends, famous) */}
