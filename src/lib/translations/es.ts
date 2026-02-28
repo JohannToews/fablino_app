@@ -496,6 +496,7 @@ const es: Translations = {
   appearanceGlassesYes: 'Con gafas',
   appearanceGlassesNo: 'Sin gafas',
   appearanceSaved: '¡Guardado! ✨',
+  appearanceSave: 'Guardar',
   appearanceSkinLight: 'Claro',
   appearanceSkinMediumLight: 'Claro-medio',
   appearanceSkinMedium: 'Medio',

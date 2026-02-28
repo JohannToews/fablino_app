@@ -296,7 +296,7 @@ export default function MyLookPage() {
                 }`}
                 whileTap={hasChanges ? { scale: 0.97 } : {}}
               >
-                {saving ? "..." : "💾 Speichern"}
+                {saving ? "..." : `💾 ${t.appearanceSave}`}
               </motion.button>
             </div>
           </>

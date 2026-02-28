@@ -496,6 +496,7 @@ const bs: Translations = {
   appearanceGlassesYes: 'Sa naočalama',
   appearanceGlassesNo: 'Bez naočala',
   appearanceSaved: 'Sačuvano! ✨',
+  appearanceSave: 'Sačuvaj',
   appearanceSkinLight: 'Svijetla',
   appearanceSkinMediumLight: 'Svijetlo-srednja',
   appearanceSkinMedium: 'Srednja',

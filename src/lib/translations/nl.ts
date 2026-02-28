@@ -496,6 +496,7 @@ const nl: Translations = {
   appearanceGlassesYes: 'Met bril',
   appearanceGlassesNo: 'Zonder bril',
   appearanceSaved: 'Opgeslagen! ✨',
+  appearanceSave: 'Opslaan',
   appearanceSkinLight: 'Licht',
   appearanceSkinMediumLight: 'Licht-medium',
   appearanceSkinMedium: 'Middel',

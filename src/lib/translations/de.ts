@@ -501,6 +501,7 @@ const de: Translations = {
   appearanceGlassesYes: 'Mit Brille',
   appearanceGlassesNo: 'Ohne Brille',
   appearanceSaved: 'Gespeichert! ✨',
+  appearanceSave: 'Speichern',
   appearanceSkinLight: 'Hell',
   appearanceSkinMediumLight: 'Hell-medium',
   appearanceSkinMedium: 'Mittel',

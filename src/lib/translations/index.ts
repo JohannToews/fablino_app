@@ -576,6 +576,7 @@ export interface Translations {
   appearanceGlassesYes: string;
   appearanceGlassesNo: string;
   appearanceSaved: string;
+  appearanceSave: string;
   appearanceSkinLight: string;
   appearanceSkinMediumLight: string;
   appearanceSkinMedium: string;
