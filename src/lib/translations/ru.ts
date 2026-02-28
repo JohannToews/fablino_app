@@ -516,6 +516,10 @@ const ru: Translations = {
   appearanceStylePigtails: 'Хвостики',
   appearanceStyleBun: 'Пучок',
   appearanceStyleBangs: 'Чёлка',
+  deleteProfileTitle: 'Удалить профиль?',
+  deleteProfileMessage: 'Удаление профиля {name} также удалит все {count} историй. Это действие нельзя отменить.',
+  deleteProfileButton: 'Удалить профиль',
+  siblingBadge: 'Профиль',
 };
 
 export default ru;

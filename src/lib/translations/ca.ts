@@ -516,6 +516,10 @@ const ca: Translations = {
   appearanceStylePigtails: 'Cuetes',
   appearanceStyleBun: 'Monyo',
   appearanceStyleBangs: 'Serrell',
+  deleteProfileTitle: 'Eliminar el perfil?',
+  deleteProfileMessage: 'Eliminar el perfil de {name} també eliminarà les {count} històries. Aquesta acció no es pot desfer.',
+  deleteProfileButton: 'Eliminar perfil',
+  siblingBadge: 'Perfil',
 };
 
 export default ca;

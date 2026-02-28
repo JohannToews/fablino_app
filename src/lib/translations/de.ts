@@ -521,6 +521,10 @@ const de: Translations = {
   appearanceStylePigtails: 'Zöpfchen',
   appearanceStyleBun: 'Dutt',
   appearanceStyleBangs: 'Pony',
+  deleteProfileTitle: 'Profil löschen?',
+  deleteProfileMessage: 'Wenn du {name}s Profil löschst, werden auch alle {count} Geschichten von {name} gelöscht. Das kann nicht rückgängig gemacht werden.',
+  deleteProfileButton: 'Profil löschen',
+  siblingBadge: 'Profil',
 };
 
 export default de;

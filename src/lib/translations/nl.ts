@@ -516,6 +516,10 @@ const nl: Translations = {
   appearanceStylePigtails: 'Staartjes',
   appearanceStyleBun: 'Knot',
   appearanceStyleBangs: 'Pony',
+  deleteProfileTitle: 'Profiel verwijderen?',
+  deleteProfileMessage: 'Als je het profiel van {name} verwijdert, worden ook alle {count} verhalen verwijderd. Dit kan niet ongedaan worden gemaakt.',
+  deleteProfileButton: 'Profiel verwijderen',
+  siblingBadge: 'Profiel',
 };
 
 export default nl;

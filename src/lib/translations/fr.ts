@@ -516,6 +516,10 @@ const fr: Translations = {
   appearanceStylePigtails: 'Couettes',
   appearanceStyleBun: 'Chignon',
   appearanceStyleBangs: 'Frange',
+  deleteProfileTitle: 'Supprimer le profil ?',
+  deleteProfileMessage: 'Supprimer le profil de {name} supprimera aussi les {count} histoires. Cette action est irréversible.',
+  deleteProfileButton: 'Supprimer le profil',
+  siblingBadge: 'Profil',
 };
 
 export default fr;

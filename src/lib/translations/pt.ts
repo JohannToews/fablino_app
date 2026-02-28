@@ -516,6 +516,10 @@ const pt: Translations = {
   appearanceStylePigtails: 'Maria-chiquinha',
   appearanceStyleBun: 'Coque',
   appearanceStyleBangs: 'Franja',
+  deleteProfileTitle: 'Eliminar perfil?',
+  deleteProfileMessage: 'Ao eliminar o perfil de {name}, as {count} histórias também serão eliminadas. Esta ação não pode ser desfeita.',
+  deleteProfileButton: 'Eliminar perfil',
+  siblingBadge: 'Perfil',
 };
 
 export default pt;

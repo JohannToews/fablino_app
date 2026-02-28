@@ -359,7 +359,7 @@ const CreateStoryPage = () => {
           user_id: user.id,
           kid_profile_id: selectedProfile?.id,
           generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-          ending_type: isSeries ? 'C' : 'A',
+          ending_type: (isSeries ? 'C' : 'A') as "A" | "B" | "C",
           episode_number: isSeries ? 1 : null,
           story_length: storyLength,
           series_id: null, // Will self-reference after for series
@@ -803,7 +803,7 @@ const CreateStoryPage = () => {
           user_id: user.id,
           kid_profile_id: selectedProfile?.id,
           generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
-          ending_type: isSeries ? 'C' : 'A',
+          ending_type: (isSeries ? 'C' : 'A') as "A" | "B" | "C",
           episode_number: isSeries ? 1 : null,
           story_length: storyLength,
           series_id: null,

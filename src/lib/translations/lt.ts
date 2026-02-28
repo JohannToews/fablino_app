@@ -516,6 +516,10 @@ const lt: Translations = {
   appearanceStylePigtails: 'Uodegėlės',
   appearanceStyleBun: 'Kuodas',
   appearanceStyleBangs: 'Kirpčiai',
+  deleteProfileTitle: 'Ištrinti profilį?',
+  deleteProfileMessage: 'Ištrynus {name} profilį, bus ištrintos ir visos {count} istorijos. Šio veiksmo negalima atšaukti.',
+  deleteProfileButton: 'Ištrinti profilį',
+  siblingBadge: 'Profilis',
 };
 
 export default lt;

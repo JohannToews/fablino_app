@@ -516,6 +516,10 @@ const sk: Translations = {
   appearanceStylePigtails: 'Copíky',
   appearanceStyleBun: 'Drdol',
   appearanceStyleBangs: 'Ofina',
+  deleteProfileTitle: 'Odstrániť profil?',
+  deleteProfileMessage: 'Odstránením profilu {name} sa odstráni aj všetkých {count} príbehov. Túto akciu nie je možné vrátiť späť.',
+  deleteProfileButton: 'Odstrániť profil',
+  siblingBadge: 'Profil',
 };
 
 export default sk;

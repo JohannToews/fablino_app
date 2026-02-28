@@ -516,6 +516,10 @@ const ro: Translations = {
   appearanceStylePigtails: 'Codițe',
   appearanceStyleBun: 'Coc',
   appearanceStyleBangs: 'Breton',
+  deleteProfileTitle: 'Ștergi profilul?',
+  deleteProfileMessage: 'Ștergerea profilului {name} va șterge și toate cele {count} povești. Această acțiune nu poate fi anulată.',
+  deleteProfileButton: 'Șterge profilul',
+  siblingBadge: 'Profil',
 };
 
 export default ro;

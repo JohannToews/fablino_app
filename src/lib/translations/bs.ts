@@ -516,6 +516,10 @@ const bs: Translations = {
   appearanceStylePigtails: 'Repići',
   appearanceStyleBun: 'Punđa',
   appearanceStyleBangs: 'Šiške',
+  deleteProfileTitle: 'Obrisati profil?',
+  deleteProfileMessage: 'Brisanjem profila {name} izbrisat će se i svih {count} priča. Ovo se ne može poništiti.',
+  deleteProfileButton: 'Obriši profil',
+  siblingBadge: 'Profil',
 };
 
 export default bs;

@@ -171,7 +171,7 @@ const StorySelectPage = () => {
       
       // Determine ending type based on episode number (max 5 episodes typically)
       // Episode 5 should be final (ending type A), others are cliffhangers (C)
-      const endingType = nextEpisodeNumber >= 5 ? 'A' : 'C';
+      const endingType = (nextEpisodeNumber >= 5 ? 'A' : 'C') as "A" | "B" | "C";
 
       // B-14: Placeholder story row for incremental status/metrics
       let placeholderStoryIdSelect: string | null = null;

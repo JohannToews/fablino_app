@@ -516,6 +516,10 @@ const sl: Translations = {
   appearanceStylePigtails: 'Čopki',
   appearanceStyleBun: 'Figa',
   appearanceStyleBangs: 'Šiška',
+  deleteProfileTitle: 'Izbrisati profil?',
+  deleteProfileMessage: 'Z brisanjem profila {name} bo izbrisanih tudi vseh {count} zgodb. Tega dejanja ni mogoče razveljaviti.',
+  deleteProfileButton: 'Izbriši profil',
+  siblingBadge: 'Profil',
 };
 
 export default sl;

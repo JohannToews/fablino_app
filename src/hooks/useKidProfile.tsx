@@ -99,6 +99,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       .from("kid_profiles")
       .select("*")
       .eq("user_id", user.id)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: true });
 
     if (data && data.length > 0) {
