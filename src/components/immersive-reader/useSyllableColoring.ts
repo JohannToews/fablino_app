@@ -1,17 +1,12 @@
 import { useMemo } from 'react';
-
-/**
- * Languages where syllable coloring is offered in the UI.
- * Other languages have patterns but quality is insufficient for children.
- */
-const SUPPORTED_LANGUAGES = ['de', 'fr'];
+import { isSyllableSupported } from '@/lib/syllabify';
 
 /**
  * Check if syllable coloring is available for the given language.
+ * Uses syllabify's supported set (de, fr, en, es, nl, it).
  */
 export function isSyllableColoringSupported(language: string): boolean {
-  const key = language.toLowerCase().substring(0, 2);
-  return SUPPORTED_LANGUAGES.includes(key);
+  return isSyllableSupported(language);
 }
 
 /**
@@ -29,13 +24,9 @@ export function useSyllableColoring(language: string, enabled: boolean) {
     [language]
   );
 
-  // Map language codes to hyphenation module keys (BS → DE fallback)
   const hyphenLanguage = useMemo(() => {
     const key = language.toLowerCase().substring(0, 2);
-    if (SUPPORTED_LANGUAGES.includes(key)) return key;
-    // Bosnian fallback to German (closest available with Latin script)
-    if (key === 'bs') return 'de';
-    return 'de';
+    return isSyllableSupported(key) ? key : 'en';
   }, [language]);
 
   const isActive = enabled && isSupported;

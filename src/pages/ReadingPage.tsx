@@ -13,8 +13,8 @@ import QuizCompletionResult from "@/components/QuizCompletionResult";
 import StoryAudioPlayer from "@/components/StoryAudioPlayer";
 import StoryFeedbackDialog from "@/components/StoryFeedbackDialog";
 import ReadingSettings, { FontSizeLevel, LineSpacingLevel, getReadingTextClasses } from "@/components/ReadingSettings";
-import SyllableText, { isSyllableModeSupported, countSyllables } from "@/components/SyllableText";
-import { preloadSyllables, isFrenchReady } from "@/lib/syllabify";
+import SyllableText, { countSyllables } from "@/components/SyllableText";
+import { preloadSyllables, isFrenchReady, isSyllableSupported } from "@/lib/syllabify";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
@@ -2349,7 +2349,7 @@ const ReadingPage = () => {
                 language={textLang}
                 syllableMode={syllableMode}
                 onSyllableModeChange={setSyllableMode}
-                showSyllableOption={isSyllableModeSupported(textLang)}
+                showSyllableOption={isSyllableSupported(textLang)}
               />
             </div>
 

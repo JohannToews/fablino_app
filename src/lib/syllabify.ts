@@ -12,6 +12,14 @@ import dutch from 'hyphenation.nl';
 // @ts-ignore
 import italian from 'hyphenation.it';
 
+/** Languages that have real hyphenation patterns (no fallback). */
+export const SUPPORTED_SYLLABLE_LANGUAGES = new Set<string>(['de', 'fr', 'en', 'es', 'nl', 'it']);
+
+export function isSyllableSupported(lang: string): boolean {
+  const key = lang.toLowerCase().substring(0, 2);
+  return SUPPORTED_SYLLABLE_LANGUAGES.has(key);
+}
+
 // === DE + other langs: hypher (synchronous, good quality) ===
 const hyphers: Record<string, InstanceType<typeof Hypher>> = {
   de: new Hypher(german),
@@ -88,24 +96,28 @@ export async function preloadSyllables(text: string, language: string): Promise<
  *
  * DE + en/es/nl/it → hypher (synchronous, good quality)
  * FR              → cache lookup (must call preloadSyllables first)
- * Unknown lang    → falls back to DE patterns
+ * Unsupported     → return word as single segment (no hyphenation)
  */
 export function syllabify(word: string, language: string): string[] {
   if (!word || word.trim().length === 0) return [word];
 
   const lang = language.toLowerCase().substring(0, 2);
 
+  if (!isSyllableSupported(lang)) {
+    return [word];
+  }
+
   if (lang === 'fr') {
     const cached = frCache.get(word.toLowerCase());
     if (cached) return cached;
     if (frReady) {
-      // Word wasn't in the preloaded set — treat as single syllable
       console.warn(`[syllabify] FR cache miss: "${word}"`);
     }
     return [word];
   }
 
-  const hypher = hyphers[lang] || hyphers['de'];
+  const hypher = hyphers[lang];
+  if (!hypher) return [word];
   try {
     const result = hypher.hyphenate(word);
     return result.length > 0 ? result : [word];
@@ -152,11 +164,9 @@ export function countSyllables(word: string, language: string): number {
 /** Languages that have hyphenation patterns loaded. */
 export const SUPPORTED_LANGUAGES = [...Object.keys(hyphers), 'fr'];
 
-const SYLLABLE_UI_LANGUAGES = ['de', 'fr'];
-
+/** @deprecated Use isSyllableSupported for UI (show toggle only when true). */
 export function isSyllableModeSupported(language: string): boolean {
-  const lang = language.toLowerCase().substring(0, 2);
-  return SYLLABLE_UI_LANGUAGES.includes(lang);
+  return isSyllableSupported(language);
 }
 
 /** Whether FR preloading has completed. */
