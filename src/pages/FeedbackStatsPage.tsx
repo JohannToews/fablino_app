@@ -2268,7 +2268,7 @@ const FeedbackStatsPage = () => {
                             {item.episode_number ?? '-'}
                           </TableCell>
                           <TableCell className="text-xs text-center">
-                            {item.generation_status === 'verified' ? '✅' : item.generation_status === 'generating' ? '⏳' : '❌'}
+                            {item.generation_status === 'verified' ? '✅' : item.generation_status === 'images_partial' ? '⚠️' : item.generation_status === 'images_failed' ? '🖼️❌' : item.generation_status === 'generating' ? '⏳' : '❌'}
                           </TableCell>
                           <TableCell className="text-xs text-center">
                             {item.cover_image_status === 'complete' && item.story_images_status === 'complete' ? '✅' : 

@@ -295,7 +295,7 @@ const OnboardingStoryPage = () => {
           prompt: detailParam || resolvedStoryType,
           user_id: user.id,
           kid_profile_id: kidId,
-          generation_status: "verified",
+          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
           ending_type: "A",
           story_length: "short",
           image_style_key: imageStyle,

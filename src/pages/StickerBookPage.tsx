@@ -42,7 +42,7 @@ const StickerBookPage = () => {
           .from('stories')
           .select('id, title, cover_image_url, created_at')
           .eq('kid_profile_id', selectedProfileId)
-          .in('generation_status', ['completed', 'verified'])
+          .in('generation_status', ['completed', 'verified', 'images_partial', 'images_failed'])
           .eq('completed', true)
           .eq('is_deleted', false)
           .order('created_at', { ascending: false });

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, BookText, GraduationCap, CheckCircle2, Users, Layers } from "lucide-react";
+import { BookOpen, BookText, GraduationCap, CheckCircle2, Users, Layers, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, type Translations } from "@/lib/translations";
@@ -32,6 +32,7 @@ interface Story {
   completed?: boolean | null;
   series_episode_count?: number | null;
   has_comic_grid?: boolean | null;
+  generation_status?: string | null;
 }
 
 // Difficulty, tab, and status labels are now in lib/translations.ts
@@ -282,6 +283,7 @@ const StorySelectPage = () => {
           episode_summary: data.episode_summary ?? null,
           continuity_state: data.continuity_state ?? null,
           visual_style_sheet: data.visual_style_sheet ?? null,
+          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
         })
         .select()
         .single();
@@ -492,6 +494,13 @@ const StoryCard = ({
           {isCompleted && <CheckCircle2 className="h-3 w-3" />}
           {isCompleted ? t.statusCompleted : t.statusToRead}
         </Badge>
+        {/* Image warning badge */}
+        {(story.generation_status === 'images_failed' || story.generation_status === 'images_partial') && (
+          <Badge className="absolute bottom-2 left-2 text-xs font-bold flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white">
+            <AlertTriangle className="h-3 w-3" />
+            {story.generation_status === 'images_failed' ? '🖼️' : '⚠️'}
+          </Badge>
+        )}
         {/* Difficulty badge */}
         {story.difficulty && (
           <Badge 

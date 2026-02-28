@@ -1007,7 +1007,7 @@ const ReadingPage = () => {
           visual_style_sheet: data.visual_style_sheet ?? null,
           image_style_key: data.image_style_key ?? null,
           // Classification & performance (same as Episode 1)
-          generation_status: "verified",
+          generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
           structure_beginning: data.structure_beginning ?? null,
           structure_middle: data.structure_middle ?? null,
           structure_ending: data.structure_ending ?? null,
@@ -1339,7 +1339,7 @@ const ReadingPage = () => {
             visual_style_sheet: genData.visual_style_sheet ?? null,
             image_style_key: genData.image_style_key ?? null,
             // Classification & performance
-            generation_status: "verified",
+            generation_status: genData.imageWarning ? (genData.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
             structure_beginning: genData.structure_beginning ?? null,
             structure_middle: genData.structure_middle ?? null,
             structure_ending: genData.structure_ending ?? null,
