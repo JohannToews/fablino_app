@@ -1,22 +1,40 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useBlocker } from "react-router-dom";
+
+type NavigationBlocker = {
+  state: "unblocked" | "blocked" | "proceeding";
+  proceed?: () => void;
+  reset?: () => void;
+};
+
+const FALLBACK_BLOCKER: NavigationBlocker = {
+  state: "unblocked",
+};
 
 /**
  * Prevents accidental navigation away from a page.
- * - Blocks in-app React Router navigation (shows custom dialog via returned blocker)
+ * - Blocks in-app React Router navigation when available
+ * - Falls back gracefully when blocker API is unavailable
  * - Blocks browser back/refresh via beforeunload event
- *
- * @param shouldBlock - Whether navigation should be blocked
- * @returns The blocker object from react-router-dom
  */
-export function useNavigationGuard(shouldBlock: boolean) {
-  const blocker = useBlocker(
-    useCallback(
-      ({ currentLocation, nextLocation }) =>
-        shouldBlock && currentLocation.pathname !== nextLocation.pathname,
-      [shouldBlock]
-    )
-  );
+export function useNavigationGuard(shouldBlock: boolean): NavigationBlocker {
+  const warnedRef = useRef(false);
+  let blocker: NavigationBlocker = FALLBACK_BLOCKER;
+
+  try {
+    blocker = useBlocker(
+      useCallback(
+        ({ currentLocation, nextLocation }) =>
+          shouldBlock && currentLocation.pathname !== nextLocation.pathname,
+        [shouldBlock]
+      )
+    ) as NavigationBlocker;
+  } catch (error) {
+    if (!warnedRef.current) {
+      warnedRef.current = true;
+      console.warn("[useNavigationGuard] Blocker API unavailable, using fallback guard.", error);
+    }
+  }
 
   // Browser back / refresh / tab close
   useEffect(() => {
@@ -33,3 +51,4 @@ export function useNavigationGuard(shouldBlock: boolean) {
 
   return blocker;
 }
+
