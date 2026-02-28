@@ -95,7 +95,7 @@ Respond ONLY as JSON with translations in ALL of these languages: de, fr, en, es
         contents: [{ parts: [{ text: systemPrompt }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 4096,
           responseMimeType: 'application/json',
         },
       }),
