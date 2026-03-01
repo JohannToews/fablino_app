@@ -1815,7 +1815,12 @@ Deno.serve(async (req) => {
           if (kidProfile) {
             resolvedKidAge = kidAge ?? kidProfile.age;
             resolvedKidName = kidName ?? kidProfile.first_name;
-            resolvedKidGender = (kidProfile as any).gender ?? '';
+            const rawGender = (kidProfile as any).gender ?? '';
+            resolvedKidGender = (rawGender === 'male' || rawGender === 'm' || rawGender === 'boy')
+              ? 'male'
+              : (rawGender === 'female' || rawGender === 'f' || rawGender === 'girl')
+                ? 'female'
+                : rawGender;
             if (!kidAge || !kidName) {
               resolvedDifficultyLevel = difficultyLevel || kidProfile.difficulty_level;
               resolvedContentSafetyLevel = contentSafetyLevel || kidProfile.content_safety_level;

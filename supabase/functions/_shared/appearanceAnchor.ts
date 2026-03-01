@@ -16,13 +16,12 @@ export function buildAppearanceAnchor(
     eye_color?: string;
   } | null
 ): string {
+  const genderWord = kidGender === "female" ? "girl" : kidGender === "male" ? "boy" : "child";
   if (!appearance) {
-    return `${kidAge}-year-old child named ${kidName}`;
+    return `${kidAge}-year-old ${genderWord} named ${kidName}`;
   }
 
   const parts: string[] = [];
-
-  const genderWord = kidGender === "female" ? "girl" : kidGender === "male" ? "boy" : "child";
   const genderAdj = kidGender === "female" ? "girlish" : kidGender === "male" ? "boyish" : "";
   parts.push(genderAdj ? `${kidAge}-year-old ${genderWord} with a ${genderAdj} face` : `${kidAge}-year-old ${genderWord}`);
 
