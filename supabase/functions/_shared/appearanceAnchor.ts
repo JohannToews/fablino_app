@@ -134,3 +134,17 @@ export function buildAppearanceAnchor(
 
   return parts.join(", ");
 }
+
+/**
+ * Extracts clothing/accessory portion from a full character anchor string.
+ * Used to separate LLM's clothing description from physical features,
+ * so we can merge My Look (physical) with LLM (clothing).
+ */
+export function extractClothingFromAnchor(fullAnchor: string): string {
+  // Match from "wearing", "dressed in", "clothed in" to end of string
+  const clothingMatch = fullAnchor.match(/,?\s*(wearing|dressed in|clothed in)[\s\S]*/i);
+  if (clothingMatch) {
+    return clothingMatch[0].replace(/^,?\s*/, '');
+  }
+  return '';
+}

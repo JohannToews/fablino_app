@@ -2159,21 +2159,100 @@ export async function buildStoryPrompt(
     sections.push(`## ${headers.series}\n${request.series_context}`);
   }
 
-  // IMAGE PLAN INSTRUCTIONS (Block 2.4)
+  // IMAGE PLAN INSTRUCTIONS (Block 2.4) — Character Sheet + Story Moments + Camera
   const sceneCount = request.word_count_override?.scene_image_count ?? getSceneCount(request.length || 'medium');
-  const sceneGuidance = sceneCount === 1
-    ? 'Scene should capture the emotional highlight of the story.'
-    : sceneCount === 2
-    ? 'Scene 1: turning point or discovery. Scene 2: resolution or triumph.'
-    : 'Scene 1: departure/beginning (curiosity). Scene 2: conflict/discovery (tension). Scene 3: resolution/return (joy/relief).';
-  
-  const imagePlanSection = [
-    '## IMAGE PLAN INSTRUCTIONS',
-    `Generate exactly ${sceneCount} scene(s) in the image_plan.`,
-    sceneGuidance,
-    'For each scene in image_plan, include "target_paragraph": the 0-based index of the paragraph in the story text that this image best illustrates. Count paragraphs starting from 0. Distribute images evenly across the story — do not cluster them at the beginning or end.',
-    'All descriptions in ENGLISH. No text, signs, or readable writing in any scene.',
-  ].join('\n');
+  const imagePlanSection = `=== IMAGE PLAN INSTRUCTIONS ===
+
+You must provide an image_plan with three parts: character_sheet, world_anchor, and scenes.
+ALL text in the image_plan must be in English regardless of story language.
+
+────────────────────────────────
+PART 1 — CHARACTER SHEET
+────────────────────────────────
+
+Create a character_sheet array with a visual reference card for EVERY character that appears in the story. This includes the protagonist, sidekicks, family members, friends, villains, antagonists, secondary characters, animals, creatures — anyone or anything that appears in at least one image.
+
+Each entry must contain:
+- "name": Character name exactly as used in the story
+- "role": "protagonist" | "sidekick" | "villain" | "family" | "friend" | "secondary"
+- "full_anchor": Complete visual description in English. MUST include ALL of:
+  - Age and gender (for human characters)
+  - Face shape and expression tendency
+  - Skin tone
+  - Hair: type, length, style, color
+  - Eye color
+  - Body type / build / size
+  - EXACT clothing worn in THIS story (specific colors, materials, patterns, layers)
+  - Accessories, jewelry, hats, scarves
+  - Distinguishing features: scars, freckles, markings
+  - For animals/creatures: species, size, fur/scale color, distinctive markings
+- "props": Array of items this character carries, wields, or interacts with repeatedly
+
+Rules:
+- The protagonist's physical features (face, skin, hair, eyes, glasses, body) MUST match the CHILD description from above exactly. You ONLY add clothing, accessories, and props based on the story.
+- For all other characters: create a complete, richly detailed visual description.
+- Clothing must be SPECIFIC, not generic.
+  NOT "a shirt" → "a dark green tunic with a brown leather belt and copper buckle"
+  NOT "armor" → "rusty iron chest plate with a faded red dragon emblem, dented shoulder guards"
+  NOT "a dress" → "a flowing sky-blue dress with silver embroidery at the hem, white apron"
+- For animals: describe breed/species, size relative to other characters, fur/feather patterns, eye color, any accessories (collar, saddle, scarf).
+- Every detail you write here will be used IDENTICALLY in every image. Precision matters.
+
+────────────────────────────────
+PART 2 — WORLD ANCHOR
+────────────────────────────────
+
+"world_anchor": A 20-30 word description of the story's visual atmosphere: lighting quality, color mood, art direction notes. NOT specific locations — those go in scenes.
+
+────────────────────────────────
+PART 3 — SCENES
+────────────────────────────────
+
+Create a scenes array with ${sceneCount} scenes that illustrate KEY NARRATIVE MOMENTS from the story.
+
+Each scene must contain:
+- "scene_id": Sequential number (1, 2, 3, ...)
+- "description": The specific story moment this image captures (see rules below)
+- "characters_present": Array of character names present in this scene (must match names from character_sheet EXACTLY)
+- "camera": Camera angle and framing for this scene (see camera rules below)
+- "target_paragraph": Which paragraph number this scene illustrates
+- "emotion": The dominant emotion of this moment
+
+SCENE DESCRIPTION RULES:
+
+Each scene must capture a SPECIFIC NARRATIVE MOMENT, not a generic setting. Include:
+- WHAT is happening RIGHT NOW: the specific action from the story text
+- KEY OBJECTS involved in this moment (the compass glowing, the door shattering, the potion bubbling over)
+- BODY LANGUAGE and POSES that show the emotion (kneeling, reaching, stumbling back, clutching something)
+- ENVIRONMENT DETAILS mentioned in the story text (not generic — the actual place described)
+- EMOTIONAL STAKES: what's at risk or what just changed
+
+CRITICAL: Scene descriptions must NEVER describe character appearance, clothing, body, hair, or any physical features. These come EXCLUSIVELY from the character_sheet. Scenes describe ONLY: location, action, pose, objects, mood, lighting, weather.
+
+Bad scene: "A boy with brown hair and a red cape stands in a forest looking scared"
+Bad scene: "A forest scene with a cave"
+Good scene: "Kneeling at the edge of a glowing underground lake, right hand reaching toward a floating crystal just out of reach, golden compass in left hand pulsing with blue light, bioluminescent mushrooms illuminating cave walls, faint reflection of the crystal in the dark water, expression of awe mixed with hesitation"
+
+CAMERA RULES:
+
+Choose the camera angle and framing that best serves each story moment. Vary the camera across scenes — never use the same framing twice in a row.
+
+Available options (pick one per scene, combine angle + framing):
+- Framing: "extreme close-up" (face/hands only), "close-up" (head and shoulders), "medium shot" (waist up), "full body shot", "wide shot" (character small in environment), "extreme wide shot" (landscape dominant)
+- Angle: "eye level", "low angle" (looking up — makes subject powerful), "high angle" (looking down — makes subject vulnerable), "bird's eye" (directly above), "dutch angle" (tilted — creates tension), "over-the-shoulder" (from behind another character)
+
+Guidelines:
+- Emotional/intimate moments → close-up or extreme close-up, eye level
+- World-building/establishing → wide shot or extreme wide shot
+- Action/conflict → dynamic angle (low angle, dutch angle), medium or full body
+- Tension/vulnerability → high angle
+- Confrontation → over-the-shoulder or low angle
+- Victory/triumph → low angle, full body or medium shot
+- Mystery/discovery → medium shot, eye level or slight low angle
+
+Format: "{framing}, {angle}" — e.g. "close-up, eye level" or "wide shot, high angle"
+
+=== END IMAGE PLAN INSTRUCTIONS ===`;
   sections.push(imagePlanSection);
 
   // Final instruction

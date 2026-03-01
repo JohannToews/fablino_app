@@ -270,6 +270,7 @@ const CreateStoryPage = () => {
         },
       });
       clearTimeout(timeoutId);
+      console.log('[DEBUG] image_plan:', data?.image_plan);
 
       if (error) {
         console.error("Generation error:", error);
@@ -725,6 +726,7 @@ const CreateStoryPage = () => {
         ]);
         data = result.data;
         error = result.error;
+        console.log('[DEBUG] image_plan:', result.data?.image_plan);
       } catch (timeoutErr: any) {
         if (timeoutErr?.message === 'TIMEOUT') {
           console.error('[CreateStory] Generation timed out after', GENERATION_TIMEOUT_MS / 1000, 's');

@@ -11,7 +11,14 @@ import type { ComicLayout, ComicImagePlan } from '../_shared/comicStrip/types.ts
 import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
 import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
 import type { EmotionFlowResult } from '../_shared/emotionFlow/types.ts';
-import { buildAppearanceAnchor } from '../_shared/appearanceAnchor.ts';
+import { buildAppearanceAnchor, extractClothingFromAnchor } from '../_shared/appearanceAnchor.ts';
+
+interface CharacterSheetEntry {
+  name: string;
+  role: 'protagonist' | 'sidekick' | 'villain' | 'family' | 'friend' | 'secondary';
+  full_anchor: string;
+  props?: string[];
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2241,7 +2248,7 @@ Required JSON structure:
   "content": "The complete story text as a single string...",
   "questions": [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "expectedAnswer": "..."}],
   "vocabulary": [{"word": "...", "explanation": "..."}],
-  "image_plan": {"character_anchor": "...", "world_anchor": "...", "scenes": [EXACTLY ${(useComicStrip && comicLayout && comicLayout.panelCount === 8) ? 7 : genConfig.scene_image_count} scene objects, one per scene image: {"scene_id": 1, "setting": "...", "characters_present": "...", "action": "...", "emotion": "...", "target_paragraph": 0}]}
+  "image_plan": {"character_anchor": "... (optional, for backward compatibility)", "character_sheet": [{"name": "...", "role": "protagonist|sidekick|villain|family|friend|secondary", "full_anchor": "...", "props": []}], "world_anchor": "...", "scenes": [EXACTLY ${(useComicStrip && comicLayout && comicLayout.panelCount === 8) ? 7 : genConfig.scene_image_count} scene objects: {"scene_id": 1, "description": "...", "characters_present": [], "camera": "e.g. close-up, eye level", "target_paragraph": 0, "emotion": "..."}]}
 }
 Fields episode_summary, continuity_state, visual_style_sheet, branch_options are ONLY required for series episodes.`;
     }
@@ -2262,7 +2269,12 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
           emotionBlocks.join('\n\n') +
           '\n\n--- END EMOTION FLOW ---\n\n';
 
-        if (userPrompt.includes('## IMAGE PLAN INSTRUCTIONS')) {
+        if (userPrompt.includes('=== IMAGE PLAN INSTRUCTIONS ===')) {
+          userPrompt = userPrompt.replace(
+            '=== IMAGE PLAN INSTRUCTIONS ===',
+            emotionSection + '=== IMAGE PLAN INSTRUCTIONS ==='
+          );
+        } else if (userPrompt.includes('## IMAGE PLAN INSTRUCTIONS')) {
           userPrompt = userPrompt.replace(
             '## IMAGE PLAN INSTRUCTIONS',
             emotionSection + '## IMAGE PLAN INSTRUCTIONS'
@@ -2277,7 +2289,7 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
     // ── Comic-Strip: Replace IMAGE PLAN INSTRUCTIONS with panel instructions ──
     if (useComicStrip && comicLayout && comicLayout.layoutKey !== 'layout_0_single') {
       const comicInstructions = buildComicStripInstructions(comicLayout, { useGridFormat: true });
-      const imagePlanRegex = /## IMAGE PLAN INSTRUCTIONS[\s\S]*?All descriptions in ENGLISH\. No text, signs, or readable writing in any scene\./;
+      const imagePlanRegex = /=== IMAGE PLAN INSTRUCTIONS ===[\s\S]*?=== END IMAGE PLAN INSTRUCTIONS ===/;
       if (imagePlanRegex.test(userPrompt)) {
         userPrompt = userPrompt.replace(imagePlanRegex, comicInstructions);
         console.log('[ComicStrip] Replaced IMAGE PLAN INSTRUCTIONS with comic panel instructions');
@@ -2676,20 +2688,88 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       console.error('[generate-story] Error parsing image_plan:', e);
     }
 
-    // Override character_anchor with kid "Mein Look" when kid is protagonist and has appearance set (AFTER LLM parse so we overwrite LLM value)
-    if (imagePlan && includeSelf && kidAppearance) {
-      const discardedLlmAnchor = imagePlan.character_anchor;
-      const appearanceAnchor = buildAppearanceAnchor(
-        resolvedKidName || 'Child',
-        resolvedKidAge || 8,
-        resolvedKidGender || 'child',
-        kidAppearance
-      );
-      imagePlan.character_anchor = appearanceAnchor;
-      console.log('[generate-story] ✅ Appearance anchor OVERRIDE:', appearanceAnchor);
-      console.log('[generate-story] ❌ Discarded LLM anchor:', discardedLlmAnchor ?? '(none)');
-    } else if (imagePlan?.character_anchor != null) {
-      console.log('[generate-story] No appearance override (include_self=', includeSelf, ', kidAppearance=', !!kidAppearance, '), using LLM anchor');
+    // ──── CHARACTER SHEET PROCESSING ────
+    const characterSheet: CharacterSheetEntry[] = imagePlan?.character_sheet ?? [];
+    const hasCharacterSheet = Array.isArray(characterSheet) && characterSheet.length > 0;
+
+    if (hasCharacterSheet && imagePlan) {
+      console.log(`[CharacterSheet] ${characterSheet.length} characters:`, characterSheet.map((c: CharacterSheetEntry) => `${c.name} (${c.role})`).join(', '));
+
+      // 2b: Merge protagonist with My Look (if kid is in story)
+      if (includeSelf && kidAppearance) {
+        const protagonistEntry = characterSheet.find(
+          (c: CharacterSheetEntry) => c.role === 'protagonist' || c.name === (resolvedKidName || 'Child')
+        );
+        if (protagonistEntry) {
+          const myLookBase = buildAppearanceAnchor(
+            resolvedKidName || 'Child',
+            resolvedKidAge || 8,
+            resolvedKidGender || 'child',
+            kidAppearance
+          );
+          const clothingFromLLM = extractClothingFromAnchor(protagonistEntry.full_anchor);
+          const propsString = protagonistEntry.props?.length
+            ? `, carrying ${protagonistEntry.props.join(' and ')}`
+            : '';
+          protagonistEntry.full_anchor = clothingFromLLM
+            ? `${myLookBase}, ${clothingFromLLM}${propsString}`
+            : `${myLookBase}${propsString}`;
+          console.log(`[CharacterSheet] Protagonist merged: ${protagonistEntry.full_anchor.substring(0, 100)}...`);
+        }
+      }
+
+      // 2c: Validate characters_present in scenes reference valid character names
+      const validNames = new Set(characterSheet.map((c: CharacterSheetEntry) => c.name));
+      const scenes = imagePlan.scenes ?? [];
+      for (const scene of scenes) {
+        if (scene.characters_present) {
+          const filtered = scene.characters_present.filter((name: string) => validNames.has(name));
+          if (filtered.length < scene.characters_present.length) {
+            console.warn(`[CharacterSheet] Scene ${scene.scene_id}: removed unknown characters:`, scene.characters_present.filter((name: string) => !validNames.has(name)));
+          }
+          scene.characters_present = filtered;
+        }
+      }
+
+      // 2d: Default camera if LLM omitted it
+      const DEFAULT_CAMERAS = [
+        'medium wide shot, slight low angle',
+        'wide shot, eye level',
+        'close-up, eye level',
+        'full body shot, dynamic low angle',
+        'medium shot, eye level',
+      ];
+      for (let i = 0; i < scenes.length; i++) {
+        const scene = scenes[i];
+        if (!scene.camera) {
+          scene.camera = DEFAULT_CAMERAS[i % DEFAULT_CAMERAS.length];
+        }
+      }
+
+      // 2e: Set character_anchor for backward compatibility (legacy image pipeline uses this)
+      const protagonist = characterSheet.find((c: CharacterSheetEntry) => c.role === 'protagonist');
+      if (protagonist) {
+        imagePlan.character_anchor = protagonist.full_anchor;
+      }
+    } else {
+      if (imagePlan) {
+        console.warn('[CharacterSheet] No character_sheet in LLM response — using legacy path');
+      }
+      // Legacy: Override character_anchor with kid "Mein Look" when kid is protagonist and has appearance set
+      if (imagePlan && includeSelf && kidAppearance) {
+        const discardedLlmAnchor = imagePlan.character_anchor;
+        const appearanceAnchor = buildAppearanceAnchor(
+          resolvedKidName || 'Child',
+          resolvedKidAge || 8,
+          resolvedKidGender || 'child',
+          kidAppearance
+        );
+        imagePlan.character_anchor = appearanceAnchor;
+        console.log('[generate-story] ✅ Appearance anchor OVERRIDE:', appearanceAnchor);
+        console.log('[generate-story] ❌ Discarded LLM anchor:', discardedLlmAnchor ?? '(none)');
+      } else if (imagePlan?.character_anchor != null) {
+        console.log('[generate-story] No appearance override (include_self=', includeSelf, ', kidAppearance=', !!kidAppearance, '), using LLM anchor');
+      }
     }
 
     // Parse grid-based comic image plan when comic strip is active (grid_1 / grid_2 format)
