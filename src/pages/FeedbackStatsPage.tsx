@@ -927,7 +927,8 @@ const FeedbackStatsPage = () => {
     const { data: ratingsData } = await supabase
       .from("story_ratings")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
     // Ratings will be enriched after stories/users are loaded
     const rawRatings = ratingsData || [];
@@ -972,13 +973,15 @@ const FeedbackStatsPage = () => {
           age
         )
       `)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
     // Load user results to check which stories have been read
     const { data: resultsData } = await supabase
       .from("user_results")
       .select("reference_id")
-      .in("activity_type", ["story_completed", "story_read"]);
+      .in("activity_type", ["story_completed", "story_read"])
+      .limit(5000);
 
     const readStoryIds = new Set(resultsData?.map(r => r.reference_id) || []);
 
@@ -986,7 +989,8 @@ const FeedbackStatsPage = () => {
     const { data: comprehensionResults } = await supabase
       .from("user_results")
       .select("reference_id, total_questions, correct_answers")
-      .in("activity_type", ["quiz_complete", "quiz_completed"]);
+      .in("activity_type", ["quiz_complete", "quiz_completed"])
+      .limit(5000);
 
     const quizCompletedStoryIds = new Set<string>();
     comprehensionResults?.forEach(r => {
@@ -998,7 +1002,8 @@ const FeedbackStatsPage = () => {
     // Load comprehension questions count per story (for stories without results)
     const { data: questionsData } = await supabase
       .from("comprehension_questions")
-      .select("story_id");
+      .select("story_id")
+      .limit(10000);
 
     const questionsPerStory = new Map<string, number>();
     questionsData?.forEach(q => {
@@ -1008,7 +1013,8 @@ const FeedbackStatsPage = () => {
     // Load marked words per story
     const { data: markedWordsData } = await supabase
       .from("marked_words")
-      .select("story_id, explanation");
+      .select("story_id, explanation")
+      .limit(10000);
 
     // Count words per story (requested = has entry, saved = has explanation)
     const wordsPerStory = new Map<string, { requested: number; saved: number }>();
