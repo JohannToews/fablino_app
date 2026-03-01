@@ -236,13 +236,14 @@ KATI KURALLAR:
 5. Fiiller için: eylemi açıkla
 6. İsimler için: somut olarak ne olduğunu söyle
 7. Sıfatlar için: basit bir eş anlamlı ver veya tanımla
+8. Açıklama dili ZORUNLU olarak Türkçe olmalı, asla İngilizce kullanma
 
 MÜKEMMEL ÖRNEKLER:
 - "cesur" → "Korkmayan biri"
 - "oburca yemek" → "Çok hızlı ve iştahla yemek"
 - "muhteşem" → "Çok çok güzel"
 
-YALNIZCA geçerli JSON ile yanıt ver:
+YALNIZCA geçerli JSON ile yanıt ver (açıklama Türkçe olmalı):
 {"correctedWord": "düzeltilmiş_veya_orijinal_kelime", "explanation": "kısa açıklama"}`,
 
   pl: (word: string, context?: string) => `Jesteś żywym słownikiem dla 8-letnich dzieci.
@@ -466,10 +467,16 @@ Deno.serve(async (req) => {
     }
 
     const { word, context, language = 'fr', explanationLanguage, kidProfileId, storyId } = await req.json();
-    
+
+    // Normalize language codes (e.g. TR, tr-TR -> tr)
+    const normalizedStoryLanguage = String(language || 'fr').toLowerCase().split('-')[0];
+    const normalizedExplanationLanguage = explanationLanguage
+      ? String(explanationLanguage).toLowerCase().split('-')[0]
+      : normalizedStoryLanguage;
+
     // If explanationLanguage is provided, use it for the prompt language
     // This allows word explanations to be in a different language than the story text
-    const promptLanguage = explanationLanguage || language;
+    const promptLanguage = normalizedExplanationLanguage || normalizedStoryLanguage || 'fr';
     
     if (!word || typeof word !== 'string') {
       return new Response(
@@ -546,7 +553,7 @@ Deno.serve(async (req) => {
           kid_profile_id: kidProfileId,
           story_id: storyId || null,
           word: correctedWord || word,
-          word_language: language,
+          word_language: normalizedStoryLanguage,
           explanation_language: promptLanguage,
         }).then(({ error }) => {
           if (error) console.error('[word-log] insert failed:', error.message);

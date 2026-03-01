@@ -484,6 +484,10 @@ interface BranchOption {
   image_hint?: string;
 }
 
+interface CachedExplanation {
+  explanation: string;
+  language: string | null;
+}
 
 const ReadingPage = () => {
   const { user } = useAuth();
@@ -521,7 +525,7 @@ const ReadingPage = () => {
   const [savedSingleWordPositions, setSavedSingleWordPositions] = useState<Set<string>>(new Set());
   const [savedPhrasePositions, setSavedPhrasePositions] = useState<Set<string>>(new Set());
   // DB cached explanations (for avoiding re-fetching from LLM)
-  const [cachedExplanations, setCachedExplanations] = useState<Map<string, string>>(new Map());
+  const [cachedExplanations, setCachedExplanations] = useState<Map<string, CachedExplanation>>(new Map());
   // Total marked words count from DB (for display)
   const [totalMarkedCount, setTotalMarkedCount] = useState(0);
   const [showWordPanel, setShowWordPanel] = useState(false);
@@ -592,10 +596,16 @@ const ReadingPage = () => {
   useEffect(() => {
     if (id) {
       loadStory();
-      loadCachedExplanations();
       checkForQuestions();
+      setCachedExplanations(new Map());
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id && story?.text_language) {
+      loadCachedExplanations();
+    }
+  }, [id, story?.text_language]);
 
   // Optional: load Farsi (Vazirmatn) font when story is RTL
   useEffect(() => {
@@ -1420,24 +1430,31 @@ const ReadingPage = () => {
   };
 
   const loadCachedExplanations = async () => {
+    if (!id || !story?.text_language) return;
+
+    const storyLang = String(story.text_language).toLowerCase().split('-')[0];
     const { data, count } = await supabase
       .from("marked_words")
       .select("word, explanation, explanation_language", { count: "exact" })
       .eq("story_id", id);
-    
+
     if (data) {
-      const storyLang = story?.text_language || 'fr';
-      const explanationMap = new Map<string, string>();
+      const explanationMap = new Map<string, CachedExplanation>();
       data.forEach((w) => {
-        if (w.explanation) {
-          // Only cache if explanation language matches story language (or legacy rows without language)
-          if (!w.explanation_language || w.explanation_language === storyLang) {
-            explanationMap.set(w.word.toLowerCase(), w.explanation);
-          }
-        }
+        if (!w.explanation) return;
+
+        const cachedLang = w.explanation_language
+          ? String(w.explanation_language).toLowerCase().split('-')[0]
+          : null;
+
+        explanationMap.set(w.word.toLowerCase(), {
+          explanation: w.explanation,
+          language: cachedLang,
+        });
       });
       setCachedExplanations(explanationMap);
     }
+
     if (count !== null) {
       setTotalMarkedCount(count);
     }
@@ -1446,7 +1463,7 @@ const ReadingPage = () => {
   const fetchExplanation = async (text: string): Promise<string | null> => {
     try {
       // Use story's text_language for both word context and explanation language
-      const storyLang = story?.text_language || 'fr';
+      const storyLang = String(story?.text_language || 'fr').toLowerCase().split('-')[0];
       const { data, error } = await supabase.functions.invoke("explain-word", {
         body: { word: text, language: storyLang, explanationLanguage: storyLang, kidProfileId: selectedProfile?.id, storyId: story?.id },
       });
@@ -1538,11 +1555,12 @@ const ReadingPage = () => {
       setCurrentPositionKey(selectedPositions[0]);
     }
 
-    // Check if already cached
+    // Check if already cached (must match current story language)
+    const storyLang = String(story?.text_language || 'fr').toLowerCase().split('-')[0];
     const existingExplanation = cachedExplanations.get(cleanText);
     
-    if (existingExplanation) {
-      setExplanation(existingExplanation);
+    if (existingExplanation?.language === storyLang) {
+      setExplanation(existingExplanation.explanation);
       setIsExplaining(false);
       setIsSaved(true); // Already in DB
       return;
@@ -1613,11 +1631,12 @@ const ReadingPage = () => {
     // Track as unsaved
     setUnsavedPositions(new Set([positionKey]));
 
-    // Check if already cached
+    // Check if already cached (must match current story language)
+    const storyLang = String(story?.text_language || 'fr').toLowerCase().split('-')[0];
     const existingExplanation = cachedExplanations.get(cleanWord);
     
-    if (existingExplanation) {
-      setExplanation(existingExplanation);
+    if (existingExplanation?.language === storyLang) {
+      setExplanation(existingExplanation.explanation);
       setIsExplaining(false);
       setIsSaved(true); // Already in DB
       return;
@@ -1653,7 +1672,7 @@ const ReadingPage = () => {
   const handleSaveExplanation = async () => {
     if (!selectedWord || !explanation || !id) return;
 
-    const storyLang = story?.text_language || 'fr';
+    const storyLang = String(story?.text_language || 'fr').toLowerCase().split('-')[0];
     // Save to DB with language metadata
     const { error } = await supabase.from("marked_words").insert({
       story_id: id,
@@ -1670,7 +1689,7 @@ const ReadingPage = () => {
 
     console.log("[Analytics] word_saved", { storyId: id, word: selectedWord, language: kidAppLanguage });
     setTotalMarkedCount(prev => prev + 1);
-    setCachedExplanations(prev => new Map(prev.set(selectedWord.toLowerCase(), explanation)));
+    setCachedExplanations(prev => new Map(prev.set(selectedWord.toLowerCase(), { explanation, language: storyLang })));
     setIsSaved(true);
     // Clear unsaved tracking since this is now saved
     setUnsavedPositions(new Set());
