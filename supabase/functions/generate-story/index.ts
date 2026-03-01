@@ -2784,6 +2784,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         }
       }
 
+      // Log character_sheet (name + role) and per-scene characters_present for debugging
+      console.log('[CharacterSheet] character_sheet:', JSON.stringify(sheet.map((c: CharacterSheetEntry) => ({ name: c.name, role: c.role }))));
+      console.log('[CharacterSheet] scenes characters_present:', JSON.stringify(scenes.map((s: any) => ({ scene_id: s.scene_id, characters_present: s.characters_present || [] }))));
+
       // 2d: Default camera if LLM omitted it
       const DEFAULT_CAMERAS = [
         'medium wide shot, slight low angle',
@@ -3231,6 +3235,7 @@ Respond with ONLY valid JSON, no markdown:
             return { label: imgPrompt.label, url: cached, cached: true };
           }
           console.log(`[generate-story] Cache MISS for ${imgPrompt.label}`);
+          console.log(`[IMAGE-PROMPT-FULL] ${imgPrompt.label}: ${imgPrompt.prompt}`);
 
           // 2. Generate image (Vertex AI FIRST → Lovable Gateway fallback)
           let imageUrl: string | null = null;
