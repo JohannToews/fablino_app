@@ -3,6 +3,10 @@ import { BookOpen, Plus, CheckCircle2, Loader2 } from "lucide-react";
 import { getThumbnailUrl } from "@/lib/imageUtils";
 import { useTranslations, type Language } from "@/lib/translations";
 
+/** Check if a story is still being generated (not yet readable) */
+const isStoryGenerating = (status?: string | null): boolean =>
+  !status || ['generating', 'pending', 'checking'].includes(status);
+
 interface Story {
   id: string;
   title: string;
@@ -16,6 +20,7 @@ interface Story {
   series_mode?: string | null;
   branch_chosen?: string | null;
   series_episode_count?: number | null;
+  generation_status?: string | null;
 }
 
 interface Series {
@@ -32,8 +37,6 @@ interface SeriesGridProps {
   isGeneratingForSeries: string | null;
 }
 
-// Translations now come from central lib/translations.ts
-
 const SeriesGrid = ({ 
   stories, 
   appLang, 
@@ -45,18 +48,13 @@ const SeriesGrid = ({
   const t = useTranslations(appLang as Language);
 
   // Group stories by series
-  // First episodes: series_id is null but episode_number = 1, use own id as key
-  // Continuation episodes: use series_id as key
   const seriesMap = new Map<string, Story[]>();
   stories.forEach(story => {
-    // Determine the series key
     let seriesKey: string | null = null;
     
     if (story.series_id) {
-      // This is a continuation episode - use series_id
       seriesKey = story.series_id;
     } else if (story.episode_number !== null && story.episode_number >= 1) {
-      // This is a first episode - use its own id as the series key
       seriesKey = story.id;
     }
     
@@ -67,7 +65,6 @@ const SeriesGrid = ({
     }
   });
 
-  // Convert to array and sort episodes within each series
   const seriesList: Series[] = Array.from(seriesMap.entries()).map(([seriesId, episodes]) => ({
     seriesId,
     episodes: episodes.sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0)),
@@ -100,7 +97,6 @@ const SeriesGrid = ({
           >
             {/* Series Header */}
             <div className="flex gap-4 mb-4">
-              {/* Series Cover (from first episode) */}
               <div className="w-24 h-32 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                 {firstEpisode?.cover_image_url ? (
                   <img
@@ -117,7 +113,6 @@ const SeriesGrid = ({
                 )}
               </div>
               
-              {/* Series Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-baloo text-xl font-bold text-foreground truncate">
@@ -142,10 +137,12 @@ const SeriesGrid = ({
                 const episode = series.episodes.find(e => (e.episode_number || 1) === epNum);
                 const isCompleted = episode ? (storyStatuses.get(episode.id) || false) : false;
                 const exists = !!episode;
+                const generating = episode ? isStoryGenerating(episode.generation_status) : false;
                 return (
                   <div
                     key={epNum}
                     className={`h-2 flex-1 rounded-full transition-colors ${
+                      generating ? 'bg-primary/30 animate-pulse' :
                       isCompleted ? 'bg-green-500' : exists ? 'bg-primary/40' : 'bg-muted'
                     }`}
                     title={`${t.seriesEpisode} ${epNum}`}
@@ -161,15 +158,35 @@ const SeriesGrid = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {series.episodes.map((episode) => {
                 const isCompleted = storyStatuses.get(episode.id) || false;
+                const generating = isStoryGenerating(episode.generation_status);
                 
                 return (
                   <div
                     key={episode.id}
-                    onClick={() => navigate(`/read/${episode.id}`)}
-                    className="cursor-pointer group"
+                    onClick={() => {
+                      if (!generating) navigate(`/read/${episode.id}`);
+                    }}
+                    className={generating ? 'cursor-default' : 'cursor-pointer group'}
                   >
-                    <div className="aspect-square rounded-xl overflow-hidden bg-muted relative border-2 border-transparent group-hover:border-primary transition-all">
-                      {episode.cover_image_url ? (
+                    <div className={`aspect-square rounded-xl overflow-hidden bg-muted relative border-2 transition-all ${
+                      generating
+                        ? 'border-primary/20'
+                        : 'border-transparent group-hover:border-primary'
+                    }`}>
+                      {generating ? (
+                        /* ── Generating state: pulsing indicator ── */
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 animate-pulse">
+                          <img 
+                            src="/mascot/3_wating_story_generated.png" 
+                            alt="Fablino" 
+                            className="h-12 w-12 object-contain mb-1"
+                          />
+                          <Loader2 className="h-4 w-4 text-primary animate-spin mb-1" />
+                          <span className="text-[10px] text-primary/80 font-medium px-2 text-center">
+                            {t.seriesGenerating}
+                          </span>
+                        </div>
+                      ) : episode.cover_image_url ? (
                         <img
                           src={getThumbnailUrl(episode.cover_image_url, 256, 50)}
                           alt={episode.title}
@@ -185,21 +202,25 @@ const SeriesGrid = ({
                         </div>
                       )}
                       {/* Episode number badge */}
-                      <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] font-bold rounded-md px-1.5 py-0.5">
+                      <div className={`absolute top-1 left-1 text-white text-[10px] font-bold rounded-md px-1.5 py-0.5 ${
+                        generating ? 'bg-primary/40' : 'bg-black/60'
+                      }`}>
                         Ep. {episode.episode_number || 1}
                       </div>
                       {/* Status indicator */}
-                      {isCompleted && (
+                      {isCompleted && !generating && (
                         <div className="absolute top-1 right-1 bg-green-500 rounded-full p-1">
                           <CheckCircle2 className="h-3 w-3 text-white" />
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-center mt-1 font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    <p className={`text-xs text-center mt-1 font-medium transition-colors ${
+                      generating ? 'text-primary/50' : 'text-muted-foreground group-hover:text-foreground'
+                    }`}>
                       {t.seriesEpisode} {episode.episode_number || 1}
                     </p>
                     {/* Show branch choice for interactive series */}
-                    {episode.branch_chosen && (
+                    {!generating && episode.branch_chosen && (
                       <p className="text-[10px] text-center text-[#E8863A] truncate mt-0.5" title={episode.branch_chosen}>
                         → {episode.branch_chosen}
                       </p>
