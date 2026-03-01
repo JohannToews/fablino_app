@@ -2255,6 +2255,30 @@ Format: "{framing}, {angle}" — e.g. "close-up, eye level" or "wide shot, high 
 === END IMAGE PLAN INSTRUCTIONS ===`;
   sections.push(imagePlanSection);
 
+  // Required JSON output schema (LLM follows this strictly — must include character_sheet in image_plan)
+  const jsonSchemaSection = `## REQUIRED JSON OUTPUT FORMAT
+
+Respond with a single JSON object. The image_plan MUST use this exact structure (include character_sheet):
+
+{
+  "title": "string",
+  "content": "string",
+  "questions": [{"question": "...", "options": ["A","B","C","D"], "correctAnswer": "A", "expectedAnswer": "..."}],
+  "vocabulary": [{"word": "...", "explanation": "..."}],
+  "image_plan": {
+    "character_sheet": [
+      {"name": "string", "role": "protagonist|sidekick|villain|family|friend|secondary", "full_anchor": "string", "props": ["string"]}
+    ],
+    "world_anchor": "string",
+    "scenes": [
+      {"scene_id": 1, "description": "string", "characters_present": ["string"], "camera": "string", "target_paragraph": 0, "emotion": "string"}
+    ]
+  }
+}
+
+You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must provide a character_sheet array with one entry per character that appears in the story.`;
+  sections.push(jsonSchemaSection);
+
   // Final instruction
   sections.push(headers.respondJson);
 
