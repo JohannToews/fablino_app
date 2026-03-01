@@ -2674,9 +2674,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           has_character_anchor: !!imagePlan.character_anchor,
           keys: Object.keys(imagePlan),
         }));
+        const safeStr = (v: unknown, len = 50) => typeof v === 'string' ? v.substring(0, len) : JSON.stringify(v)?.substring(0, len);
         console.log('[generate-story] image_plan extracted:',
-          `character_anchor: ${imagePlan.character_anchor?.substring(0, 50)}...`,
-          `world_anchor: ${imagePlan.world_anchor?.substring(0, 50)}...`,
+          `character_anchor: ${safeStr(imagePlan.character_anchor)}...`,
+          `world_anchor: ${safeStr(imagePlan.world_anchor)}...`,
           `scenes: ${imagePlan.scenes?.length ?? 'n/a'}`,
           `grid_1: ${imagePlan.grid_1?.length ?? 'n/a'}`,
           `grid_2: ${imagePlan.grid_2?.length ?? 'n/a'}`
@@ -2686,6 +2687,16 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     } catch (e) {
       console.error('[generate-story] Error parsing image_plan:', e);
+    }
+
+    // ──── Normalize character_anchor / world_anchor to string ────
+    if (imagePlan) {
+      if (imagePlan.character_anchor && typeof imagePlan.character_anchor !== 'string') {
+        imagePlan.character_anchor = JSON.stringify(imagePlan.character_anchor);
+      }
+      if (imagePlan.world_anchor && typeof imagePlan.world_anchor !== 'string') {
+        imagePlan.world_anchor = JSON.stringify(imagePlan.world_anchor);
+      }
     }
 
     // ──── CHARACTER SHEET PROCESSING ────
@@ -2894,7 +2905,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         imagePlan.character_anchor = emotionFlowResult.protagonistSeed.appearance_en;
       }
 
-      console.log('[image-prompt] character_anchor used:', JSON.stringify(imagePlan.character_anchor?.substring(0, 120)), 'source:', kidAppearance ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
+      const safeAnchorLog = (v: unknown, len = 120) => typeof v === 'string' ? v.substring(0, len) : JSON.stringify(v)?.substring(0, len);
+      console.log('[image-prompt] character_anchor used:', JSON.stringify(safeAnchorLog(imagePlan.character_anchor)), 'source:', kidAppearance ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
       console.log('[IMAGE-PIPELINE] Calling buildImagePrompts:', JSON.stringify({
         hasSeriesContext: !!seriesImageCtx,
         episodeNumber: seriesImageCtx?.episodeNumber ?? null,
@@ -3321,7 +3333,8 @@ Respond with ONLY valid JSON, no markdown:
           const characterAnchor = (includeSelf && kidAppearance)
             ? buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance)
             : (emotionFlowResult?.protagonistSeed?.appearance_en ?? comicImagePlan.character_anchor);
-          console.log('[image-prompt] comic character_anchor used:', JSON.stringify(characterAnchor?.substring(0, 120)), 'source:', (includeSelf && kidAppearance) ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
+          const safeComicAnchorLog = (v: unknown, len = 120) => typeof v === 'string' ? v.substring(0, len) : JSON.stringify(v)?.substring(0, len);
+          console.log('[image-prompt] comic character_anchor used:', JSON.stringify(safeComicAnchorLog(characterAnchor)), 'source:', (includeSelf && kidAppearance) ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
           const imageStylePrefix = [
             seriesImageCtx?.visualStyleSheet ? `SERIES VISUAL CONSISTENCY (Episode ${seriesImageCtx?.episodeNumber}): ${JSON.stringify(seriesImageCtx.visualStyleSheet)}` : '',
             imageStyleData?.promptSnippet || '',
