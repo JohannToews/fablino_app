@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthOptional } from "./useAuth";
+import type { Language } from "@/lib/translations";
 
 export type KidLanguage = 'de' | 'fr' | 'en' | 'es' | 'nl' | 'it' | 'bs'
   | 'tr' | 'bg' | 'ro' | 'pl' | 'lt' | 'hu' | 'ca' | 'sl' | 'pt' | 'sk' | 'uk' | 'ru'
@@ -60,11 +61,11 @@ interface KidProfileContextType {
   hasMultipleProfiles: boolean;
   isLoading: boolean;
   refreshProfiles: () => Promise<void>;
-  kidAppLanguage: KidLanguage;
+  kidAppLanguage: Language;
   /** The language stories should be generated/read in */
-  kidReadingLanguage: KidLanguage;
+  kidReadingLanguage: Language;
   /** The language word explanations should be given in */
-  kidExplanationLanguage: KidLanguage;
+  kidExplanationLanguage: Language;
   /** Languages spoken at home */
   kidHomeLanguages: string[];
   /** Languages available for story generation */
@@ -168,14 +169,14 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
   // Derive app language: school_system is the primary source (set via the UI dropdown).
   // ui_language/reading_language in DB are kept in sync but school_system is what the user
   // actually changes, so it must take priority.
-  const kidAppLanguage = getKidLanguage(selectedProfile?.school_system);
-  const kidReadingLanguage = getKidLanguage(selectedProfile?.school_system);
+  const kidAppLanguage = getKidLanguage(selectedProfile?.school_system) as Language;
+  const kidReadingLanguage = getKidLanguage(selectedProfile?.school_system) as Language;
 
   
   // Use explicit explanation_language if available, default to 'de'
-  const kidExplanationLanguage = selectedProfile?.explanation_language
+  const kidExplanationLanguage = (selectedProfile?.explanation_language
     ? toKidLanguage(selectedProfile.explanation_language)
-    : 'de' as KidLanguage;
+    : 'de') as Language;
   
   // Home languages from profile, default to ['de']
   const kidHomeLanguages = selectedProfile?.home_languages || ['de'];
