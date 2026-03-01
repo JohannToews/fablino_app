@@ -1422,14 +1422,18 @@ const ReadingPage = () => {
   const loadCachedExplanations = async () => {
     const { data, count } = await supabase
       .from("marked_words")
-      .select("word, explanation", { count: "exact" })
+      .select("word, explanation, explanation_language", { count: "exact" })
       .eq("story_id", id);
     
     if (data) {
+      const storyLang = story?.text_language || 'fr';
       const explanationMap = new Map<string, string>();
       data.forEach((w) => {
         if (w.explanation) {
-          explanationMap.set(w.word.toLowerCase(), w.explanation);
+          // Only cache if explanation language matches story language (or legacy rows without language)
+          if (!w.explanation_language || w.explanation_language === storyLang) {
+            explanationMap.set(w.word.toLowerCase(), w.explanation);
+          }
         }
       });
       setCachedExplanations(explanationMap);
@@ -1649,11 +1653,14 @@ const ReadingPage = () => {
   const handleSaveExplanation = async () => {
     if (!selectedWord || !explanation || !id) return;
 
-    // Save to DB
+    const storyLang = story?.text_language || 'fr';
+    // Save to DB with language metadata
     const { error } = await supabase.from("marked_words").insert({
       story_id: id,
       word: selectedWord,
       explanation: explanation,
+      word_language: storyLang,
+      explanation_language: storyLang,
     });
 
     if (error) {
