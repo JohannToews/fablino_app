@@ -2689,6 +2689,26 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       console.error('[generate-story] Error parsing image_plan:', e);
     }
 
+    // ──── If character_anchor is an object/JSON instead of a string, it might be the character_sheet in disguise ────
+    if (imagePlan) {
+      if (imagePlan.character_anchor && typeof imagePlan.character_anchor === 'object') {
+        imagePlan.character_sheet = Object.values(imagePlan.character_anchor) as CharacterSheetEntry[];
+        imagePlan.character_anchor = undefined;
+        console.log('[CharacterSheet] Extracted character_sheet from character_anchor (object):', imagePlan.character_sheet.length, 'entries');
+      } else if (imagePlan.character_anchor && typeof imagePlan.character_anchor === 'string' && imagePlan.character_anchor.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(imagePlan.character_anchor);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            imagePlan.character_sheet = Object.values(parsed) as CharacterSheetEntry[];
+            imagePlan.character_anchor = undefined;
+            console.log('[CharacterSheet] Extracted character_sheet from character_anchor (JSON string):', imagePlan.character_sheet.length, 'entries');
+          }
+        } catch {
+          /* not JSON, keep as string */
+        }
+      }
+    }
+
     // ──── Normalize character_anchor / world_anchor to string ────
     if (imagePlan) {
       if (imagePlan.character_anchor && typeof imagePlan.character_anchor !== 'string') {
@@ -2758,9 +2778,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
 
       // 2e: Set character_anchor for backward compatibility (legacy image pipeline uses this)
-      const protagonist = characterSheet.find((c: CharacterSheetEntry) => c.role === 'protagonist');
-      if (protagonist) {
+      const protagonist = characterSheet.find(
+        (c: CharacterSheetEntry) => c.role === 'protagonist' || c.name === (resolvedKidName || 'Child')
+      );
+      if (protagonist?.full_anchor) {
         imagePlan.character_anchor = protagonist.full_anchor;
+        console.log('[CharacterSheet] Set character_anchor from protagonist:', protagonist.name);
+      } else if (characterSheet.length > 0 && characterSheet[0].full_anchor) {
+        imagePlan.character_anchor = characterSheet[0].full_anchor;
+        console.log('[CharacterSheet] Set character_anchor from first character (no protagonist match):', characterSheet[0].name);
       }
     } else {
       if (imagePlan) {
