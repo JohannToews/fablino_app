@@ -348,7 +348,34 @@ SAVRŠENI PRIMJERI:
 - "prekrasan" → "Vrlo vrlo lijep"
 
 ODGOVORI SAMO validnim JSON:
-{"correctedWord": "ispravljena_ili_originalna_rijec", "explanation": "kratko_objašnjenje"}`
+{"correctedWord": "ispravljena_ili_originalna_rijec", "explanation": "kratko_objašnjenje"}`,
+
+  ro: (word: string, context?: string) => `Ești un dicționar viu pentru copii de 8 ani.
+
+Cuvântul sau expresia de explicat: "${word}"
+${context ? `Contextul propoziției: "${context}"` : ''}
+
+MISIUNE:
+1. Dacă cuvântul este scris greșit, corectează-l
+2. Dă o explicație SIMPLĂ și CLARĂ în maximum 8 cuvinte
+
+REGULI STRICTE:
+1. Maximum 8 cuvinte pentru explicație, nu mai mult
+2. Folosește cuvinte foarte simple pe care un copil de 8 ani le cunoaște
+3. Fără semne de punctuație la final (fără punct, fără virgulă)
+4. Nu repeta cuvântul de explicat
+5. Pentru verbe: explică acțiunea
+6. Pentru substantive: spune concret ce este
+7. Pentru adjective: dă un sinonim simplu sau descrie
+8. Explicația TREBUIE să fie în limba română, niciodată în engleză
+
+EXEMPLE PERFECTE:
+- "curajos" → "Cineva care nu se teme"
+- "a devora" → "A mânca foarte repede și lacom"
+- "magnific" → "Foarte foarte frumos"
+
+RĂSPUNDE DOAR cu JSON valid (explicația în română):
+{"correctedWord": "cuvânt_corectat_sau_original", "explanation": "explicație scurtă"}`
 };
 
 // Helper: sleep for exponential backoff
