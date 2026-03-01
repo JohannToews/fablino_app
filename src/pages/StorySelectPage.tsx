@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, BookText, GraduationCap, CheckCircle2, Users, Layers, AlertTriangle } from "lucide-react";
+import { BookOpen, BookText, GraduationCap, CheckCircle2, Users, Layers, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { useTranslations, type Translations } from "@/lib/translations";
@@ -55,6 +55,26 @@ const StorySelectPage = () => {
   // AbortController for episode generation — prevents orphaned requests
   const abortControllerRef = useRef<AbortController | null>(null);
   useEffect(() => { return () => { abortControllerRef.current?.abort(); }; }, []);
+
+  // ── Realtime: auto-refresh story list when any story's generation_status changes ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('stories-generation-status')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'stories' },
+        (payload) => {
+          const newStatus = (payload.new as any)?.generation_status;
+          const oldStatus = (payload.old as any)?.generation_status;
+          // Invalidate React Query cache when generation completes or images arrive
+          if (newStatus !== oldStatus) {
+            queryClient.invalidateQueries({ queryKey: ['stories', selectedProfileId, user?.id] });
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedProfileId, user?.id, queryClient]);
 
   // React Query: fetch stories + results with 5min cache
   const { data: queryData, isLoading } = useQuery({
@@ -472,6 +492,10 @@ const StorySelectPage = () => {
 
 // Sub-tab labels now come from central translations.ts
 
+/** Check if a story is still being generated */
+const isStoryGenerating = (status?: string | null): boolean =>
+  !status || ['generating', 'pending', 'checking'].includes(status);
+
 // Single story card component
 const StoryCard = ({ 
   story, 
@@ -484,14 +508,22 @@ const StoryCard = ({
   navigate: (path: string) => void; 
   isCompleted: boolean;
 }) => {
-  
+  const generating = isStoryGenerating(story.generation_status);
+
   return (
     <div
-      onClick={() => navigate(`/read/${story.id}`)}
-      className="card-story group"
+      onClick={() => { if (!generating) navigate(`/read/${story.id}`); }}
+      className={generating ? 'card-story opacity-70 cursor-default' : 'card-story group'}
     >
       <div className="aspect-[3/2] sm:aspect-[4/3] mb-3 sm:mb-4 rounded-xl overflow-hidden bg-muted relative">
-        {story.cover_image_url ? (
+        {generating ? (
+          /* Generating state — non-tappable card with pulsing indicator */
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 animate-pulse">
+            <img src="/mascot/3_wating_story_generated.png" alt="Fablino" className="h-16 w-16 object-contain mb-2" />
+            <Loader2 className="h-5 w-5 text-primary animate-spin mb-1" />
+            <span className="text-xs text-primary/80 font-medium">{t.seriesGenerating}</span>
+          </div>
+        ) : story.cover_image_url ? (
           <img
             src={getThumbnailUrl(story.cover_image_url, story.has_comic_grid ? 800 : 400, 60)}
             alt={story.title}
@@ -509,25 +541,27 @@ const StoryCard = ({
           </div>
         )}
         {/* Status badge */}
-        <Badge 
-          className={`absolute top-2 left-2 text-xs font-bold flex items-center gap-1 ${
-            isCompleted 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
-              : 'bg-amber-500 hover:bg-amber-600 text-white'
-          }`}
-        >
-          {isCompleted && <CheckCircle2 className="h-3 w-3" />}
-          {isCompleted ? t.statusCompleted : t.statusToRead}
-        </Badge>
+        {!generating && (
+          <Badge 
+            className={`absolute top-2 left-2 text-xs font-bold flex items-center gap-1 ${
+              isCompleted 
+                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                : 'bg-amber-500 hover:bg-amber-600 text-white'
+            }`}
+          >
+            {isCompleted && <CheckCircle2 className="h-3 w-3" />}
+            {isCompleted ? t.statusCompleted : t.statusToRead}
+          </Badge>
+        )}
         {/* Image warning badge */}
-        {(story.generation_status === 'images_failed' || story.generation_status === 'images_partial') && (
+        {!generating && (story.generation_status === 'images_failed' || story.generation_status === 'images_partial') && (
           <Badge className="absolute bottom-2 left-2 text-xs font-bold flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white">
             <AlertTriangle className="h-3 w-3" />
             {story.generation_status === 'images_failed' ? '🖼️' : '⚠️'}
           </Badge>
         )}
         {/* Difficulty badge */}
-        {story.difficulty && (
+        {!generating && story.difficulty && (
           <Badge 
             className={`absolute top-2 right-2 text-xs font-bold ${
               story.difficulty === 'easy' 
@@ -541,8 +575,10 @@ const StoryCard = ({
           </Badge>
         )}
       </div>
-      <h3 className="font-baloo text-base sm:text-xl font-bold text-center group-hover:text-primary transition-colors line-clamp-2" dir="auto">
-        {story.title}
+      <h3 className={`font-baloo text-base sm:text-xl font-bold text-center transition-colors line-clamp-2 ${
+        generating ? 'text-muted-foreground' : 'group-hover:text-primary'
+      }`} dir="auto">
+        {generating ? t.seriesGenerating : story.title}
       </h3>
     </div>
   );

@@ -474,6 +474,7 @@ interface Story {
   comic_layout_key?: string | null;
   comic_panel_count?: number | null;
   comic_grid_plan?: any | null;
+  generation_status?: string | null;
 }
 
 interface BranchOption {
@@ -2058,6 +2059,37 @@ const ReadingPage = () => {
   // Story not found (e.g. invalid id or load error) — avoid rendering content with null story
   if (!story) {
     return <Navigate to="/stories" replace />;
+  }
+
+  // ── Guard: Story still generating → show "being written" screen ──
+  const isStillGenerating = !story.generation_status || ['generating', 'pending', 'checking'].includes(story.generation_status);
+  if (isStillGenerating) {
+    const lang = kidAppLanguage || 'de';
+    const generatingLabels: Record<string, { title: string; message: string; toLibrary: string }> = {
+      de: { title: 'Geschichte wird geschrieben', message: 'Diese Geschichte wird gerade geschrieben... Du kannst sie gleich in deiner Bibliothek finden.', toLibrary: 'Zur Bibliothek' },
+      fr: { title: 'Histoire en cours d\'écriture', message: 'Cette histoire est en cours d\'écriture... Tu la trouveras bientôt dans ta bibliothèque.', toLibrary: 'Vers la bibliothèque' },
+      en: { title: 'Story being written', message: 'This story is being written... You\'ll find it in your library soon.', toLibrary: 'Go to library' },
+      es: { title: 'Historia escribiéndose', message: 'Esta historia se está escribiendo... La encontrarás pronto en tu biblioteca.', toLibrary: 'Ir a la biblioteca' },
+      nl: { title: 'Verhaal wordt geschreven', message: 'Dit verhaal wordt geschreven... Je vindt het binnenkort in je bibliotheek.', toLibrary: 'Naar de bibliotheek' },
+      it: { title: 'Storia in scrittura', message: 'Questa storia è in fase di scrittura... La troverai presto nella tua biblioteca.', toLibrary: 'Vai alla biblioteca' },
+      bs: { title: 'Priča se piše', message: 'Ova priča se upravo piše... Uskoro ćeš je pronaći u svojoj biblioteci.', toLibrary: 'Idi u biblioteku' },
+      tr: { title: 'Hikâye yazılıyor', message: 'Bu hikâye şu anda yazılıyor... Kütüphanende bulabileceksin.', toLibrary: 'Kütüphaneye git' },
+      pl: { title: 'Historia jest pisana', message: 'Ta historia jest właśnie pisana... Wkrótce znajdziesz ją w swojej bibliotece.', toLibrary: 'Do biblioteki' },
+      ro: { title: 'Povestea se scrie', message: 'Această poveste se scrie chiar acum... O vei găsi în curând în biblioteca ta.', toLibrary: 'Spre bibliotecă' },
+      pt: { title: 'História a ser escrita', message: 'Esta história está a ser escrita... Em breve encontra-la-ás na tua biblioteca.', toLibrary: 'Ir para a biblioteca' },
+    };
+    const gl = generatingLabels[lang] || generatingLabels.en;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-6">
+        <img src="/mascot/3_wating_story_generated.png" alt="Fablino" className="h-32 w-32 object-contain animate-pulse" />
+        <h2 className="font-baloo text-2xl font-bold text-foreground">{gl.title}</h2>
+        <p className="text-muted-foreground max-w-sm">{gl.message}</p>
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <Button onClick={() => navigate('/stories')} variant="outline" className="mt-4">
+          {gl.toLibrary}
+        </Button>
+      </div>
+    );
   }
 
   const storyContent = story.content ?? '';
