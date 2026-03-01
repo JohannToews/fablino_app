@@ -258,7 +258,6 @@ SCENE: ${scene.description}
 ATMOSPHERE: ${worldAnchor}
 
 STYLE: ${styleBlock}
-${ageModifier}
 ${NO_TEXT_INSTRUCTION}
 
 NEGATIVE: ${negativePrompt}, inconsistent character appearance, different clothing than described, wrong hair color, wrong skin tone, wrong eye color, extra characters not in scene`;
@@ -299,7 +298,6 @@ Setting atmosphere: ${worldAnchor}
 Mood: Inviting, adventurous, age-appropriate. The image should make a child want to read this story.
 
 STYLE: ${styleBlock}
-${ageModifier}
 ${NO_TEXT_INSTRUCTION}
 
 NEGATIVE: ${negativePrompt}, inconsistent character appearance, text, title, letters, words`;
@@ -316,7 +314,7 @@ NEGATIVE: ${negativePrompt}, inconsistent character appearance, text, title, let
 export function buildImagePrompts(
   imagePlan: ImagePlan,
   ageStyleRules: ImageStyleRules,
-  themeImageRules: ThemeImageRules,
+  themeImageRules: ThemeImageRules | null | undefined,
   childAge: number,
   seriesContext?: SeriesImageContext,
   imageStyleOverride?: { promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string },
@@ -335,20 +333,17 @@ export function buildImagePrompts(
       ? [
           ageModifier,
           seriesContext.visualStyleSheet.world_style,
-          ageStyleRules.color_palette,
+          ...(imageStyleOverride ? [] : [ageStyleRules.color_palette]),
           EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5],
         ].filter(Boolean).join('. ')
       : [
           ageModifier,
-          themeImageRules.image_style_prompt,
-          ageStyleRules.style_prompt,
-          themeImageRules.image_color_palette || ageStyleRules.color_palette,
+          ...(imageStyleOverride ? [] : [ageStyleRules.style_prompt, ageStyleRules.color_palette]),
         ].filter(Boolean).join('. ');
     const negativeBlock = [
       NO_PHYSICAL_BOOK_NEGATIVE,
       imageStyleOverride?.negative_prompt,
-      themeImageRules.image_negative_prompt,
-      ageStyleRules.negative_prompt,
+      ...(imageStyleOverride ? [] : [ageStyleRules.negative_prompt]),
       'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
     ].filter(Boolean).join(', ');
 
@@ -416,21 +411,18 @@ export function buildImagePrompts(
     ? [
         ageModifier,
         seriesContext.visualStyleSheet.world_style,
-        ageStyleRules.color_palette,
+        ...(imageStyleOverride ? [] : [ageStyleRules.color_palette]),
         EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5],
       ].filter(Boolean).join('. ')
     : [
         ageModifier,
-        themeImageRules.image_style_prompt,
-        ageStyleRules.style_prompt,
-        themeImageRules.image_color_palette || ageStyleRules.color_palette,
+        ...(imageStyleOverride ? [] : [ageStyleRules.style_prompt, ageStyleRules.color_palette]),
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
     NO_PHYSICAL_BOOK_NEGATIVE,
     imageStyleOverride?.negative_prompt,
-    themeImageRules.image_negative_prompt,
-    ageStyleRules.negative_prompt,
+    ...(imageStyleOverride ? [] : [ageStyleRules.negative_prompt]),
     'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
   ].filter(Boolean).join(', ');
 
@@ -500,7 +492,7 @@ export function buildFallbackImagePrompt(
   storyTitle: string,
   characterDescription: string,
   ageStyleRules: ImageStyleRules,
-  themeImageRules: ThemeImageRules,
+  themeImageRules: ThemeImageRules | null | undefined,
   childAge?: number,
   seriesContext?: SeriesImageContext,
   imageStyleOverride?: { promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string },
@@ -509,26 +501,23 @@ export function buildFallbackImagePrompt(
     ? `${imageStyleOverride.promptSnippet}. ${imageStyleOverride.ageModifier}`.replace(/\.\s*$/, '')
     : (childAge ? getAgeModifierFallback(childAge) : '');
 
-  // Same series vs. single-story logic as buildImagePrompts
+  // Same series vs. single-story logic as buildImagePrompts (image_style_rules only when no override)
   const styleBlock = seriesContext
     ? [
         ageModifier,
         seriesContext.visualStyleSheet.world_style,
-        ageStyleRules.color_palette,
+        ...(imageStyleOverride ? [] : [ageStyleRules.color_palette]),
         EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5],
       ].filter(Boolean).join('. ')
     : [
         ageModifier,
-        themeImageRules.image_style_prompt,
-        ageStyleRules.style_prompt,
-        ageStyleRules.color_palette,
+        ...(imageStyleOverride ? [] : [ageStyleRules.style_prompt, ageStyleRules.color_palette]),
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
     NO_PHYSICAL_BOOK_NEGATIVE,
     imageStyleOverride?.negative_prompt,
-    themeImageRules.image_negative_prompt,
-    ageStyleRules.negative_prompt,
+    ...(imageStyleOverride ? [] : [ageStyleRules.negative_prompt]),
     'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
   ].filter(Boolean).join(', ');
 
@@ -563,7 +552,7 @@ export async function loadImageRules(
   ageGroup: string,
   themeKey: string | null,
   language: string,
-): Promise<{ ageRules: ImageStyleRules; themeRules: ThemeImageRules }> {
+): Promise<{ ageRules: ImageStyleRules }> {
 
   // 1. image_style_rules by age group
   const { data: ageData } = await supabase
@@ -573,29 +562,9 @@ export async function loadImageRules(
     .is('theme_key', null)  // General rules (not theme-specific)
     .maybeSingle();
 
-  // 2. theme_rules image columns (by theme_key + language)
-  // NOTE: image_style_prompt, image_negative_prompt, image_color_palette don't exist
-  // in theme_rules yet (planned for Phase 1.3). This query will return null for those
-  // columns but won't error since Supabase ignores missing columns in select.
-  // Once the migration adds these columns, this query will automatically pick them up.
-  let themeData: ThemeImageRules = {};
-  if (themeKey && themeKey !== 'surprise') {
-    try {
-      const { data } = await supabase
-        .from('theme_rules')
-        .select('image_style_prompt, image_negative_prompt, image_color_palette')
-        .eq('theme_key', themeKey)
-        .eq('language', language)
-        .maybeSingle();
-      themeData = data || {};
-    } catch {
-      // Columns don't exist yet – expected until Phase 1.3 migration
-      themeData = {};
-    }
-  }
-
+  // theme_rules image columns (image_style_prompt, etc.) removed: in live DB they are
+  // nonexistent or always null; image style comes from image_styles + image_style_rules only.
   return {
     ageRules: ageData || {},
-    themeRules: themeData || {},
   };
 }
