@@ -912,6 +912,8 @@ const FeedbackStatsPage = () => {
   const [wordExplanationCounts, setWordExplanationCounts] = useState<Map<string, number>>(new Map());
   const [markedWordsCounts, setMarkedWordsCounts] = useState<Map<string, number>>(new Map());
   const [totalKidProfiles, setTotalKidProfiles] = useState(0);
+  const [kpiStartDate, setKpiStartDate] = useState<Date | undefined>(undefined);
+  const [pendingKpiDate, setPendingKpiDate] = useState<Date | undefined>(undefined);
   
   const adminLang = (user?.adminLanguage || 'de') as Language;
   const t = translations[adminLang] || translations.de;
@@ -1157,6 +1159,7 @@ const FeedbackStatsPage = () => {
   // Filtered stories
   const filteredStories = useMemo(() => {
     return stories.filter(story => {
+      if (kpiStartDate && new Date(story.created_at) < kpiStartDate) return false;
       if (filterUser !== "all" && story.username !== filterUser) return false;
       if (filterKid !== "all" && story.kid_name !== filterKid) return false;
       if (filterDifficulty !== "all" && story.difficulty !== filterDifficulty) return false;
@@ -1171,7 +1174,7 @@ const FeedbackStatsPage = () => {
       if (filterQuizCompleted === "no" && story.quiz_completed) return false;
       return true;
     });
-  }, [stories, filterUser, filterKid, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuizCompleted]);
+  }, [stories, kpiStartDate, filterUser, filterKid, filterDifficulty, filterStatus, filterTitle, filterJaiFini, filterQuizCompleted]);
 
   // Filtered ratings
   const filteredRatings = useMemo(() => {
@@ -1292,8 +1295,13 @@ const FeedbackStatsPage = () => {
 
   const fmtMs = (ms: number | null) => ms != null ? (ms / 1000).toFixed(1) + 's' : '-';
 
-  const avgRating = ratings.length > 0
-    ? (ratings.reduce((sum, r) => sum + r.quality_rating, 0) / ratings.length).toFixed(1)
+  const kpiRatings = useMemo(() => {
+    if (!kpiStartDate) return ratings;
+    return ratings.filter(r => new Date(r.created_at) >= kpiStartDate);
+  }, [ratings, kpiStartDate]);
+
+  const avgRating = kpiRatings.length > 0
+    ? (kpiRatings.reduce((sum, r) => sum + r.quality_rating, 0) / kpiRatings.length).toFixed(1)
     : "0";
 
   const totalWordsRequested = 0;
@@ -1407,8 +1415,8 @@ const FeedbackStatsPage = () => {
     setIsDeletingFeedback(false);
   };
 
-  const [kpiStartDate, setKpiStartDate] = useState<Date | undefined>(undefined);
-  const [pendingKpiDate, setPendingKpiDate] = useState<Date | undefined>(undefined);
+
+
 
   const kpiStories = useMemo(() => {
     if (!kpiStartDate) return stories;
@@ -1472,7 +1480,7 @@ const FeedbackStatsPage = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold">{totalKidProfiles}</span>
+                <span className="text-2xl font-bold">{kpiStartDate ? new Set(kpiStories.map(s => s.kid_profile_id).filter(Boolean)).size : totalKidProfiles}</span>
               </div>
             </CardContent>
           </Card>
