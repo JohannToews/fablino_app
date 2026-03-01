@@ -187,6 +187,12 @@ const CreateStoryPage = () => {
       return;
     }
 
+    if (!selectedProfile?.id) {
+      toast.error(t.noKidProfileSelected || 'Bitte wähle zuerst ein Kinderprofil');
+      navigate("/");
+      return;
+    }
+
     // K5: Enforce daily rate limit
     if (limitReached) {
       toast.error(t.createDailyLimitReached.replace('{n}', String(dailyLimit)));
@@ -572,6 +578,12 @@ const CreateStoryPage = () => {
   ) => {
     if (!user?.id) {
       toast.error(t.readingPleaseLogin);
+      navigate("/");
+      return;
+    }
+
+    if (!selectedProfile?.id) {
+      toast.error(t.noKidProfileSelected || 'Bitte wähle zuerst ein Kinderprofil');
       navigate("/");
       return;
     }
