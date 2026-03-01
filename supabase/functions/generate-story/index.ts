@@ -53,28 +53,29 @@ function safeParseStoryResponse(raw: string): any | null {
   // Step 2: Try direct parse
   try {
     const parsed = JSON.parse(cleaned);
+    console.log('[PARSE] Step 2 direct parse OK');
     return parsed;
   } catch (e1: any) {
     console.warn('[PARSE] Direct JSON.parse failed:', e1.message?.substring(0, 100));
   }
 
-  // Step 3: Extract first { to last }
+  // Step 3: Extract first { to last } (risk: "}" inside a string can truncate and drop image_plan)
   const firstBrace = cleaned.indexOf('{');
   const lastBrace = cleaned.lastIndexOf('}');
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     try {
       const parsed = JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
-      console.log('[PARSE] Extracted JSON block succeeded');
+      console.log('[PARSE] Step 3 brace extraction OK' + (!(parsed as any).image_plan ? ' (no image_plan in result — possible truncation)' : ''));
       return parsed;
     } catch (e2: any) {
       console.warn('[PARSE] Extracted JSON block failed:', e2.message?.substring(0, 100));
     }
   }
 
-  // Step 4: Regex fallback – extract "content" or "text" field
+  // Step 4: Regex fallback – extract "content" or "text" field (image_plan is NOT recovered)
   const contentMatch = cleaned.match(/"(?:content|text)"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (contentMatch) {
-    console.warn('[PARSE] Using regex fallback for content field');
+    console.warn('[PARSE] Step 4 regex fallback for content — image_plan will be missing, fallback path will run');
     return {
       title: 'Untitled Story',
       content: contentMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'),
@@ -2385,6 +2386,12 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
           vocabulary: parsed.vocabulary || nested.vocabulary || [],
           // Flatten classification if present
           ...(parsed.classification && typeof parsed.classification === 'object' ? parsed.classification : {}),
+          // Preserve top-level fields that are NOT inside nested (otherwise image_plan etc. are lost)
+          ...(parsed.image_plan != null && { image_plan: parsed.image_plan }),
+          ...(parsed.branch_options != null && { branch_options: parsed.branch_options }),
+          ...(parsed.episode_summary != null && { episode_summary: parsed.episode_summary }),
+          ...(parsed.continuity_state != null && { continuity_state: parsed.continuity_state }),
+          ...(parsed.visual_style_sheet != null && { visual_style_sheet: parsed.visual_style_sheet }),
         };
       } else {
         story = parsed;
