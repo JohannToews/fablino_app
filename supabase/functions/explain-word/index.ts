@@ -263,13 +263,14 @@ SUROWE ZASADY:
 5. Dla czasowników: wyjaśnij czynność
 6. Dla rzeczowników: powiedz konkretnie, co to jest
 7. Dla przymiotników: podaj prosty synonim lub opisz
+8. Wyjaśnienie MUSI być po polsku, nigdy po angielsku
 
 IDEALNE PRZYKŁADY:
 - "odważny" → "Ktoś, kto się nie boi"
 - "pożerać" → "Jeść bardzo szybko i łapczywie"
 - "wspaniały" → "Bardzo bardzo ładny"
 
-ODPOWIEDZ TYLKO poprawnym JSON:
+ODPOWIEDZ TYLKO poprawnym JSON (wyjaśnienie po polsku):
 {"correctedWord": "poprawione_lub_oryginalne_slowo", "explanation": "krotkie_wyjasnienie"}`,
 
   uk: (word: string, context?: string) => `Ти — живий словник для 8-річних дітей.
