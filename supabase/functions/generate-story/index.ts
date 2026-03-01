@@ -6,7 +6,7 @@ import { mergeSeriesContinuityState } from '../_shared/seriesContinuityMerge.ts'
 import { selectStorySubtype, recordSubtypeUsage, SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
 import { isComicStripEnabled } from '../_shared/comicStrip/featureFlag.ts';
 import { selectLayout } from '../_shared/comicStrip/layouts.ts';
-import { buildComicStripInstructions, buildComicStripImagePrompt, buildComicStripImagePrompts, buildComicGridPrompt, parseComicStripPlan } from '../_shared/comicStrip/comicStripPromptBuilder.ts';
+import { buildComicStripInstructions, buildComicStripImagePrompt, buildComicStripImagePrompts, buildComicGridPrompt, buildComicGridPromptV2, parseComicStripPlan } from '../_shared/comicStrip/comicStripPromptBuilder.ts';
 import type { ComicLayout, ComicImagePlan } from '../_shared/comicStrip/types.ts';
 import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
 import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
@@ -2719,16 +2719,33 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     }
 
+    // ──── SERIES CHARACTER SHEET MERGE (Ep 2-5: keep Ep 1 characters, add new) — before hasCharacterSheet ────
+    if (imagePlan && (isSeries || seriesId) && (resolvedEpisodeNumber ?? 1) > 1 && seriesContextData?.visualStyleSheet?.character_sheet) {
+      const ep1Sheet: CharacterSheetEntry[] = seriesContextData.visualStyleSheet.character_sheet;
+      const currentSheet: CharacterSheetEntry[] = imagePlan.character_sheet ?? [];
+      const mergedSheet = [...ep1Sheet];
+      for (const newChar of currentSheet) {
+        const existsInEp1 = mergedSheet.some((c: CharacterSheetEntry) => c.name === newChar.name);
+        if (!existsInEp1) {
+          mergedSheet.push(newChar);
+          console.log(`[SeriesSheet] New character in Ep${resolvedEpisodeNumber}: ${newChar.name} (${newChar.role})`);
+        }
+      }
+      imagePlan.character_sheet = mergedSheet;
+      console.log(`[SeriesSheet] Merged: ${mergedSheet.length} characters (${ep1Sheet.length} from Ep1 + ${mergedSheet.length - ep1Sheet.length} new)`);
+    }
+
     // ──── CHARACTER SHEET PROCESSING ────
     const characterSheet: CharacterSheetEntry[] = imagePlan?.character_sheet ?? [];
     const hasCharacterSheet = Array.isArray(characterSheet) && characterSheet.length > 0;
 
     if (hasCharacterSheet && imagePlan) {
-      console.log(`[CharacterSheet] ${characterSheet.length} characters:`, characterSheet.map((c: CharacterSheetEntry) => `${c.name} (${c.role})`).join(', '));
+      const sheet = imagePlan.character_sheet ?? [];
+      console.log(`[CharacterSheet] ${sheet.length} characters:`, sheet.map((c: CharacterSheetEntry) => `${c.name} (${c.role})`).join(', '));
 
       // 2b: Merge protagonist with My Look (if kid is in story)
       if (includeSelf && kidAppearance) {
-        const protagonistEntry = characterSheet.find(
+        const protagonistEntry = sheet.find(
           (c: CharacterSheetEntry) => c.role === 'protagonist' || c.name === (resolvedKidName || 'Child')
         );
         if (protagonistEntry) {
@@ -2750,7 +2767,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
 
       // 2c: Validate characters_present in scenes reference valid character names
-      const validNames = new Set(characterSheet.map((c: CharacterSheetEntry) => c.name));
+      const validNames = new Set(sheet.map((c: CharacterSheetEntry) => c.name));
       const scenes = imagePlan.scenes ?? [];
       for (const scene of scenes) {
         if (scene.characters_present) {
@@ -2778,15 +2795,15 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
 
       // 2e: Set character_anchor for backward compatibility (legacy image pipeline uses this)
-      const protagonist = characterSheet.find(
+      const protagonist = sheet.find(
         (c: CharacterSheetEntry) => c.role === 'protagonist' || c.name === (resolvedKidName || 'Child')
       );
       if (protagonist?.full_anchor) {
         imagePlan.character_anchor = protagonist.full_anchor;
         console.log('[CharacterSheet] Set character_anchor from protagonist:', protagonist.name);
-      } else if (characterSheet.length > 0 && characterSheet[0].full_anchor) {
-        imagePlan.character_anchor = characterSheet[0].full_anchor;
-        console.log('[CharacterSheet] Set character_anchor from first character (no protagonist match):', characterSheet[0].name);
+      } else if (sheet.length > 0 && sheet[0].full_anchor) {
+        imagePlan.character_anchor = sheet[0].full_anchor;
+        console.log('[CharacterSheet] Set character_anchor from first character (no protagonist match):', sheet[0].name);
       }
     } else {
       if (imagePlan) {
@@ -2807,6 +2824,21 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       } else if (imagePlan?.character_anchor != null) {
         console.log('[generate-story] No appearance override (include_self=', includeSelf, ', kidAppearance=', !!kidAppearance, '), using LLM anchor');
       }
+    }
+
+    // Episode 1: Build or augment visual_style_sheet with character_sheet for series persistence
+    if ((resolvedEpisodeNumber ?? 1) === 1 && imagePlan?.character_sheet?.length) {
+      const charactersMap = Object.fromEntries(
+        imagePlan.character_sheet.map((c: CharacterSheetEntry) => [c.name, c.full_anchor])
+      );
+      visualStyleSheet = {
+        ...(visualStyleSheet && typeof visualStyleSheet === 'object' ? visualStyleSheet : {}),
+        characters: { ...(visualStyleSheet?.characters || {}), ...charactersMap },
+        character_sheet: imagePlan.character_sheet,
+        world_style: imagePlan.world_anchor || (visualStyleSheet?.world_style ?? ''),
+        recurring_visual: visualStyleSheet?.recurring_visual ?? '',
+      };
+      console.log('[generate-story] Ep1 visual_style_sheet set with character_sheet:', imagePlan.character_sheet.length, 'characters');
     }
 
     // Parse grid-based comic image plan when comic strip is active (grid_1 / grid_2 format)
@@ -2907,12 +2939,13 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       // For Ep2+: use visual_style_sheet loaded from Episode 1
       // For Ep1: use visual_style_sheet just parsed from this LLM response
       const vss = seriesContextData.visualStyleSheet || visualStyleSheet;
-      if (vss && typeof vss === 'object' && (vss.characters || vss.world_style)) {
+      if (vss && typeof vss === 'object' && (vss.characters || vss.world_style || (vss as any).character_sheet?.length)) {
         seriesImageCtx = {
           visualStyleSheet: {
             characters: vss.characters || {},
             world_style: vss.world_style || '',
             recurring_visual: vss.recurring_visual || '',
+            ...((vss as any).character_sheet && { character_sheet: (vss as any).character_sheet }),
           },
           episodeNumber: currentEpForImages,
         };
@@ -2933,6 +2966,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
       const safeAnchorLog = (v: unknown, len = 120) => typeof v === 'string' ? v.substring(0, len) : JSON.stringify(v)?.substring(0, len);
       console.log('[image-prompt] character_anchor used:', JSON.stringify(safeAnchorLog(imagePlan.character_anchor)), 'source:', kidAppearance ? 'kid_appearance' : (emotionFlowResult?.protagonistSeed?.appearance_en ? 'emotion_flow' : 'llm_generated'));
+      const protagonistGenderForPrompt = resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined;
       console.log('[IMAGE-PIPELINE] Calling buildImagePrompts:', JSON.stringify({
         hasSeriesContext: !!seriesImageCtx,
         episodeNumber: seriesImageCtx?.episodeNumber ?? null,
@@ -2941,7 +2975,10 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           ? Object.keys(seriesImageCtx.visualStyleSheet)
           : null
       }));
-      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData);
+      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData, {
+        title: story.title || 'Untitled Story',
+        protagonistGender: protagonistGenderForPrompt,
+      });
     } else {
       // ═══ FALLBACK: Generate image_plan via separate LLM call ═══
       console.log('[generate-story] No image_plan in LLM response, using fallback');
@@ -2984,7 +3021,10 @@ Respond with ONLY valid JSON, no markdown:
             fallbackPlan.character_anchor = appearanceAnchor;
             console.log('[generate-story] ✅ Fallback path: appearance anchor OVERRIDE:', appearanceAnchor);
           }
-          imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData);
+          imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData, {
+            title: story.title || 'Untitled Story',
+            protagonistGender: resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined,
+          });
         } else {
           throw new Error('Invalid fallback image_plan structure');
         }
@@ -3373,20 +3413,14 @@ Respond with ONLY valid JSON, no markdown:
 
           console.log(`[IMAGE] Style: ${imageStyleData?.styleKey || 'default'}, negativePrompt: ${comicNegativePrompt?.substring(0, 100) || 'NONE'}, suffix: ${consistencySuffix?.substring(0, 60)}`);
 
-          const prompt1 = buildComicGridPrompt(
-            comicImagePlan.grid_1,
-            characterAnchor,
-            comicImagePlan.world_anchor,
-            imageStylePrefix,
-            consistencySuffix,
-          );
-          const prompt2 = buildComicGridPrompt(
-            comicImagePlan.grid_2,
-            characterAnchor,
-            comicImagePlan.world_anchor,
-            imageStylePrefix,
-            consistencySuffix,
-          );
+          const comicSheet = imagePlan?.character_sheet;
+          const useComicV2 = Array.isArray(comicSheet) && comicSheet.length > 0;
+          const prompt1 = useComicV2
+            ? buildComicGridPromptV2(comicImagePlan.grid_1, comicSheet, comicImagePlan.world_anchor, imageStylePrefix, consistencySuffix)
+            : buildComicGridPrompt(comicImagePlan.grid_1, characterAnchor, comicImagePlan.world_anchor, imageStylePrefix, consistencySuffix);
+          const prompt2 = useComicV2
+            ? buildComicGridPromptV2(comicImagePlan.grid_2, comicSheet, comicImagePlan.world_anchor, imageStylePrefix, consistencySuffix)
+            : buildComicGridPrompt(comicImagePlan.grid_2, characterAnchor, comicImagePlan.world_anchor, imageStylePrefix, consistencySuffix);
 
           // Log final Vertex prompts for debugging
           console.log(`[COMIC] Vertex prompt grid_1 (first 2000 chars): ${prompt1.substring(0, 2000)}`);

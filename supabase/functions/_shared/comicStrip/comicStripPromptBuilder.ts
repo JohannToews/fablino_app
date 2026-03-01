@@ -6,6 +6,7 @@
 
 import type { ComicLayout, ComicStripPlan, ComicStripPlanPanel } from './types.ts';
 import type { ComicPanel } from './types.ts';
+import type { CharacterSheetEntry } from '../imagePromptBuilder.ts';
 
 // ─── Function 1: buildComicStripInstructions ───────────────────────
 
@@ -282,6 +283,45 @@ Character reference (same character(s) in all 4 panels): ${characterAnchor}
 IMPORTANT: The child must be clearly recognizable as the described gender regardless of hair length or hairstyle. Maintain gender-typical facial features, body shape, and overall appearance.
 No text, signs, numbers, or readable writing in any panel.
 ${suffix}`;
+}
+
+/**
+ * V2: Build comic grid prompt with character_sheet block (identical characters in every panel).
+ * When character_sheet is available, use this instead of buildComicGridPrompt for consistent character appearance.
+ */
+export function buildComicGridPromptV2(
+  grid: ComicPanel[],
+  characterSheet: CharacterSheetEntry[],
+  worldAnchor: string,
+  imageStylePrefix: string,
+  consistencySuffix?: string,
+): string {
+  const allCharacterNames = new Set<string>();
+  grid.forEach((panel) => {
+    const p = panel as any;
+    if (Array.isArray(p.characters_present)) p.characters_present.forEach((c: string) => allCharacterNames.add(c));
+  });
+  if (allCharacterNames.size === 0) {
+    const protagonist = characterSheet.find((c) => c.role === 'protagonist');
+    const sidekick = characterSheet.find((c) => c.role === 'sidekick');
+    if (protagonist) allCharacterNames.add(protagonist.name);
+    if (sidekick) allCharacterNames.add(sidekick.name);
+  }
+  const charBlock = [...allCharacterNames]
+    .map((name) => {
+      const char = characterSheet.find((c) => c.name === name);
+      if (!char) return null;
+      return `${char.role.toUpperCase()} — ${char.name}: ${char.full_anchor}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+  const characterSection = `=== CHARACTER REFERENCE (IDENTICAL IN EVERY PANEL) ===
+${charBlock}
+
+CRITICAL: Characters must look EXACTLY the same in every panel.
+Same clothing, same hair, same features, same colors. Zero variation.
+=== END CHARACTER REFERENCE ===`;
+  return buildComicGridPrompt(grid, characterSection, worldAnchor, imageStylePrefix, consistencySuffix);
 }
 
 export interface BuildComicStripImagePromptParams {

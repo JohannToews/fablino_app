@@ -7,17 +7,27 @@
 
 // ─── Types ───────────────────────────────────────────────────────
 
+export interface CharacterSheetEntry {
+  name: string;
+  role: 'protagonist' | 'sidekick' | 'villain' | 'family' | 'friend' | 'secondary';
+  full_anchor: string;
+  props?: string[];
+}
+
 export interface ImagePlan {
   character_anchor: string;
   world_anchor: string;
   scenes: Array<{
     scene_id: number;
-    story_position: string;
+    story_position?: string;
     description: string;
     emotion: string;
-    key_elements: string[];
-    target_paragraph?: number;  // 0-based paragraph index (new stories); absent on old stories
+    key_elements?: string[];
+    target_paragraph?: number;
+    characters_present?: string[];
+    camera?: string;
   }>;
+  character_sheet?: CharacterSheetEntry[];
 }
 
 export interface ImageStyleRules {
@@ -195,11 +205,112 @@ export async function getStyleForAge(
   };
 }
 
+// ─── V2: Character sheet + story moments + camera ─────────────────
+
+/**
+ * Build a single scene image prompt using character_sheet and camera.
+ */
+export function buildSceneImagePromptV2(
+  scene: {
+    description: string;
+    characters_present?: string[];
+    camera: string;
+    emotion?: string;
+  },
+  characterSheet: CharacterSheetEntry[],
+  worldAnchor: string,
+  styleBlock: string,
+  negativePrompt: string,
+  ageModifier: string,
+  protagonistGender?: string
+): string {
+  const characters_present = scene.characters_present ?? [];
+  const characterLines = characters_present
+    .map((name) => {
+      const char = characterSheet.find((c) => c.name === name);
+      if (!char) return null;
+      return `${char.role.toUpperCase()} — ${char.name}:\n${char.full_anchor}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+  const protagonistInScene = characters_present.some((name) => {
+    const char = characterSheet.find((c) => c.name === name);
+    return char?.role === 'protagonist';
+  });
+  const genderClarity =
+    protagonistInScene && protagonistGender
+      ? `\nThe protagonist must be clearly recognizable as a ${protagonistGender} regardless of hair length or hairstyle.`
+      : '';
+
+  return `=== CHARACTER REFERENCE (MUST MATCH EXACTLY) ===
+${characterLines}
+
+CRITICAL: Every character MUST look EXACTLY as described above.
+Do not modify, add, or omit any visual detail — especially clothing, hair, and skin tone.
+Characters not listed above must NOT appear in the image.${genderClarity}
+=== END CHARACTER REFERENCE ===
+
+CAMERA: ${scene.camera}
+
+SCENE: ${scene.description}
+
+ATMOSPHERE: ${worldAnchor}
+
+STYLE: ${styleBlock}
+${ageModifier}
+${NO_TEXT_INSTRUCTION}
+
+NEGATIVE: ${negativePrompt}, inconsistent character appearance, different clothing than described, wrong hair color, wrong skin tone, wrong eye color, extra characters not in scene`;
+}
+
+/**
+ * Build cover image prompt using character_sheet.
+ */
+export function buildCoverImagePromptV2(
+  title: string,
+  characterSheet: CharacterSheetEntry[],
+  worldAnchor: string,
+  styleBlock: string,
+  negativePrompt: string,
+  ageModifier: string,
+  protagonistGender?: string
+): string {
+  const protagonist = characterSheet.find((c) => c.role === 'protagonist');
+  const sidekick = characterSheet.find((c) => c.role === 'sidekick');
+
+  let charLines = '';
+  if (protagonist) charLines += `PROTAGONIST — ${protagonist.name}:\n${protagonist.full_anchor}\n\n`;
+  if (sidekick) charLines += `SIDEKICK — ${sidekick.name}:\n${sidekick.full_anchor}\n\n`;
+
+  const genderClarity = protagonistGender
+    ? `\nThe protagonist must be clearly recognizable as a ${protagonistGender}.`
+    : '';
+
+  return `=== CHARACTER REFERENCE (MUST MATCH EXACTLY) ===
+${charLines}CRITICAL: Characters MUST look EXACTLY as described above.${genderClarity}
+=== END CHARACTER REFERENCE ===
+
+CAMERA: medium wide shot, slight low angle
+
+BOOK COVER for "${title}".
+Composition: Character(s) prominent in foreground, setting visible behind.
+Setting atmosphere: ${worldAnchor}
+Mood: Inviting, adventurous, age-appropriate. The image should make a child want to read this story.
+
+STYLE: ${styleBlock}
+${ageModifier}
+${NO_TEXT_INSTRUCTION}
+
+NEGATIVE: ${negativePrompt}, inconsistent character appearance, text, title, letters, words`;
+}
+
 // ─── Main: buildImagePrompts ─────────────────────────────────────
 
 /**
  * Builds final image prompts from image_plan + DB rules.
- * Returns cover + scene prompts.
+ * When image_plan.character_sheet is present, uses V2 path (character sheet + camera).
+ * Otherwise uses legacy path (character_anchor + scenes).
  * Phase 3: Optional seriesContext adds Visual Style Sheet prefix + Episode Mood.
  */
 export function buildImagePrompts(
@@ -209,10 +320,85 @@ export function buildImagePrompts(
   childAge: number,
   seriesContext?: SeriesImageContext,
   imageStyleOverride?: { promptSnippet: string; ageModifier: string; negative_prompt?: string; consistency_suffix?: string },
+  options?: { title?: string; protagonistGender?: string },
 ): ImagePromptResult[] {
+  const characterSheet = (imagePlan as any).character_sheet as CharacterSheetEntry[] | undefined;
+  const hasCharacterSheet = Array.isArray(characterSheet) && characterSheet.length > 0;
+
+  if (hasCharacterSheet && imagePlan.scenes?.length) {
+    // V2 path: character sheet + story moments + camera
+    const ageModifier = imageStyleOverride
+      ? `${imageStyleOverride.promptSnippet}. ${imageStyleOverride.ageModifier}`.replace(/\.\s*$/, '')
+      : getAgeModifierFallback(childAge);
+    const seriesPrefix = seriesContext ? buildSeriesStylePrefix(seriesContext) : '';
+    const styleBlock = seriesContext
+      ? [
+          ageModifier,
+          seriesContext.visualStyleSheet.world_style,
+          ageStyleRules.color_palette,
+          EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5],
+        ].filter(Boolean).join('. ')
+      : [
+          ageModifier,
+          themeImageRules.image_style_prompt,
+          ageStyleRules.style_prompt,
+          themeImageRules.image_color_palette || ageStyleRules.color_palette,
+        ].filter(Boolean).join('. ');
+    const negativeBlock = [
+      NO_PHYSICAL_BOOK_NEGATIVE,
+      imageStyleOverride?.negative_prompt,
+      themeImageRules.image_negative_prompt,
+      ageStyleRules.negative_prompt,
+      'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
+    ].filter(Boolean).join(', ');
+
+    const title = options?.title ?? 'Untitled Story';
+    const protagonistGender = options?.protagonistGender;
+    const worldAnchor = imagePlan.world_anchor ?? '';
+
+    const results: ImagePromptResult[] = [];
+
+    const coverPrompt = buildCoverImagePromptV2(
+      title,
+      characterSheet,
+      worldAnchor,
+      seriesPrefix ? `${seriesPrefix}\n\n${styleBlock}` : styleBlock,
+      negativeBlock,
+      ageModifier,
+      protagonistGender
+    );
+    results.push({ prompt: coverPrompt, negative_prompt: negativeBlock, label: 'cover' });
+
+    for (const scene of imagePlan.scenes) {
+      const scenePrompt = buildSceneImagePromptV2(
+        {
+          description: scene.description,
+          characters_present: scene.characters_present,
+          camera: scene.camera ?? 'medium shot, eye level',
+          emotion: scene.emotion,
+        },
+        characterSheet,
+        worldAnchor,
+        seriesPrefix ? `${seriesPrefix}\n\n${styleBlock}` : styleBlock,
+        negativeBlock,
+        ageModifier,
+        protagonistGender
+      );
+      results.push({
+        prompt: scenePrompt,
+        negative_prompt: negativeBlock,
+        label: `scene_${scene.scene_id}`,
+      });
+    }
+
+    console.log('[IMAGE-PROMPTS] V2 path:', results.length, 'prompts (character_sheet + camera)');
+    return results;
+  }
+
+  // ═══ LEGACY PATH ═══
   const results: ImagePromptResult[] = [];
 
-  console.log('[IMAGE-PROMPTS] buildImagePrompts called:', JSON.stringify({
+  console.log('[IMAGE-PROMPTS] buildImagePrompts called (legacy):', JSON.stringify({
     hasSeriesContext: !!seriesContext,
     hasStyleSheet: !!seriesContext?.visualStyleSheet,
     worldStyle: seriesContext?.visualStyleSheet?.world_style?.substring(0, 80) ?? 'none',
@@ -220,37 +406,31 @@ export function buildImagePrompts(
     childAge
   }));
 
-  // ═══ Age modifier (DB style override or fine-grained fallback) ═══
   const ageModifier = imageStyleOverride
     ? `${imageStyleOverride.promptSnippet}. ${imageStyleOverride.ageModifier}`.replace(/\.\s*$/, '')
     : getAgeModifierFallback(childAge);
 
-  // ═══ Phase 3: Series visual consistency prefix ═══
   const seriesPrefix = seriesContext ? buildSeriesStylePrefix(seriesContext) : '';
 
-  // ═══ Shared style parts ═══
-  // For series: ageModifier + world_style from StyleSheet + color palette + episode mood
-  //   → SKIP ageStyleRules.style_prompt (e.g. "Peppa Pig") which clashes with the StyleSheet
-  // For single stories: full stack as before
   const styleBlock = seriesContext
     ? [
-        ageModifier,                                        // ✅ Fine-grained per year (e.g. "Cute but not babyish")
-        seriesContext.visualStyleSheet.world_style,          // ✅ Series world style from Ep1 StyleSheet
-        ageStyleRules.color_palette,                         // ✅ Color palette is safe
-        EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5], // ✅ Episode mood
+        ageModifier,
+        seriesContext.visualStyleSheet.world_style,
+        ageStyleRules.color_palette,
+        EPISODE_MOOD[seriesContext.episodeNumber] || EPISODE_MOOD[5],
       ].filter(Boolean).join('. ')
     : [
-        ageModifier,                                        // Age modifier first (highest priority)
-        themeImageRules.image_style_prompt,                  // Theme-specific style (null until Phase 1.3)
-        ageStyleRules.style_prompt,                          // DB: image_style_rules.style_prompt
-        themeImageRules.image_color_palette || ageStyleRules.color_palette,  // Color palette
+        ageModifier,
+        themeImageRules.image_style_prompt,
+        ageStyleRules.style_prompt,
+        themeImageRules.image_color_palette || ageStyleRules.color_palette,
       ].filter(Boolean).join('. ');
 
   const negativeBlock = [
-    NO_PHYSICAL_BOOK_NEGATIVE,                         // Global: prevent physical book / page frame
-    imageStyleOverride?.negative_prompt,                // Style-specific (from image_styles DB)
-    themeImageRules.image_negative_prompt,              // Theme-specific negatives (null until Phase 1.3)
-    ageStyleRules.negative_prompt,                      // DB: image_style_rules.negative_prompt
+    NO_PHYSICAL_BOOK_NEGATIVE,
+    imageStyleOverride?.negative_prompt,
+    themeImageRules.image_negative_prompt,
+    ageStyleRules.negative_prompt,
     'text, letters, words, writing, labels, captions, speech bubbles, watermark, signature, blurry, deformed, ugly',
   ].filter(Boolean).join(', ');
 
