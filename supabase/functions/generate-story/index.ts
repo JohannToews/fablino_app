@@ -348,22 +348,15 @@ async function performConsistencyCheck(
     ? `\n\n--- SERIEN-KONTEXT (Episode ${seriesContext.episodeNumber}) ---\nVorherige Episode:\n${seriesContext.previousEpisode.substring(0, 1500)}...`
     : '';
 
-  const userPrompt = `Prüfe diese Geschichte auf Qualität und Konsistenz:
+  const userPrompt = `Check this story exactly against the rules in the system prompt.
+Return ONLY the JSON format specified by the system prompt.
 
-TITEL: ${story.title}
+STORY TITLE:
+${story.title}
 
-INHALT:
+STORY CONTENT:
 ${story.content}
-${seriesInfo}
-
-Analysiere den Text und antworte NUR mit einem JSON-Objekt in diesem Format:
-{
-  "hasIssues": true/false,
-  "issues": ["Liste der gefundenen Probleme"],
-  "suggestedFixes": "Konkrete Anweisungen zur Korrektur aller Probleme in einem zusammenhängenden Text"
-}
-
-Falls keine Probleme gefunden: {"hasIssues": false, "issues": [], "suggestedFixes": ""}`;
+${seriesInfo}`;
 
   try {
     const response = await callLovableAI(apiKey, checkPrompt, userPrompt, 0.3);
@@ -375,13 +368,23 @@ Falls keine Probleme gefunden: {"hasIssues": false, "issues": [], "suggestedFixe
     }
     
     const result = JSON.parse(jsonMatch[0]);
-    // Support both English (hasIssues) and German (fehler_gefunden) response formats
-    const hasIssues = result.hasIssues === true || result.fehler_gefunden === true || result.errors_found === true;
+    // Support all known response formats: hasIssues/issues, fehler_gefunden/fehler, errors_found/errors
     const rawIssues = result.issues || result.errors || result.fehler || [];
     const issues = Array.isArray(rawIssues)
       ? rawIssues.map((f: any) => typeof f === 'string' ? f : `[${f.kategorie || f.category}] ${f.problem}: "${f.originaltext || f.original}" → ${f.korrektur || f.fix}`)
       : [];
+
+    const stats = result.stats || result.statistik || {};
+    const statsCount = Number(stats.critical || stats.kritisch || 0) + Number(stats.medium || stats.mittel || 0) + Number(stats.low || stats.gering || 0);
+    const hasIssues =
+      result.hasIssues === true ||
+      result.fehler_gefunden === true ||
+      result.errors_found === true ||
+      issues.length > 0 ||
+      statsCount > 0;
+
     const suggestedFixes = result.suggestedFixes || result.zusammenfassung || result.summary || "";
+    console.log(`[Consistency] Parsed result: hasIssues=${hasIssues}, issues=${issues.length}, statsCount=${statsCount}`);
     return { hasIssues, issues, suggestedFixes };
   } catch (error) {
     console.error("Error in consistency check:", error);
