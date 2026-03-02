@@ -3080,14 +3080,16 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
         protagonistGender: protagonistGenderForPrompt,
       });
     } else {
-      // ═══ FALLBACK: Generate image_plan via separate LLM call ═══
-      console.log('[generate-story] No image_plan in LLM response, using fallback');
-      console.log('[generate-story] Generating image_plan via separate LLM call...');
+      // When Visual Director is active, image_plan is produced by VD later; skip fallback to avoid duplicate LLM call.
+      if (!useVisualDirector) {
+        // ═══ FALLBACK: Generate image_plan via separate LLM call ═══
+        console.log('[generate-story] No image_plan in LLM response, using fallback');
+        console.log('[generate-story] Generating image_plan via separate LLM call...');
 
-      const targetSceneCount = genConfig.scene_image_count || 3;
+        const targetSceneCount = genConfig.scene_image_count || 3;
 
-      try {
-        const imagePlanPrompt = `You are a visual director for a children's illustrated story. Analyze the story below and create a JSON image_plan.
+        try {
+          const imagePlanPrompt = `You are a visual director for a children's illustrated story. Analyze the story below and create a JSON image_plan.
 
 RULES:
 - character_anchor: A concise English description of the main character(s) — appearance, clothing, distinctive features. Max 80 words.
@@ -3100,53 +3102,57 @@ Pick the most VISUALLY INTERESTING moments (transformations, discoveries, dramat
 Respond with ONLY valid JSON, no markdown:
 {"character_anchor": "...", "world_anchor": "...", "scenes": [...]}`;
 
-        const storyExcerpt = story.content.length > 2000 ? story.content.substring(0, 2000) + '...' : story.content;
-        const imagePlanContext = `Story title: "${story.title}"\n\n${storyExcerpt}`;
+          const storyExcerpt = story.content.length > 2000 ? story.content.substring(0, 2000) + '...' : story.content;
+          const imagePlanContext = `Story title: "${story.title}"\n\n${storyExcerpt}`;
 
-        const imagePlanResponse = await callLovableAI(LOVABLE_API_KEY, imagePlanPrompt, imagePlanContext, 0.4);
+          const imagePlanResponse = await callLovableAI(LOVABLE_API_KEY, imagePlanPrompt, imagePlanContext, 0.4);
 
-        // Parse the image plan
-        const cleanedResponse = imagePlanResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        const fallbackPlan = JSON.parse(cleanedResponse);
+          // Parse the image plan
+          const cleanedResponse = imagePlanResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+          const fallbackPlan = JSON.parse(cleanedResponse);
 
-        if (fallbackPlan?.character_anchor && fallbackPlan?.scenes?.length > 0) {
-          console.log(`[generate-story] Fallback image_plan generated: ${fallbackPlan.scenes.length} scenes`);
-          if (includeSelf && kidAppearance) {
-            const appearanceAnchor = buildAppearanceAnchor(
-              resolvedKidName || 'Child',
-              resolvedKidAge || 8,
-              resolvedKidGender || 'child',
-              kidAppearance
-            );
-            fallbackPlan.character_anchor = appearanceAnchor;
-            console.log('[generate-story] ✅ Fallback path: appearance anchor OVERRIDE:', appearanceAnchor);
+          if (fallbackPlan?.character_anchor && fallbackPlan?.scenes?.length > 0) {
+            console.log(`[generate-story] Fallback image_plan generated: ${fallbackPlan.scenes.length} scenes`);
+            if (includeSelf && kidAppearance) {
+              const appearanceAnchor = buildAppearanceAnchor(
+                resolvedKidName || 'Child',
+                resolvedKidAge || 8,
+                resolvedKidGender || 'child',
+                kidAppearance
+              );
+              fallbackPlan.character_anchor = appearanceAnchor;
+              console.log('[generate-story] ✅ Fallback path: appearance anchor OVERRIDE:', appearanceAnchor);
+            }
+            imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, null, childAge, seriesImageCtx, imageStyleData, {
+              title: story.title || 'Untitled Story',
+              protagonistGender: resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined,
+            });
+          } else {
+            throw new Error('Invalid fallback image_plan structure');
           }
-          imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, null, childAge, seriesImageCtx, imageStyleData, {
-            title: story.title || 'Untitled Story',
-            protagonistGender: resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined,
-          });
-        } else {
-          throw new Error('Invalid fallback image_plan structure');
-        }
-      } catch (err) {
-        // Last resort: simple cover only
-        console.error('[generate-story] Fallback image_plan generation failed, using cover-only:', err);
-        try {
-          const characterDescriptionPrompt = `Analyze this story and create a short, precise visual description of the main characters (appearance, clothing, distinctive features). Max 100 words. Answer in English.`;
-          const characterContext = `Story: "${story.title}"\n${story.content.substring(0, 500)}...`;
-          characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
-        } catch { /* ignore */ }
+        } catch (err) {
+          // Last resort: simple cover only
+          console.error('[generate-story] Fallback image_plan generation failed, using cover-only:', err);
+          try {
+            const characterDescriptionPrompt = `Analyze this story and create a short, precise visual description of the main characters (appearance, clothing, distinctive features). Max 100 words. Answer in English.`;
+            const characterContext = `Story: "${story.title}"\n${story.content.substring(0, 500)}...`;
+            characterDescription = await callLovableAI(LOVABLE_API_KEY, characterDescriptionPrompt, characterContext, 0.3);
+          } catch { /* ignore */ }
 
-        const fallbackPrompt = buildFallbackImagePrompt(
-          story.title,
-          characterDescription,
-          imageAgeRules,
-          null,
-          childAge,
-          seriesImageCtx,
-          imageStyleData,
-        );
-        imagePrompts = [fallbackPrompt];
+          const fallbackPrompt = buildFallbackImagePrompt(
+            story.title,
+            characterDescription,
+            imageAgeRules,
+            null,
+            childAge,
+            seriesImageCtx,
+            imageStyleData,
+          );
+          imagePrompts = [fallbackPrompt];
+        }
+      } else {
+        // VD will set imagePrompts in the Visual Director block; leave empty so downstream log/slice don't throw.
+        imagePrompts = [];
       }
     }
 

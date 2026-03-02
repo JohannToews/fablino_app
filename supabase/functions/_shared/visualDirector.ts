@@ -142,43 +142,87 @@ Each entry needs:
 
 CRITICAL: If a kid appearance anchor is provided below, the protagonist's physical description (face, skin, hair, eyes, body) MUST match it EXACTLY. You only ADD clothing, accessories, and props.
 
+## CHARACTER DESCRIPTION BALANCE (CRITICAL FOR IMAGE CONSISTENCY)
+
+Imagen gives more visual weight to longer descriptions, causing
+shorter-described characters to "absorb" features from longer ones.
+ALL character full_anchors MUST follow the SAME structure and SIMILAR length.
+
+MANDATORY STRUCTURE for every human character full_anchor:
+"[age] [gender], [skin tone], [hair: length + type + color], [eye color],
+ [build], [clothing: color + garment + one detail]"
+
+MANDATORY STRUCTURE for animal/creature full_anchor:
+"[species], [size], [fur/scale color + pattern], [distinctive feature],
+ [accessory if any]"
+
+LENGTH RULES:
+- Every full_anchor must be 25-40 words. No exceptions.
+- The LONGEST description may not exceed 1.5x the SHORTEST description.
+- If the protagonist anchor is 25 words, no sidekick may exceed 38 words.
+
+CLOTHING RULES (applies to ALL characters):
+- Clothing is SPECIFIC but CONCISE: color + garment + one detail.
+  YES: "purple-gold silk kimono with wide obi belt" (8 words)
+  NO:  "a vibrant, intricately patterned silk kimono in shades of
+       purple and gold, tied with a wide obi belt" (19 words)
+  YES: "dark blue t-shirt with small yellow star emblem" (8 words)
+  NO:  "a casual t-shirt" (3 words — too generic, Imagen invents)
+
+TOKEN BALANCE SELF-CHECK:
+Before outputting your JSON, count words in each full_anchor.
+If any description is more than 1.5x the shortest, SHORTEN it.
+
 ## WORLD ANCHOR
 
 One 20-30 word description of the visual atmosphere: lighting quality, color mood, art direction. NOT specific locations.
 
-## SCENE BALANCING (CRITICAL)
+## SCENE BALANCING (CRITICAL — CHECK BEFORE OUTPUT)
 
-Generated scenes MUST have maximum visual variety. Before finalizing
-your scenes, verify ALL of these diversity checks:
+All generated scenes MUST have maximum visual variety.
+A viewer scrolling through the images must see DIFFERENT pictures,
+not variations of the same composition.
 
-LOCATION CHECK:
-- No two consecutive scenes may share the same location/setting
-- If the story has 3 scenes: at least 2 different locations
-- If indoor→indoor, the rooms must look completely different
-
-CHARACTER GROUPING CHECK:
-- Vary who is visible: solo protagonist, duo, group, antagonist focus
-- Do NOT show the same character combination in every scene
-- At least one scene should show a different grouping than the others
+Before finalizing your output, verify ALL of these checks:
 
 CAMERA CHECK:
-- Never use the same framing twice in a row
-- If scene 1 is "close-up", scene 2 must be "medium shot" or "wide shot"
-- Mix intimate (close) and environmental (wide) across the set
+- Never use the same framing in consecutive scenes.
+  If scene 1 = "medium shot", scene 2 MUST be different.
+- For 3 scenes: use at least 3 different framings.
 
-MOOD/LIGHTING CHECK:
-- Scenes must have different atmospheres
-- Vary: bright/dark, warm/cool, calm/tense, indoor/outdoor
-- Consecutive scenes should feel visually different at a glance
+LOCATION CHECK:
+- No two consecutive scenes may show the same location.
+- If the story takes place in one location, show DIFFERENT AREAS
+  of that location (e.g. entrance vs. deep inside vs. rooftop).
 
-COMPOSITION CHECK:
-- Vary spatial relationships: centered vs. off-center,
-  single figure vs. multiple, foreground action vs. background focus
-- A viewer scrolling through all images should see VARIETY,
-  not the same composition repeated
+CHARACTER GROUPING CHECK:
+- Vary who is visible across scenes.
+- Do NOT show the same character combination in every scene.
+- At least one scene should show the protagonist alone OR with a
+  different character grouping than the others.
 
-If you detect two scenes that would look too similar as illustrations,
+OBJECT CHECK:
+- key_objects should differ between scenes.
+- Do NOT repeat the same key_object in consecutive scenes unless
+  it is physically transformed (e.g. "closed book" → "glowing open book").
+
+MOOD CHECK:
+- Each scene must have a noticeably different atmosphere.
+- Vary lighting (bright/dark), temperature (warm/cool),
+  and energy (calm/tense) across the set.
+
+If any two scenes would look too similar as illustrations,
 REPLACE one with a different story moment.
+
+## SCENE DISTRIBUTION BY COUNT
+
+- 1 scene: Pick the single most visually dramatic moment.
+- 2 scenes: One from setup/discovery, one from the climax.
+  Must differ in camera, location, and mood.
+- 3 scenes: Distribute across the arc — opening hook, central
+  conflict, resolution. All three must feel visually distinct.
+- 4+ scenes: Cover the full arc including quieter emotional beats.
+  Ensure maximum visual variety across all dimensions.
 
 ## SCENE RULES
 
@@ -202,22 +246,21 @@ Scene selection rules:
 
 ## CAMERA
 
-Keep it simple. Only these options:
-
-- "close-up" — face/emotions, intimate moments
+Only use these options:
+- "close-up" — face and emotions, intimate moments
 - "medium shot" — characters interacting, dialogue
 - "full body" — action, movement, full character visible
-- "wide shot" — character small in environment, establishing scenes
+- "wide shot" — character small in environment, establishing scene
 
-Angle (optional addition):
-- "low angle" — character looks powerful/heroic
-- "high angle" — character looks small/vulnerable
+Optional angle (add after framing):
+- ", low angle" — character looks powerful or heroic
+- ", high angle" — character looks small or vulnerable
 
 Format: "{framing}" or "{framing}, {angle}"
 Examples: "close-up", "wide shot, low angle", "medium shot"
 
-Do NOT use: dutch angle, bird's eye, extreme close-up, over-the-shoulder,
-or other cinematography jargon. Imagen doesn't understand these.
+Do NOT use: dutch angle, bird's eye, extreme close-up,
+over-the-shoulder, or any other film jargon.
 
 ## COMPOSITION
 

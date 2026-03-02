@@ -86,9 +86,38 @@ export function mapVisualDirectorToImagePlan(
   let characterAnchor = protagonist?.full_anchor || '';
 
   if (includeSelf && kidAppearanceAnchor && protagonist) {
-    const clothingMatch = protagonist.full_anchor.match(/wearing\s+(.+?)(?:\.|$)/i);
-    const clothing = clothingMatch ? `, wearing ${clothingMatch[1]}` : '';
-    characterAnchor = kidAppearanceAnchor + clothing;
+    // DB anchor = physical only (Mein Look has no clothing)
+    // VD anchor = full description including clothing
+    // Strategy: use DB physical features + extract VD clothing
+
+    const clothingPatterns = [
+      /(?:wearing|wears)\s+(.+?)(?:\.\s*|$)/i,
+      /(?:dressed in|clad in)\s+(.+?)(?:\.\s*|$)/i,
+    ];
+
+    let clothingDesc = '';
+    for (const pattern of clothingPatterns) {
+      const match = protagonist.full_anchor.match(pattern);
+      if (match) {
+        clothingDesc = match[1].replace(/\.\s*$/, '').trim();
+        break;
+      }
+    }
+
+    // Remove any existing "wearing..." from DB anchor (safety)
+    const baseAnchor = kidAppearanceAnchor
+      .replace(/,?\s*wearing\s+[^,.]*/i, '')
+      .trim()
+      .replace(/,\s*$/, '');
+
+    // Merge: DB physical + VD clothing
+    characterAnchor = clothingDesc
+      ? `${baseAnchor}, wearing ${clothingDesc}`
+      : kidAppearanceAnchor;
+
+    console.log(`[VD→ImagePlan] Clothing merge: physical="${baseAnchor.substring(0, 50)}..." + clothing="${clothingDesc || 'none'}"`);
+
+    // Update protagonist in character_sheet too
     protagonist.full_anchor = characterAnchor;
   }
 
