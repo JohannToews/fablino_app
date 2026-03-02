@@ -667,7 +667,7 @@ Deno.serve(async (req) => {
     // ── Generate Cover Image ──
     const ageGroup = getAgeGroup(childAge);
 
-    const { ageRules: imageAgeRules, themeRules: imageThemeRules } = await loadImageRules(
+    const { ageRules: imageAgeRules } = await loadImageRules(
       supabase, ageGroup, resolvedThemeKey, textLanguage
     );
 
