@@ -1383,21 +1383,23 @@ Deno.serve(async (req) => {
   let lastCompletedPhase: string | undefined;
 
   try {
-    const { 
-      length, 
-      difficulty, 
-      description, 
-      schoolLevel, 
-      textType, 
-      textLanguage, 
-      globalLanguage, 
-      customSystemPrompt, 
-      endingType, 
-      episodeNumber, 
-      seriesId, 
+    const body = await req.json();
+    // Accept both camelCase and snake_case so protagonist gender can be loaded from kid_profiles
+    const kidProfileId = body.kidProfileId ?? body.kid_profile_id;
+    const {
+      length,
+      difficulty,
+      description,
+      schoolLevel,
+      textType,
+      textLanguage,
+      globalLanguage,
+      customSystemPrompt,
+      endingType,
+      episodeNumber,
+      seriesId,
       userId,
-      // New modular parameters
-      source = 'admin', // 'admin' or 'kid'
+      source = 'admin',
       isSeries = false,
       storyType,
       characters,
@@ -1405,40 +1407,35 @@ Deno.serve(async (req) => {
       timePeriod,
       kidName,
       kidHobbies,
-      // Block 2.3c: New dynamic prompt parameters
-      kidProfileId,
       kidAge,
       difficultyLevel,
       contentSafetyLevel,
       themeKey,
-      storyLanguage: storyLanguageParam,  // 'fr', 'de', 'en', etc.
-      storyLength,                        // 'short' | 'medium' | 'long'
+      storyLanguage: storyLanguageParam,
+      storyLength,
       includeSelf,
-      selectedCharacters,                 // Array<{name, age?, relation?, description?}>
-      specialAbilities,                   // string[]
-      userPrompt: userPromptParam,        // free text from user
-      seriesContext,                       // summary of previous episodes
-      // Sub-elements from wizard (e.g. thematic add-ons)
+      selectedCharacters,
+      specialAbilities,
+      userPrompt: userPromptParam,
+      seriesContext,
       subElements,
-      // Block 2.3e: surprise_characters flag
       surprise_characters: surpriseCharactersParam,
-      // Modus B: Interactive series
-      seriesMode: seriesModeParam,     // 'normal' | 'interactive' | undefined
-      branchChosen: branchChosenParam, // option title chosen by child (from frontend)
-      // Image style (Phase 1 — DB-backed styles)
+      seriesMode: seriesModeParam,
+      branchChosen: branchChosenParam,
       image_style_key: imageStyleKeyParam,
-      // Chapter story model — variable episode count
       series_episode_count: seriesEpisodeCountParam,
-      // B-14: Optional story row ID for incremental status/metrics writes
       story_id: storyIdParam,
-    } = await req.json();
+    } = body;
 
     storyId = storyIdParam ?? null;
+    if (includeSelf && !kidProfileId) {
+      console.warn('[generate-story] include_self=true but no kidProfileId — protagonist gender will be empty (cannot load from kid_profiles).');
+    }
 
     // Block 2.3d/e: Debug logging for character data from frontend
     console.log('[generate-story] Request body characters:', JSON.stringify(characters, null, 2));
     console.log('[generate-story] Request body selectedCharacters:', JSON.stringify(selectedCharacters, null, 2));
-    console.log('[generate-story] include_self:', includeSelf);
+    console.log('[generate-story] include_self:', includeSelf, 'kidProfileId:', kidProfileId ?? '(missing)');
     console.log('[generate-story] surprise_characters:', surpriseCharactersParam);
     console.log('[generate-story] storyType:', storyType);
 
@@ -1804,7 +1801,7 @@ Deno.serve(async (req) => {
       };
       const resolvedLength = storyLength || lengthMapping[length] || 'medium';
 
-      // ── Load kid profile from DB if we have kidProfileId but missing details ──
+      // ── Load kid profile from DB if we have kidProfileId (needed for protagonist gender when include_self) ──
 
       if (kidProfileId) {
         try {
@@ -1826,7 +1823,9 @@ Deno.serve(async (req) => {
               resolvedDifficultyLevel = difficultyLevel || kidProfile.difficulty_level;
               resolvedContentSafetyLevel = contentSafetyLevel || kidProfile.content_safety_level;
             }
-            console.log(`[generate-story] Loaded kid profile: ${resolvedKidName}, age=${resolvedKidAge}, diff=${resolvedDifficultyLevel}`);
+            console.log(`[generate-story] Loaded kid profile: ${resolvedKidName}, age=${resolvedKidAge}, gender=${resolvedKidGender || '(empty)'}, diff=${resolvedDifficultyLevel}`);
+          } else {
+            console.warn(`[generate-story] kid_profiles row not found for id=${kidProfileId} — protagonist gender will be empty.`);
           }
         } catch (profileErr: any) {
           console.warn('[generate-story] Could not load kid profile:', profileErr.message);
