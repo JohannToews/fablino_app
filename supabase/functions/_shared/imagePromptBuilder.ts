@@ -19,6 +19,12 @@ export interface CharacterSheetEntry {
 export interface ImagePlan {
   character_anchor: string;
   world_anchor: string;
+  cover?: {
+    description?: string;
+    characters_present?: string[];
+    mood?: string;
+    camera?: string;
+  };
   scenes: Array<{
     scene_id: number;
     story_position?: string;
@@ -28,6 +34,7 @@ export interface ImagePlan {
     target_paragraph?: number;
     characters_present?: string[];
     camera?: string;
+    background_figures?: 'none' | 'few' | 'crowd';
   }>;
   character_sheet?: CharacterSheetEntry[];
 }
@@ -154,6 +161,7 @@ export function mapVisualDirectorToImagePlan(
     emotion: scene.atmosphere,
     characters_present: scene.characters_present,
     camera: scene.camera,
+    background_figures: scene.background_figures,
   }));
 
   console.log(`[VD→ImagePlan] mapped ${mappedScenes.length} scenes, protagonist="${protagonist?.name}", characterAnchor length=${characterAnchor.length}`);
@@ -161,6 +169,12 @@ export function mapVisualDirectorToImagePlan(
   return {
     character_anchor: characterAnchor,
     world_anchor: vdOutput.world_anchor,
+    cover: vdOutput.cover ? {
+      description: vdOutput.cover.description,
+      characters_present: vdOutput.cover.characters_present,
+      mood: vdOutput.cover.mood,
+      camera: vdOutput.cover.camera || 'medium shot',
+    } : undefined,
     scenes: mappedScenes,
     character_sheet: vdOutput.character_sheet.map((c) => ({
       name: c.name,
@@ -232,6 +246,13 @@ const NO_TEXT_INSTRUCTION = 'NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO NUMBE
 
 /** Appended to every image negative prompt so Imagen does not render a physical book (spine, pages, borders). */
 const NO_PHYSICAL_BOOK_NEGATIVE = 'Do NOT render as a physical book, open book, book pages, or book spread. No book spine, page edges, white borders, grey background, or any frame. Fill the entire square canvas edge-to-edge with no margins.';
+
+/** Per-scene negative suffix based on background_figures (VD). Used in V2 prompt builder and result.negative_prompt. */
+function getBackgroundNegativeSuffix(background_figures?: 'none' | 'few' | 'crowd'): string {
+  if (background_figures === 'few') return ', sharp background faces, extra named characters';
+  if (background_figures === 'crowd') return ', identifiable background faces, extra named characters';
+  return ', extra characters, additional people, crowd, bystanders, background figures, third person';
+}
 
 // ─── Age Modifier (fine-grained, per year) ───────────────────────
 
@@ -334,6 +355,7 @@ export function buildSceneImagePromptV2(
     characters_present?: string[];
     camera: string;
     emotion?: string;
+    background_figures?: 'none' | 'few' | 'crowd';
   },
   characterSheet: CharacterSheetEntry[],
   worldAnchor: string,
@@ -343,6 +365,19 @@ export function buildSceneImagePromptV2(
   protagonistGender?: string
 ): string {
   const characters_present = scene.characters_present ?? [];
+  const characterCount = characters_present.length;
+  const background_figures = scene.background_figures;
+  const backgroundNegativeSuffix = getBackgroundNegativeSuffix(background_figures);
+
+  let characterCountLine: string;
+  if (background_figures === 'none' || !background_figures) {
+    characterCountLine = `EXACTLY ${characterCount} character${characterCount === 1 ? '' : 's'} in this image. No additional people, no background figures, no crowd, no bystanders.`;
+  } else if (background_figures === 'few') {
+    characterCountLine = `${characterCount} NAMED character${characterCount === 1 ? '' : 's'} (must match references above). A few anonymous background figures may appear but must be blurred, out of focus, or partially hidden.`;
+  } else {
+    characterCountLine = `${characterCount} NAMED character${characterCount === 1 ? '' : 's'} (must match references above) in a crowded scene. Background people are blurred and anonymous.`;
+  }
+
   const characterLines = characters_present
     .map((name) => {
       const char = characterSheet.find((c) => c.name === name);
@@ -369,6 +404,8 @@ Do not modify, add, or omit any visual detail — especially clothing, hair, and
 Characters not listed above must NOT appear in the image.${genderClarity}
 === END CHARACTER REFERENCE ===
 
+${characterCountLine}
+
 CAMERA: ${scene.camera}
 
 SCENE: ${scene.description}
@@ -378,7 +415,7 @@ ATMOSPHERE: ${worldAnchor}
 STYLE: ${styleBlock}
 ${NO_TEXT_INSTRUCTION}
 
-NEGATIVE: ${negativePrompt}, inconsistent character appearance, different clothing than described, wrong hair color, wrong skin tone, wrong eye color, extra characters not in scene`;
+NEGATIVE: ${negativePrompt}, inconsistent character appearance, different clothing than described, wrong hair color, wrong skin tone, wrong eye color, extra characters not in scene${backgroundNegativeSuffix}`;
 }
 
 /**
@@ -391,8 +428,10 @@ export function buildCoverImagePromptV2(
   styleBlock: string,
   negativePrompt: string,
   ageModifier: string,
-  protagonistGender?: string
+  protagonistGender?: string,
+  coverCamera?: string
 ): string {
+  const camera = coverCamera || 'medium shot';
   const protagonist = characterSheet.find((c) => c.role === 'protagonist');
   const sidekick = characterSheet.find((c) => c.role === 'sidekick');
 
@@ -404,11 +443,14 @@ export function buildCoverImagePromptV2(
     ? `\nThe protagonist must be clearly recognizable as a ${protagonistGender}.`
     : '';
 
+  const coverCharCount = (protagonist ? 1 : 0) + (sidekick ? 1 : 0);
   return `=== CHARACTER REFERENCE (MUST MATCH EXACTLY) ===
 ${charLines}CRITICAL: Characters MUST look EXACTLY as described above.${genderClarity}
 === END CHARACTER REFERENCE ===
 
-CAMERA: medium wide shot, slight low angle
+EXACTLY ${coverCharCount} character${coverCharCount === 1 ? '' : 's'} in this image. No additional people, no background figures, no crowd, no bystanders.
+
+CAMERA: ${camera}
 
 BOOK COVER for "${title}".
 Composition: Character(s) prominent in foreground, setting visible behind.
@@ -418,7 +460,7 @@ Mood: Inviting, adventurous, age-appropriate. The image should make a child want
 STYLE: ${styleBlock}
 ${NO_TEXT_INSTRUCTION}
 
-NEGATIVE: ${negativePrompt}, inconsistent character appearance, text, title, letters, words`;
+NEGATIVE: ${negativePrompt}, inconsistent character appearance, text, title, letters, words, extra characters, additional people, crowd, bystanders, background figures, third person`;
 }
 
 // ─── Main: buildImagePrompts ─────────────────────────────────────
@@ -471,6 +513,7 @@ export function buildImagePrompts(
 
     const results: ImagePromptResult[] = [];
 
+    const coverCamera = imagePlan.cover?.camera || 'medium shot';
     const coverPrompt = buildCoverImagePromptV2(
       title,
       characterSheet,
@@ -478,7 +521,8 @@ export function buildImagePrompts(
       seriesPrefix ? `${seriesPrefix}\n\n${styleBlock}` : styleBlock,
       negativeBlock,
       ageModifier,
-      protagonistGender
+      protagonistGender,
+      coverCamera
     );
     results.push({ prompt: coverPrompt, negative_prompt: negativeBlock, label: 'cover' });
 
@@ -489,6 +533,7 @@ export function buildImagePrompts(
           characters_present: scene.characters_present,
           camera: scene.camera ?? 'medium shot, eye level',
           emotion: scene.emotion,
+          background_figures: scene.background_figures,
         },
         characterSheet,
         worldAnchor,
@@ -499,7 +544,7 @@ export function buildImagePrompts(
       );
       results.push({
         prompt: scenePrompt,
-        negative_prompt: negativeBlock,
+        negative_prompt: negativeBlock + getBackgroundNegativeSuffix(scene.background_figures),
         label: `scene_${scene.scene_id}`,
       });
     }

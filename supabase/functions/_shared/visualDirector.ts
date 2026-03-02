@@ -102,6 +102,8 @@ export interface VisualDirectorScene {
   key_objects: string[];
   atmosphere: string;
   camera: string;
+  /** "none" = only named characters (default). "few" = 2-3 blurred/anonymous. "crowd" = busy scene. */
+  background_figures?: 'none' | 'few' | 'crowd';
 }
 
 export interface VisualDirectorOutput {
@@ -112,6 +114,7 @@ export interface VisualDirectorOutput {
     description: string;
     characters_present: string[];
     mood: string;
+    camera?: string;
   };
 }
 
@@ -237,6 +240,17 @@ Each scene needs:
 - "key_objects": Objects that MUST appear in this image (plot-relevant items)
 - "atmosphere": Mood + lighting for THIS specific scene (can differ from world_anchor)
 - "camera": See CAMERA below. Simple framing + optional angle.
+- "background_figures": Optional. "none" | "few" | "crowd". See BACKGROUND FIGURES below.
+
+BACKGROUND FIGURES:
+- Default is "none" — only named characters appear.
+- Use "few" for scenes in public spaces where emptiness
+  would look unnatural (e.g. a park, a street).
+- Use "crowd" only for scenes that REQUIRE a crowd
+  (e.g. stadium, marketplace, school assembly).
+- Background figures must be BLURRED, FACELESS, or
+  TURNED AWAY. They must never be confused with named
+  characters.
 
 Scene selection rules:
 - Distribute across story arc (beginning, middle, end)
@@ -262,6 +276,12 @@ Examples: "close-up", "wide shot, low angle", "medium shot"
 Do NOT use: dutch angle, bird's eye, extreme close-up,
 over-the-shoulder, or any other film jargon.
 
+CLOSE-UP USAGE:
+- "close-up" should be used for ONE scene maximum per story.
+- Reserve close-up for the most emotionally intense moment
+  (fear, surprise, joy, determination).
+- Never use close-up for establishing scenes or action scenes.
+
 ## COMPOSITION
 
 The "composition" field describes the spatial relationship in PLAIN LANGUAGE.
@@ -275,6 +295,13 @@ Bad: "over-the-shoulder two-shot"
 - "description": The single best motif that represents the whole story (English, 20-30 words)
 - "characters_present": Who appears on the cover
 - "mood": Overall emotional tone
+- "camera": See COVER CAMERA below.
+
+COVER CAMERA:
+- Cover must ALWAYS be "medium shot" or "full body".
+- NEVER use "close-up" for covers — the reader needs to see
+  the character(s) AND the setting to understand the story world.
+- Show the protagonist in context, not just a face.
 
 ## OUTPUT FORMAT
 
