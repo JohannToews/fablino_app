@@ -2369,6 +2369,16 @@ export type Database = {
     Functions: {
       check_and_award_badges: { Args: { p_child_id: string }; Returns: Json }
       cleanup_unclaimed_onboarding_stories: { Args: never; Returns: number }
+      get_kid_profile_for_story: {
+        Args: { p_id: string }
+        Returns: {
+          age: number
+          content_safety_level: number
+          difficulty_level: number
+          first_name: string
+          gender: string
+        }[]
+      }
       get_my_results: {
         Args: { p_story_ids?: string[] }
         Returns: {
