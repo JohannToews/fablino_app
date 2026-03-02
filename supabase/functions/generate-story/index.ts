@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildStoryPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG, getEpisodeConfig, getDefaultEpisodeCount, type PromptBuildResult } from '../_shared/promptBuilder.ts';
 import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
-import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, getStyleForAge, ImagePromptResult, SeriesImageContext } from '../_shared/imagePromptBuilder.ts';
+import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, getStyleForAge, ImagePromptResult, SeriesImageContext, mapVisualDirectorToImagePlan } from '../_shared/imagePromptBuilder.ts';
+import { callVisualDirector } from '../_shared/visualDirector.ts';
 import { mergeSeriesContinuityState } from '../_shared/seriesContinuityMerge.ts';
 import { selectStorySubtype, recordSubtypeUsage, SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
 import { isComicStripEnabled } from '../_shared/comicStrip/featureFlag.ts';
@@ -166,6 +167,22 @@ function extractGatewayImageUrl(data: any): string | null {
   }
 
   return null;
+}
+
+// Visual Director: per-user feature flag (app_settings.visual_director_enabled_users = JSON array of user IDs)
+export async function isVisualDirectorEnabled(userId: string, supabase: any): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'visual_director_enabled_users')
+      .maybeSingle();
+    if (!data?.value) return false;
+    const users = JSON.parse(data.value);
+    return Array.isArray(users) && users.includes(userId);
+  } catch {
+    return false;
+  }
 }
 
 // Helper function to call Lovable AI Gateway for text generation (better rate limits)
@@ -1487,6 +1504,14 @@ Deno.serve(async (req) => {
     useComicStrip = false;
     console.log('[DISABLED] Comic strip mode temporarily disabled — using standard image path');
 
+    let useVisualDirector = false;
+    try {
+      useVisualDirector = await isVisualDirectorEnabled(userId, supabase);
+      console.log(`[VisualDirector] enabled=${useVisualDirector} for user=${userId}`);
+    } catch (e) {
+      console.warn('[VisualDirector] Flag check failed, defaulting to false', e);
+    }
+
     // ── Load image generation config from DB (with fallback) ──
     let imageGenConfig: {
       coverModel: string;
@@ -1952,6 +1977,7 @@ Deno.serve(async (req) => {
           label: selectedSubtype.label,
         } : undefined,
         appearance: kidAppearance ?? undefined,
+        useVisualDirector: useVisualDirector,
         // ── Granular generation config (from generation_config table) ──
         // Comic 8-panel (2×(2x2)) uses 7 scenes + cover
         word_count_override: {
@@ -2400,6 +2426,7 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         ? userPrompt 
         : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
+      console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
       const content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
 
       // Parse the JSON from the response (robust, multi-fallback)
@@ -3655,6 +3682,124 @@ Respond with ONLY valid JSON, no markdown:
     // ═══════════════════════════════════════════════════════════════════
     if (!comicStripHandled) {
 
+    if (useVisualDirector) {
+      // ══════ VISUAL DIRECTOR PATH ══════
+      console.log('[VisualDirector] Starting parallel: Visual Director + consistency check');
+      const vdStartTime = Date.now();
+
+      const timedConsistencyCheckVD = async () => {
+        const t0 = Date.now();
+        await consistencyCheckTask();
+        consistencyCheckMs = Date.now() - t0;
+      };
+
+      const [vdResult, consistencyResult] = await Promise.allSettled([
+        callVisualDirector({
+          apiKey: LOVABLE_API_KEY,
+          storyTitle: story.title || 'Untitled',
+          storyContent: story.content,
+          storyLanguage: effectiveStoryLanguage,
+          sceneCount: genConfig.scene_image_count || 3,
+          kidName: resolvedKidName,
+          kidAge: resolvedKidAge,
+          kidGender: resolvedKidGender,
+          kidAppearanceAnchor: (includeSelf && kidAppearance)
+            ? buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance)
+            : undefined,
+          includeSelf: includeSelf,
+        }),
+        timedConsistencyCheckVD(),
+      ]);
+
+      console.log(`[VisualDirector] Parallel block completed in ${Date.now() - vdStartTime}ms`);
+
+      if (vdResult.status === 'fulfilled' && vdResult.value) {
+        const vdOutput = vdResult.value;
+        console.log(`[VisualDirector] Success: ${vdOutput.scenes?.length} scenes, ${vdOutput.character_sheet?.length} characters`);
+
+        const vdImagePlan = mapVisualDirectorToImagePlan(
+          vdOutput,
+          (includeSelf && kidAppearance)
+            ? buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance)
+            : null,
+          resolvedKidName,
+          includeSelf,
+        );
+        imagePlan = vdImagePlan;
+
+        const protagonistGenderForPrompt = resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined;
+        imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, null, childAge, seriesImageCtx, imageStyleData, {
+          title: story.title || 'Untitled Story',
+          protagonistGender: protagonistGenderForPrompt,
+        });
+
+        console.log('[VisualDirector] Image prompts built:', imagePrompts.length,
+          'prompts:', imagePrompts.map(p => p.label).join(', '));
+
+        if (imagePrompts.length > imageGenConfig.maxImagesPerStory) {
+          console.log(`[VisualDirector] Limiting image prompts from ${imagePrompts.length} to ${imageGenConfig.maxImagesPerStory} (config limit)`);
+          imagePrompts = imagePrompts.slice(0, imageGenConfig.maxImagesPerStory);
+        }
+      } else {
+        console.error('[VisualDirector] Failed, falling back to legacy image_plan path:',
+          vdResult.status === 'rejected' ? vdResult.reason : 'empty result');
+        // imagePlan stays as parsed from Call 1 (null/empty since VD was active).
+        // The existing fallback LLM call below will handle this.
+      }
+
+      // Sequential image generation (VD already finished, prompts are built)
+      const vdImageStart = Date.now();
+      const vdImageResults = await generateAllImagesTask();
+      imageGenerationMs = Date.now() - vdImageStart;
+
+      let coverImageBase64: string | null = null;
+      const storyImages: string[] = [];
+      for (const result of vdImageResults) {
+        if (result.url) {
+          if (result.label === 'cover') {
+            coverImageBase64 = result.url;
+          } else {
+            storyImages.push(result.url);
+          }
+        }
+      }
+
+      if (!coverImageBase64 && storyImages.length > 0) {
+        coverImageBase64 = storyImages[0];
+        console.log('[VisualDirector] Using first scene image as cover fallback');
+      }
+
+      coverImageUrl = null;
+      if (coverImageBase64) {
+        coverImageUrl = await uploadImageToStorage(coverImageBase64, 'covers', 'cover');
+        if (!coverImageUrl) {
+          console.warn('[IMAGE-UPLOAD] Cover upload failed, falling back to base64 data URL');
+          coverImageUrl = coverImageBase64;
+        }
+      }
+
+      storyImageUrls = [];
+      for (let i = 0; i < storyImages.length; i++) {
+        const url = await uploadImageToStorage(storyImages[i], 'covers', `scene-${i}`);
+        if (url) {
+          storyImageUrls.push(url);
+        } else {
+          storyImageUrls.push(storyImages[i]);
+        }
+      }
+
+      imageWarning = !coverImageUrl
+        ? "cover_generation_failed"
+        : (imagePrompts.length > 1 && storyImageUrls.length < (imagePrompts.length - 1))
+          ? "some_scene_images_failed"
+          : null;
+
+      console.log(`[VisualDirector] Total VD path: ${Date.now() - vdStartTime}ms (images: ${imageGenerationMs}ms)`);
+      console.log(`[VisualDirector] Final images: cover=${coverImageUrl ? 'URL' : 'null'}, scenes=${storyImageUrls.length}`);
+
+    } else {
+    // ══════ ORIGINAL PATH (unchanged) ══════
+
     // ── Execute consistency check + ALL images PARALLEL with timeout ──
     const PARALLEL_TIMEOUT_MS = 180000; // 180 seconds for consistency + ALL images together
     const parallelStart = Date.now();
@@ -3752,6 +3897,8 @@ Respond with ONLY valid JSON, no markdown:
       : (imagePrompts.length > 1 && storyImageUrls.length < (imagePrompts.length - 1))
         ? "some_scene_images_failed"
         : null;
+
+    } // ── END if/else useVisualDirector ──
 
     } // ── END if (!comicStripHandled) ──
 

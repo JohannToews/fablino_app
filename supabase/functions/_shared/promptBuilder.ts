@@ -90,6 +90,8 @@ export interface StoryRequest {
     hair_color: string;
     glasses: boolean;
   } | null;
+  // ── Visual Director: when true, Call 1 does not generate image_plan (Call 2 handles it) ──
+  useVisualDirector?: boolean;
 }
 
 // ─── Section Headers (translated) ───────────────────────────────
@@ -2253,10 +2255,27 @@ Guidelines:
 Format: "{framing}, {angle}" — e.g. "close-up, eye level" or "wide shot, high angle"
 
 === END IMAGE PLAN INSTRUCTIONS ===`;
-  sections.push(imagePlanSection);
+  if (!request.useVisualDirector) {
+    sections.push(imagePlanSection);
+  }
 
-  // Required JSON output schema (LLM follows this strictly — must include character_sheet in image_plan)
-  const jsonSchemaSection = `## REQUIRED JSON OUTPUT FORMAT
+  // Required JSON output schema (LLM follows this strictly — must include character_sheet in image_plan when not Visual Director)
+  if (request.useVisualDirector) {
+    const jsonSchemaSection = `## REQUIRED JSON OUTPUT FORMAT
+
+Respond with a single JSON object:
+
+{
+  "title": "string",
+  "content": "string",
+  "questions": [{"question": "...", "options": ["A","B","C","D"], "correctAnswer": "A", "expectedAnswer": "..."}],
+  "vocabulary": [{"word": "...", "explanation": "..."}]
+}
+
+Do NOT include an image_plan field. Image planning will be handled separately.`;
+    sections.push(jsonSchemaSection);
+  } else {
+    const jsonSchemaSection = `## REQUIRED JSON OUTPUT FORMAT
 
 Respond with a single JSON object. The image_plan MUST use this exact structure (include character_sheet):
 
@@ -2277,7 +2296,8 @@ Respond with a single JSON object. The image_plan MUST use this exact structure 
 }
 
 You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must provide a character_sheet array with one entry per character that appears in the story.`;
-  sections.push(jsonSchemaSection);
+    sections.push(jsonSchemaSection);
+  }
 
   // Final instruction
   sections.push(headers.respondJson);

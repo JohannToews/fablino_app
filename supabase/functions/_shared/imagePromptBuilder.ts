@@ -5,6 +5,8 @@
  * Phase 3: Adds Visual Style Sheet prefix + Episode Mood for series consistency.
  */
 
+import type { VisualDirectorOutput } from './visualDirector.ts';
+
 // ─── Types ───────────────────────────────────────────────────────
 
 export interface CharacterSheetEntry {
@@ -63,6 +65,66 @@ export interface VisualStyleSheet {
 export interface SeriesImageContext {
   visualStyleSheet: VisualStyleSheet;
   episodeNumber: number;  // 1-5
+}
+
+// ─── Visual Director → ImagePlan adapter ─────────────────────────
+
+/**
+ * Maps Visual Director output to the ImagePlan shape expected by buildImagePrompts().
+ * When includeSelf && kidAppearanceAnchor are set, protagonist physical description
+ * comes from DB (kidAppearanceAnchor); clothing is taken from VD's full_anchor.
+ */
+export function mapVisualDirectorToImagePlan(
+  vdOutput: VisualDirectorOutput,
+  kidAppearanceAnchor?: string | null,
+  _kidName?: string,
+  includeSelf?: boolean,
+): ImagePlan {
+  const protagonist = vdOutput.character_sheet.find((c) => c.role === 'protagonist')
+    || vdOutput.character_sheet[0];
+
+  let characterAnchor = protagonist?.full_anchor || '';
+
+  if (includeSelf && kidAppearanceAnchor && protagonist) {
+    const clothingMatch = protagonist.full_anchor.match(/wearing\s+(.+?)(?:\.|$)/i);
+    const clothing = clothingMatch ? `, wearing ${clothingMatch[1]}` : '';
+    characterAnchor = kidAppearanceAnchor + clothing;
+    protagonist.full_anchor = characterAnchor;
+  }
+
+  const mappedScenes = vdOutput.scenes.map((scene) => ({
+    scene_id: scene.scene_id,
+    description: scene.scene_description,
+    emotion: scene.atmosphere,
+    characters_present: scene.characters_present,
+    camera: scene.camera,
+  }));
+
+  console.log(`[VD→ImagePlan] mapped ${mappedScenes.length} scenes, protagonist="${protagonist?.name}", characterAnchor length=${characterAnchor.length}`);
+
+  return {
+    character_anchor: characterAnchor,
+    world_anchor: vdOutput.world_anchor,
+    scenes: mappedScenes,
+    character_sheet: vdOutput.character_sheet.map((c) => ({
+      name: c.name,
+      role: c.role as CharacterSheetEntry['role'],
+      full_anchor: c.full_anchor,
+      props: c.props,
+    })),
+  };
+}
+
+/**
+ * Extracts cover data from Visual Director output for the cover image prompt.
+ */
+export function extractCoverFromVisualDirector(vdOutput: VisualDirectorOutput): {
+  description: string;
+  characters_present: string[];
+  mood: string;
+} | null {
+  if (!vdOutput.cover) return null;
+  return vdOutput.cover;
 }
 
 // ─── Phase 3: Episode Mood Modifier ─────────────────────────────
