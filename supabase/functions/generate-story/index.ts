@@ -305,7 +305,16 @@ async function getConsistencyCheckPrompt(language: string): Promise<string | nul
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Try language-specific first, then universal English prompt
+    // Prefer universal English V2 prompt (works for all languages, consistent JSON format)
+    const { data: v2Data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "consistency_check_prompt_v2")
+      .maybeSingle();
+    
+    if (v2Data?.value) return v2Data.value;
+
+    // Fallback: language-specific prompt (legacy)
     const promptKey = `system_prompt_consistency_check_${language}`;
     const { data } = await supabase
       .from("app_settings")
@@ -313,17 +322,15 @@ async function getConsistencyCheckPrompt(language: string): Promise<string | nul
       .eq("key", promptKey)
       .maybeSingle();
     
-    // Fallback to universal English prompt if language-specific not found
-    if (!data?.value) {
-      const { data: universalData } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "consistency_check_prompt_v2")
-        .maybeSingle();
-      return universalData?.value || null;
-    }
-    
-    return data?.value || null;
+    if (data?.value) return data.value;
+
+    // Last fallback: universal without version suffix
+    const { data: universalData } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "system_prompt_consistency_check")
+      .maybeSingle();
+    return universalData?.value || null;
   } catch (error) {
     console.error("Error fetching consistency check prompt:", error);
     return null;
@@ -370,11 +377,10 @@ Falls keine Probleme gefunden: {"hasIssues": false, "issues": [], "suggestedFixe
     const result = JSON.parse(jsonMatch[0]);
     // Support both English (hasIssues) and German (fehler_gefunden) response formats
     const hasIssues = result.hasIssues === true || result.fehler_gefunden === true || result.errors_found === true;
-    const issues = Array.isArray(result.issues) 
-      ? result.issues 
-      : Array.isArray(result.fehler) 
-        ? result.fehler.map((f: any) => typeof f === 'string' ? f : `[${f.kategorie || f.category}] ${f.problem}: "${f.originaltext || f.original}" → ${f.korrektur || f.fix}`)
-        : [];
+    const rawIssues = result.issues || result.errors || result.fehler || [];
+    const issues = Array.isArray(rawIssues)
+      ? rawIssues.map((f: any) => typeof f === 'string' ? f : `[${f.kategorie || f.category}] ${f.problem}: "${f.originaltext || f.original}" → ${f.korrektur || f.fix}`)
+      : [];
     const suggestedFixes = result.suggestedFixes || result.zusammenfassung || result.summary || "";
     return { hasIssues, issues, suggestedFixes };
   } catch (error) {
@@ -3184,8 +3190,8 @@ Respond with ONLY valid JSON, no markdown:
     // ================== PARALLEL: CONSISTENCY CHECK + ALL IMAGES ==================
     console.log("Starting PARALLEL execution: consistency check + image generation...");
 
-    const adminLangMap: Record<string, string> = { DE: 'de', FR: 'fr', EN: 'en' };
-    const adminLanguage = adminLangMap[textLanguage] || 'de';
+    // textLanguage is already lowercase (de, fr, en, es, etc.)
+    const adminLanguage = textLanguage?.toLowerCase() || 'de';
 
     // Track consistency check results
     let totalIssuesFound = 0;
