@@ -305,12 +305,23 @@ async function getConsistencyCheckPrompt(language: string): Promise<string | nul
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Try language-specific first, then universal English prompt
     const promptKey = `system_prompt_consistency_check_${language}`;
     const { data } = await supabase
       .from("app_settings")
       .select("value")
       .eq("key", promptKey)
       .maybeSingle();
+    
+    // Fallback to universal English prompt if language-specific not found
+    if (!data?.value) {
+      const { data: universalData } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "consistency_check_prompt_v2")
+        .maybeSingle();
+      return universalData?.value || null;
+    }
     
     return data?.value || null;
   } catch (error) {
@@ -357,11 +368,15 @@ Falls keine Probleme gefunden: {"hasIssues": false, "issues": [], "suggestedFixe
     }
     
     const result = JSON.parse(jsonMatch[0]);
-    return {
-      hasIssues: result.hasIssues === true,
-      issues: Array.isArray(result.issues) ? result.issues : [],
-      suggestedFixes: result.suggestedFixes || ""
-    };
+    // Support both English (hasIssues) and German (fehler_gefunden) response formats
+    const hasIssues = result.hasIssues === true || result.fehler_gefunden === true || result.errors_found === true;
+    const issues = Array.isArray(result.issues) 
+      ? result.issues 
+      : Array.isArray(result.fehler) 
+        ? result.fehler.map((f: any) => typeof f === 'string' ? f : `[${f.kategorie || f.category}] ${f.problem}: "${f.originaltext || f.original}" → ${f.korrektur || f.fix}`)
+        : [];
+    const suggestedFixes = result.suggestedFixes || result.zusammenfassung || result.summary || "";
+    return { hasIssues, issues, suggestedFixes };
   } catch (error) {
     console.error("Error in consistency check:", error);
     return { hasIssues: false, issues: [], suggestedFixes: "" };
