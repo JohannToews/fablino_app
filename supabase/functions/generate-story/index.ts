@@ -1511,6 +1511,10 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.warn('[VisualDirector] Flag check failed, defaulting to false', e);
     }
+    if (useVisualDirector) {
+      console.log(`[VD-DEBUG] ========== VISUAL DIRECTOR PIPELINE ==========`);
+      console.log(`[VD-DEBUG] enabled=${useVisualDirector}, userId=${userId}`);
+    }
 
     // ── Load image generation config from DB (with fallback) ──
     let imageGenConfig: {
@@ -2735,6 +2739,16 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
       }
     }
 
+    if (useVisualDirector) {
+      console.log(`[VD-DEBUG] CALL 1 RESULT:`);
+      console.log(`[VD-DEBUG]   title: "${story.title}"`);
+      console.log(`[VD-DEBUG]   content length: ${story.content?.length || 0} chars`);
+      console.log(`[VD-DEBUG]   has image_plan: ${!!(story as any).image_plan}`);
+      console.log(`[VD-DEBUG]   sceneCount requested: ${genConfig.scene_image_count}`);
+      console.log(`[VD-DEBUG]   kidAppearance: ${kidAppearance ? 'yes' : 'none'}`);
+      console.log(`[VD-DEBUG]   includeSelf: ${includeSelf}`);
+    }
+
     // ================== Block 2.4: PARSE image_plan FROM LLM RESPONSE ==================
     let imagePlan: any = null;
     try {
@@ -3727,6 +3741,12 @@ Respond with ONLY valid JSON, no markdown:
         );
         imagePlan = vdImagePlan;
 
+        console.log(`[VD-DEBUG] ADAPTER OUTPUT (ImagePlan):`);
+        console.log(`[VD-DEBUG]   character_anchor: "${vdImagePlan.character_anchor?.substring(0, 120)}..."`);
+        console.log(`[VD-DEBUG]   world_anchor: "${vdImagePlan.world_anchor}"`);
+        console.log(`[VD-DEBUG]   scenes: ${vdImagePlan.scenes?.length}`);
+        console.log(`[VD-DEBUG]   character_sheet entries: ${vdImagePlan.character_sheet?.length}`);
+
         const protagonistGenderForPrompt = resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined;
         imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, null, childAge, seriesImageCtx, imageStyleData, {
           title: story.title || 'Untitled Story',
@@ -3736,15 +3756,23 @@ Respond with ONLY valid JSON, no markdown:
         console.log('[VisualDirector] Image prompts built:', imagePrompts.length,
           'prompts:', imagePrompts.map(p => p.label).join(', '));
 
+        if (imagePrompts?.length > 0) {
+          console.log(`[VD-DEBUG] FINAL IMAGE PROMPTS:`);
+          imagePrompts.forEach((p: any, i: number) => {
+            console.log(`[VD-DEBUG]   [${i}] label=${p.label}, prompt_length=${p.prompt?.length || 0}`);
+            console.log(`[VD-DEBUG]   [${i}] prompt_preview: "${(p.prompt || '').substring(0, 200)}..."`);
+          });
+        }
+
         if (imagePrompts.length > imageGenConfig.maxImagesPerStory) {
           console.log(`[VisualDirector] Limiting image prompts from ${imagePrompts.length} to ${imageGenConfig.maxImagesPerStory} (config limit)`);
           imagePrompts = imagePrompts.slice(0, imageGenConfig.maxImagesPerStory);
         }
       } else {
-        console.error('[VisualDirector] Failed, falling back to legacy image_plan path:',
-          vdResult.status === 'rejected' ? vdResult.reason : 'empty result');
-        // imagePlan stays as parsed from Call 1 (null/empty since VD was active).
-        // The existing fallback LLM call below will handle this.
+        const vdError = vdResult.status === 'rejected' ? vdResult.reason : 'empty result';
+        console.error('[VisualDirector] Failed, falling back to legacy image_plan path:', vdError);
+        console.error(`[VD-DEBUG] ERROR: ${vdError?.message || vdError}`);
+        console.error(`[VD-DEBUG] FALLBACK: using old image_plan path`);
       }
 
       // Sequential image generation (VD already finished, prompts are built)
@@ -3796,6 +3824,7 @@ Respond with ONLY valid JSON, no markdown:
 
       console.log(`[VisualDirector] Total VD path: ${Date.now() - vdStartTime}ms (images: ${imageGenerationMs}ms)`);
       console.log(`[VisualDirector] Final images: cover=${coverImageUrl ? 'URL' : 'null'}, scenes=${storyImageUrls.length}`);
+      console.log(`[VD-DEBUG] ========== END VD PIPELINE ==========`);
 
     } else {
     // ══════ ORIGINAL PATH (unchanged) ══════

@@ -305,6 +305,14 @@ export async function callVisualDirector(params: {
   includeSelf?: boolean;
 }): Promise<VisualDirectorOutput> {
   const startMs = Date.now();
+
+  console.log(`[VD-DEBUG] VD CALL INPUT:`);
+  console.log(`[VD-DEBUG]   storyTitle: "${params.storyTitle}"`);
+  console.log(`[VD-DEBUG]   storyLanguage: ${params.storyLanguage}`);
+  console.log(`[VD-DEBUG]   sceneCount: ${params.sceneCount}`);
+  console.log(`[VD-DEBUG]   kidAppearanceAnchor: ${params.kidAppearanceAnchor ? params.kidAppearanceAnchor.substring(0, 100) + '...' : 'none'}`);
+  console.log(`[VD-DEBUG]   includeSelf: ${params.includeSelf}`);
+
   const systemPrompt = SYSTEM_PROMPT.replace("{scene_count}", String(params.sceneCount));
   const userPrompt = buildUserPrompt({
     storyTitle: params.storyTitle,
@@ -318,13 +326,21 @@ export async function callVisualDirector(params: {
 
   try {
     const content = await callLovableAI(params.apiKey, systemPrompt, userPrompt, 0.4, 3);
+
+    console.log(`[VD-DEBUG] VD RAW RESPONSE (first 500 chars):`);
+    console.log(`[VD-DEBUG]   ${content.substring(0, 500)}`);
+
     const parsed = parseVisualDirectorResponse(content);
     if (!parsed) {
       console.error("[VisualDirector] JSON parse failed. Response starts with:", content.substring(0, 300));
+      console.error(`[VD-DEBUG] ERROR: JSON parse failed`);
+      console.error(`[VD-DEBUG] FALLBACK: using old image_plan path`);
       throw new Error("Visual Director returned invalid JSON");
     }
     if (!Array.isArray(parsed.character_sheet) || parsed.character_sheet.length === 0) {
       console.error("[VisualDirector] character_sheet missing or empty:", JSON.stringify(parsed).substring(0, 200));
+      console.error(`[VD-DEBUG] ERROR: character_sheet missing or empty`);
+      console.error(`[VD-DEBUG] FALLBACK: using old image_plan path`);
       throw new Error("Visual Director must return a non-empty character_sheet");
     }
     if (!Array.isArray(parsed.scenes) || parsed.scenes.length !== params.sceneCount) {
@@ -334,13 +350,24 @@ export async function callVisualDirector(params: {
         "expected",
         params.sceneCount
       );
+      console.error(`[VD-DEBUG] ERROR: scenes length mismatch (got ${parsed.scenes?.length}, expected ${params.sceneCount})`);
+      console.error(`[VD-DEBUG] FALLBACK: using old image_plan path`);
       throw new Error(`Visual Director must return exactly ${params.sceneCount} scenes`);
     }
+
+    console.log(`[VD-DEBUG] VD PARSED OUTPUT:`);
+    console.log(`[VD-DEBUG]   character_sheet: ${JSON.stringify(parsed.character_sheet?.map(c => ({ name: c.name, role: c.role, anchor_length: c.full_anchor?.length })))}`);
+    console.log(`[VD-DEBUG]   world_anchor: "${parsed.world_anchor}"`);
+    console.log(`[VD-DEBUG]   scenes: ${JSON.stringify(parsed.scenes?.map(s => ({ id: s.scene_id, camera: s.camera, desc_length: s.scene_description?.length, characters: s.characters_present, key_objects: s.key_objects, atmosphere: s.atmosphere?.substring(0, 50) })))}`);
+    console.log(`[VD-DEBUG]   cover: ${JSON.stringify(parsed.cover)}`);
+
     const ms = Date.now() - startMs;
     console.log(`[VisualDirector] completed in ${ms}ms, ${parsed.scenes.length} scenes`);
     return parsed;
   } catch (err: any) {
     console.error("[VisualDirector] Error:", err?.message ?? err);
+    console.error(`[VD-DEBUG] ERROR: ${err?.message ?? err}`);
+    console.error(`[VD-DEBUG] FALLBACK: using old image_plan path`);
     throw err;
   }
 }
