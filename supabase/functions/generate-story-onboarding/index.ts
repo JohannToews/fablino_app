@@ -683,7 +683,7 @@ Deno.serve(async (req) => {
       story.title,
       `A ${childAge}-year-old child named ${childName} as the main character`,
       imageAgeRules,
-      imageThemeRules,
+      null,
       childAge,
       undefined,
       imageStyleData ? { promptSnippet: imageStyleData.promptSnippet, ageModifier: imageStyleData.ageModifier } : undefined,

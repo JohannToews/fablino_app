@@ -2997,7 +2997,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           ? Object.keys(seriesImageCtx.visualStyleSheet)
           : null
       }));
-      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData, {
+      imagePrompts = buildImagePrompts(imagePlan, imageAgeRules, null, childAge, seriesImageCtx, imageStyleData, {
         title: story.title || 'Untitled Story',
         protagonistGender: protagonistGenderForPrompt,
       });
@@ -3043,7 +3043,7 @@ Respond with ONLY valid JSON, no markdown:
             fallbackPlan.character_anchor = appearanceAnchor;
             console.log('[generate-story] ✅ Fallback path: appearance anchor OVERRIDE:', appearanceAnchor);
           }
-          imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, imageThemeRules, childAge, seriesImageCtx, imageStyleData, {
+          imagePrompts = buildImagePrompts(fallbackPlan, imageAgeRules, null, childAge, seriesImageCtx, imageStyleData, {
             title: story.title || 'Untitled Story',
             protagonistGender: resolvedKidGender === 'male' ? 'boy' : resolvedKidGender === 'female' ? 'girl' : undefined,
           });
@@ -3063,7 +3063,7 @@ Respond with ONLY valid JSON, no markdown:
           story.title,
           characterDescription,
           imageAgeRules,
-          imageThemeRules,
+          null,
           childAge,
           seriesImageCtx,
           imageStyleData,
