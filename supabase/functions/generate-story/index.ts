@@ -2925,7 +2925,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     const resolvedThemeKeyForImages = themeKey || storyType || null;
 
     const imageRulesStart = Date.now();
-    const { ageRules: imageAgeRules, themeRules: imageThemeRules } = await loadImageRules(
+    const { ageRules: imageAgeRules } = await loadImageRules(
       supabase,
       ageGroup,
       resolvedThemeKeyForImages,
