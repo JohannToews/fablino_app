@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
 import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
+import { FEATURES } from "@/config/features";
 import { useStoryLengthOptions } from "@/hooks/useStoryLengthOptions";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import VoiceRecordButton from "./VoiceRecordButton";
@@ -623,7 +624,7 @@ const SpecialEffectsScreen = ({
           )}
 
           {/* Series toggle — 44px chips */}
-          {showSettings && (
+          {FEATURES.SERIES_UI_ENABLED && showSettings && (
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-[#92400E] w-18 sm:w-20 shrink-0">{st.seriesLabel}</span>
               <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-xl p-1">
@@ -647,7 +648,7 @@ const SpecialEffectsScreen = ({
         </div>
 
         {/* Admin series toggle (standalone, for Weg B where showSettings is false) */}
-        {!showSettings && isAdmin && (
+        {FEATURES.SERIES_UI_ENABLED && !showSettings && isAdmin && (
           <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2.5">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-[#92400E] w-18 sm:w-20 shrink-0">{st.seriesLabel}</span>
@@ -672,7 +673,7 @@ const SpecialEffectsScreen = ({
         )}
 
         {/* Series mode toggle (normal vs interactive) */}
-        {isAdmin && isSeries && (
+        {FEATURES.SERIES_UI_ENABLED && isAdmin && isSeries && (
           <div className="w-full flex gap-2 animate-fade-in">
             <button
               onClick={() => setSeriesMode('normal')}
@@ -746,7 +747,7 @@ const SpecialEffectsScreen = ({
         </div>
 
         {/* Series hint */}
-        {isSeries && (
+        {FEATURES.SERIES_UI_ENABLED && isSeries && (
           <p className="text-xs text-center text-[#92400E]/70 bg-orange-50/80 rounded-lg px-2 py-1.5 border border-orange-100/60">
             {t.seriesHint}
           </p>
@@ -761,7 +762,7 @@ const SpecialEffectsScreen = ({
             data-premium-button="primary"
             className="w-full min-h-[56px] rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98]"
           >
-            {isSeries ? t.continueEpisode1 : t.continue} ✨
+            {FEATURES.SERIES_UI_ENABLED && isSeries ? t.continueEpisode1 : t.continue} ✨
           </button>
         </div>
       </div>
