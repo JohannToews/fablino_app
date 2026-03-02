@@ -2774,7 +2774,13 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           protagonistEntry.full_anchor = clothingFromLLM
             ? `${myLookBase}, ${clothingFromLLM}${propsString}`
             : `${myLookBase}${propsString}`;
+          const genderLabel = (resolvedKidGender === 'male' || resolvedKidGender === 'm' || resolvedKidGender === 'boy')
+            ? 'boy'
+            : (resolvedKidGender === 'female' || resolvedKidGender === 'f' || resolvedKidGender === 'girl')
+              ? 'girl'
+              : 'child';
           console.log(`[CharacterSheet] Protagonist merged: ${protagonistEntry.full_anchor.substring(0, 100)}...`);
+          console.log(`[CharacterSheet] Protagonist gender applied: ${resolvedKidGender} → ${genderLabel}`);
         }
       }
 

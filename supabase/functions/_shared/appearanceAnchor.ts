@@ -16,13 +16,20 @@ export function buildAppearanceAnchor(
     eye_color?: string;
   } | null
 ): string {
-  const genderWord = kidGender === "female" ? "girl" : kidGender === "male" ? "boy" : "child";
+  // Normalize so m/boy/male → boy, f/girl/female → girl (kid_profiles may send "m"/"f" or caller may pass "child" when missing)
+  const normalized =
+    kidGender === "male" || kidGender === "m" || kidGender === "boy"
+      ? "male"
+      : kidGender === "female" || kidGender === "f" || kidGender === "girl"
+        ? "female"
+        : "";
+  const genderWord = normalized === "female" ? "girl" : normalized === "male" ? "boy" : "child";
   if (!appearance) {
     return `${kidAge}-year-old ${genderWord} named ${kidName}`;
   }
 
   const parts: string[] = [];
-  const genderAdj = kidGender === "female" ? "girlish" : kidGender === "male" ? "boyish" : "";
+  const genderAdj = normalized === "female" ? "girlish" : normalized === "male" ? "boyish" : "";
   parts.push(genderAdj ? `${kidAge}-year-old ${genderWord} with a ${genderAdj} face` : `${kidAge}-year-old ${genderWord}`);
 
   const skinMap: Record<string, string> = {
@@ -125,9 +132,9 @@ export function buildAppearanceAnchor(
   }
 
   // Gender-appropriate clothing hint for visual reinforcement
-  if (kidGender === "male") {
+  if (normalized === "male") {
     parts.push("wearing a casual t-shirt");
-  } else if (kidGender === "female") {
+  } else if (normalized === "female") {
     parts.push("wearing a colorful top");
   }
 
