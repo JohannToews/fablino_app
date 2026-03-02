@@ -90,6 +90,9 @@ export function mapVisualDirectorToImagePlan(
     // VD anchor = full description including clothing
     // Strategy: use DB physical features + extract VD clothing
 
+    // Extract clothing from VD's full_anchor
+    // Strategy: try explicit keywords first, then fall back to
+    // extracting the last segment (after "build," or similar)
     const clothingPatterns = [
       /(?:wearing|wears)\s+(.+?)(?:\.\s*|$)/i,
       /(?:dressed in|clad in)\s+(.+?)(?:\.\s*|$)/i,
@@ -104,6 +107,32 @@ export function mapVisualDirectorToImagePlan(
       }
     }
 
+    // Fallback: VD often lists clothing as the LAST comma-separated
+    // segment without a "wearing" prefix, e.g.:
+    // "9-year-old boy, light skin, short curly brown hair, brown eyes,
+    //  slim build, dark blue t-shirt with small yellow star emblem"
+    // Detect clothing-like words in the last segment(s)
+    if (!clothingDesc) {
+      const segments = protagonist.full_anchor.split(',').map(s => s.trim());
+      const clothingKeywords = [
+        'shirt', 't-shirt', 'tshirt', 'jacket', 'hoodie', 'sweater',
+        'dress', 'coat', 'vest', 'jeans', 'pants', 'shorts', 'skirt',
+        'uniform', 'outfit', 'robe', 'cloak', 'cape', 'armor', 'armour',
+        'overalls', 'blouse', 'tunic', 'hat', 'cap', 'scarf', 'boots'
+      ];
+      // Collect all segments that contain clothing keywords
+      const clothingSegments = segments.filter(seg =>
+        clothingKeywords.some(kw => seg.toLowerCase().includes(kw))
+      );
+      if (clothingSegments.length > 0) {
+        clothingDesc = clothingSegments.join(', ').trim();
+      }
+    }
+
+    console.log(`[VD→ImagePlan] Clothing merge: physical="${
+      (kidAppearanceAnchor || '').substring(0, 50)}..." + clothing="${
+      clothingDesc || 'none'}"`);
+
     // Remove any existing "wearing..." from DB anchor (safety)
     const baseAnchor = kidAppearanceAnchor
       .replace(/,?\s*wearing\s+[^,.]*/i, '')
@@ -114,8 +143,6 @@ export function mapVisualDirectorToImagePlan(
     characterAnchor = clothingDesc
       ? `${baseAnchor}, wearing ${clothingDesc}`
       : kidAppearanceAnchor;
-
-    console.log(`[VD→ImagePlan] Clothing merge: physical="${baseAnchor.substring(0, 50)}..." + clothing="${clothingDesc || 'none'}"`);
 
     // Update protagonist in character_sheet too
     protagonist.full_anchor = characterAnchor;
