@@ -1386,6 +1386,31 @@ Deno.serve(async (req) => {
     const body = await req.json();
     // Accept both camelCase and snake_case so protagonist gender can be loaded from kid_profiles
     const kidProfileId = body.kidProfileId ?? body.kid_profile_id;
+
+    // === TEMPORARILY DISABLED (2026-03-02) ===
+    // Feature: Series stories (isSeries, seriesContext, episodeNumber)
+    // Reason: Simplifying generate-story flow for Visual Director development
+    // To re-enable: remove this early-return block
+    // === END DISABLED ===
+    let isSeries: boolean = body.isSeries ?? false;
+    let seriesId: string | undefined = body.seriesId;
+    let episodeNumber: number | undefined = body.episodeNumber;
+    if (body.isSeries || body.seriesId != null || body.episodeNumber != null) {
+      isSeries = false;
+      seriesId = undefined;
+      episodeNumber = undefined;
+      console.log('[DISABLED] Series mode requested but temporarily disabled — treating as standalone');
+    }
+
+    // === TEMPORARILY DISABLED (2026-03-02) ===
+    // Feature: Branching stories (branch_options, continueBranch)
+    // Reason: Simplifying generate-story flow for Visual Director development
+    // To re-enable: remove this early-return block
+    // === END DISABLED ===
+    let branchChosenParam: string | undefined = body.branchChosen;
+    branchChosenParam = undefined;
+    console.log('[DISABLED] Branching stories temporarily disabled — using linear story mode');
+
     const {
       length,
       difficulty,
@@ -1396,11 +1421,8 @@ Deno.serve(async (req) => {
       globalLanguage,
       customSystemPrompt,
       endingType,
-      episodeNumber,
-      seriesId,
       userId,
       source = 'admin',
-      isSeries = false,
       storyType,
       characters,
       locations,
@@ -1421,7 +1443,6 @@ Deno.serve(async (req) => {
       subElements,
       surprise_characters: surpriseCharactersParam,
       seriesMode: seriesModeParam,
-      branchChosen: branchChosenParam,
       image_style_key: imageStyleKeyParam,
       series_episode_count: seriesEpisodeCountParam,
       story_id: storyIdParam,
@@ -1458,6 +1479,13 @@ Deno.serve(async (req) => {
         console.warn('[ComicStrip] Feature flag check failed:', flagErr?.message);
       }
     }
+    // === TEMPORARILY DISABLED (2026-03-02) ===
+    // Feature: Comic-Strip path (isComicStripEnabled, grid_1, grid_2, parseComicStripPlan)
+    // Reason: Simplifying generate-story flow for Visual Director development
+    // To re-enable: remove this early-return block
+    // === END DISABLED ===
+    useComicStrip = false;
+    console.log('[DISABLED] Comic strip mode temporarily disabled — using standard image path');
 
     // ── Load image generation config from DB (with fallback) ──
     let imageGenConfig: {
@@ -1966,7 +1994,14 @@ Deno.serve(async (req) => {
 
       // ── Emotion-Flow Engine ──
       if (userId) {
-        const useEmotionFlow = await isEmotionFlowEnabled(userId, supabase);
+        let useEmotionFlow = await isEmotionFlowEnabled(userId, supabase);
+        // === TEMPORARILY DISABLED (2026-03-02) ===
+        // Feature: Emotion Flow Engine (runEmotionFlowEngine)
+        // Reason: Simplifying generate-story flow for Visual Director development
+        // To re-enable: remove this early-return block
+        // === END DISABLED ===
+        useEmotionFlow = false;
+        console.log('[DISABLED] Emotion Flow Engine temporarily disabled');
         if (useEmotionFlow) {
           try {
             const characterMode = surpriseCharactersParam
