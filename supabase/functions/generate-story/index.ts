@@ -1802,17 +1802,20 @@ Deno.serve(async (req) => {
       const resolvedLength = storyLength || lengthMapping[length] || 'medium';
 
       // ── Load kid profile from DB if we have kidProfileId (needed for protagonist gender when include_self) ──
+      // Use RPC get_kid_profile_for_story so the lookup bypasses RLS and uses correct table/columns (kid_profiles.name, not first_name).
 
       if (kidProfileId) {
         try {
-          const { data: kidProfile } = await supabase
-            .from('kid_profiles')
-            .select('first_name, age, gender, difficulty_level, content_safety_level')
-            .eq('id', kidProfileId)
-            .maybeSingle();
-          if (kidProfile) {
-            resolvedKidAge = kidAge ?? kidProfile.age;
-            resolvedKidName = kidName ?? kidProfile.first_name;
+          const { data: rpcRows, error: rpcError } = await supabase.rpc('get_kid_profile_for_story', {
+            p_id: kidProfileId,
+          });
+          if (rpcError) {
+            console.warn('[generate-story] get_kid_profile_for_story RPC error:', rpcError.message);
+          }
+          const kidProfile = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+          if (kidProfile && typeof kidProfile === 'object') {
+            resolvedKidAge = kidAge ?? (kidProfile as any).age;
+            resolvedKidName = kidName ?? (kidProfile as any).first_name;
             const rawGender = (kidProfile as any).gender ?? '';
             resolvedKidGender = (rawGender === 'male' || rawGender === 'm' || rawGender === 'boy')
               ? 'male'
@@ -1820,12 +1823,12 @@ Deno.serve(async (req) => {
                 ? 'female'
                 : rawGender;
             if (!kidAge || !kidName) {
-              resolvedDifficultyLevel = difficultyLevel || kidProfile.difficulty_level;
-              resolvedContentSafetyLevel = contentSafetyLevel || kidProfile.content_safety_level;
+              resolvedDifficultyLevel = difficultyLevel ?? (kidProfile as any).difficulty_level;
+              resolvedContentSafetyLevel = contentSafetyLevel ?? (kidProfile as any).content_safety_level;
             }
             console.log(`[generate-story] Loaded kid profile: ${resolvedKidName}, age=${resolvedKidAge}, gender=${resolvedKidGender || '(empty)'}, diff=${resolvedDifficultyLevel}`);
           } else {
-            console.warn(`[generate-story] kid_profiles row not found for id=${kidProfileId} — protagonist gender will be empty.`);
+            console.warn(`[generate-story] kid profile not found for id=${kidProfileId} (RPC returned no row) — protagonist gender will be empty.`);
           }
         } catch (profileErr: any) {
           console.warn('[generate-story] Could not load kid profile:', profileErr.message);

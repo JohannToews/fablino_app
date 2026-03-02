@@ -38,18 +38,17 @@ These are in the same outer scope as the character_sheet merge block, so the mer
 
 ---
 
-### 3. DB load from `kid_profiles` (only path that sets gender)
+### 3. DB load (only path that sets gender)
 
-**Lines ~1809–1841:**
+**Table/columns (from schema):** Table is `kid_profiles` (not `kids`). PK column is `id`. The table has **`name`**, not `first_name` (see migrations and `types.ts`). Gender column is `gender` (TEXT). RLS policy `user_own_kids_select` restricts SELECT to `user_id = get_user_profile_id() AND is_deleted = false`, which can block the Edge Function’s direct table read in some setups.
+
+**Fix (RPC bypass):** The load now uses RPC `get_kid_profile_for_story(p_id uuid)` (migration `20260302_rpc_get_kid_profile_for_story.sql`). The function runs with `SECURITY DEFINER` so it bypasses RLS, and it selects from `kid_profiles` with the correct columns (`name` returned as `first_name`).
 
 - **Condition:** `if (kidProfileId)` — **if `kidProfileId` is falsy, this whole block is skipped** and `resolvedKidGender` remains `''`.
-- **Query:**
+- **Query (current):**
   ```ts
-  const { data: kidProfile } = await supabase
-    .from('kid_profiles')
-    .select('first_name, age, gender, difficulty_level, content_safety_level')
-    .eq('id', kidProfileId)
-    .maybeSingle();
+  const { data: rpcRows } = await supabase.rpc('get_kid_profile_for_story', { p_id: kidProfileId });
+  const kidProfile = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
   ```
 - **Where gender goes:** If `kidProfile` is returned:
   - `rawGender = (kidProfile as any).gender ?? ''`
