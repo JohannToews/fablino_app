@@ -487,6 +487,48 @@ export type Database = {
         }
         Relationships: []
       }
+      crash_logs: {
+        Row: {
+          component_stack: string | null
+          created_at: string
+          error_message: string | null
+          error_stack: string | null
+          extra: Json | null
+          id: string
+          kid_profile_id: string | null
+          platform: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          created_at?: string
+          error_message?: string | null
+          error_stack?: string | null
+          extra?: Json | null
+          id?: string
+          kid_profile_id?: string | null
+          platform?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          created_at?: string
+          error_message?: string | null
+          error_stack?: string | null
+          extra?: Json | null
+          id?: string
+          kid_profile_id?: string | null
+          platform?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       custom_learning_themes: {
         Row: {
           category: string
