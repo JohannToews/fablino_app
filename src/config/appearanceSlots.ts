@@ -128,15 +128,15 @@ const SLOT_HAIR_LENGTH: AppearanceSlot = {
   key: 'hair_length',
   label: { de: 'Haarlänge', en: 'Hair length' },
   category: 'hair',
-  pickerType: 'button_group',
+  pickerType: 'icon_carousel',
   phase: 1,
   required: true,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
-    { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short' }, anchorFragment: 'very short' },
-    { value: 'short', label: { de: 'Kurz', en: 'Short' }, anchorFragment: 'short' },
-    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, anchorFragment: 'medium-length' },
-    { value: 'long', label: { de: 'Lang', en: 'Long' }, anchorFragment: 'long' },
+    { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short' }, icon: 'hair-length-veryshort.png', anchorFragment: 'very short' },
+    { value: 'short', label: { de: 'Kurz', en: 'Short' }, icon: 'hair-length-short.png', anchorFragment: 'short' },
+    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, icon: 'hair-length-medium.png', anchorFragment: 'medium-length' },
+    { value: 'long', label: { de: 'Lang', en: 'Long' }, icon: 'hair-length-long.png', anchorFragment: 'long' },
   ],
 };
 
