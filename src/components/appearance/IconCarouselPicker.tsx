@@ -52,6 +52,13 @@ export default function IconCarouselPicker({ options, selectedValue, onChange, l
 
 function IconWithFallback({ icon, label }: { icon: string; label: string }) {
   const [failed, setFailed] = useState(false);
+
+  // If icon is an emoji (not a file path), render directly
+  const isEmoji = !icon.includes('/') && !icon.includes('.');
+  if (isEmoji) {
+    return <span className="text-2xl">{icon}</span>;
+  }
+
   const src = `/appearance/${icon}`;
 
   if (failed) {
