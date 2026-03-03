@@ -35,6 +35,7 @@ import ShareRedirectPage from "./pages/ShareRedirectPage";
 import StickerBookPage from "./pages/StickerBookPage";
 import MyLookPage from "./pages/MyLookPage";
 import MyLookPageV2 from "./pages/MyLookPageV2";
+import MyPeoplePage from "./pages/MyPeoplePage";
 import WelcomePage from "./pages/WelcomePage";
 import OnboardingKindPage from "./pages/OnboardingKindPage";
 import OnboardingStoryPage from "./pages/OnboardingStoryPage";
@@ -98,6 +99,11 @@ const App = () => (
               <Route path="/my-look-v2" element={
                 <ProtectedRoute>
                   <MyLookPageV2 />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-people" element={
+                <ProtectedRoute>
+                  <MyPeoplePage />
                 </ProtectedRoute>
               } />
               <Route path="/read/:id" element={
