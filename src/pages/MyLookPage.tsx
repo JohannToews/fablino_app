@@ -42,7 +42,7 @@ const DEFAULT_APPEARANCE: KidAppearance = {
 };
 
 export default function MyLookPage() {
-  const { selectedProfile, selectedProfileId, kidAppLanguage } = useKidProfile();
+  const { selectedProfile, selectedProfileId, kidAppLanguage, isLoading: profilesLoading } = useKidProfile();
   const t = getTranslations((kidAppLanguage || "de") as Language);
 
   const [appearance, setAppearance] = useState<KidAppearance>(DEFAULT_APPEARANCE);
@@ -82,38 +82,71 @@ export default function MyLookPage() {
 
   useEffect(() => {
     if (!selectedProfileId) {
+      setAppearance(DEFAULT_APPEARANCE);
+      setSavedAppearance(DEFAULT_APPEARANCE);
       setLoading(false);
       return;
     }
+
     let cancelled = false;
     setLoading(true);
+
+    const withTimeout = async <T,>(task: () => Promise<T>, ms = 10000): Promise<T> => {
+      return await Promise.race([
+        task(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`kid_appearance_timeout_after_${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
     (async () => {
-      const { data } = await (supabase as any)
-        .from("kid_appearance")
-        .select("*")
-        .eq("kid_profile_id", selectedProfileId)
-        .maybeSingle();
-      if (!cancelled && data) {
-        const loaded: KidAppearance = {
-          skinTone: (data.skin_tone as SkinToneKey) || "medium",
-          hairLength: (data.hair_length as HairLengthKey) || "medium",
-          hairType: (data.hair_type as HairTypeKey) || "straight",
-          hairStyle: (data.hair_style as HairStyleKey) || "loose",
-          hairColor: (data.hair_color as HairColorKey) || "brown",
-          eyeColor: (data.eye_color as EyeColorKey) || "brown",
-          glasses: !!data.glasses,
-        };
-        setAppearance(loaded);
-        setSavedAppearance(loaded);
-      } else if (!cancelled) {
-        setAppearance(DEFAULT_APPEARANCE);
-        setSavedAppearance(DEFAULT_APPEARANCE);
-      }
-      if (!cancelled) {
-        setLoading(false);
-        setHasChanges(false);
+      try {
+        const { data, error } = await withTimeout(
+          async () => await (supabase as any)
+            .from("kid_appearance")
+            .select("*")
+            .eq("kid_profile_id", selectedProfileId)
+            .maybeSingle(),
+          10000
+        );
+
+        if (cancelled) return;
+
+        if (error) {
+          console.error("[MyLookPage] Load error:", error.message);
+        }
+
+        if (data) {
+          const loaded: KidAppearance = {
+            skinTone: (data.skin_tone as SkinToneKey) || "medium",
+            hairLength: (data.hair_length as HairLengthKey) || "medium",
+            hairType: (data.hair_type as HairTypeKey) || "straight",
+            hairStyle: (data.hair_style as HairStyleKey) || "loose",
+            hairColor: (data.hair_color as HairColorKey) || "brown",
+            eyeColor: (data.eye_color as EyeColorKey) || "brown",
+            glasses: !!data.glasses,
+          };
+          setAppearance(loaded);
+          setSavedAppearance(loaded);
+        } else {
+          setAppearance(DEFAULT_APPEARANCE);
+          setSavedAppearance(DEFAULT_APPEARANCE);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("[MyLookPage] Load crashed:", err);
+          setAppearance(DEFAULT_APPEARANCE);
+          setSavedAppearance(DEFAULT_APPEARANCE);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setHasChanges(false);
+        }
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -156,10 +189,18 @@ export default function MyLookPage() {
     }
   }, [gender, loading]);
 
-  if (!selectedProfile) {
+  if (profilesLoading && !selectedProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <p className="text-muted-foreground">{t.loading}</p>
+      </div>
+    );
+  }
+
+  if (!profilesLoading && !selectedProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <p className="text-muted-foreground">Bitte wähle zuerst ein Kindprofil.</p>
       </div>
     );
   }

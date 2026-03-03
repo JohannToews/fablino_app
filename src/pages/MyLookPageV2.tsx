@@ -21,7 +21,7 @@ const LEGACY_COLUMN_MAP: Record<string, string> = {
 };
 
 export default function MyLookPageV2() {
-  const { selectedProfile, selectedProfileId, kidAppLanguage } = useKidProfile();
+  const { selectedProfile, selectedProfileId, kidAppLanguage, isLoading: profilesLoading } = useKidProfile();
   const lang = (kidAppLanguage || "de") as Language;
   const t = getTranslations(lang);
 
@@ -34,44 +34,77 @@ export default function MyLookPageV2() {
 
   // Load appearance data
   useEffect(() => {
-    if (!selectedProfileId) { setLoading(false); return; }
+    if (!selectedProfileId) {
+      setData({});
+      setSavedData({});
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
 
+    const withTimeout = async <T,>(task: () => Promise<T>, ms = 10000): Promise<T> => {
+      return await Promise.race([
+        task(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`kid_appearance_timeout_after_${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
     (async () => {
-      const { data: row } = await (supabase as any)
-        .from("kid_appearance")
-        .select("*")
-        .eq("kid_profile_id", selectedProfileId)
-        .maybeSingle();
+      try {
+        const { data: row, error } = await withTimeout(
+          async () => await (supabase as any)
+            .from("kid_appearance")
+            .select("*")
+            .eq("kid_profile_id", selectedProfileId)
+            .maybeSingle(),
+          10000
+        );
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      let initial: AppearanceData = {};
+        if (error) {
+          console.error("[MyLookPageV2] Load error:", error.message);
+        }
 
-      if (row) {
-        // Prefer appearance_data JSONB if populated
-        const jsonData = row.appearance_data as Record<string, unknown> | null;
-        if (jsonData && typeof jsonData === 'object' && Object.keys(jsonData).length > 0) {
-          initial = jsonData as AppearanceData;
-        } else {
-          // Fallback: build from legacy columns
-          initial = {
-            skin_tone: row.skin_tone || 'medium',
-            eye_color: row.eye_color || 'brown',
-            glasses: String(!!row.glasses),
-            hair_color: row.hair_color || 'brown',
-            hair_type: row.hair_type || 'straight',
-            hair_length: row.hair_length || 'medium',
-            hair_style: row.hair_style || 'loose',
-            body_type: row.body_type || 'average',
-          };
+        let initial: AppearanceData = {};
+
+        if (row) {
+          // Prefer appearance_data JSONB if populated
+          const jsonData = row.appearance_data as Record<string, unknown> | null;
+          if (jsonData && typeof jsonData === 'object' && Object.keys(jsonData).length > 0) {
+            initial = jsonData as AppearanceData;
+          } else {
+            // Fallback: build from legacy columns
+            initial = {
+              skin_tone: row.skin_tone || 'medium',
+              eye_color: row.eye_color || 'brown',
+              glasses: String(!!row.glasses),
+              hair_color: row.hair_color || 'brown',
+              hair_type: row.hair_type || 'straight',
+              hair_length: row.hair_length || 'medium',
+              hair_style: row.hair_style || 'loose',
+              body_type: row.body_type || 'average',
+            };
+          }
+        }
+
+        setData(initial);
+        setSavedData(initial);
+      } catch (err) {
+        if (!cancelled) {
+          console.error("[MyLookPageV2] Load crashed:", err);
+          setData({});
+          setSavedData({});
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
-
-      setData(initial);
-      setSavedData(initial);
-      setLoading(false);
     })();
 
     return () => { cancelled = true; };
@@ -123,10 +156,18 @@ export default function MyLookPageV2() {
   // Filter slots for current phase
   const visibleSlots = APPEARANCE_SLOTS.filter(slot => slot.phase <= CURRENT_PHASE);
 
-  if (!selectedProfile) {
+  if (profilesLoading && !selectedProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <p className="text-muted-foreground">{t.loading}</p>
+      </div>
+    );
+  }
+
+  if (!profilesLoading && !selectedProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <p className="text-muted-foreground">Bitte wähle zuerst ein Kindprofil.</p>
       </div>
     );
   }
