@@ -205,7 +205,6 @@ export function buildAnchorFromSlots(
   }
 
   const FACE_KEYS = new Set(['skin_tone', 'eye_color', 'glasses']);
-  const BODY_KEYS = new Set(['body_type', 'facial_hair']);
 
   // 2. SLOTS: face first (skin, eyes, glasses), then hair (step 3), then body
   for (const slot of APPEARANCE_SLOTS) {
@@ -231,48 +230,59 @@ export function buildAnchorFromSlots(
   const hairLength = getOptionFragment(hairLengthSlot, appearanceData.hair_length ?? '');
   const hairType = getOptionFragment(hairTypeSlot, appearanceData.hair_type ?? '');
   const hairColorFragment = getOptionFragment(hairColorSlot, appearanceData.hair_color ?? '');
-  const hairStyleFragment = getOptionFragment(hairStyleSlot, hairStyle);
-
-  const skipLengthStyles = new Set(['bald', 'buzz_cut', 'afro', 'afro_puffs']);
+  const hairStyleFragment = getOptionFragment(hairStyleSlot, hairStyle) || 'worn loose';
+  const colorWord = hairColorFragment.replace(/\s*hair\s*$/i, '').trim();
 
   if (hairStyle === 'bald') {
-    if (hairStyleFragment) parts.push(hairStyleFragment);
+    parts.push('bald head');
   } else if (hairStyle === 'bald_top') {
-    if (hairStyleFragment) parts.push(hairStyleFragment);
-  } else if (hairStyle && skipLengthStyles.has(hairStyle)) {
-    if (hairColorFragment && hairStyleFragment) {
-      parts.push(`${hairColorFragment}, ${hairStyleFragment}`);
-    } else if (hairStyleFragment) {
-      parts.push(hairStyleFragment);
-    } else if (hairColorFragment) {
-      parts.push(hairColorFragment);
-    }
+    parts.push('bald on top with hair on the sides');
+  } else if (hairStyle === 'buzz_cut') {
+    parts.push(colorWord ? `${colorWord} buzz cut` : 'buzz cut');
+  } else if (hairStyle === 'afro' || hairStyle === 'afro_puffs') {
+    parts.push(colorWord ? `${colorWord} ${hairStyleFragment}` : hairStyleFragment);
   } else {
-    const colorWord = hairColorFragment.replace(/\s*hair\s*$/i, '').trim() || '';
     const segs: string[] = [];
-    if (!skipLengthStyles.has(hairStyle) && hairLength) segs.push(hairLength);
+    if (colorWord) segs.push(colorWord);
+    if (hairLength) segs.push(hairLength);
     if (hairType) segs.push(hairType);
-    if (colorWord) segs.push(`${colorWord} hair`);
-    if (segs.length > 0) {
-      parts.push(segs.join(' ') + (hairStyleFragment ? `, ${hairStyleFragment}` : ''));
-    } else if (hairStyleFragment) {
-      parts.push(hairStyleFragment);
-    } else if (hairColorFragment) {
-      parts.push(hairColorFragment);
+    segs.push('hair');
+    parts.push(`${segs.join(' ')}, ${hairStyleFragment}`);
+  }
+
+  // 4. BODY SLOTS (body_type) + facial_hair with color injection
+  const facialHairSlot = APPEARANCE_SLOTS.find((s) => s.key === 'facial_hair');
+  const bodyTypeSlot = APPEARANCE_SLOTS.find((s) => s.key === 'body_type');
+
+  // facial_hair with beard color = hair color
+  if (facialHairSlot) {
+    const fhRaw = appearanceData.facial_hair;
+    const fhValue = fhRaw === true ? 'true' : fhRaw === false ? 'false' : (fhRaw != null && fhRaw !== '' ? String(fhRaw) : '');
+    if (fhValue && fhValue !== 'none' && fhValue !== 'false' && fhValue !== '') {
+      const BEARD_COLOR_MAP: Record<string, (c: string) => string> = {
+        stubble: (c) => c ? `with ${c} stubble` : 'with stubble',
+        short_beard: (c) => c ? `with a short ${c} beard` : 'with a short beard',
+        full_beard: (c) => c ? `with a full ${c} beard` : 'with a full beard',
+        mustache: (c) => c ? `with a ${c} mustache` : 'with a mustache',
+      };
+      const builder = BEARD_COLOR_MAP[fhValue];
+      if (builder) {
+        parts.push(builder(colorWord));
+      } else {
+        const fragment = getOptionFragment(facialHairSlot, fhValue);
+        if (fragment) parts.push(fragment);
+      }
     }
   }
 
-  // 4. BODY SLOTS (body_type, facial_hair)
-  for (const slot of APPEARANCE_SLOTS) {
-    if (slot.phase > CURRENT_PHASE) continue;
-    if (!BODY_KEYS.has(slot.key)) continue;
-
-    const raw = appearanceData[slot.key];
-    const value = raw === true ? 'true' : raw === false ? 'false' : (raw != null && raw !== '' ? String(raw) : '');
-    if (value === '' || value === 'false' || value === 'none') continue;
-
-    const fragment = getOptionFragment(slot, value);
-    if (fragment) parts.push(fragment);
+  // body_type
+  if (bodyTypeSlot) {
+    const btRaw = appearanceData.body_type;
+    const btValue = btRaw === true ? 'true' : btRaw === false ? 'false' : (btRaw != null && btRaw !== '' ? String(btRaw) : '');
+    if (btValue && btValue !== 'false' && btValue !== 'none' && btValue !== '') {
+      const fragment = getOptionFragment(bodyTypeSlot, btValue);
+      if (fragment) parts.push(fragment);
+    }
   }
 
   return parts.join(', ');
