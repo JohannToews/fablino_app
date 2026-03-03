@@ -62,26 +62,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Fetch user profile from user_profiles table (for Supabase Auth users)
   const fetchUserProfile = async (authUser: User): Promise<UserSettings | null> => {
+    const withTimeout = async <T,>(task: () => Promise<T>, ms = 10000): Promise<T> => {
+      return await Promise.race([
+        task(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`timeout_after_${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
     try {
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('id, username, display_name, email, auth_id, auth_migrated, admin_language, app_language, text_language, system_prompt, created_at, updated_at')
-        .eq('auth_id', authUser.id)
-        .order('auth_migrated', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: profile, error } = await withTimeout(
+        async () => await supabase
+          .from('user_profiles')
+          .select('id, username, display_name, email, auth_id, auth_migrated, admin_language, app_language, text_language, system_prompt, created_at, updated_at')
+          .eq('auth_id', authUser.id)
+          .order('auth_migrated', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        10000
+      );
 
       if (error || !profile) {
         console.error('Error fetching user profile:', error);
         return null;
       }
 
-      // Fetch user role
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', profile.id)
-        .single();
+      // Fetch user role (optional; fallback to standard if missing)
+      const { data: roleData, error: roleError } = await withTimeout(
+        async () => await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', profile.id)
+          .maybeSingle(),
+        8000
+      );
+
+      if (roleError) {
+        console.warn('Error fetching user role, using fallback role=standard:', roleError.message);
+      }
 
       return {
         id: profile.id,
@@ -167,79 +186,102 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     // Check if migration banner was dismissed this session
     const dismissed = sessionStorage.getItem(MIGRATION_DISMISSED_KEY) === 'true';
     setMigrationBannerDismissed(dismissed);
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('Auth state changed:', event, newSession?.user?.email);
-        
-        if (newSession?.user) {
-          setSession(newSession);
-          setAuthMode('supabase');
-          // Use setTimeout to avoid potential deadlock with Supabase client
-          setTimeout(async () => {
-            const profile = await fetchUserProfile(newSession.user);
-            setUser(profile);
-            setIsLoading(false);
-          }, 0);
-        } else if (event === 'SIGNED_OUT') {
-          // Check for legacy session as fallback
-          const legacyUser = checkLegacySession();
-          if (legacyUser) {
-            setUser(legacyUser);
-            setAuthMode('legacy');
-          } else {
-            setSession(null);
-            setUser(null);
-            setAuthMode(null);
-          }
-          setIsLoading(false);
-        }
+    const applyLegacyFallback = () => {
+      const legacyUser = checkLegacySession();
+      if (legacyUser) {
+        const legacyToken = sessionStorage.getItem(LEGACY_SESSION_KEY)
+          || localStorage.getItem(LEGACY_SESSION_KEY)
+          || 'legacy-token';
+        const mockSession = {
+          access_token: legacyToken,
+          refresh_token: '',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: { id: legacyUser.id } as any,
+        } as Session;
+
+        setSession(mockSession);
+        setUser(legacyUser);
+        setAuthMode('legacy');
+      } else {
+        setSession(null);
+        setUser(null);
+        setAuthMode(null);
       }
-    );
+      setIsLoading(false);
+    };
+
+    const loadSupabaseProfile = (authUser: User) => {
+      void (async () => {
+        try {
+          const profile = await fetchUserProfile(authUser);
+          if (!isMounted) return;
+          setUser(profile);
+        } catch (error) {
+          console.error('Error loading Supabase profile:', error);
+          if (!isMounted) return;
+          setUser(null);
+        } finally {
+          if (isMounted) setIsLoading(false);
+        }
+      })();
+    };
+
+    // Set up auth state listener FIRST
+    // IMPORTANT: callback must stay synchronous (no async/await + no Supabase calls directly here)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('Auth state changed:', event, newSession?.user?.email);
+      if (!isMounted) return;
+
+      if (newSession?.user) {
+        setSession(newSession);
+        setAuthMode('supabase');
+        loadSupabaseProfile(newSession.user);
+        return;
+      }
+
+      if (event === 'SIGNED_OUT' || !newSession) {
+        applyLegacyFallback();
+      }
+    });
 
     // THEN check for existing session
     const initAuth = async () => {
       try {
-        // First check Supabase Auth session
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-        
+        const { data: { session: existingSession } } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('auth_init_timeout')), 10000)
+          ),
+        ]);
+
+        if (!isMounted) return;
+
         if (existingSession?.user) {
           setSession(existingSession);
           setAuthMode('supabase');
-          const profile = await fetchUserProfile(existingSession.user);
-          setUser(profile);
-          setIsLoading(false);
+          loadSupabaseProfile(existingSession.user);
         } else {
-          // No Supabase session - check for legacy session
-          const legacyUser = checkLegacySession();
-          if (legacyUser) {
-            setUser(legacyUser);
-            setAuthMode('legacy');
-            // Create a mock session for legacy
-            const mockSession = {
-              access_token: sessionStorage.getItem(LEGACY_SESSION_KEY) || 'legacy-token',
-              refresh_token: '',
-              expires_in: 3600,
-              token_type: 'bearer',
-              user: { id: legacyUser.id } as any
-            } as Session;
-            setSession(mockSession);
-          }
-          setIsLoading(false);
+          applyLegacyFallback();
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setIsLoading(false);
+        if (isMounted) applyLegacyFallback();
       }
     };
 
     initAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Login via Supabase Auth (email/password)
