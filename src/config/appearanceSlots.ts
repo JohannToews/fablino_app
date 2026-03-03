@@ -121,11 +121,11 @@ const SLOT_HAIR_TYPE: AppearanceSlot = {
   required: true,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
-    { value: 'straight', label: { de: 'Glatt', en: 'Straight' }, icon: '〰️', anchorFragment: 'straight' },
-    { value: 'wavy', label: { de: 'Wellig', en: 'Wavy' }, icon: '🌊', anchorFragment: 'wavy' },
-    { value: 'curly', label: { de: 'Lockig', en: 'Curly' }, icon: '➰', anchorFragment: 'curly' },
-    { value: 'tight_curly', label: { de: 'Krauses', en: 'Tight curly' }, icon: '🔄', anchorFragment: 'tight curly' },
-    { value: 'coily', label: { de: 'Afro', en: 'Coily' }, icon: '🌀', anchorFragment: 'afro-textured' },
+    { value: 'straight', label: { de: 'Glatt', en: 'Straight' }, icon: 'hair-straight.png', anchorFragment: 'straight' },
+    { value: 'wavy', label: { de: 'Wellig', en: 'Wavy' }, icon: 'hair-wavy.png', anchorFragment: 'wavy' },
+    { value: 'curly', label: { de: 'Lockig', en: 'Curly' }, icon: 'hair-curly.png', anchorFragment: 'curly' },
+    { value: 'tight_curly', label: { de: 'Krauses', en: 'Tight curly' }, icon: 'hair-tight-curly.png', anchorFragment: 'tight curly' },
+    { value: 'coily', label: { de: 'Afro', en: 'Coily' }, icon: 'hair-afro.png', anchorFragment: 'afro-textured' },
   ],
 };
 
