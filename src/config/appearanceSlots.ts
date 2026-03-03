@@ -53,6 +53,7 @@ const SLOT_SKIN_TONE: AppearanceSlot = {
     { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, hex: '#C68E6A', anchorFragment: 'medium skin tone' },
     { value: 'medium_dark', label: { de: 'Mittel-Dunkel', en: 'Medium dark' }, hex: '#A0674B', anchorFragment: 'medium-dark skin' },
     { value: 'dark', label: { de: 'Dunkel', en: 'Dark' }, hex: '#6B3F2E', anchorFragment: 'dark skin' },
+    { value: 'very_dark', label: { de: 'Sehr dunkel', en: 'Very dark' }, hex: '#3B2314', anchorFragment: 'very dark skin' },
   ],
 };
 
@@ -100,15 +101,9 @@ const SLOT_HAIR_COLOR: AppearanceSlot = {
     { value: 'black', label: { de: 'Schwarz', en: 'Black' }, hex: '#1A1A1A', anchorFragment: 'black hair' },
     { value: 'dark_brown', label: { de: 'Dunkelbraun', en: 'Dark brown' }, hex: '#3B2314', anchorFragment: 'dark brown hair' },
     { value: 'brown', label: { de: 'Braun', en: 'Brown' }, hex: '#6B4226', anchorFragment: 'brown hair' },
-    { value: 'light_brown', label: { de: 'Hellbraun', en: 'Light brown' }, hex: '#A0784E', anchorFragment: 'light brown hair' },
     { value: 'blonde', label: { de: 'Blond', en: 'Blonde' }, hex: '#D4AA6A', anchorFragment: 'blonde hair' },
-    { value: 'light_blonde', label: { de: 'Hellblond', en: 'Light blonde' }, hex: '#F0D89A', anchorFragment: 'light blonde hair' },
     { value: 'red', label: { de: 'Rot', en: 'Red' }, hex: '#8B3A2F', anchorFragment: 'red hair' },
-    { value: 'auburn', label: { de: 'Kastanienbraun', en: 'Auburn' }, hex: '#7A3B2E', anchorFragment: 'auburn hair' },
-    { value: 'ginger', label: { de: 'Ingwer', en: 'Ginger' }, hex: '#C46A3A', anchorFragment: 'ginger hair' },
     { value: 'gray', label: { de: 'Grau', en: 'Gray' }, hex: '#9E9E9E', anchorFragment: 'gray hair' },
-    { value: 'white', label: { de: 'Weiß', en: 'White' }, hex: '#E8E8E8', anchorFragment: 'white hair' },
-    { value: 'silver', label: { de: 'Silber', en: 'Silver' }, hex: '#C0C0C0', anchorFragment: 'silver hair' },
   ],
 };
 
