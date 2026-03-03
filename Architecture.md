@@ -20,9 +20,10 @@
 12. [Voice Input Feature](#voice-input-feature)
 13. [Immersive Reader](#immersive-reader)
 14. [Image Style System](#image-style-system)
-15. [Syllable Coloring](#syllable-coloring)
-16. [Feature Flags & Premium UI](#feature-flags--premium-ui)
-17. [Technical Debt & Code Smells](#technical-debt--code-smells)
+15. [Visual Director (Image Planning)](#visual-director-image-planning)
+16. [Syllable Coloring](#syllable-coloring)
+17. [Feature Flags & Premium UI](#feature-flags--premium-ui)
+18. [Technical Debt & Code Smells](#technical-debt--code-smells)
 
 ---
 
@@ -134,7 +135,8 @@ kinder-wort-trainer/
 │   ├── functions/                     # 17 Edge Functions
 │   │   ├── _shared/                   # Shared modules
 │   │   │   ├── promptBuilder.ts       # Block 2.3c: Dynamic prompt builder + Series context (EPISODE_CONFIG, buildSeriesContextBlock)
-│   │   │   ├── imagePromptBuilder.ts  # Block 2.4: Image prompt construction + Series visual pipeline (VisualStyleSheet, EPISODE_MOOD)
+│   │   │   ├── imagePromptBuilder.ts  # Block 2.4: Image prompt construction + Series visual pipeline; VD adapter (mapVisualDirectorToImagePlan)
+│   │   │   ├── visualDirector.ts      # Visual Director: optional second LLM call for image planning (character_sheet, scenes, cover, camera)
 │   │   │   ├── learningThemeRotation.ts # Block 2.3c: Learning theme rotation
 │   │   │   ├── auth.ts                # Supabase + legacy auth (x-legacy-token/x-legacy-user-id)
 │   │   │   └── cors.ts               # CORS logic (Lovable + allowed origins)
@@ -317,12 +319,11 @@ generate-story/index.ts:
      • Build composite system prompt inline
   2. Call Lovable AI Gateway (Gemini 3 Flash Preview)
      → Generates: title, content, questions, vocabulary, structure ratings,
-        emotional classifications, image_plan (Block 2.4)
+        emotional classifications; image_plan only when useVisualDirector is false (Block 2.4)
   3. Word count validation (retry if below minimum)
-  4. Image prompt building (parallel with step 5):
-     a. Parse image_plan from LLM response
-     b. Load image_style_rules + theme_rules from DB
-     c. imagePromptBuilder.ts: buildImagePrompts() → cover + scene prompts
+  4. Image pipeline (branch by useVisualDirector):
+     LEGACY: Parse image_plan from LLM response; if missing and !useVisualDirector → fallback LLM call for image_plan; buildImagePrompts(plan) → cover + scene prompts.
+     VISUAL DIRECTOR: When useVisualDirector=true, Call 1 omits image_plan. After story is saved, inside image block: run Visual Director (callVisualDirector) + consistency check in parallel → mapVisualDirectorToImagePlan() → buildImagePrompts(plan) V2 path (character_sheet, camera, background_figures, cover.camera) → generate images.
   5. PARALLEL execution (Promise.allSettled + 90s timeout):
      a. Consistency check v2 (up to 2 correction attempts)
      b. ALL image generation in parallel (cover + 1-3 scenes)
@@ -753,8 +754,9 @@ useKidProfile.tsx → getKidLanguage(school_system)
 
 | Module | Purpose |
 |--------|---------|
-| `promptBuilder.ts` | Builds dynamic user message by querying rule tables (age_rules, difficulty_rules, theme_rules, emotion_rules). Handles surprise theme/characters, character relationships, learning themes, image plan instructions. **Series**: exports `EPISODE_CONFIG` (5-episode definitions), `buildSeriesContextBlock()` (episode function, requirements, structure constraints, continuity state, output extensions). Extended `StoryRequest` interface with series fields. |
-| `imagePromptBuilder.ts` | Constructs image prompts from LLM image_plan + DB style rules. `getStyleForAge()` reads from `image_styles` DB table (fallback to hardcoded). Age-specific modifiers (per year 5-12+). Cover + scene prompts. `target_paragraph` support. **Series**: exports `VisualStyleSheet`/`SeriesImageContext` interfaces, `EPISODE_MOOD` (5 mood strings), `buildSeriesStylePrefix()`. Conditional styleBlock: series uses world_style + episode mood (no style_prompt collision). |
+| `promptBuilder.ts` | Builds dynamic user message by querying rule tables (age_rules, difficulty_rules, theme_rules, emotion_rules). Handles surprise theme/characters, character relationships, learning themes, image plan instructions. When **useVisualDirector**: omits image_plan from requested JSON so Call 1 returns story only. **Series**: exports `EPISODE_CONFIG`, `buildSeriesContextBlock()`, extended `StoryRequest`. |
+| `imagePromptBuilder.ts` | Constructs image prompts from image_plan + DB style rules. **V2 path** (when character_sheet present): `buildSceneImagePromptV2` / `buildCoverImagePromptV2` with character refs, camera, background_figures, explicit character count. **VD adapter**: `mapVisualDirectorToImagePlan()` maps Visual Director output (character_sheet, scenes, cover with camera) to ImagePlan; protagonist merge: DB physical (Mein Look) + VD clothing. **Series**: `VisualStyleSheet`, `EPISODE_MOOD`, `buildSeriesStylePrefix()`. `getStyleForAge()` from `image_styles` DB. |
+| `visualDirector.ts` | **Visual Director**: optional second LLM call for Imagen-optimized image planning. Input: story title + content; output: `character_sheet` (full_anchor per character, token balance rules), `world_anchor`, `scenes` (scene_description, camera, characters_present, key_objects, atmosphere, background_figures), `cover` (description, characters_present, mood, camera). System prompt: character balance, scene balancing (camera/location/object/mood), close-up rules, cover camera (no close-up). Used when `useVisualDirector` is true. |
 | `learningThemeRotation.ts` | Determines if a learning theme should be applied based on parent_learning_config frequency and round-robin rotation. |
 
 ### Prompt Architecture
@@ -1034,6 +1036,41 @@ ReadingPage / CreateStoryPage
 
 ---
 
+## Visual Director (Image Planning)
+
+When the **Visual Director** path is enabled (`useVisualDirector`), image planning is done by a **second LLM call** after the story is generated, instead of requesting `image_plan` in the first story JSON.
+
+### Flow
+
+```
+Call 1 (promptBuilder + generate-story):
+  → Request JSON without image_plan when useVisualDirector
+  → LLM returns: title, content, questions, vocabulary, etc. (no image_plan)
+
+After story is saved, in image block (!comicStripHandled):
+  → Promise.allSettled([ callVisualDirector(...), consistencyCheckTask() ])
+  → VD returns: character_sheet, world_anchor, scenes, cover (each with camera; scenes with background_figures)
+  → mapVisualDirectorToImagePlan(vdOutput, kidAppearanceAnchor, …) → ImagePlan
+  → buildImagePrompts(plan) V2 path → cover + scene prompts (character refs, camera, character count, background_figures)
+  → generateAllImagesTask() → cover + scene images
+```
+
+### Responsibilities
+
+| Component | Role |
+|-----------|------|
+| `visualDirector.ts` | System prompt: character_sheet (token balance 25–40 words, 1.5× max ratio), world_anchor, scene rules (camera, background_figures, scene balancing, close-up once max, cover camera medium/full body only). `callVisualDirector()` → LLM → JSON. |
+| `imagePromptBuilder.ts` | `mapVisualDirectorToImagePlan()`: VD output → ImagePlan; protagonist merge = DB physical (Mein Look) + VD clothing. V2 prompts: explicit character count, background_figures (none/few/crowd), cover camera from VD. |
+| `generate-story/index.ts` | When useVisualDirector: skip fallback image_plan LLM; run VD + consistency in parallel; map VD → plan; build prompts; generate images. |
+
+### VD output schema (summary)
+
+- **character_sheet**: name, role, full_anchor, props (balanced length; clothing concise).
+- **scenes**: scene_id, scene_description, characters_present, camera, key_objects, atmosphere, background_figures (none | few | crowd).
+- **cover**: description, characters_present, mood, camera (medium shot or full body only).
+
+---
+
 ## Syllable Coloring
 
 ### Architecture
@@ -1239,4 +1276,4 @@ Stored in `app_settings` as JSON arrays of `user_profiles.id`. Value `["*"]` = e
 
 ---
 
-*Last updated: 2026-02-24. Covers: Block 1 (multilingual DB), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization complete (design-tokens.ts including FABLINO_SHADOWS/FABLINO_MOTION, FablinoMascot, SpeechBubble, FablinoPageHeader, compact SpecialEffectsScreen, theme/character Vite imports), **Gamification Phase 1 backend complete** (7 migrations), **Gamification Phase 2 frontend fixes complete** (total_stars insert, activity types story_read/quiz_complete, allBadgeCount=23), **Performance optimizations** (React Query caching on StorySelectPage, server-side story list RPC, image thumbnails via getThumbnailUrl, lazy loading), **New infrastructure** (story-images storage bucket, edgeFunctionHelper with legacy auth, migrate-covers + migrate-user-auth edge functions, SavedCharactersModal, ConsistencyCheckStats, stories.is_favorite), **Series Feature Modus A complete** (Phase 0-5), **Voice Input** (useVoiceRecorder hook + VoiceRecordButton + WaveformVisualizer), **Speech-to-Text rewrite** (ElevenLabs → Gladia V2 API with custom vocabulary), **Immersive Reader** (admin-only book-style reader with pixel-based content splitting, landscape spreads, cover page with multi-paragraph fill, image deduplication, syllable coloring DE/FR, fullscreen mode, warm cream background #FFF9F0, 17 components in src/components/immersive-reader/), **Image Style System** (Phase 1: image_styles DB table with 10 styles + getStyleForAge() reads from DB; Phase 2: ImageStylePicker in Story Wizard Screen 4; Phase 3: ImageStylesSection CRUD in Admin Panel with preview upload), **Syllable Coloring** (hybrid approach: hypher sync for DE, hyphen async+cache for FR; SyllableText component; toggle restricted to DE/FR; live monitoring), **Classic Reader default** (all users default to classic, admin toggle for immersive via URL param or UI toggle), **Feature Flags & Premium UI** (per-user flags in app_settings: emotion_flow_enabled_users, comic_strip_enabled_users, premium_ui_enabled_users; FeatureFlagsPage for admin toggles; usePremiumUi hook + PremiumUiBodyClass for body.premium-ui; PremiumRouteTransition for route animations; manage-users getPremiumUi/setPremiumUi; design-tokens FABLINO_SHADOWS/FABLINO_MOTION).*
+*Last updated: 2026-03-02. Covers: Block 1 (multilingual DB), **Visual Director** (optional second LLM for image planning when useVisualDirector: character_sheet, scenes with camera/background_figures, cover with camera; mapVisualDirectorToImagePlan; V2 prompts with character count and background_figures), Block 2.1 (learning themes + guardrails), Block 2.2/2.2b (rule tables + difficulty_rules), Block 2.3a (story classifications + kid_characters), Block 2.3c (dynamic prompt engine), Block 2.3d (story_languages, wizard character management), Block 2.3e (dual-path wizard, surprise theme/characters), Block 2.4 (intelligent image generation), Phase 5 (star-based gamification, badges, BadgeCelebrationModal, ResultsPage), UI harmonization complete (design-tokens.ts including FABLINO_SHADOWS/FABLINO_MOTION, FablinoMascot, SpeechBubble, FablinoPageHeader, compact SpecialEffectsScreen, theme/character Vite imports), **Gamification Phase 1 backend complete** (7 migrations), **Gamification Phase 2 frontend fixes complete** (total_stars insert, activity types story_read/quiz_complete, allBadgeCount=23), **Performance optimizations** (React Query caching on StorySelectPage, server-side story list RPC, image thumbnails via getThumbnailUrl, lazy loading), **New infrastructure** (story-images storage bucket, edgeFunctionHelper with legacy auth, migrate-covers + migrate-user-auth edge functions, SavedCharactersModal, ConsistencyCheckStats, stories.is_favorite), **Series Feature Modus A complete** (Phase 0-5), **Voice Input** (useVoiceRecorder hook + VoiceRecordButton + WaveformVisualizer), **Speech-to-Text rewrite** (ElevenLabs → Gladia V2 API with custom vocabulary), **Immersive Reader** (admin-only book-style reader with pixel-based content splitting, landscape spreads, cover page with multi-paragraph fill, image deduplication, syllable coloring DE/FR, fullscreen mode, warm cream background #FFF9F0, 17 components in src/components/immersive-reader/), **Image Style System** (Phase 1: image_styles DB table with 10 styles + getStyleForAge() reads from DB; Phase 2: ImageStylePicker in Story Wizard Screen 4; Phase 3: ImageStylesSection CRUD in Admin Panel with preview upload), **Syllable Coloring** (hybrid approach: hypher sync for DE, hyphen async+cache for FR; SyllableText component; toggle restricted to DE/FR; live monitoring), **Classic Reader default** (all users default to classic, admin toggle for immersive via URL param or UI toggle), **Feature Flags & Premium UI** (per-user flags in app_settings: emotion_flow_enabled_users, comic_strip_enabled_users, premium_ui_enabled_users; FeatureFlagsPage for admin toggles; usePremiumUi hook + PremiumUiBodyClass for body.premium-ui; PremiumRouteTransition for route animations; manage-users getPremiumUi/setPremiumUi; design-tokens FABLINO_SHADOWS/FABLINO_MOTION).*

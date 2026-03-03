@@ -1,0 +1,325 @@
+/**
+ * Fablino Avatar v2 — Slot-based appearance config.
+ * appearance_data (JSONB) keys and options with anchor fragments for image prompts.
+ * No DB queries, no UI; config-only.
+ */
+
+// ─── Interfaces ─────────────────────────────────────────────────────────────
+
+export type AgeCategory = 'child' | 'teen' | 'adult' | 'senior';
+export type SlotCategory = 'face' | 'hair' | 'body' | 'accessories' | 'details';
+export type PickerType = 'color' | 'icon_carousel' | 'toggle' | 'size_slider';
+
+export interface AppearanceOption {
+  value: string;
+  label: Record<string, string>;
+  icon?: string;
+  hex?: string;
+  anchorFragment: string;
+}
+
+export interface AppearanceSlot {
+  key: string;
+  label: Record<string, string>;
+  category: SlotCategory;
+  pickerType: PickerType;
+  options: AppearanceOption[];
+  availableFor: AgeCategory[];
+  genderFilter?: ('male' | 'female' | null)[];
+  phase: number;
+  required: boolean;
+}
+
+/** What is stored in JSONB appearance_data: slot key → option value (string or boolean for toggle). */
+export type AppearanceData = Record<string, string | boolean>;
+
+// ─── Constants ─────────────────────────────────────────────────────────────
+
+export const CURRENT_PHASE = 1;
+
+// ─── Phase 1 Slots ──────────────────────────────────────────────────────────
+
+const SLOT_SKIN_TONE: AppearanceSlot = {
+  key: 'skin_tone',
+  label: { de: 'Hautton', en: 'Skin tone' },
+  category: 'face',
+  pickerType: 'color',
+  phase: 1,
+  required: true,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'light', label: { de: 'Hell', en: 'Light' }, hex: '#FDDBB4', anchorFragment: 'light skin' },
+    { value: 'medium_light', label: { de: 'Hell-Mittel', en: 'Light medium' }, hex: '#E8B88A', anchorFragment: 'light-medium skin' },
+    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, hex: '#C68E6A', anchorFragment: 'medium skin tone' },
+    { value: 'medium_dark', label: { de: 'Mittel-Dunkel', en: 'Medium dark' }, hex: '#A0674B', anchorFragment: 'medium-dark skin' },
+    { value: 'dark', label: { de: 'Dunkel', en: 'Dark' }, hex: '#6B3F2E', anchorFragment: 'dark skin' },
+  ],
+};
+
+const SLOT_EYE_COLOR: AppearanceSlot = {
+  key: 'eye_color',
+  label: { de: 'Augenfarbe', en: 'Eye color' },
+  category: 'face',
+  pickerType: 'color',
+  phase: 1,
+  required: false,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'brown', label: { de: 'Braun', en: 'Brown' }, anchorFragment: 'brown eyes' },
+    { value: 'dark_brown', label: { de: 'Dunkelbraun', en: 'Dark brown' }, anchorFragment: 'dark brown eyes' },
+    { value: 'green', label: { de: 'Grün', en: 'Green' }, anchorFragment: 'green eyes' },
+    { value: 'blue', label: { de: 'Blau', en: 'Blue' }, anchorFragment: 'blue eyes' },
+    { value: 'gray', label: { de: 'Grau', en: 'Gray' }, anchorFragment: 'gray eyes' },
+    { value: 'hazel', label: { de: 'Haselnuss', en: 'Hazel' }, anchorFragment: 'hazel eyes' },
+  ],
+};
+
+const SLOT_GLASSES: AppearanceSlot = {
+  key: 'glasses',
+  label: { de: 'Brille', en: 'Glasses' },
+  category: 'face',
+  pickerType: 'toggle',
+  phase: 1,
+  required: false,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'false', label: { de: 'Keine', en: 'None' }, anchorFragment: '' },
+    { value: 'true', label: { de: 'Brille', en: 'Glasses' }, anchorFragment: 'wearing glasses' },
+  ],
+};
+
+const SLOT_HAIR_COLOR: AppearanceSlot = {
+  key: 'hair_color',
+  label: { de: 'Haarfarbe', en: 'Hair color' },
+  category: 'hair',
+  pickerType: 'color',
+  phase: 1,
+  required: true,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'black', label: { de: 'Schwarz', en: 'Black' }, anchorFragment: 'black hair' },
+    { value: 'dark_brown', label: { de: 'Dunkelbraun', en: 'Dark brown' }, anchorFragment: 'dark brown hair' },
+    { value: 'brown', label: { de: 'Braun', en: 'Brown' }, anchorFragment: 'brown hair' },
+    { value: 'light_brown', label: { de: 'Hellbraun', en: 'Light brown' }, anchorFragment: 'light brown hair' },
+    { value: 'blonde', label: { de: 'Blond', en: 'Blonde' }, anchorFragment: 'blonde hair' },
+    { value: 'light_blonde', label: { de: 'Hellblond', en: 'Light blonde' }, anchorFragment: 'light blonde hair' },
+    { value: 'red', label: { de: 'Rot', en: 'Red' }, anchorFragment: 'red hair' },
+    { value: 'auburn', label: { de: 'Kastanienbraun', en: 'Auburn' }, anchorFragment: 'auburn hair' },
+    { value: 'ginger', label: { de: 'Ingwer', en: 'Ginger' }, anchorFragment: 'ginger hair' },
+    { value: 'gray', label: { de: 'Grau', en: 'Gray' }, anchorFragment: 'gray hair' },
+    { value: 'white', label: { de: 'Weiß', en: 'White' }, anchorFragment: 'white hair' },
+    { value: 'silver', label: { de: 'Silber', en: 'Silver' }, anchorFragment: 'silver hair' },
+  ],
+};
+
+const SLOT_HAIR_TYPE: AppearanceSlot = {
+  key: 'hair_type',
+  label: { de: 'Haartyp', en: 'Hair type' },
+  category: 'hair',
+  pickerType: 'icon_carousel',
+  phase: 1,
+  required: true,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'straight', label: { de: 'Glatt', en: 'Straight' }, icon: 'hair/type/straight.svg', anchorFragment: 'straight' },
+    { value: 'wavy', label: { de: 'Wellig', en: 'Wavy' }, icon: 'hair/type/wavy.svg', anchorFragment: 'wavy' },
+    { value: 'curly', label: { de: 'Lockig', en: 'Curly' }, icon: 'hair/type/curly.svg', anchorFragment: 'curly' },
+    { value: 'coily', label: { de: 'Afro', en: 'Coily' }, icon: 'hair/type/coily.svg', anchorFragment: 'afro-textured' },
+  ],
+};
+
+const SLOT_HAIR_LENGTH: AppearanceSlot = {
+  key: 'hair_length',
+  label: { de: 'Haarlänge', en: 'Hair length' },
+  category: 'hair',
+  pickerType: 'icon_carousel',
+  phase: 1,
+  required: true,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short' }, icon: 'hair/length/very_short.svg', anchorFragment: 'very short' },
+    { value: 'short', label: { de: 'Kurz', en: 'Short' }, icon: 'hair/length/short.svg', anchorFragment: 'short' },
+    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, icon: 'hair/length/medium.svg', anchorFragment: 'medium-length' },
+    { value: 'long', label: { de: 'Lang', en: 'Long' }, icon: 'hair/length/long.svg', anchorFragment: 'long' },
+  ],
+};
+
+const SLOT_HAIR_STYLE: AppearanceSlot = {
+  key: 'hair_style',
+  label: { de: 'Frisur', en: 'Hair style' },
+  category: 'hair',
+  pickerType: 'icon_carousel',
+  phase: 1,
+  required: true,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'loose', label: { de: 'Offen', en: 'Loose' }, icon: 'hair/style/loose.svg', anchorFragment: 'worn loose' },
+    { value: 'ponytail', label: { de: 'Pferdeschwanz', en: 'Ponytail' }, icon: 'hair/style/ponytail.svg', anchorFragment: 'in a ponytail' },
+    { value: 'braids', label: { de: 'Zöpfe', en: 'Braids' }, icon: 'hair/style/braids.svg', anchorFragment: 'in braids' },
+    { value: 'two_braids', label: { de: 'Zwei Zöpfe', en: 'Two braids' }, icon: 'hair/style/two_braids.svg', anchorFragment: 'in two braids' },
+    { value: 'pigtails', label: { de: 'Seitenzöpfe', en: 'Pigtails' }, icon: 'hair/style/pigtails.svg', anchorFragment: 'in pigtails' },
+    { value: 'bun', label: { de: 'Dutt', en: 'Bun' }, icon: 'hair/style/bun.svg', anchorFragment: 'in a bun' },
+    { value: 'bob', label: { de: 'Bob', en: 'Bob' }, icon: 'hair/style/bob.svg', anchorFragment: 'bob cut' },
+    { value: 'half_up', label: { de: 'Halbhoch', en: 'Half up' }, icon: 'hair/style/half_up.svg', anchorFragment: 'half-up style' },
+    { value: 'side_part', label: { de: 'Seitenscheitel', en: 'Side part' }, icon: 'hair/style/side_part.svg', anchorFragment: 'side-parted' },
+    { value: 'undercut', label: { de: 'Undercut', en: 'Undercut' }, icon: 'hair/style/undercut.svg', anchorFragment: 'undercut' },
+    { value: 'buzz_cut', label: { de: 'Bürstenschnitt', en: 'Buzz cut' }, icon: 'hair/style/buzz_cut.svg', anchorFragment: 'buzz cut' },
+    { value: 'afro', label: { de: 'Afro', en: 'Afro' }, icon: 'hair/style/afro.svg', anchorFragment: 'afro hairstyle' },
+    { value: 'afro_puffs', label: { de: 'Afro Puffs', en: 'Afro puffs' }, icon: 'hair/style/afro_puffs.svg', anchorFragment: 'afro puffs' },
+    { value: 'twist_out', label: { de: 'Twist Out', en: 'Twist out' }, icon: 'hair/style/twist_out.svg', anchorFragment: 'twist-out curls' },
+    { value: 'receding', label: { de: 'Geheimratsecken', en: 'Receding' }, icon: 'hair/style/receding.svg', anchorFragment: 'receding hairline' },
+    { value: 'bald_top', label: { de: 'Kahl oben', en: 'Bald on top' }, icon: 'hair/style/bald_top.svg', anchorFragment: 'bald on top with hair on sides' },
+    { value: 'bald', label: { de: 'Kahl', en: 'Bald' }, icon: 'hair/style/bald.svg', anchorFragment: 'bald head' },
+  ],
+};
+
+const SLOT_BODY_TYPE: AppearanceSlot = {
+  key: 'body_type',
+  label: { de: 'Körperstatur', en: 'Body type' },
+  category: 'body',
+  pickerType: 'icon_carousel',
+  phase: 1,
+  required: false,
+  availableFor: ['child', 'teen', 'adult', 'senior'],
+  options: [
+    { value: 'slim', label: { de: 'Schlank', en: 'Slim' }, icon: 'body/slim.svg', anchorFragment: 'slim build' },
+    { value: 'average', label: { de: 'Normal', en: 'Average' }, icon: 'body/average.svg', anchorFragment: 'average build' },
+    { value: 'stocky', label: { de: 'Kräftig', en: 'Stocky' }, icon: 'body/stocky.svg', anchorFragment: 'stocky build' },
+  ],
+};
+
+const SLOT_FACIAL_HAIR: AppearanceSlot = {
+  key: 'facial_hair',
+  label: { de: 'Bart', en: 'Facial hair' },
+  category: 'details',
+  pickerType: 'icon_carousel',
+  phase: 1,
+  required: false,
+  availableFor: ['adult', 'senior'],
+  genderFilter: ['male'],
+  options: [
+    { value: 'none', label: { de: 'Kein Bart', en: 'None' }, icon: 'beard/none.svg', anchorFragment: '' },
+    { value: 'stubble', label: { de: 'Dreitagebart', en: 'Stubble' }, icon: 'beard/stubble.svg', anchorFragment: 'with stubble' },
+    { value: 'short_beard', label: { de: 'Kurzbart', en: 'Short beard' }, icon: 'beard/short_beard.svg', anchorFragment: 'with a short beard' },
+    { value: 'full_beard', label: { de: 'Vollbart', en: 'Full beard' }, icon: 'beard/full_beard.svg', anchorFragment: 'with a full beard' },
+    { value: 'mustache', label: { de: 'Schnurrbart', en: 'Mustache' }, icon: 'beard/mustache.svg', anchorFragment: 'with a mustache' },
+  ],
+};
+
+export const APPEARANCE_SLOTS: AppearanceSlot[] = [
+  SLOT_SKIN_TONE,
+  SLOT_EYE_COLOR,
+  SLOT_GLASSES,
+  SLOT_HAIR_COLOR,
+  SLOT_HAIR_TYPE,
+  SLOT_HAIR_LENGTH,
+  SLOT_HAIR_STYLE,
+  SLOT_BODY_TYPE,
+  SLOT_FACIAL_HAIR,
+];
+
+// ─── Filtering ──────────────────────────────────────────────────────────────
+
+const HAIR_COLOR_AGE_RESTRICTED = new Set(['gray', 'white', 'silver']);
+const HAIR_STYLE_MALE_ADULT_ONLY = new Set(['receding', 'bald_top', 'bald']);
+const HAIR_STYLE_CHILD_OR_FEMALE = new Set(['pigtails', 'afro_puffs']);
+
+/**
+ * Returns options for a slot given age category and gender.
+ * Applies availableFor, genderFilter, and special rules for hair_color / hair_style.
+ */
+export function getFilteredOptions(
+  slot: AppearanceSlot,
+  ageCategory: AgeCategory,
+  gender: 'male' | 'female' | null
+): AppearanceOption[] {
+  if (!slot.availableFor.includes(ageCategory)) {
+    return [];
+  }
+  if (slot.genderFilter != null && slot.genderFilter.length > 0) {
+    const allowed = slot.genderFilter.includes(gender);
+    if (!allowed) return [];
+  }
+
+  let options = slot.options;
+
+  if (slot.key === 'hair_color') {
+    const isAdultOrSenior = ageCategory === 'adult' || ageCategory === 'senior';
+    if (!isAdultOrSenior) {
+      options = options.filter((opt) => !HAIR_COLOR_AGE_RESTRICTED.has(opt.value));
+    }
+  }
+
+  if (slot.key === 'hair_style') {
+    const isAdultOrSenior = ageCategory === 'adult' || ageCategory === 'senior';
+    const isMale = gender === 'male';
+    options = options.filter((opt) => {
+      if (HAIR_STYLE_MALE_ADULT_ONLY.has(opt.value)) {
+        return isAdultOrSenior && isMale;
+      }
+      if (HAIR_STYLE_CHILD_OR_FEMALE.has(opt.value)) {
+        return ageCategory === 'child' || gender === 'female';
+      }
+      return true;
+    });
+  }
+
+  return options;
+}
+
+// ─── Age & gender inference ─────────────────────────────────────────────────
+
+const SENIOR_RELATIONS = [
+  'Oma', 'Opa', 'Grand-mère', 'Grand-père', 'Grandma', 'Grandpa',
+  'Abuela', 'Abuelo', 'Nonna', 'Nonno', 'Babcia', 'Dziadek', 'Бабуся', 'Дідусь',
+];
+const PARENT_RELATIONS = [
+  'Mama', 'Papa', 'Maman', 'Mom', 'Dad', 'Mamá', 'Papá',
+  'Mamma', 'Papà', 'Мама', 'Тато',
+];
+const SIBLING_RELATIONS = [
+  'Bruder', 'Schwester', 'Frère', 'Sœur', 'Brother', 'Sister',
+  'Hermano', 'Hermana', 'Brat', 'Sestra',
+];
+
+function matchesOne(relation: string | null | undefined, list: string[]): boolean {
+  if (relation == null || relation === '') return false;
+  const r = relation.trim().toLowerCase();
+  return list.some((x) => x.toLowerCase() === r);
+}
+
+/**
+ * Infers age category from role and relation (e.g. for character_appearances).
+ */
+export function inferAgeCategory(
+  role: string,
+  relation: string | null | undefined
+): AgeCategory {
+  const rel = relation?.trim() ?? '';
+  const roleLower = role.trim().toLowerCase();
+  if (matchesOne(rel, SENIOR_RELATIONS)) return 'senior';
+  if (matchesOne(rel, PARENT_RELATIONS)) return 'adult';
+  if (matchesOne(rel, SIBLING_RELATIONS)) return 'child';
+  if (roleLower === 'friend') return 'child';
+  return 'adult';
+}
+
+const MALE_RELATIONS = [
+  'Papa', 'Opa', 'Dad', 'Grandpa', 'Grand-père', 'Abuelo', 'Papá', 'Nonno', 'Dziadek', 'Тато', 'Дідусь',
+  'Bruder', 'Frère', 'Brother', 'Hermano', 'Brat',
+];
+const FEMALE_RELATIONS = [
+  'Mama', 'Oma', 'Mom', 'Grandma', 'Grand-mère', 'Abuela', 'Mamá', 'Nonna', 'Babcia', 'Мама', 'Бабуся',
+  'Schwester', 'Sœur', 'Sister', 'Hermana', 'Sestra',
+];
+
+/**
+ * Infers gender from relation string when possible.
+ */
+export function inferGenderFromRelation(relation: string | null | undefined): 'male' | 'female' | null {
+  if (relation == null || relation === '') return null;
+  const r = relation.trim().toLowerCase();
+  if (MALE_RELATIONS.some((x) => x.toLowerCase() === r)) return 'male';
+  if (FEMALE_RELATIONS.some((x) => x.toLowerCase() === r)) return 'female';
+  return null;
+}

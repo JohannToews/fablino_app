@@ -11,7 +11,8 @@
 
 ### 1. Ein Call oder getrennte Calls?
 
-**Ein einziger LLM-Call.** Story-Text und Image-Prompts (als `image_plan`) werden **im selben Request** abgefragt.
+**Standard (ohne Visual Director):** Ein einziger LLM-Call. Story-Text und Image-Prompts (als `image_plan`) werden im selben Request abgefragt.  
+**Mit Visual Director (useVisualDirector):** Call 1 fordert **kein** image_plan an; die Bildplanung erfolgt in einem zweiten LLM-Call (siehe A2b).
 
 - **Datei:** `supabase/functions/generate-story/index.ts`
 - **Stelle:** `const content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);` (ca. Zeile 2171)
@@ -122,6 +123,31 @@ if ((story as any).image_plan) {
 ### 3. Nach dem Parsen
 
 Die rohen Werte aus `image_plan` gehen in **imagePromptBuilder.ts**; dort werden Style-Prefix (DB), age modifier, theme/age rules und ggf. Series Visual Style Sheet hinzugefügt. Die **Struktur** (character_anchor, scenes) wird nicht geändert.
+
+---
+
+## A2b: Visual Director path (optional)
+
+Wenn **useVisualDirector** aktiv ist, wird **kein** image_plan im ersten LLM-Call angefordert. Die Bildplanung übernimmt ein **zweiter LLM-Call** (Visual Director).
+
+### Ablauf
+
+1. **Call 1 (Story):** promptBuilder + generate-story fordern das JSON **ohne** image_plan an → LLM liefert title, content, questions, vocabulary usw., **kein** image_plan.
+2. **Kein Fallback:** Wenn useVisualDirector=true, wird der alte Fallback (separater LLM-Call für image_plan) **nicht** ausgeführt (vermeidet doppelten Aufruf).
+3. **Nach dem Speichern der Story**, im Image-Block (wenn !comicStripHandled):
+   - **Parallel:** `Promise.allSettled([ callVisualDirector(...), consistencyCheckTask() ])`.
+   - **Visual Director** (_shared/visualDirector.ts): Liest Story (title, content), liefert JSON: `character_sheet` (full_anchor pro Figur, Token-Balance), `world_anchor`, `scenes` (scene_description, camera, characters_present, key_objects, atmosphere, background_figures), `cover` (description, characters_present, mood, camera).
+   - **Adapter:** `mapVisualDirectorToImagePlan(vdOutput, kidAppearanceAnchor, …)` in imagePromptBuilder.ts bildet VD-Output auf ImagePlan ab; Protagonist = DB „Mein Look“ (physisch) + VD-Kleidung.
+   - **Prompts:** `buildImagePrompts(plan)` nutzt den **V2-Pfad** (character_sheet, buildSceneImagePromptV2 / buildCoverImagePromptV2): pro Szene character count, camera, background_figures (none/few/crowd), Cover mit VD cover.camera.
+4. **Bildgenerierung:** Wie in A4; alle Prompts (Cover + Szenen) werden parallel erzeugt.
+
+### Relevante Dateien
+
+| Datei | Rolle |
+|-------|--------|
+| `_shared/visualDirector.ts` | System-Prompt (character balance, scene balancing, camera/close-up/cover-Regeln), `callVisualDirector()` → LLM → JSON. |
+| `_shared/imagePromptBuilder.ts` | `mapVisualDirectorToImagePlan()`, V2-Pfad mit character_sheet, character count, background_figures, cover.camera. |
+| `generate-story/index.ts` | useVisualDirector prüfen; VD + Consistency parallel; Fallback image_plan bei VD auslassen. |
 
 ---
 
