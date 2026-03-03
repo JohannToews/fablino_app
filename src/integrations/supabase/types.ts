@@ -146,6 +146,62 @@ export type Database = {
         }
         Relationships: []
       }
+      character_appearances: {
+        Row: {
+          age_category: string
+          appearance_data: Json
+          character_name: string
+          created_at: string | null
+          gender: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          relation: string | null
+          role: string
+          sort_order: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          age_category?: string
+          appearance_data?: Json
+          character_name: string
+          created_at?: string | null
+          gender?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          relation?: string | null
+          role: string
+          sort_order?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          age_category?: string
+          appearance_data?: Json
+          character_name?: string
+          created_at?: string | null
+          gender?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          relation?: string | null
+          role?: string
+          sort_order?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_appearances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_seeds: {
         Row: {
           age_range: string[] | null
@@ -934,6 +990,8 @@ export type Database = {
       }
       kid_appearance: {
         Row: {
+          appearance_data: Json | null
+          body_type: string | null
           created_at: string | null
           eye_color: string
           glasses: boolean
@@ -947,6 +1005,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          appearance_data?: Json | null
+          body_type?: string | null
           created_at?: string | null
           eye_color?: string
           glasses?: boolean
@@ -960,6 +1020,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          appearance_data?: Json | null
+          body_type?: string | null
           created_at?: string | null
           eye_color?: string
           glasses?: boolean
@@ -985,6 +1047,7 @@ export type Database = {
       kid_characters: {
         Row: {
           age: number | null
+          character_appearance_id: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -999,6 +1062,7 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          character_appearance_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -1013,6 +1077,7 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          character_appearance_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -1026,6 +1091,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "kid_characters_character_appearance_id_fkey"
+            columns: ["character_appearance_id"]
+            isOneToOne: false
+            referencedRelation: "character_appearances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kid_characters_kid_profile_id_fkey"
             columns: ["kid_profile_id"]
