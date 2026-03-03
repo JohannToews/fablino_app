@@ -40,8 +40,14 @@ import WelcomePage from "./pages/WelcomePage";
 import OnboardingKindPage from "./pages/OnboardingKindPage";
 import OnboardingStoryPage from "./pages/OnboardingStoryPage";
 import NotFound from "./pages/NotFound";
+import { useAvatarV2 } from "@/hooks/useFeatureFlags";
 
 const queryClient = new QueryClient();
+
+const MyLookRoute = () => {
+  const avatarV2Enabled = useAvatarV2();
+  return avatarV2Enabled ? <MyLookPageV2 /> : <MyLookPage />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -93,7 +99,7 @@ const App = () => (
               } />
               <Route path="/my-look" element={
                 <ProtectedRoute>
-                  <MyLookPage />
+                  <MyLookRoute />
                 </ProtectedRoute>
               } />
               <Route path="/my-look-v2" element={
