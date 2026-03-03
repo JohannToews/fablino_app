@@ -101,56 +101,76 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
     }
 
-    const { data, error: queryError } = await supabase
-      .from("kid_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: true });
+    const withTimeout = async <T,>(task: () => Promise<T>, ms = 12000): Promise<T> => {
+      return await Promise.race([
+        task(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`kid_profiles_timeout_after_${ms}ms`)), ms)
+        ),
+      ]);
+    };
 
-    if (queryError) {
-      console.error('[useKidProfile] Failed to load kid profiles:', queryError.message, queryError);
-    }
+    try {
+      const { data, error: queryError } = await withTimeout(
+        async () => await supabase
+          .from("kid_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: true }),
+        12000
+      );
 
-    if (data && data.length > 0) {
-      // Map DB data to KidProfile type (handle optional fields)
-      const mappedProfiles: KidProfile[] = data.map(d => ({
-        id: d.id,
-        name: d.name,
-        cover_image_url: d.cover_image_url,
-        color_palette: d.color_palette,
-        school_class: d.school_class,
-        school_system: d.school_system,
-        hobbies: d.hobbies,
-        image_style: d.image_style,
-        // Optional fields - use fallbacks if not in DB
-        ui_language: (d as any).ui_language || d.school_system,
-        reading_language: (d as any).reading_language || d.school_system,
-        explanation_language: (d as any).explanation_language || 'de',
-        home_languages: (d as any).home_languages || ['de'],
-        content_safety_level: (() => { const v = (d as any).content_safety_level ?? 2; return Math.min(4, Math.max(1, Number(v) || 2)); })(),
-        difficulty_level: (() => { const v = (d as any).difficulty_level ?? 2; return Math.min(3, Math.max(1, Number(v) || 2)); })(),
-        age: (d as any).age ?? null,
-        gender: (d as any).gender ?? null,
-        story_languages: (d as any).story_languages || [(d as any).reading_language || d.school_system],
-      }));
-      setKidProfiles(mappedProfiles);
-      
-      // Auto-select first profile if none selected or selected doesn't exist
-      const currentSelection = sessionStorage.getItem('selected_kid_profile_id');
-      const profileExists = data.some(p => p.id === currentSelection);
-      
-      if (!currentSelection || !profileExists) {
-        setSelectedProfileId(data[0].id);
-        sessionStorage.setItem('selected_kid_profile_id', data[0].id);
+      if (queryError) {
+        console.error('[useKidProfile] Failed to load kid profiles:', queryError.message, queryError);
       }
-    } else {
+
+      if (data && data.length > 0) {
+        // Map DB data to KidProfile type (handle optional fields)
+        const mappedProfiles: KidProfile[] = data.map(d => ({
+          id: d.id,
+          name: d.name,
+          cover_image_url: d.cover_image_url,
+          color_palette: d.color_palette,
+          school_class: d.school_class,
+          school_system: d.school_system,
+          hobbies: d.hobbies,
+          image_style: d.image_style,
+          // Optional fields - use fallbacks if not in DB
+          ui_language: (d as any).ui_language || d.school_system,
+          reading_language: (d as any).reading_language || d.school_system,
+          explanation_language: (d as any).explanation_language || 'de',
+          home_languages: (d as any).home_languages || ['de'],
+          content_safety_level: (() => { const v = (d as any).content_safety_level ?? 2; return Math.min(4, Math.max(1, Number(v) || 2)); })(),
+          difficulty_level: (() => { const v = (d as any).difficulty_level ?? 2; return Math.min(3, Math.max(1, Number(v) || 2)); })(),
+          age: (d as any).age ?? null,
+          gender: (d as any).gender ?? null,
+          story_languages: (d as any).story_languages || [(d as any).reading_language || d.school_system],
+        }));
+        setKidProfiles(mappedProfiles);
+
+        // Auto-select first profile if none selected or selected doesn't exist
+        const currentSelection = sessionStorage.getItem('selected_kid_profile_id');
+        const profileExists = data.some(p => p.id === currentSelection);
+
+        if (!currentSelection || !profileExists) {
+          setSelectedProfileId(data[0].id);
+          sessionStorage.setItem('selected_kid_profile_id', data[0].id);
+        }
+      } else {
+        setKidProfiles([]);
+        setSelectedProfileId(null);
+        sessionStorage.removeItem('selected_kid_profile_id');
+      }
+    } catch (error) {
+      console.error('[useKidProfile] loadKidProfiles crashed:', error);
       setKidProfiles([]);
       setSelectedProfileId(null);
       sessionStorage.removeItem('selected_kid_profile_id');
+    } finally {
+      hasLoadedOnce.current = true;
+      setIsLoading(false);
     }
-    hasLoadedOnce.current = true;
-    setIsLoading(false);
   }, [user]);
 
   useEffect(() => {
