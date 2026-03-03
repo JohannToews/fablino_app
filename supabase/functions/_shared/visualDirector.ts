@@ -315,6 +315,7 @@ function buildUserPrompt(params: {
   kidAge?: number;
   kidAppearanceAnchor?: string;
   includeSelf?: boolean;
+  characterAnchors?: Array<{name: string; role: string; anchor: string}>;
 }): string {
   const parts: string[] = [
     `Story Title: ${params.storyTitle}`,
@@ -325,6 +326,18 @@ function buildUserPrompt(params: {
   if (params.kidAppearanceAnchor && params.includeSelf) {
     parts.push("PROTAGONIST APPEARANCE (MUST MATCH EXACTLY — only add clothing):");
     parts.push(params.kidAppearanceAnchor);
+    parts.push("");
+  }
+  if (params.characterAnchors && params.characterAnchors.length > 0) {
+    parts.push("KNOWN CHARACTER APPEARANCES:");
+    parts.push("For these characters, use the provided physical description EXACTLY as the character_sheet full_anchor.");
+    parts.push("Only ADD clothing and outfit — do NOT change face, hair, skin, body, or glasses.");
+    parts.push("");
+    for (const c of params.characterAnchors) {
+      parts.push(`${c.name} (${c.role}): ${c.anchor}`);
+    }
+    parts.push("");
+    parts.push("For all other characters in the story: create a complete, richly detailed visual description yourself.");
     parts.push("");
   }
   parts.push(`Number of scene images to generate: ${params.sceneCount}`);
@@ -373,6 +386,7 @@ export async function callVisualDirector(params: {
   kidGender?: string;
   kidAppearanceAnchor?: string;
   includeSelf?: boolean;
+  characterAnchors?: Array<{name: string; role: string; anchor: string}>;
 }): Promise<VisualDirectorOutput> {
   const startMs = Date.now();
 
@@ -392,6 +406,7 @@ export async function callVisualDirector(params: {
     kidAge: params.kidAge,
     kidAppearanceAnchor: params.kidAppearanceAnchor,
     includeSelf: params.includeSelf,
+    characterAnchors: params.characterAnchors,
   });
 
   try {

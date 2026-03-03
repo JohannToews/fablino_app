@@ -12,7 +12,9 @@ import type { ComicLayout, ComicImagePlan } from '../_shared/comicStrip/types.ts
 import { isEmotionFlowEnabled } from '../_shared/emotionFlow/featureFlag.ts';
 import { runEmotionFlowEngine } from '../_shared/emotionFlow/engine.ts';
 import type { EmotionFlowResult } from '../_shared/emotionFlow/types.ts';
-import { buildAppearanceAnchor, extractClothingFromAnchor } from '../_shared/appearanceAnchor.ts';
+import { buildAppearanceAnchor, extractClothingFromAnchor, buildAnchorFromSlots } from '../_shared/appearanceAnchor.ts';
+import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearanceSlots.ts';
+import { isAvatarV2Enabled } from '../_shared/featureFlags.ts';
 
 interface CharacterSheetEntry {
   name: string;
@@ -1821,6 +1823,7 @@ Deno.serve(async (req) => {
     let resolvedDifficultyLevel = difficultyLevel;
     let resolvedContentSafetyLevel = contentSafetyLevel;
     let kidAppearance: { skin_tone: string; hair_length: string; hair_type: string; hair_style: string; hair_color: string; glasses: boolean } | null = null;
+    let characterAnchors: Array<{name: string; role: string; anchor: string}> = [];
 
     try {
       // 1. Load CORE Slim v2
@@ -1928,6 +1931,71 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ═══ AVATAR V2: Character Appearances ═══
+      const avatarV2 = kidProfileId ? await isAvatarV2Enabled(supabase, userId) : false;
+
+      if (avatarV2 && kidProfileId) {
+        try {
+          const { data: charsWithAppearance } = await supabase
+            .from('kid_characters')
+            .select(`
+              name, role, relation,
+              character_appearances!character_appearance_id (
+                appearance_data, age_category, gender
+              )
+            `)
+            .eq('kid_profile_id', kidProfileId)
+            .eq('is_active', true)
+            .not('character_appearance_id', 'is', null);
+
+          if (charsWithAppearance) {
+            for (const char of charsWithAppearance as any[]) {
+              const ca = char.character_appearances;
+              if (ca?.appearance_data && Object.keys(ca.appearance_data).length > 0) {
+                characterAnchors.push({
+                  name: char.name,
+                  role: char.role,
+                  anchor: buildAnchorFromSlots(
+                    char.name,
+                    'adult',
+                    ca.gender || inferGenderFromRelation(char.relation),
+                    ca.age_category || inferAgeCategory(char.role, char.relation),
+                    ca.appearance_data
+                  ),
+                });
+              }
+            }
+          }
+          if (characterAnchors.length > 0) {
+            console.log(`[generate-story] Avatar V2: loaded ${characterAnchors.length} character anchor(s)`);
+          }
+        } catch (err: any) {
+          console.warn('[generate-story] Avatar V2: Failed to load character appearances', err?.message);
+        }
+
+        try {
+          const { data: kidAppFull } = await supabase
+            .from('kid_appearance')
+            .select('appearance_data')
+            .eq('kid_profile_id', kidProfileId)
+            .maybeSingle();
+
+          if (kidAppFull?.appearance_data && Object.keys(kidAppFull.appearance_data).length > 0) {
+            kidAppearance = kidAppearance ?? { skin_tone: '', hair_length: '', hair_type: '', hair_style: '', hair_color: '', glasses: false };
+            (kidAppearance as any).__v2_anchor = buildAnchorFromSlots(
+              resolvedKidName || 'Child',
+              resolvedKidAge || 8,
+              resolvedKidGender === 'male' ? 'male' : resolvedKidGender === 'female' ? 'female' : null,
+              'child',
+              kidAppFull.appearance_data
+            );
+            console.log(`[generate-story] Avatar V2: kid appearance anchor overridden from appearance_data`);
+          }
+        } catch (_) {
+          // Fallback: v1-Anchor bleibt
+        }
+      }
+
       // ── Story Subtype Selection (Themenvariation) ──
       // Only select for Episode 1 of a series or standalone stories. Ep2+ inherit from Ep1.
       selectedSubtype = null;  // reset
@@ -1968,13 +2036,20 @@ Deno.serve(async (req) => {
         series_context: seriesContext || (episodeNumber && episodeNumber > 1 ? description : undefined),
         protagonists: {
           include_self: includeSelf || false,
-          characters: (characters || selectedCharacters || []).map((c: any) => ({
-            name: c.name,
-            age: c.age || undefined,
-            relation: c.relation || undefined,
-            description: c.description || undefined,
-            role: c.role || undefined,
-          })),
+          characters: (characters || selectedCharacters || []).map((c: any) => {
+            const mapped: any = {
+              name: c.name,
+              age: c.age || undefined,
+              relation: c.relation || undefined,
+              description: c.description || undefined,
+              role: c.role || undefined,
+            };
+            const matchingAnchor = characterAnchors.find(ca => ca.name === c.name);
+            if (matchingAnchor) {
+              mapped.appearance_anchor = matchingAnchor.anchor;
+            }
+            return mapped;
+          }),
         },
         special_abilities: specialAbilities || [],
         sub_elements: subElements || [],
@@ -3748,9 +3823,10 @@ Respond with ONLY valid JSON, no markdown:
           kidAge: resolvedKidAge,
           kidGender: resolvedKidGender,
           kidAppearanceAnchor: (includeSelf && kidAppearance)
-            ? buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance)
+            ? ((kidAppearance as any).__v2_anchor || buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance))
             : undefined,
           includeSelf: includeSelf,
+          ...(characterAnchors.length > 0 ? { characterAnchors } : {}),
         }),
         timedConsistencyCheckVD(),
       ]);
@@ -3764,7 +3840,7 @@ Respond with ONLY valid JSON, no markdown:
         const vdImagePlan = mapVisualDirectorToImagePlan(
           vdOutput,
           (includeSelf && kidAppearance)
-            ? buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance)
+            ? ((kidAppearance as any).__v2_anchor || buildAppearanceAnchor(resolvedKidName || 'Child', resolvedKidAge || 8, resolvedKidGender || 'child', kidAppearance))
             : null,
           resolvedKidName,
           includeSelf,

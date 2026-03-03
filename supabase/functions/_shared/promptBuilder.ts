@@ -26,6 +26,7 @@ export interface StoryRequest {
       relation?: string;
       description?: string;
       role?: string;  // 'family' | 'friend' | 'known_figure' | 'villain' | 'antagonist'
+      appearance_anchor?: string;  // Avatar v2: slot-based physical description
     }>;
   };
   special_abilities: string[];
@@ -417,6 +418,9 @@ function buildCharactersSection(
         entry += ' — villain/antagonist (MUST act as a real obstacle to the protagonist)';
       }
       lines.push(entry);
+      if (char.appearance_anchor) {
+        lines.push(`  [Appearance: ${char.appearance_anchor}]`);
+      }
     }
 
   } else {
@@ -438,18 +442,27 @@ function buildCharactersSection(
 
       if (parents.length >= 2) {
         lines.push(`${fmtChar(parents[0])} ${andWord(lang)} ${fmtChar(parents[1])} — ${coupleLabel(lang)}`);
+        for (const p of [parents[0], parents[1]]) {
+          if (p.appearance_anchor) lines.push(`  [Appearance: ${p.appearance_anchor}]`);
+        }
         // If more than 2 parents (e.g. Oma + Opa too), list the rest individually
         for (const p of parents.slice(2)) {
           lines.push(`${fmtChar(p)} — ${p.relation || ''}`);
+          if (p.appearance_anchor) lines.push(`  [Appearance: ${p.appearance_anchor}]`);
         }
       } else if (parents.length === 1) {
         lines.push(`${fmtChar(parents[0])} — ${parents[0].relation || ''}`);
+        if (parents[0].appearance_anchor) lines.push(`  [Appearance: ${parents[0].appearance_anchor}]`);
       }
 
       if (siblings.length >= 2) {
         lines.push(`${siblings.map(fmtChar).join(` ${andWord(lang)} `)} — ${siblingsLabel(lang)}`);
+        for (const s of siblings) {
+          if (s.appearance_anchor) lines.push(`  [Appearance: ${s.name}: ${s.appearance_anchor}]`);
+        }
       } else if (siblings.length === 1) {
         lines.push(`${fmtChar(siblings[0])} — ${siblings[0].relation || ''}`);
+        if (siblings[0].appearance_anchor) lines.push(`  [Appearance: ${siblings[0].appearance_anchor}]`);
       }
 
       // Family hint if both parents and siblings present
@@ -459,24 +472,31 @@ function buildCharactersSection(
 
       for (const c of otherFamily) {
         lines.push(`${fmtChar(c)} — ${c.relation || ''}`);
+        if (c.appearance_anchor) lines.push(`  [Appearance: ${c.appearance_anchor}]`);
       }
     }
 
     // -- Friends --
     if (friends.length >= 2) {
       lines.push(`${friends.map(fmtChar).join(` ${andWord(lang)} `)} — ${friendsLabel(lang)}`);
+      for (const f of friends) {
+        if (f.appearance_anchor) lines.push(`  [Appearance: ${f.name}: ${f.appearance_anchor}]`);
+      }
     } else if (friends.length === 1) {
       lines.push(`${fmtChar(friends[0])} — ${singleFriendLabel(lang)}`);
+      if (friends[0].appearance_anchor) lines.push(`  [Appearance: ${friends[0].appearance_anchor}]`);
     }
 
     // -- Known figures --
     for (const c of known) {
       lines.push(`${c.name} — ${knownFigureLabel(lang)}`);
+      if (c.appearance_anchor) lines.push(`  [Appearance: ${c.appearance_anchor}]`);
     }
 
     // -- Villains / antagonists (must act as real obstacles) --
     for (const c of villains) {
       lines.push(`${fmtChar(c)} — villain/antagonist (MUST act as a real obstacle to the protagonist)`);
+      if (c.appearance_anchor) lines.push(`  [Appearance: ${c.appearance_anchor}]`);
     }
 
     // -- Unclassified --
@@ -485,6 +505,7 @@ function buildCharactersSection(
       if (c.age) parts.push(`${c.age}`);
       if (c.relation) parts.push(c.relation);
       lines.push(parts.join(', '));
+      if (c.appearance_anchor) lines.push(`  [Appearance: ${c.appearance_anchor}]`);
     }
   }
 
@@ -2192,6 +2213,7 @@ Each entry must contain:
 
 Rules:
 - The protagonist's physical features (face, skin, hair, eyes, glasses, body) MUST match the CHILD description from above exactly. You ONLY add clothing, accessories, and props based on the story.
+- For characters with [Appearance: ...] provided in the CHARACTERS section above, the character_sheet full_anchor MUST incorporate these physical features exactly. You may ADD clothing and accessories, but NEVER change the provided physical description.
 - For all other characters: create a complete, richly detailed visual description.
 - Clothing must be SPECIFIC, not generic.
   NOT "a shirt" → "a dark green tunic with a brown leather belt and copper buckle"
