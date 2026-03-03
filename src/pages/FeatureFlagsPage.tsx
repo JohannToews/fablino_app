@@ -18,7 +18,7 @@ interface UserRow {
   username: string;
 }
 
-type FeatureKey = "emotion_flow_enabled_users" | "comic_strip_enabled_users" | "premium_ui_enabled_users" | "farsi_enabled_users" | "avatar_builder_enabled_users" | "visual_director_enabled_users";
+type FeatureKey = "emotion_flow_enabled_users" | "comic_strip_enabled_users" | "premium_ui_enabled_users" | "farsi_enabled_users" | "avatar_builder_enabled_users" | "visual_director_enabled_users" | "avatar_v2_enabled_users";
 
 const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string }[] = [
   { key: "emotion_flow_enabled_users", label: "Emotion-Flow", globalLabel: "Emotion-Flow für ALLE aktivieren" },
@@ -27,6 +27,7 @@ const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string }[]
   { key: "farsi_enabled_users", label: "Farsi (فارسی)", globalLabel: "Farsi für ALLE aktivieren" },
   { key: "avatar_builder_enabled_users", label: "Avatar Builder (Mein Look)", globalLabel: "Avatar Builder für ALLE aktivieren" },
   { key: "visual_director_enabled_users", label: "Visual Director", globalLabel: "Visual Director für ALLE aktivieren" },
+  { key: "avatar_v2_enabled_users", label: "Avatar v2", globalLabel: "Avatar v2 für ALLE aktivieren" },
 ];
 
 const FeatureFlagsPage = () => {
@@ -41,6 +42,7 @@ const FeatureFlagsPage = () => {
     farsi_enabled_users: [],
     avatar_builder_enabled_users: [],
     visual_director_enabled_users: [],
+    avatar_v2_enabled_users: [],
   });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -66,6 +68,7 @@ const FeatureFlagsPage = () => {
           "farsi_enabled_users",
           "avatar_builder_enabled_users",
           "visual_director_enabled_users",
+          "avatar_v2_enabled_users",
         ]),
         (supabase as any).from("user_profiles").select("id, display_name, email, username").order("display_name"),
       ]);
@@ -86,6 +89,7 @@ const FeatureFlagsPage = () => {
           farsi_enabled_users: parsed.farsi_enabled_users || [],
           avatar_builder_enabled_users: parsed.avatar_builder_enabled_users || [],
           visual_director_enabled_users: parsed.visual_director_enabled_users || [],
+          avatar_v2_enabled_users: parsed.avatar_v2_enabled_users || [],
         });
       }
 
@@ -215,7 +219,7 @@ const FeatureFlagsPage = () => {
             <Separator />
 
             {/* Header */}
-            <div className="grid grid-cols-[1fr_repeat(6,auto)] gap-2 text-xs font-medium text-muted-foreground px-1">
+            <div className="grid grid-cols-[1fr_repeat(7,auto)] gap-2 text-xs font-medium text-muted-foreground px-1">
               <span>Name / Email</span>
               {FEATURES_CONFIG.map((f) => (
                 <span key={f.key} className="w-20 text-center">{f.label}</span>
@@ -224,7 +228,7 @@ const FeatureFlagsPage = () => {
 
             <div className="space-y-1 max-h-[60vh] overflow-y-auto">
               {filteredUsers.map((u) => (
-                <div key={u.id} className="grid grid-cols-[1fr_repeat(6,auto)] gap-2 items-center py-1.5 px-1 rounded hover:bg-muted/50">
+                <div key={u.id} className="grid grid-cols-[1fr_repeat(7,auto)] gap-2 items-center py-1.5 px-1 rounded hover:bg-muted/50">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{u.display_name || u.username}</p>
                     {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
