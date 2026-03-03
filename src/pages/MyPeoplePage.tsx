@@ -41,8 +41,28 @@ interface CharacterAppearance {
 }
 
 interface LinkedKid {
-  kid_profile_id: string;
-  kid_name: string;
+  kidProfileId: string;
+  kidName: string;
+}
+
+/** A deduplicated person card combining kid_characters + optional appearance */
+interface PersonCard {
+  /** Dedup key: name__relation */
+  key: string;
+  name: string;
+  role: string;
+  relation: string | null;
+  age: number | null;
+  ageCategory: AgeCategory;
+  gender: 'male' | 'female' | null;
+  /** If set, this person has appearance data */
+  characterAppearanceId: string | null;
+  /** Full appearance row (if loaded) */
+  appearance: CharacterAppearance | null;
+  /** Which kids use this character */
+  usedByKids: LinkedKid[];
+  /** All kid_characters row IDs for this person */
+  kidCharacterIds: string[];
 }
 
 // ─── Relation options ───────────────────────────────────────────────────────
@@ -83,59 +103,192 @@ export default function MyPeoplePage() {
   const t = getTranslations(lang);
   const userId = user?.id;
 
-  const [characters, setCharacters] = useState<CharacterAppearance[]>([]);
-  const [linkedKids, setLinkedKids] = useState<Record<string, LinkedKid[]>>({});
+  const [persons, setPersons] = useState<PersonCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState<Screen>('overview');
   const [editingChar, setEditingChar] = useState<CharacterAppearance | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
-  // ─── Load characters ────────────────────────────────────────────────────
+  // ─── Load & deduplicate characters ──────────────────────────────────────
 
   const loadCharacters = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || kidProfiles.length === 0) {
+      setPersons([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
-    const { data } = await (supabase as any)
-      .from('character_appearances')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('sort_order')
-      .order('character_name');
+    try {
+      const kidIds = kidProfiles.map(p => p.id);
 
-    const chars: CharacterAppearance[] = data || [];
-    setCharacters(chars);
-
-    // Load linked kids for each character
-    if (chars.length > 0) {
-      const charIds = chars.map(c => c.id);
-      const { data: links } = await (supabase as any)
+      // 1. All kid_characters for this user's kids
+      const { data: allChars, error: charsErr } = await (supabase as any)
         .from('kid_characters')
-        .select('character_appearance_id, kid_profile_id, kid_profiles!inner(name)')
-        .in('character_appearance_id', charIds)
+        .select('id, kid_profile_id, name, role, relation, age, description, is_active, character_appearance_id')
+        .in('kid_profile_id', kidIds)
         .eq('is_active', true);
 
-      const linkMap: Record<string, LinkedKid[]> = {};
-      for (const link of (links || [])) {
-        const caId = link.character_appearance_id;
-        if (!linkMap[caId]) linkMap[caId] = [];
-        linkMap[caId].push({
-          kid_profile_id: link.kid_profile_id,
-          kid_name: (link.kid_profiles as any)?.name || '?',
-        });
+      if (charsErr) {
+        console.error('[MyPeoplePage] kid_characters load error:', charsErr.message);
       }
-      setLinkedKids(linkMap);
-    }
 
-    setLoading(false);
-  }, [userId]);
+      // 2. All character_appearances for this user
+      const { data: allAppearances, error: appErr } = await (supabase as any)
+        .from('character_appearances')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      if (appErr) {
+        console.error('[MyPeoplePage] character_appearances load error:', appErr.message);
+      }
+
+      const appearanceMap = new Map<string, CharacterAppearance>();
+      for (const a of (allAppearances || [])) {
+        appearanceMap.set(a.id, a as CharacterAppearance);
+      }
+
+      // 3. Deduplicate kid_characters by (name + relation)
+      const personMap = new Map<string, PersonCard>();
+
+      for (const char of (allChars || [])) {
+        const key = `${(char.name || '').trim().toLowerCase()}__${(char.relation || '').trim().toLowerCase()}`;
+        const kidName = kidProfiles.find(p => p.id === char.kid_profile_id)?.name || '?';
+
+        if (!personMap.has(key)) {
+          const ageCat = inferAgeCategory(char.role || 'friend', char.relation);
+          const gender = inferGenderFromRelation(char.relation);
+
+          // Check if character_appearance_id points to an existing appearance
+          let validAppearanceId: string | null = null;
+          let appearance: CharacterAppearance | null = null;
+          if (char.character_appearance_id && appearanceMap.has(char.character_appearance_id)) {
+            validAppearanceId = char.character_appearance_id;
+            appearance = appearanceMap.get(char.character_appearance_id) || null;
+          }
+
+          personMap.set(key, {
+            key,
+            name: char.name,
+            role: char.role || 'friend',
+            relation: char.relation,
+            age: char.age,
+            ageCategory: ageCat,
+            gender,
+            characterAppearanceId: validAppearanceId,
+            appearance,
+            usedByKids: [],
+            kidCharacterIds: [],
+          });
+        }
+
+        const person = personMap.get(key)!;
+        person.usedByKids.push({ kidProfileId: char.kid_profile_id, kidName });
+        person.kidCharacterIds.push(char.id);
+
+        // If this entry has a valid appearance and the person doesn't yet, adopt it
+        if (char.character_appearance_id && appearanceMap.has(char.character_appearance_id) && !person.characterAppearanceId) {
+          person.characterAppearanceId = char.character_appearance_id;
+          person.appearance = appearanceMap.get(char.character_appearance_id) || null;
+        }
+      }
+
+      // 4. Also include character_appearances that have NO kid_characters link (orphaned appearances)
+      const linkedAppIds = new Set<string>();
+      for (const p of personMap.values()) {
+        if (p.characterAppearanceId) linkedAppIds.add(p.characterAppearanceId);
+      }
+      for (const [appId, app] of appearanceMap.entries()) {
+        if (!linkedAppIds.has(appId)) {
+          const key = `${(app.character_name || '').trim().toLowerCase()}__${(app.relation || '').trim().toLowerCase()}`;
+          if (!personMap.has(key)) {
+            personMap.set(key, {
+              key,
+              name: app.character_name,
+              role: app.role,
+              relation: app.relation,
+              age: null,
+              ageCategory: (app.age_category as AgeCategory) || 'adult',
+              gender: app.gender as 'male' | 'female' | null,
+              characterAppearanceId: app.id,
+              appearance: app,
+              usedByKids: [],
+              kidCharacterIds: [],
+            });
+          }
+        }
+      }
+
+      const sorted = Array.from(personMap.values()).sort((a, b) => {
+        // Family first, then friends
+        if (a.role === 'family' && b.role !== 'family') return -1;
+        if (a.role !== 'family' && b.role === 'family') return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      setPersons(sorted);
+    } catch (err) {
+      console.error('[MyPeoplePage] loadCharacters crashed:', err);
+      setPersons([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, kidProfiles]);
 
   useEffect(() => { loadCharacters(); }, [loadCharacters]);
 
+  // ─── Create appearance for a person that doesn't have one ──────────────
+
+  const createAppearanceForPerson = async (person: PersonCard) => {
+    if (!userId) return;
+
+    const { data: newApp, error } = await (supabase as any)
+      .from('character_appearances')
+      .insert({
+        user_id: userId,
+        character_name: person.name,
+        role: person.role,
+        relation: person.relation,
+        age_category: person.ageCategory,
+        gender: person.gender,
+        appearance_data: {},
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (error || !newApp) {
+      console.error('[MyPeoplePage] Create appearance error:', error?.message);
+      toast.error('Fehler beim Erstellen');
+      return;
+    }
+
+    // Link all kid_characters of this person
+    if (person.kidCharacterIds.length > 0) {
+      await (supabase as any)
+        .from('kid_characters')
+        .update({ character_appearance_id: newApp.id })
+        .in('id', person.kidCharacterIds);
+    }
+
+    // Navigate to editor
+    setEditingChar(newApp as CharacterAppearance);
+    setScreen('editor');
+  };
+
   // ─── Navigate to editor ─────────────────────────────────────────────────
 
-  const openEditor = (char: CharacterAppearance) => {
+  const openEditor = (person: PersonCard) => {
+    if (person.appearance) {
+      setEditingChar(person.appearance);
+      setScreen('editor');
+    } else {
+      createAppearanceForPerson(person);
+    }
+  };
+
+  const openEditorDirect = (char: CharacterAppearance) => {
     setEditingChar(char);
     setScreen('editor');
   };
@@ -161,13 +314,13 @@ export default function MyPeoplePage() {
 
   return (
     <OverviewScreen
-      characters={characters}
-      linkedKids={linkedKids}
+      persons={persons}
       kidProfiles={kidProfiles}
       loading={loading}
       language={lang}
       userId={userId || ''}
       onEdit={openEditor}
+      onEditDirect={openEditorDirect}
       onAdd={() => setShowAddDialog(true)}
       onRefresh={loadCharacters}
       t={t}
@@ -182,13 +335,13 @@ export default function MyPeoplePage() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface OverviewProps {
-  characters: CharacterAppearance[];
-  linkedKids: Record<string, LinkedKid[]>;
+  persons: PersonCard[];
   kidProfiles: any[];
   loading: boolean;
   language: string;
   userId: string;
-  onEdit: (c: CharacterAppearance) => void;
+  onEdit: (p: PersonCard) => void;
+  onEditDirect: (c: CharacterAppearance) => void;
   onAdd: () => void;
   onRefresh: () => void;
   t: any;
@@ -197,25 +350,27 @@ interface OverviewProps {
 }
 
 function OverviewScreen({
-  characters, linkedKids, kidProfiles, loading, language, userId,
-  onEdit, onAdd, onRefresh, t, showAddDialog, setShowAddDialog,
+  persons, kidProfiles, loading, language, userId,
+  onEdit, onEditDirect, onAdd, onRefresh, t, showAddDialog, setShowAddDialog,
 }: OverviewProps) {
-  const familyChars = characters.filter(c => c.role === 'family');
-  const friendChars = characters.filter(c => c.role === 'friend');
+  const familyPersons = persons.filter(p => p.role === 'family');
+  const friendPersons = persons.filter(p => p.role !== 'family');
 
   const getAgeBadge = (cat: string) => {
     const labels = AGE_LABELS[cat] || AGE_LABELS.adult;
     return labels[language] || labels.en || labels.de;
   };
 
-  const getGenderIcon = (gender: string | null) => {
-    if (gender === 'male') return '♂';
-    if (gender === 'female') return '♀';
-    return '⚪';
+  const getGenderIcon = (gender: 'male' | 'female' | null, ageCategory: string) => {
+    if (ageCategory === 'senior') return gender === 'male' ? '👴' : gender === 'female' ? '👵' : '🧓';
+    if (ageCategory === 'adult') return gender === 'male' ? '👨' : gender === 'female' ? '👩' : '🧑';
+    return gender === 'male' ? '👦' : gender === 'female' ? '👧' : '🧒';
   };
 
-  const getPreview = (data: AppearanceData | null) => {
-    if (!data || Object.keys(data).length === 0) return null;
+  const getAppearancePreview = (app: CharacterAppearance | null) => {
+    if (!app?.appearance_data || typeof app.appearance_data !== 'object') return null;
+    const data = app.appearance_data as AppearanceData;
+    if (Object.keys(data).length === 0) return null;
     const parts: string[] = [];
     for (const slot of APPEARANCE_SLOTS) {
       const val = data[slot.key];
@@ -227,17 +382,17 @@ function OverviewScreen({
         }
       }
     }
-    return parts.slice(0, 4).join(', ') + (parts.length > 4 ? '…' : '');
+    return parts.length > 0 ? parts.slice(0, 4).join(', ') + (parts.length > 4 ? '…' : '') : null;
   };
 
-  const renderCard = (char: CharacterAppearance) => {
-    const kids = linkedKids[char.id] || [];
-    const preview = getPreview(char.appearance_data);
-    const hasAppearance = preview !== null;
+  const renderPersonCard = (person: PersonCard) => {
+    const preview = getAppearancePreview(person.appearance);
+    const hasAppearance = !!person.characterAppearanceId && preview !== null;
+    const hasAppearanceNoData = !!person.characterAppearanceId && preview === null;
 
     return (
       <motion.div
-        key={char.id}
+        key={person.key}
         layout
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -246,37 +401,44 @@ function OverviewScreen({
         <div className="flex items-start justify-between mb-2">
           <div>
             <h3 className="font-semibold text-[hsl(20,50%,12%)] text-base">
-              🧑 {char.character_name}
+              {getGenderIcon(person.gender, person.ageCategory)} {person.name}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {char.relation || char.role} · {getGenderIcon(char.gender)}
+              {person.relation || person.role}
             </p>
           </div>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-100 text-[hsl(30,80%,30%)]">
-            {getAgeBadge(char.age_category)}
+            {getAgeBadge(person.ageCategory)}
           </span>
         </div>
 
         {hasAppearance ? (
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{preview}</p>
+          <p className="text-xs text-emerald-600 mb-2 flex items-center gap-1">
+            ✅ <span>{preview}</span>
+          </p>
+        ) : hasAppearanceNoData ? (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 mb-2">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Aussehen noch nicht ausgefüllt</span>
+          </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-xs text-amber-600 mb-3">
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 mb-2">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>Noch kein Aussehen definiert</span>
           </div>
         )}
 
-        {kids.length > 0 && (
+        {person.usedByKids.length > 0 && (
           <p className="text-xs text-muted-foreground mb-2">
-            Genutzt von: {kids.map(k => k.kid_name).join(', ')} ✓
+            Genutzt von: {person.usedByKids.map(k => k.kidName).join(', ')}
           </p>
         )}
 
         <button
-          onClick={() => onEdit(char)}
+          onClick={() => onEdit(person)}
           className="flex items-center gap-1 text-sm font-medium text-[#F97316] hover:text-[#EA6C10] transition-colors"
         >
-          {hasAppearance ? 'Aussehen bearbeiten' : 'Aussehen definieren'}
+          {hasAppearance || hasAppearanceNoData ? 'Aussehen bearbeiten' : 'Aussehen definieren'}
           <ChevronRight className="w-4 h-4" />
         </button>
       </motion.div>
@@ -302,15 +464,19 @@ function OverviewScreen({
           <div className="flex items-center justify-center py-12">
             <span className="text-muted-foreground">{t.loading}</span>
           </div>
-        ) : characters.length === 0 ? (
+        ) : persons.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex flex-col items-center py-16 text-center"
           >
             <img src="/mascot/5_new_story.png" alt="Fablino" className="w-24 h-24 mb-4 object-contain" />
-            <p className="text-muted-foreground text-sm mb-6">
-              Füge deine Familie und Freunde hinzu!
+            <p className="text-muted-foreground text-sm mb-2">
+              Noch keine Personen angelegt!
+            </p>
+            <p className="text-muted-foreground text-xs mb-6 max-w-xs">
+              Erstelle zuerst eine Geschichte, dann kannst du hier das Aussehen
+              deiner Familie und Freunde festlegen.
             </p>
             <Button onClick={onAdd} className="bg-[#F97316] hover:bg-[#EA6C10] text-white rounded-2xl gap-2">
               <UserPlus className="w-4 h-4" />
@@ -319,26 +485,28 @@ function OverviewScreen({
           </motion.div>
         ) : (
           <>
-            {familyChars.length > 0 && (
+            {familyPersons.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="w-4 h-4 text-[#F97316]" />
                   <h2 className="text-sm font-semibold text-[hsl(20,50%,12%)]">Familie</h2>
+                  <span className="text-xs text-muted-foreground">({familyPersons.length})</span>
                 </div>
                 <div className="space-y-3">
-                  {familyChars.map(renderCard)}
+                  {familyPersons.map(renderPersonCard)}
                 </div>
               </div>
             )}
 
-            {friendChars.length > 0 && (
+            {friendPersons.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-base">🧒</span>
                   <h2 className="text-sm font-semibold text-[hsl(20,50%,12%)]">Freunde</h2>
+                  <span className="text-xs text-muted-foreground">({friendPersons.length})</span>
                 </div>
                 <div className="space-y-3">
-                  {friendChars.map(renderCard)}
+                  {friendPersons.map(renderPersonCard)}
                 </div>
               </div>
             )}
@@ -366,17 +534,10 @@ function OverviewScreen({
         onCreated={(char) => {
           setShowAddDialog(false);
           onRefresh();
-          // Navigate to editor for the new character
-          if (char) {
-            // Small delay to let the overview refresh
-            setTimeout(() => {
-              // Find and open the new char — handled by parent
-            }, 200);
-          }
         }}
         onEdit={(char) => {
           setShowAddDialog(false);
-          onEdit(char);
+          onEditDirect(char);
         }}
       />
     </div>
@@ -404,7 +565,6 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
   const [selectedKids, setSelectedKids] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setName('');
@@ -414,7 +574,6 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
     }
   }, [open, kidProfiles]);
 
-  // Auto-detect gender from relation
   useEffect(() => {
     if (relation) {
       const detected = inferGenderFromRelation(relation);
@@ -455,7 +614,6 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
 
     // 2. Link to selected kid_profiles
     for (const kidId of selectedKids) {
-      // Check if kid_characters already has entry with same name
       const { data: existing } = await (supabase as any)
         .from('kid_characters')
         .select('id')
@@ -465,13 +623,11 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
         .maybeSingle();
 
       if (existing) {
-        // Update existing entry
         await (supabase as any)
           .from('kid_characters')
           .update({ character_appearance_id: newChar.id })
           .eq('id', existing.id);
       } else {
-        // Insert new kid_characters entry
         await (supabase as any)
           .from('kid_characters')
           .insert({
@@ -669,7 +825,6 @@ function AppearanceEditor({ character, language, onBack, t }: EditorProps) {
           </p>
 
           <div className="flex gap-2 flex-wrap">
-            {/* Age category selector */}
             <Select value={ageCategory} onValueChange={(v) => setAgeCategory(v as AgeCategory)}>
               <SelectTrigger className="w-auto min-w-[120px] h-8 text-xs rounded-xl border-orange-200 bg-orange-50">
                 <SelectValue>{ageBadge}</SelectValue>
@@ -683,7 +838,6 @@ function AppearanceEditor({ character, language, onBack, t }: EditorProps) {
               </SelectContent>
             </Select>
 
-            {/* Gender selector */}
             <Select
               value={gender || 'none'}
               onValueChange={(v) => setGender(v === 'none' ? null : v as 'male' | 'female')}
