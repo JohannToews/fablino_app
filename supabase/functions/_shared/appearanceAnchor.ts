@@ -154,3 +154,152 @@ export function extractClothingFromAnchor(fullAnchor: string): string {
   }
   return '';
 }
+
+// ═══ AVATAR V2 ═══
+
+import { APPEARANCE_SLOTS, type AppearanceData, CURRENT_PHASE } from './appearanceSlots.ts';
+import type { AppearanceSlot } from './appearanceSlots.ts';
+
+function getOptionFragment(slot: AppearanceSlot, value: string | boolean): string {
+  const str = value === true ? 'true' : value === false ? 'false' : String(value ?? '');
+  const opt = slot.options.find((o) => o.value === str);
+  return opt?.anchorFragment ?? '';
+}
+
+/**
+ * Builds an English appearance anchor from Avatar v2 slot-based appearance_data.
+ * No clothing hint; LLM invents outfit.
+ */
+export function buildAnchorFromSlots(
+  name: string,
+  age: number | string,
+  gender: 'male' | 'female' | null,
+  ageCategory: 'child' | 'teen' | 'adult' | 'senior',
+  appearanceData: AppearanceData,
+): string {
+  const parts: string[] = [];
+
+  // 1. PREFIX
+  const ageNum = typeof age === 'number' ? age : Number(age);
+  const hasNumericAge = !Number.isNaN(ageNum) && ageNum > 0;
+  const useAgeInPrefix = ageCategory !== 'senior' && hasNumericAge;
+
+  if (ageCategory === 'senior') {
+    if (gender === 'female') parts.push(`elderly woman named ${name}`);
+    else if (gender === 'male') parts.push(`elderly man named ${name}`);
+    else parts.push(`elderly person named ${name}`);
+  } else if (ageCategory === 'adult') {
+    if (gender === 'female') parts.push(`woman named ${name}`);
+    else if (gender === 'male') parts.push(`man named ${name}`);
+    else parts.push(`person named ${name}`);
+  } else {
+    if (useAgeInPrefix) {
+      if (gender === 'female') parts.push(`${ageNum}-year-old girl named ${name}`);
+      else if (gender === 'male') parts.push(`${ageNum}-year-old boy named ${name}`);
+      else parts.push(`${ageNum}-year-old child named ${name}`);
+    } else {
+      if (gender === 'female') parts.push(`girl named ${name}`);
+      else if (gender === 'male') parts.push(`boy named ${name}`);
+      else parts.push(`child named ${name}`);
+    }
+  }
+
+  const FACE_KEYS = new Set(['skin_tone', 'eye_color', 'glasses']);
+  const BODY_KEYS = new Set(['body_type', 'facial_hair']);
+
+  // 2. SLOTS: face first (skin, eyes, glasses), then hair (step 3), then body
+  for (const slot of APPEARANCE_SLOTS) {
+    if (slot.phase > CURRENT_PHASE) continue;
+    if (!FACE_KEYS.has(slot.key)) continue;
+
+    const raw = appearanceData[slot.key];
+    const value = raw === true ? 'true' : raw === false ? 'false' : (raw != null && raw !== '' ? String(raw) : '');
+    if (value === '' || value === 'false' || value === 'none') continue;
+
+    const fragment = getOptionFragment(slot, value);
+    if (fragment) parts.push(fragment);
+  }
+
+  // 3. HAIR STRING
+  const hairColorSlot = APPEARANCE_SLOTS.find((s) => s.key === 'hair_color')!;
+  const hairTypeSlot = APPEARANCE_SLOTS.find((s) => s.key === 'hair_type')!;
+  const hairLengthSlot = APPEARANCE_SLOTS.find((s) => s.key === 'hair_length')!;
+  const hairStyleSlot = APPEARANCE_SLOTS.find((s) => s.key === 'hair_style')!;
+
+  const hairStyleRaw = appearanceData.hair_style;
+  const hairStyle = hairStyleRaw === true || hairStyleRaw === false ? '' : String(hairStyleRaw ?? '').trim();
+  const hairLength = getOptionFragment(hairLengthSlot, appearanceData.hair_length ?? '');
+  const hairType = getOptionFragment(hairTypeSlot, appearanceData.hair_type ?? '');
+  const hairColorFragment = getOptionFragment(hairColorSlot, appearanceData.hair_color ?? '');
+  const hairStyleFragment = getOptionFragment(hairStyleSlot, hairStyle);
+
+  const skipLengthStyles = new Set(['bald', 'buzz_cut', 'afro', 'afro_puffs']);
+
+  if (hairStyle === 'bald') {
+    if (hairStyleFragment) parts.push(hairStyleFragment);
+  } else if (hairStyle === 'bald_top') {
+    if (hairStyleFragment) parts.push(hairStyleFragment);
+  } else if (hairStyle && skipLengthStyles.has(hairStyle)) {
+    if (hairColorFragment && hairStyleFragment) {
+      parts.push(`${hairColorFragment}, ${hairStyleFragment}`);
+    } else if (hairStyleFragment) {
+      parts.push(hairStyleFragment);
+    } else if (hairColorFragment) {
+      parts.push(hairColorFragment);
+    }
+  } else {
+    const colorWord = hairColorFragment.replace(/\s*hair\s*$/i, '').trim() || '';
+    const segs: string[] = [];
+    if (!skipLengthStyles.has(hairStyle) && hairLength) segs.push(hairLength);
+    if (hairType) segs.push(hairType);
+    if (colorWord) segs.push(`${colorWord} hair`);
+    if (segs.length > 0) {
+      parts.push(segs.join(' ') + (hairStyleFragment ? `, ${hairStyleFragment}` : ''));
+    } else if (hairStyleFragment) {
+      parts.push(hairStyleFragment);
+    } else if (hairColorFragment) {
+      parts.push(hairColorFragment);
+    }
+  }
+
+  // 4. BODY SLOTS (body_type, facial_hair)
+  for (const slot of APPEARANCE_SLOTS) {
+    if (slot.phase > CURRENT_PHASE) continue;
+    if (!BODY_KEYS.has(slot.key)) continue;
+
+    const raw = appearanceData[slot.key];
+    const value = raw === true ? 'true' : raw === false ? 'false' : (raw != null && raw !== '' ? String(raw) : '');
+    if (value === '' || value === 'false' || value === 'none') continue;
+
+    const fragment = getOptionFragment(slot, value);
+    if (fragment) parts.push(fragment);
+  }
+
+  return parts.join(', ');
+}
+
+/**
+ * Converts v1 kid appearance columns to Avatar v2 AppearanceData (for backward compat).
+ */
+export function legacyAppearanceToSlotData(appearance: {
+  skin_tone: string;
+  hair_length: string;
+  hair_type: string;
+  hair_style: string;
+  hair_color: string;
+  glasses: boolean;
+  eye_color?: string;
+  body_type?: string;
+}): AppearanceData {
+  const data: AppearanceData = {
+    skin_tone: appearance.skin_tone ?? '',
+    hair_length: appearance.hair_length ?? '',
+    hair_type: appearance.hair_type ?? '',
+    hair_style: appearance.hair_style ?? '',
+    hair_color: appearance.hair_color ?? '',
+    glasses: String(appearance.glasses) as 'true' | 'false',
+    eye_color: appearance.eye_color ?? '',
+    body_type: appearance.body_type ?? '',
+  };
+  return data;
+}
