@@ -101,12 +101,16 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
     }
 
-    const { data } = await supabase
+    const { data, error: queryError } = await supabase
       .from("kid_profiles")
       .select("*")
       .eq("user_id", user.id)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
+
+    if (queryError) {
+      console.error('[useKidProfile] Failed to load kid profiles:', queryError.message, queryError);
+    }
 
     if (data && data.length > 0) {
       // Map DB data to KidProfile type (handle optional fields)

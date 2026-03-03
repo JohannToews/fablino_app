@@ -42,15 +42,18 @@ export function usePremiumUi() {
     fetchEnabled();
   }, [fetchEnabled]);
 
-  // Refetch when user navigates (e.g. back from Feature Flags) or tab gets focus
+  // Refetch on window focus (e.g. returning from another tab after toggling in admin)
   useEffect(() => {
     const onFocus = () => fetchEnabled();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [fetchEnabled]);
 
+  // Only refetch on admin pages (not every route change — avoids excessive edge function calls)
   useEffect(() => {
-    fetchEnabled();
+    if (location.pathname.startsWith('/admin')) {
+      fetchEnabled();
+    }
   }, [location.pathname, fetchEnabled]);
 
   const setPremiumUiEnabled = useCallback(
