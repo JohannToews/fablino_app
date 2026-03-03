@@ -30,6 +30,15 @@ const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string }[]
   { key: "avatar_v2_enabled_users", label: "Avatar v2", globalLabel: "Avatar v2 für ALLE aktivieren" },
 ];
 
+// These flags are global-only (no per-user column in the grid)
+const GLOBAL_ONLY_KEYS: FeatureKey[] = [
+  "premium_ui_enabled_users",
+  "avatar_builder_enabled_users",
+  "visual_director_enabled_users",
+];
+
+const PER_USER_FEATURES = FEATURES_CONFIG.filter((f) => !GLOBAL_ONLY_KEYS.includes(f.key));
+
 const FeatureFlagsPage = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
@@ -219,21 +228,21 @@ const FeatureFlagsPage = () => {
             <Separator />
 
             {/* Header */}
-            <div className="grid grid-cols-[1fr_repeat(7,auto)] gap-2 text-xs font-medium text-muted-foreground px-1">
+            <div className={`grid grid-cols-[1fr_repeat(${PER_USER_FEATURES.length},auto)] gap-2 text-xs font-medium text-muted-foreground px-1`}>
               <span>Name / Email</span>
-              {FEATURES_CONFIG.map((f) => (
+              {PER_USER_FEATURES.map((f) => (
                 <span key={f.key} className="w-20 text-center">{f.label}</span>
               ))}
             </div>
 
             <div className="space-y-1 max-h-[60vh] overflow-y-auto">
               {filteredUsers.map((u) => (
-                <div key={u.id} className="grid grid-cols-[1fr_repeat(7,auto)] gap-2 items-center py-1.5 px-1 rounded hover:bg-muted/50">
+                <div key={u.id} className={`grid grid-cols-[1fr_repeat(${PER_USER_FEATURES.length},auto)] gap-2 items-center py-1.5 px-1 rounded hover:bg-muted/50`}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{u.display_name || u.username}</p>
                     {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
                   </div>
-                  {FEATURES_CONFIG.map((feat) => (
+                  {PER_USER_FEATURES.map((feat) => (
                     <div key={feat.key} className="w-20 flex justify-center">
                       <Switch
                         checked={isUserEnabled(feat.key, u.id)}
