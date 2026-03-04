@@ -2547,6 +2547,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_story_stats: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          checker_critical: number
+          checker_low: number
+          checker_medium: number
+          checker_subcategories: string[]
+          child_age: number
+          child_class: string
+          child_name: string
+          consistency_check_ms: number
+          critical_patch_failed: boolean
+          difficulty: string
+          emotional_coloring: string
+          emotional_secondary: string
+          generation_time_ms: number
+          humor_level: number
+          image_generation_ms: number
+          issues_corrected: number
+          issues_found: number
+          language: string
+          patch_fix_rate: number
+          quality_rating: number
+          story_created_at: string
+          story_generation_ms: number
+          story_id: string
+          story_length: string
+          story_title: string
+          structure_beginning: number
+          structure_ending: number
+          structure_middle: number
+          user_display_name: string
+          user_email: string
+          weakest_part: string
+          weakness_reason: string
+          word_count_approx: number
+        }[]
+      }
       check_and_award_badges: { Args: { p_child_id: string }; Returns: Json }
       cleanup_unclaimed_onboarding_stories: { Args: never; Returns: number }
       get_kid_profile_for_story: {
