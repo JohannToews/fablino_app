@@ -3830,13 +3830,14 @@ Respond with ONLY valid JSON, no markdown:
           const anchor1 = prompt1.includes(anchorText);
           const anchor2 = prompt2.includes(anchorText);
           console.log(`[COMIC] Character anchor identical in both grids: ${anchor1 && anchor2} (grid_1: ${anchor1}, grid_2: ${anchor2})`);
+          // Sequential: consistency check first, then images
+          console.log('[COMIC] Running consistency check before image generation...');
+          const t0 = Date.now();
+          await consistencyCheckTask();
+          consistencyCheckMs = Date.now() - t0;
+
           console.log('[COMIC] Generating 2 grid images in parallel...');
-          const [consistencySettled, result1, result2] = await Promise.allSettled([
-            (async () => {
-              const t0 = Date.now();
-              await consistencyCheckTask();
-              consistencyCheckMs = Date.now() - t0;
-            })(),
+          const [result1, result2] = await Promise.allSettled([
             comicImageTask(prompt1, 'grid_1', comicNegativePrompt),
             comicImageTask(prompt2, 'grid_2', comicNegativePrompt),
           ]);
@@ -3918,13 +3919,14 @@ Respond with ONLY valid JSON, no markdown:
             });
             if (comicPrompts.length < 2) throw new Error('Comic 8-panel requires 2 prompts');
 
+            // Sequential: consistency check first, then images
+            console.log('[ComicStrip] Running consistency check before image generation...');
+            const t0 = Date.now();
+            await consistencyCheckTask();
+            consistencyCheckMs = Date.now() - t0;
+
             console.log('[ComicStrip] Generating 2 comic strip images in parallel...');
-            const [consistencySettled, result1, result2] = await Promise.allSettled([
-              (async () => {
-                const t0 = Date.now();
-                await consistencyCheckTask();
-                consistencyCheckMs = Date.now() - t0;
-              })(),
+            const [result1, result2] = await Promise.allSettled([
               comicImageTask(comicPrompts[0], 'panel_1'),
               comicImageTask(comicPrompts[1], 'panel_2'),
             ]);
@@ -3958,18 +3960,19 @@ Respond with ONLY valid JSON, no markdown:
             seriesStylePrefix,
           });
 
+          // Sequential: consistency check first, then images
+          console.log('[ComicStrip] Running consistency check before image generation...');
+          const t0 = Date.now();
+          await consistencyCheckTask();
+          consistencyCheckMs = Date.now() - t0;
+
           console.log('[ComicStrip] Generating single comic strip image...');
-          const [consistencySettled, comicImageSettled] = await Promise.allSettled([
-            (async () => {
-              const t0 = Date.now();
-              await consistencyCheckTask();
-              consistencyCheckMs = Date.now() - t0;
-            })(),
+          const comicImageSettled = await Promise.allSettled([
             comicImageTask(comicPrompt, 'single_panel'),
           ]);
 
-          if (comicImageSettled.status === 'rejected') throw comicImageSettled.reason;
-          const comicStripBase64 = comicImageSettled.value;
+          if (comicImageSettled[0].status === 'rejected') throw comicImageSettled[0].reason;
+          const comicStripBase64 = comicImageSettled[0].value;
           imageGenerationMs = Date.now() - comicPipelineStart;
 
           comicFullImageUrl = await uploadImageToStorage(comicStripBase64, 'covers', 'comic-full');
@@ -3998,16 +4001,17 @@ Respond with ONLY valid JSON, no markdown:
 
     if (useVisualDirector) {
       // ══════ VISUAL DIRECTOR PATH ══════
-      console.log('[VisualDirector] Starting parallel: Visual Director + consistency check');
+      // Sequential: Consistency check first (patch/verify story), then VD on finalized text
+      console.log('[VisualDirector] Running consistency check before Visual Director...');
       const vdStartTime = Date.now();
 
-      const timedConsistencyCheckVD = async () => {
-        const t0 = Date.now();
-        await consistencyCheckTask();
-        consistencyCheckMs = Date.now() - t0;
-      };
+      const t0 = Date.now();
+      await consistencyCheckTask();
+      consistencyCheckMs = Date.now() - t0;
+      console.log(`[VisualDirector] Consistency check completed in ${consistencyCheckMs}ms`);
 
-      const [vdResult, consistencyResult] = await Promise.allSettled([
+      // Now run Visual Director on the patched story
+      const vdResult = await Promise.allSettled([
         callVisualDirector({
           apiKey: LOVABLE_API_KEY,
           storyTitle: story.title || 'Untitled',
@@ -4023,13 +4027,12 @@ Respond with ONLY valid JSON, no markdown:
           includeSelf: includeSelf,
           ...(characterAnchors.length > 0 ? { characterAnchors } : {}),
         }),
-        timedConsistencyCheckVD(),
       ]);
 
-      console.log(`[VisualDirector] Parallel block completed in ${Date.now() - vdStartTime}ms`);
+      console.log(`[VisualDirector] VD call completed in ${Date.now() - vdStartTime - consistencyCheckMs}ms`);
 
-      if (vdResult.status === 'fulfilled' && vdResult.value) {
-        const vdOutput = vdResult.value;
+      if (vdResult[0].status === 'fulfilled' && vdResult[0].value) {
+        const vdOutput = vdResult[0].value;
         console.log(`[VisualDirector] Success: ${vdOutput.scenes?.length} scenes, ${vdOutput.character_sheet?.length} characters`);
 
         const vdImagePlan = mapVisualDirectorToImagePlan(
@@ -4070,7 +4073,7 @@ Respond with ONLY valid JSON, no markdown:
           imagePrompts = imagePrompts.slice(0, imageGenConfig.maxImagesPerStory);
         }
       } else {
-        const vdError = vdResult.status === 'rejected' ? vdResult.reason : 'empty result';
+        const vdError = vdResult[0].status === 'rejected' ? vdResult[0].reason : 'empty result';
         console.error('[VisualDirector] Failed, falling back to legacy image_plan path:', vdError);
         console.error(`[VD-DEBUG] ERROR: ${vdError?.message || vdError}`);
         console.error(`[VD-DEBUG] FALLBACK: using old image_plan path`);
@@ -4132,48 +4135,43 @@ Respond with ONLY valid JSON, no markdown:
 
     // ── Execute consistency check + ALL images PARALLEL with timeout ──
     const PARALLEL_TIMEOUT_MS = 180000; // 180 seconds for consistency + ALL images together
-    const parallelStart = Date.now();
+    const pipelineStart = Date.now();
 
     let allImageResults: Array<{ label: string; url: string | null; cached: boolean }> = [];
 
-    // Wrap tasks to capture individual timings
-    const timedConsistencyCheck = async () => {
-      const t0 = Date.now();
-      await consistencyCheckTask();
-      consistencyCheckMs = Date.now() - t0;
-    };
-    const timedImageGeneration = async () => {
-      const t0 = Date.now();
-      const res = await generateAllImagesTask();
-      imageGenerationMs = Date.now() - t0;
-      return res;
-    };
+    // ═══ SEQUENTIAL PIPELINE: Check/Patch/Verify → Images ═══
+    // Images are generated AFTER consistency check completes and metrics are written.
+    // This ensures the final (patched) story text is used for image prompts if needed.
 
+    // Step 1: Consistency check (includes patch, re-check, and DB writes)
+    const consistencyStart = Date.now();
     try {
-      const results = await Promise.race([
-        Promise.allSettled([
-          timedConsistencyCheck(),
-          timedImageGeneration(),
-        ]),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Parallel block timeout')), PARALLEL_TIMEOUT_MS)
-        ),
-      ]);
-
-      // Extract image results from the settled promises
-      const settledResults = results as PromiseSettledResult<any>[];
-      if (settledResults[1]?.status === 'fulfilled') {
-        allImageResults = settledResults[1].value || [];
-      } else if (settledResults[1]?.status === 'rejected') {
-        console.error('[generate-story] Image generation task rejected:', settledResults[1].reason);
-      }
-
-    } catch (timeoutError) {
-      console.error(`[generate-story] Parallel block timed out after ${PARALLEL_TIMEOUT_MS}ms`);
-      // Story is still saved without images
+      await consistencyCheckTask();
+      consistencyCheckMs = Date.now() - consistencyStart;
+      console.log(`[PERF] Consistency check/patch/verify: ${consistencyCheckMs}ms`);
+    } catch (checkErr) {
+      console.error('[generate-story] Consistency check failed:', checkErr);
+      consistencyCheckMs = Date.now() - consistencyStart;
     }
 
-    console.log(`[PERF] Parallel block (consistency + images): ${Date.now() - parallelStart}ms`);
+    // Step 2: Image generation (after story is finalized)
+    const imageStart = Date.now();
+    try {
+      const imagePromise = Promise.race([
+        generateAllImagesTask(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Image generation timeout')), PARALLEL_TIMEOUT_MS)
+        ),
+      ]);
+      allImageResults = await imagePromise;
+      imageGenerationMs = Date.now() - imageStart;
+      console.log(`[PERF] Image generation: ${imageGenerationMs}ms`);
+    } catch (imgErr) {
+      console.error('[generate-story] Image generation failed or timed out:', imgErr);
+      imageGenerationMs = Date.now() - imageStart;
+    }
+
+    console.log(`[PERF] Full pipeline (check + images): ${Date.now() - pipelineStart}ms`);
 
     // ── Sort image results: cover vs. scene images ──
     let coverImageBase64: string | null = null;
