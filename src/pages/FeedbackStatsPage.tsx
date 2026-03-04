@@ -23,6 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import StoryImage from "@/components/StoryImage";
+import { StoryStatsEmbed } from "@/pages/StoryStatsPage";
 interface StoryRating {
   id: string;
   story_id: string | null;
@@ -1575,6 +1576,10 @@ const FeedbackStatsPage = () => {
               <Users className="h-4 w-4" />
               Usage Stats
             </TabsTrigger>
+            <TabsTrigger value="story-stats" className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" />
+              Story-Stats
+            </TabsTrigger>
           </TabsList>
 
           {/* Stories Tab */}
@@ -2337,6 +2342,11 @@ const FeedbackStatsPage = () => {
               usageStartDate={usageStartDate}
               setUsageStartDate={setUsageStartDate}
             />
+          </TabsContent>
+
+          {/* Story-Stats Tab */}
+          <TabsContent value="story-stats">
+            <StoryStatsEmbed />
           </TabsContent>
         </Tabs>
 

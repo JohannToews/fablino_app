@@ -57,7 +57,7 @@ const FLAG: Record<string, string> = {
   hu: "🇭🇺", ca: "🏴", sl: "🇸🇮", pt: "🇵🇹", sk: "🇸🇰", uk: "🇺🇦", ru: "🇷🇺",
 };
 
-const StoryStatsPage = () => {
+const useStoryStatsContent = () => {
   const [rows, setRows] = useState<StoryStatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailRow, setDetailRow] = useState<StoryStatRow | null>(null);
@@ -125,11 +125,8 @@ const StoryStatsPage = () => {
     return "text-orange-600 dark:text-orange-400";
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <PageHeader title="Story-Stats" backTo="/feedback-stats" />
-
-      <div className="px-3 sm:px-6 pb-8 max-w-[1400px] mx-auto space-y-4">
+  const content = (
+    <>
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 bg-card rounded-xl p-3 border">
           <Select value={langFilter} onValueChange={setLangFilter}>
@@ -271,9 +268,11 @@ const StoryStatsPage = () => {
             </Table>
           </div>
         )}
-      </div>
+      </>
+  );
 
-      {/* Detail Drawer */}
+  // Detail Drawer (shared)
+  const drawer = (
       <Sheet open={!!detailRow} onOpenChange={(open) => !open && setDetailRow(null)}>
         <SheetContent className="w-[400px] sm:w-[480px] overflow-y-auto">
           {detailRow && (
@@ -283,12 +282,10 @@ const StoryStatsPage = () => {
               </SheetHeader>
 
               <div className="mt-4 space-y-4">
-                {/* Critical patch badge */}
                 {detailRow.critical_patch_failed && (
                   <Badge variant="destructive" className="text-xs">⚠️ Critical Patch Failed</Badge>
                 )}
 
-                {/* Weakest part */}
                 {(detailRow.weakest_part || detailRow.weakness_reason) && (
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground uppercase">Schwächster Teil</p>
@@ -297,7 +294,6 @@ const StoryStatsPage = () => {
                   </div>
                 )}
 
-                {/* Checker subcategories */}
                 {(detailRow.checker_subcategories?.length ?? 0) > 0 && (
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground uppercase">Checker Subcategories</p>
@@ -312,7 +308,6 @@ const StoryStatsPage = () => {
                   </div>
                 )}
 
-                {/* Issues summary */}
                 {(detailRow.issues_found != null || detailRow.issues_corrected != null) && (
                   <div className="flex gap-4 text-sm">
                     <div>
@@ -326,14 +321,12 @@ const StoryStatsPage = () => {
                   </div>
                 )}
 
-                {/* Error counts */}
                 <div className="flex gap-3 text-sm">
                   <span>🔴 {detailRow.checker_critical ?? 0}</span>
                   <span>🟡 {detailRow.checker_medium ?? 0}</span>
                   <span>⚪ {detailRow.checker_low ?? 0}</span>
                 </div>
 
-                {/* Patch rate */}
                 <div className="text-sm">
                   <span className="text-muted-foreground">Patch Fix Rate: </span>
                   <span className={cn("font-medium", patchColor(detailRow.patch_fix_rate != null ? Number(detailRow.patch_fix_rate) : null))}>
@@ -341,7 +334,6 @@ const StoryStatsPage = () => {
                   </span>
                 </div>
 
-                {/* Link to story */}
                 <Link to={`/read/${detailRow.story_id}`} className="inline-flex items-center gap-1 text-sm text-primary underline">
                   <ExternalLink className="h-3.5 w-3.5" />Story öffnen
                 </Link>
@@ -350,6 +342,31 @@ const StoryStatsPage = () => {
           )}
         </SheetContent>
       </Sheet>
+  );
+
+  return { content, drawer };
+};
+
+/** Embeddable version for use inside tabs */
+export const StoryStatsEmbed = () => {
+  const { content, drawer } = useStoryStatsContent();
+  return (
+    <div className="space-y-4">
+      {content}
+      {drawer}
+    </div>
+  );
+};
+
+const StoryStatsPage = () => {
+  const { content, drawer } = useStoryStatsContent();
+  return (
+    <div className="min-h-screen bg-background">
+      <PageHeader title="Story-Stats" backTo="/feedback-stats" />
+      <div className="px-3 sm:px-6 pb-8 max-w-[1400px] mx-auto space-y-4">
+        {content}
+      </div>
+      {drawer}
     </div>
   );
 };
