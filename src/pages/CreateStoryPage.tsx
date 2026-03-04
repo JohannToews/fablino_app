@@ -395,6 +395,12 @@ const CreateStoryPage = () => {
           comic_full_image_2: data.comic_full_image_2 ?? null,
           comic_panel_count: data.comic_panel_count ?? null,
           comic_grid_plan: data.comic_grid_plan ?? null,
+          checker_critical: data.checker_critical ?? 0,
+          checker_medium: data.checker_medium ?? 0,
+          checker_low: data.checker_low ?? 0,
+          checker_subcategories: data.checker_subcategories ?? null,
+          critical_patch_failed: data.critical_patch_failed ?? false,
+          patch_fix_rate: data.patch_fix_rate ?? null,
         };
         const storyIdToUse = (data.story_id ?? placeholderStoryId) as string | null;
         const { data: savedStory, error: saveError } = useUpdate && storyIdToUse
@@ -846,6 +852,12 @@ const CreateStoryPage = () => {
           comic_full_image_2: data.comic_full_image_2 ?? null,
           comic_panel_count: data.comic_panel_count ?? null,
           comic_grid_plan: data.comic_grid_plan ?? null,
+          checker_critical: data.checker_critical ?? 0,
+          checker_medium: data.checker_medium ?? 0,
+          checker_low: data.checker_low ?? 0,
+          checker_subcategories: data.checker_subcategories ?? null,
+          critical_patch_failed: data.critical_patch_failed ?? false,
+          patch_fix_rate: data.patch_fix_rate ?? null,
         };
         const storyIdToUseFiction = (data.story_id ?? placeholderStoryIdFiction) as string | null;
         const { data: savedStory, error: saveError } = useUpdateFiction && storyIdToUseFiction

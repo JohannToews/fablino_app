@@ -333,6 +333,13 @@ const OnboardingStoryPage = () => {
         generation_time_ms: data.performance?.total_ms ?? null,
         story_generation_ms: data.performance?.story_generation_ms ?? null,
         image_generation_ms: data.performance?.image_generation_ms ?? null,
+        consistency_check_ms: data.performance?.consistency_check_ms ?? null,
+        checker_critical: data.checker_critical ?? 0,
+        checker_medium: data.checker_medium ?? 0,
+        checker_low: data.checker_low ?? 0,
+        checker_subcategories: data.checker_subcategories ?? null,
+        critical_patch_failed: data.critical_patch_failed ?? false,
+        patch_fix_rate: data.patch_fix_rate ?? null,
       };
       const storyIdToUseOnboarding = (data.story_id ?? placeholderStoryIdOnboarding) as string | null;
       const { data: saved, error: saveErr } = useUpdateOnboarding && storyIdToUseOnboarding

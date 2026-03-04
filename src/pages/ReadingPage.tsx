@@ -1036,6 +1036,12 @@ const ReadingPage = () => {
         comic_full_image_2: data.comic_full_image_2 ?? null,
         comic_panel_count: data.comic_panel_count ?? null,
         comic_grid_plan: data.comic_grid_plan ?? null,
+        checker_critical: data.checker_critical ?? 0,
+        checker_medium: data.checker_medium ?? 0,
+        checker_low: data.checker_low ?? 0,
+        checker_subcategories: data.checker_subcategories ?? null,
+        critical_patch_failed: data.critical_patch_failed ?? false,
+        patch_fix_rate: data.patch_fix_rate ?? null,
       };
       const storyPayloadReading = useUpdateReading
         ? basePayload
@@ -1397,6 +1403,12 @@ const ReadingPage = () => {
           comic_full_image_2: genData.comic_full_image_2 ?? null,
           comic_panel_count: genData.comic_panel_count ?? null,
           comic_grid_plan: genData.comic_grid_plan ?? null,
+          checker_critical: genData.checker_critical ?? 0,
+          checker_medium: genData.checker_medium ?? 0,
+          checker_low: genData.checker_low ?? 0,
+          checker_subcategories: genData.checker_subcategories ?? null,
+          critical_patch_failed: genData.critical_patch_failed ?? false,
+          patch_fix_rate: genData.patch_fix_rate ?? null,
         };
         const storyIdToUseInteractive = (genData.story_id ?? placeholderStoryIdInteractive) as string | null;
         const { data: newStory, error: storyError } = useUpdateInteractive && storyIdToUseInteractive

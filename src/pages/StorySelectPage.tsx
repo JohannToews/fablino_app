@@ -327,6 +327,12 @@ const StorySelectPage = () => {
         continuity_state: data.continuity_state ?? null,
         visual_style_sheet: data.visual_style_sheet ?? null,
         generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
+        checker_critical: data.checker_critical ?? 0,
+        checker_medium: data.checker_medium ?? 0,
+        checker_low: data.checker_low ?? 0,
+        checker_subcategories: data.checker_subcategories ?? null,
+        critical_patch_failed: data.critical_patch_failed ?? false,
+        patch_fix_rate: data.patch_fix_rate ?? null,
       };
       const storyIdToUseSelect = (data.story_id ?? placeholderStoryIdSelect) as string | null;
       const { data: newStory, error: insertError } = useUpdateSelect && storyIdToUseSelect
