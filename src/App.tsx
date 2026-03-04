@@ -25,6 +25,7 @@ import ReadingPage from "./pages/ReadingPage";
 import ResultsPage from "./pages/ResultsPage";
 import CollectionPage from "./pages/CollectionPage";
 import FeedbackStatsPage from "./pages/FeedbackStatsPage";
+import StoryStatsPage from "./pages/StoryStatsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -137,6 +138,11 @@ const App = () => (
               <Route path="/feedback-stats" element={
                 <ProtectedRoute>
                   <FeedbackStatsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/story-stats" element={
+                <ProtectedRoute skipKidCheck>
+                  <StoryStatsPage />
                 </ProtectedRoute>
               } />
               <Route path="/create-story" element={
