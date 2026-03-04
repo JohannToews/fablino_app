@@ -1598,6 +1598,10 @@ export type Database = {
         Row: {
           antagonist_seed_key: string | null
           branch_chosen: string | null
+          checker_critical: number | null
+          checker_low: number | null
+          checker_medium: number | null
+          checker_subcategories: string[] | null
           claimed_at: string | null
           comic_full_image: string | null
           comic_full_image_2: string | null
@@ -1612,6 +1616,7 @@ export type Database = {
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
+          critical_patch_failed: boolean | null
           deleted_at: string | null
           difficulty: string | null
           emotional_coloring: string | null
@@ -1633,7 +1638,9 @@ export type Database = {
           learning_theme_applied: string | null
           moral_topic: string | null
           parent_prompt_text: string | null
+          patch_fix_rate: number | null
           prompt: string | null
+          regenerate_count: number | null
           series_episode_count: number | null
           series_id: string | null
           series_mode: string | null
@@ -1653,10 +1660,15 @@ export type Database = {
           user_id: string | null
           user_prompt_text: string | null
           visual_style_sheet: Json | null
+          was_regenerated: boolean | null
         }
         Insert: {
           antagonist_seed_key?: string | null
           branch_chosen?: string | null
+          checker_critical?: number | null
+          checker_low?: number | null
+          checker_medium?: number | null
+          checker_subcategories?: string[] | null
           claimed_at?: string | null
           comic_full_image?: string | null
           comic_full_image_2?: string | null
@@ -1671,6 +1683,7 @@ export type Database = {
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
+          critical_patch_failed?: boolean | null
           deleted_at?: string | null
           difficulty?: string | null
           emotional_coloring?: string | null
@@ -1692,7 +1705,9 @@ export type Database = {
           learning_theme_applied?: string | null
           moral_topic?: string | null
           parent_prompt_text?: string | null
+          patch_fix_rate?: number | null
           prompt?: string | null
+          regenerate_count?: number | null
           series_episode_count?: number | null
           series_id?: string | null
           series_mode?: string | null
@@ -1712,10 +1727,15 @@ export type Database = {
           user_id?: string | null
           user_prompt_text?: string | null
           visual_style_sheet?: Json | null
+          was_regenerated?: boolean | null
         }
         Update: {
           antagonist_seed_key?: string | null
           branch_chosen?: string | null
+          checker_critical?: number | null
+          checker_low?: number | null
+          checker_medium?: number | null
+          checker_subcategories?: string[] | null
           claimed_at?: string | null
           comic_full_image?: string | null
           comic_full_image_2?: string | null
@@ -1730,6 +1750,7 @@ export type Database = {
           cover_image_status?: string | null
           cover_image_url?: string | null
           created_at?: string
+          critical_patch_failed?: boolean | null
           deleted_at?: string | null
           difficulty?: string | null
           emotional_coloring?: string | null
@@ -1751,7 +1772,9 @@ export type Database = {
           learning_theme_applied?: string | null
           moral_topic?: string | null
           parent_prompt_text?: string | null
+          patch_fix_rate?: number | null
           prompt?: string | null
+          regenerate_count?: number | null
           series_episode_count?: number | null
           series_id?: string | null
           series_mode?: string | null
@@ -1771,6 +1794,7 @@ export type Database = {
           user_id?: string | null
           user_prompt_text?: string | null
           visual_style_sheet?: Json | null
+          was_regenerated?: boolean | null
         }
         Relationships: [
           {
@@ -1886,12 +1910,52 @@ export type Database = {
         }
         Relationships: []
       }
+      story_paths: {
+        Row: {
+          code: string
+          created_at: string | null
+          hook_score: number | null
+          humor_range_max: number | null
+          humor_range_min: number | null
+          id: string
+          is_active: boolean | null
+          is_onboarding: boolean | null
+          label: string
+          min_age_group: string
+          writing_instructions: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          hook_score?: number | null
+          humor_range_max?: number | null
+          humor_range_min?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_onboarding?: boolean | null
+          label: string
+          min_age_group: string
+          writing_instructions: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          hook_score?: number | null
+          humor_range_max?: number | null
+          humor_range_min?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_onboarding?: boolean | null
+          label?: string
+          min_age_group?: string
+          writing_instructions?: string
+        }
+        Relationships: []
+      }
       story_ratings: {
         Row: {
           created_at: string
           id: string
-          issues_corrected: number | null
-          issues_found: number | null
           kid_name: string | null
           kid_profile_id: string | null
           kid_school_class: string | null
@@ -1907,8 +1971,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          issues_corrected?: number | null
-          issues_found?: number | null
           kid_name?: string | null
           kid_profile_id?: string | null
           kid_school_class?: string | null
@@ -1924,8 +1986,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          issues_corrected?: number | null
-          issues_found?: number | null
           kid_name?: string | null
           kid_profile_id?: string | null
           kid_school_class?: string | null
@@ -2527,6 +2587,10 @@ export type Database = {
         Returns: {
           antagonist_seed_key: string | null
           branch_chosen: string | null
+          checker_critical: number | null
+          checker_low: number | null
+          checker_medium: number | null
+          checker_subcategories: string[] | null
           claimed_at: string | null
           comic_full_image: string | null
           comic_full_image_2: string | null
@@ -2541,6 +2605,7 @@ export type Database = {
           cover_image_status: string | null
           cover_image_url: string | null
           created_at: string
+          critical_patch_failed: boolean | null
           deleted_at: string | null
           difficulty: string | null
           emotional_coloring: string | null
@@ -2562,7 +2627,9 @@ export type Database = {
           learning_theme_applied: string | null
           moral_topic: string | null
           parent_prompt_text: string | null
+          patch_fix_rate: number | null
           prompt: string | null
+          regenerate_count: number | null
           series_episode_count: number | null
           series_id: string | null
           series_mode: string | null
@@ -2582,6 +2649,7 @@ export type Database = {
           user_id: string | null
           user_prompt_text: string | null
           visual_style_sheet: Json | null
+          was_regenerated: boolean | null
         }[]
         SetofOptions: {
           from: "*"
