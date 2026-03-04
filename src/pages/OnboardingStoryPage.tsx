@@ -323,7 +323,6 @@ const OnboardingStoryPage = () => {
         structure_beginning: data.structure_beginning ?? null,
         structure_middle: data.structure_middle ?? null,
         structure_ending: data.structure_ending ?? null,
-        story_path_code: data.story_path_code ?? null,
         emotional_coloring: data.emotional_coloring ?? null,
         emotional_secondary: data.emotional_secondary ?? null,
         humor_level: data.humor_level ?? null,
