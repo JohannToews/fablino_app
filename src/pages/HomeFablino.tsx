@@ -406,16 +406,9 @@ const HomeFablino = () => {
             <button
               onClick={() => navigate("/my-people")}
               data-premium-button="secondary"
-              className="relative w-full py-3 px-4 rounded-2xl font-bold text-white text-base shadow-lg transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #F97316, #E8863A, #F5A623)',
-                boxShadow: '0 0 16px 4px rgba(249, 115, 22, 0.35), 0 2px 8px rgba(0,0,0,0.08)',
-              }}
+              className={FABLINO_STYLES.secondaryButton}
             >
               👨‍👩‍👧‍👦 {t.myPeople}
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm leading-none">
-                NEW
-              </span>
             </button>
           )}
         </div>
