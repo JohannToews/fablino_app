@@ -1890,6 +1890,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          issues_corrected: number | null
+          issues_found: number | null
           kid_name: string | null
           kid_profile_id: string | null
           kid_school_class: string | null
@@ -1905,6 +1907,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          issues_corrected?: number | null
+          issues_found?: number | null
           kid_name?: string | null
           kid_profile_id?: string | null
           kid_school_class?: string | null
@@ -1920,6 +1924,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          issues_corrected?: number | null
+          issues_found?: number | null
           kid_name?: string | null
           kid_profile_id?: string | null
           kid_school_class?: string | null

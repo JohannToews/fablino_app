@@ -285,9 +285,16 @@ interface ConsistencyCheckResult {
 }
 
 // Interface for series consistency check result (Phase 4)
+type CheckerSubcategory =
+  | 'RESOLUTION' | 'MAGIC_RULES' | 'KNOWLEDGE' | 'CAUSE_EFFECT'
+  | 'CHARACTER_EXIT' | 'OBJECT_TRACKING' | 'SETUP_PAYOFF' | 'OTHER';
+type FlaggedSegment = 'beginning' | 'middle' | 'ending' | 'unspecified';
+
 interface SeriesConsistencyError {
   category: 'LOGIC' | 'GRAMMAR' | 'LANGUAGE' | 'CHARACTER' | 'CONTINUITY' | 'EPISODE_FUNCTION' | 'SIGNATURE';
+  subcategory: CheckerSubcategory;
   severity: 'CRITICAL' | 'MEDIUM' | 'LOW';
+  flagged_segment: FlaggedSegment;
   original: string;
   problem: string;
   fix: string;
@@ -443,10 +450,26 @@ RULES:
 - All your analysis and corrections must be in ${storyLanguage}
 - CONTINUITY errors with severity CRITICAL must trigger a correction attempt
 
+SUBCATEGORY GUIDE (use for every error):
+- RESOLUTION: The conflict is resolved too easily, deus-ex-machina, or the solution doesn't follow from the setup.
+- MAGIC_RULES: Magical or fantastical abilities break previously established rules or limits.
+- KNOWLEDGE: A character knows something they have no way of knowing at this point in the story.
+- CAUSE_EFFECT: An event happens without a plausible cause, or a cause leads to an implausible effect.
+- CHARACTER_EXIT: A character disappears from the scene without explanation or is forgotten mid-action.
+- OBJECT_TRACKING: An object appears, disappears, or changes state without narrative justification.
+- SETUP_PAYOFF: Something introduced earlier is never paid off, or a payoff references something never set up.
+- OTHER: For grammar, spelling, age-appropriateness, or issues that don't fit the above categories.
+
+FLAGGED_SEGMENT: Indicate where in the story the error occurs:
+- "beginning": roughly the first third of the story (setup, introduction)
+- "middle": the middle section (development, complications)
+- "ending": the final third (climax, resolution)
+- "unspecified": if the error spans multiple segments or cannot be localized
+
 Respond ONLY with this JSON:
 {"errors_found": boolean,
  "summary": "Brief summary in ${storyLanguage}",
- "errors": [{"category": "LOGIC|GRAMMAR|LANGUAGE|CHARACTER|CONTINUITY|EPISODE_FUNCTION|SIGNATURE", "severity": "CRITICAL|MEDIUM|LOW", "original": "exact quote from text", "problem": "what is wrong", "fix": "suggested correction"}],
+ "errors": [{"category": "LOGIC|GRAMMAR|LANGUAGE|CHARACTER|CONTINUITY|EPISODE_FUNCTION|SIGNATURE", "subcategory": "RESOLUTION|MAGIC_RULES|KNOWLEDGE|CAUSE_EFFECT|CHARACTER_EXIT|OBJECT_TRACKING|SETUP_PAYOFF|OTHER", "severity": "CRITICAL|MEDIUM|LOW", "flagged_segment": "beginning|middle|ending|unspecified", "original": "exact quote from text", "problem": "what is wrong", "fix": "suggested correction"}],
  "stats": {"critical": 0, "medium": 0, "low": 0}}`;
 }
 
@@ -478,10 +501,14 @@ Respond ONLY with the JSON object as specified.`;
     }
 
     const result = JSON.parse(jsonMatch[0]);
+    const VALID_SUBCATEGORIES = new Set(['RESOLUTION','MAGIC_RULES','KNOWLEDGE','CAUSE_EFFECT','CHARACTER_EXIT','OBJECT_TRACKING','SETUP_PAYOFF','OTHER']);
+    const VALID_SEGMENTS = new Set(['beginning','middle','ending','unspecified']);
     const errors: SeriesConsistencyError[] = Array.isArray(result.errors)
       ? result.errors.map((e: any) => ({
           category: e.category || 'LOGIC',
+          subcategory: (VALID_SUBCATEGORIES.has(e.subcategory) ? e.subcategory : 'OTHER') as CheckerSubcategory,
           severity: e.severity || 'LOW',
+          flagged_segment: (VALID_SEGMENTS.has(e.flagged_segment) ? e.flagged_segment : 'unspecified') as FlaggedSegment,
           original: e.original || '',
           problem: e.problem || '',
           fix: e.fix || '',
@@ -518,7 +545,7 @@ async function correctStoryFromSeriesErrors(
   targetLanguage: string,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   const errorList = errors
-    .map((e, i) => `${i + 1}. [${e.category}/${e.severity}] "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`)
+    .map((e, i) => `${i + 1}. [${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}] "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`)
     .join('\n');
 
   const continuityRef = continuityState
@@ -3314,7 +3341,7 @@ Respond with ONLY valid JSON, no markdown:
 
           totalIssuesFound += checkResult.errors.length;
           allIssueDetails.push(
-            ...checkResult.errors.map(e => `[${e.category}/${e.severity}] ${e.problem}: "${e.original}" → ${e.fix}`)
+            ...checkResult.errors.map(e => `[${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}] ${e.problem}: "${e.original}" → ${e.fix}`)
           );
 
           // For series: CRITICAL CONTINUITY/CHARACTER errors REQUIRE a correction attempt
@@ -3402,6 +3429,7 @@ Respond with ONLY valid JSON, no markdown:
       // Save consistency check results (both paths)
       try {
         await supabase.from("consistency_check_results").insert({
+          story_id: storyId || null,
           story_title: story.title,
           story_length: length,
           difficulty: difficulty,
@@ -3413,6 +3441,65 @@ Respond with ONLY valid JSON, no markdown:
         console.log("Consistency check results saved");
       } catch (dbErr) {
         console.error("Error saving consistency check results:", dbErr);
+      }
+
+      // Wire consistency checker output back into story_ratings (if row already exists)
+      if (storyId && totalIssuesFound > 0) {
+        try {
+          let weakestPart: string | null = null;
+          let weaknessReason: string | null = null;
+
+          if (allIssueDetails.length > 0) {
+            const segCounts: Record<string, number> = { beginning: 0, middle: 0, ending: 0 };
+            const segRe = /@(beginning|middle|ending)\]/;
+            const beginRe = /\b(anfang|beginning|einleitung|intro|eröffnung|A[1-6])\b/i;
+            const endRe = /\b(ende|ending|schluss|abschluss|resolution|E[1-6])\b/i;
+            const criticalCategories: string[] = [];
+
+            for (const d of allIssueDetails) {
+              const segMatch = d.match(segRe);
+              if (segMatch) {
+                segCounts[segMatch[1]]++;
+              } else if (beginRe.test(d)) {
+                segCounts.beginning++;
+              } else if (endRe.test(d)) {
+                segCounts.ending++;
+              } else {
+                segCounts.middle++;
+              }
+
+              const catMatch = d.match(/^\[([A-Z_:]+)\/CRITICAL/);
+              if (catMatch) criticalCategories.push(catMatch[1]);
+            }
+
+            const maxSeg = Math.max(segCounts.beginning, segCounts.middle, segCounts.ending);
+            if (maxSeg > 0) {
+              if (segCounts.beginning === maxSeg) weakestPart = 'beginning';
+              else if (segCounts.ending === maxSeg) weakestPart = 'ending';
+              else weakestPart = 'middle';
+            }
+
+            if (criticalCategories.length > 0) {
+              const freq: Record<string, number> = {};
+              for (const c of criticalCategories) freq[c] = (freq[c] || 0) + 1;
+              weaknessReason = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+            }
+          }
+
+          await supabase
+            .from('story_ratings')
+            .update({
+              issues_found: totalIssuesFound,
+              issues_corrected: totalIssuesCorrected,
+              weakest_part: weakestPart,
+              weakness_reason: weaknessReason,
+            })
+            .eq('story_id', storyId)
+            .is('issues_found', null);
+          console.log('[generate-story] Consistency writeback to story_ratings done');
+        } catch (wbErr) {
+          console.warn('[generate-story] Consistency writeback to story_ratings failed (non-fatal):', wbErr);
+        }
       }
     };
 

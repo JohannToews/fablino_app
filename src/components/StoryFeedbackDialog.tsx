@@ -7,6 +7,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Language } from "@/lib/translations";
 
+function deriveWeakestPart(issueDetails: string[]): string | null {
+  const counts: Record<string, number> = { beginning: 0, middle: 0, ending: 0 };
+  const beginningRe = /\b(anfang|beginning|einleitung|intro|eröffnung|A[1-6])\b/i;
+  const endingRe = /\b(ende|ending|schluss|abschluss|resolution|E[1-6])\b/i;
+  for (const detail of issueDetails) {
+    if (beginningRe.test(detail)) counts.beginning++;
+    else if (endingRe.test(detail)) counts.ending++;
+    else counts.middle++;
+  }
+  const max = Math.max(counts.beginning, counts.middle, counts.ending);
+  if (max === 0) return null;
+  if (counts.beginning === max) return "beginning";
+  if (counts.ending === max) return "ending";
+  return "middle";
+}
+
 interface StoryFeedbackDialogProps {
   open: boolean;
   onClose: () => void;
@@ -200,6 +216,27 @@ const StoryFeedbackDialog = ({
 
     setIsSubmitting(true);
     try {
+      // Look up consistency check results for this story to populate issues_found / issues_corrected
+      let issuesFound: number | null = null;
+      let issuesCorrected: number | null = null;
+      let weakestPart: string | null = null;
+      try {
+        const { data: ccr } = await supabase
+          .from("consistency_check_results")
+          .select("issues_found, issues_corrected, issue_details")
+          .eq("story_id", storyId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (ccr) {
+          issuesFound = ccr.issues_found ?? null;
+          issuesCorrected = ccr.issues_corrected ?? null;
+          if (Array.isArray(ccr.issue_details) && ccr.issue_details.length > 0) {
+            weakestPart = deriveWeakestPart(ccr.issue_details);
+          }
+        }
+      } catch { /* non-critical */ }
+
       const { error } = await supabase.from("story_ratings").insert({
         user_id: userId,
         kid_profile_id: kidProfileId || null,
@@ -210,8 +247,10 @@ const StoryFeedbackDialog = ({
         kid_school_class: kidSchoolClass || null,
         kid_school_system: kidSchoolSystem || null,
         quality_rating: rating,
-        weakest_part: null,
+        weakest_part: weakestPart,
         weakness_reason: comment || null,
+        issues_found: issuesFound,
+        issues_corrected: issuesCorrected,
       });
 
       if (error) throw error;
