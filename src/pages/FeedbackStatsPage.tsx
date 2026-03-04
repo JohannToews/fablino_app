@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar } from "@/components/ui/calendar";
-import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3, CalendarIcon, Users, Globe } from "lucide-react";
+import { Star, Loader2, TrendingDown, BookOpen, CheckCircle, XCircle, Trash2, Filter, MessageSquare, BookMarked, Eye, ShieldCheck, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Timer, Columns3, CalendarIcon, Users, Globe, Download } from "lucide-react";
 import { format, startOfDay, getDay } from "date-fns";
 import { de } from "date-fns/locale";
 import { Language } from "@/lib/translations";
@@ -2044,6 +2044,40 @@ const FeedbackStatsPage = () => {
 
           {/* Classification Tab */}
           <TabsContent value="classification">
+            {sortedClassifications.length > 0 && (
+              <div className="flex justify-end mb-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const headers = [t.user, t.date, t.storyTitle, t.rating, t.structureBeginning, t.structureMiddle, t.structureEnding, t.emotionalColoring];
+                    const escape = (v: string) => `"${(v || '').replace(/"/g, '""')}"`;
+                    const rows = sortedClassifications.map((item) => [
+                      escape(item.username || '-'),
+                      format(new Date(item.created_at), 'yyyy-MM-dd'),
+                      escape(item.title),
+                      item.quality_rating ?? '-',
+                      item.structure_beginning ?? '-',
+                      item.structure_middle ?? '-',
+                      item.structure_ending ?? '-',
+                      escape(item.emotional_coloring || '-'),
+                    ].join('\t'));
+                    const tsv = [headers.join('\t'), ...rows].join('\n');
+                    const blob = new Blob(['\uFEFF' + tsv], { type: 'text/tab-separated-values;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `classification-export-${format(new Date(), 'yyyy-MM-dd')}.tsv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Export ✓');
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export TSV
+                </Button>
+              </div>
+            )}
             {sortedClassifications.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
