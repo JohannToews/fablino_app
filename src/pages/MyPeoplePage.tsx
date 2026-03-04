@@ -67,29 +67,30 @@ interface PersonCard {
 
 // ─── Relation options ───────────────────────────────────────────────────────
 
-const RELATION_OPTIONS = [
-  { value: 'Mama', role: 'family' },
-  { value: 'Papa', role: 'family' },
-  { value: 'Oma', role: 'family' },
-  { value: 'Opa', role: 'family' },
-  { value: 'Bruder', role: 'family' },
-  { value: 'Schwester', role: 'family' },
-  { value: 'Tante', role: 'family' },
-  { value: 'Onkel', role: 'family' },
-  { value: 'Cousin', role: 'family' },
-  { value: 'Cousine', role: 'family' },
-  { value: 'Freund', role: 'friend' },
-  { value: 'Freundin', role: 'friend' },
-  { value: 'Sonstige', role: 'friend' },
+const RELATION_KEYS = [
+  { key: 'Mama', translationKey: 'myPeopleRelationMom' as const, role: 'family' },
+  { key: 'Papa', translationKey: 'myPeopleRelationDad' as const, role: 'family' },
+  { key: 'Oma', translationKey: 'myPeopleRelationGrandma' as const, role: 'family' },
+  { key: 'Opa', translationKey: 'myPeopleRelationGrandpa' as const, role: 'family' },
+  { key: 'Bruder', translationKey: 'myPeopleRelationBrother' as const, role: 'family' },
+  { key: 'Schwester', translationKey: 'myPeopleRelationSister' as const, role: 'family' },
+  { key: 'Tante', translationKey: 'myPeopleRelationAunt' as const, role: 'family' },
+  { key: 'Onkel', translationKey: 'myPeopleRelationUncle' as const, role: 'family' },
+  { key: 'Cousin', translationKey: 'myPeopleRelationCousinM' as const, role: 'family' },
+  { key: 'Cousine', translationKey: 'myPeopleRelationCousinF' as const, role: 'family' },
+  { key: 'Freund', translationKey: 'myPeopleRelationFriendM' as const, role: 'friend' },
+  { key: 'Freundin', translationKey: 'myPeopleRelationFriendF' as const, role: 'friend' },
+  { key: 'Sonstige', translationKey: 'myPeopleRelationOther' as const, role: 'friend' },
 ];
 
 // ─── Age category labels ────────────────────────────────────────────────────
 
-const AGE_LABELS: Record<string, Record<string, string>> = {
-  child: { de: 'Kind', en: 'Child', fr: 'Enfant' },
-  teen: { de: 'Jugendlich', en: 'Teen', fr: 'Ado' },
-  adult: { de: 'Erwachsen', en: 'Adult', fr: 'Adulte' },
-  senior: { de: 'Senior', en: 'Senior', fr: 'Senior' },
+// Age category labels - now use translation keys
+const AGE_CATEGORY_KEYS: Record<string, string> = {
+  child: 'myPeopleAgeChild',
+  teen: 'myPeopleAgeTeen',
+  adult: 'myPeopleAgeAdult',
+  senior: 'myPeopleAgeSenior',
 };
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -260,7 +261,7 @@ export default function MyPeoplePage() {
 
     if (error || !newApp) {
       console.error('[MyPeoplePage] Create appearance error:', error?.message);
-      toast.error('Fehler beim Erstellen');
+      toast.error(t.myPeopleCreateError);
       return;
     }
 
@@ -357,8 +358,8 @@ function OverviewScreen({
   const friendPersons = persons.filter(p => p.role !== 'family');
 
   const getAgeBadge = (cat: string) => {
-    const labels = AGE_LABELS[cat] || AGE_LABELS.adult;
-    return labels[language] || labels.en || labels.de;
+    const key = AGE_CATEGORY_KEYS[cat] || AGE_CATEGORY_KEYS.adult;
+    return (t as any)[key] || cat;
   };
 
   const getGenderIcon = (gender: 'male' | 'female' | null, ageCategory: string) => {
@@ -419,18 +420,18 @@ function OverviewScreen({
         ) : hasAppearanceNoData ? (
           <div className="flex items-center gap-1.5 text-xs text-amber-600 mb-2">
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>Aussehen noch nicht ausgefüllt</span>
+            <span>{t.myPeopleAppearanceIncomplete}</span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 text-xs text-amber-600 mb-2">
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>Noch kein Aussehen definiert</span>
+            <span>{t.myPeopleNoAppearance}</span>
           </div>
         )}
 
         {person.usedByKids.length > 0 && (
           <p className="text-xs text-muted-foreground mb-2">
-            Genutzt von: {person.usedByKids.map(k => k.kidName).join(', ')}
+            {t.myPeopleUsedBy} {person.usedByKids.map(k => k.kidName).join(', ')}
           </p>
         )}
 
@@ -438,7 +439,7 @@ function OverviewScreen({
           onClick={() => onEdit(person)}
           className="flex items-center gap-1 text-sm font-medium text-[#F97316] hover:text-[#EA6C10] transition-colors"
         >
-          {hasAppearance || hasAppearanceNoData ? 'Aussehen bearbeiten' : 'Aussehen definieren'}
+          {hasAppearance || hasAppearanceNoData ? t.myPeopleEditAppearance : t.myPeopleDefineAppearance}
           <ChevronRight className="w-4 h-4" />
         </button>
       </motion.div>
@@ -450,14 +451,14 @@ function OverviewScreen({
       <div className="max-w-lg mx-auto px-4 pt-2">
         <FablinoPageHeader
           mascotImage="/mascot/6_Onboarding.png"
-          message="Gestalte das Aussehen deiner Familie und Freunde!"
+          message={t.myPeopleHeaderMessage}
           mascotSize="sm"
           showBackButton
           backTo="/"
         />
 
         <h1 className="font-baloo text-xl font-bold text-[hsl(20,50%,12%)] mb-6">
-          Meine Leute
+          {t.myPeople}
         </h1>
 
         {loading ? (
@@ -472,15 +473,14 @@ function OverviewScreen({
           >
             <img src="/mascot/5_new_story.png" alt="Fablino" className="w-24 h-24 mb-4 object-contain" />
             <p className="text-muted-foreground text-sm mb-2">
-              Noch keine Personen angelegt!
+              {t.myPeopleEmpty}
             </p>
             <p className="text-muted-foreground text-xs mb-6 max-w-xs">
-              Erstelle zuerst eine Geschichte, dann kannst du hier das Aussehen
-              deiner Familie und Freunde festlegen.
+              {t.myPeopleEmptyHint}
             </p>
             <Button onClick={onAdd} className="bg-[#F97316] hover:bg-[#EA6C10] text-white rounded-2xl gap-2">
               <UserPlus className="w-4 h-4" />
-              Person hinzufügen
+              {t.myPeopleAddPerson}
             </Button>
           </motion.div>
         ) : (
@@ -489,7 +489,7 @@ function OverviewScreen({
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="w-4 h-4 text-[#F97316]" />
-                  <h2 className="text-sm font-semibold text-[hsl(20,50%,12%)]">Familie</h2>
+                  <h2 className="text-sm font-semibold text-[hsl(20,50%,12%)]">{t.myPeopleFamily}</h2>
                   <span className="text-xs text-muted-foreground">({familyPersons.length})</span>
                 </div>
                 <div className="space-y-3">
@@ -502,7 +502,7 @@ function OverviewScreen({
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-base">🧒</span>
-                  <h2 className="text-sm font-semibold text-[hsl(20,50%,12%)]">Freunde</h2>
+                  <h2 className="text-sm font-semibold text-[hsl(20,50%,12%)]">{t.myPeopleFriends}</h2>
                   <span className="text-xs text-muted-foreground">({friendPersons.length})</span>
                 </div>
                 <div className="space-y-3">
@@ -531,6 +531,7 @@ function OverviewScreen({
         userId={userId}
         kidProfiles={kidProfiles}
         language={language}
+        t={t}
         onCreated={(char) => {
           setShowAddDialog(false);
           onRefresh();
@@ -556,9 +557,10 @@ interface AddPersonDialogProps {
   language: string;
   onCreated: (char: CharacterAppearance | null) => void;
   onEdit: (char: CharacterAppearance) => void;
+  t: any;
 }
 
-function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, onCreated, onEdit }: AddPersonDialogProps) {
+function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, onCreated, onEdit, t }: AddPersonDialogProps) {
   const [name, setName] = useState('');
   const [relation, setRelation] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -581,7 +583,7 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
     }
   }, [relation]);
 
-  const roleForRelation = RELATION_OPTIONS.find(r => r.value === relation)?.role || 'friend';
+  const roleForRelation = RELATION_KEYS.find(r => r.key === relation)?.role || 'friend';
 
   const handleSave = async () => {
     if (!name.trim() || !relation) return;
@@ -607,7 +609,7 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
 
     if (error || !newChar) {
       console.error('[AddPerson] Insert error:', error?.message);
-      toast.error('Fehler beim Hinzufügen');
+      toast.error(t.myPeopleAddError);
       setSaving(false);
       return;
     }
@@ -642,7 +644,7 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
     }
 
     setSaving(false);
-    toast.success('Person hinzugefügt! ✨');
+    toast.success(t.myPeoplePersonAdded);
     onEdit(newChar as CharacterAppearance);
   };
 
@@ -650,42 +652,42 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-[hsl(20,50%,12%)]">Person hinzufügen</DialogTitle>
+          <DialogTitle className="text-[hsl(20,50%,12%)]">{t.myPeopleAddPerson}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div>
-            <Label htmlFor="char-name" className="text-sm font-medium">Name *</Label>
+            <Label htmlFor="char-name" className="text-sm font-medium">{t.myPeopleNameLabel} *</Label>
             <Input
               id="char-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="z.B. Mama, Opa Hans, Emma..."
+              placeholder={t.myPeopleNamePlaceholder}
               className="mt-1 rounded-xl"
             />
           </div>
 
           <div>
-            <Label className="text-sm font-medium">Beziehung *</Label>
+            <Label className="text-sm font-medium">{t.myPeopleRelationLabel} *</Label>
             <Select value={relation} onValueChange={setRelation}>
               <SelectTrigger className="mt-1 rounded-xl">
-                <SelectValue placeholder="Wählen..." />
+                <SelectValue placeholder={t.myPeopleSelectPlaceholder} />
               </SelectTrigger>
               <SelectContent>
-                {RELATION_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.value}</SelectItem>
+                {RELATION_KEYS.map(opt => (
+                  <SelectItem key={opt.key} value={opt.key}>{(t as any)[opt.translationKey]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label className="text-sm font-medium">Geschlecht</Label>
+            <Label className="text-sm font-medium">{t.myPeopleGenderLabel}</Label>
             <div className="flex gap-2 mt-1">
               {([
-                { val: 'male' as const, label: '♂ Männlich' },
-                { val: 'female' as const, label: '♀ Weiblich' },
-                { val: null, label: '⚪ k.A.' },
+                { val: 'male' as const, label: t.myPeopleGenderMale },
+                { val: 'female' as const, label: t.myPeopleGenderFemale },
+                { val: null, label: t.myPeopleGenderNone },
               ]).map(({ val, label }) => (
                 <button
                   key={String(val)}
@@ -705,7 +707,7 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
 
           {kidProfiles.length > 1 && (
             <div>
-              <Label className="text-sm font-medium">Für welche Kinder?</Label>
+              <Label className="text-sm font-medium">{t.myPeopleForWhichKids}</Label>
               <div className="space-y-2 mt-2">
                 {kidProfiles.map(kid => (
                   <label key={kid.id} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -733,7 +735,7 @@ function AddPersonDialog({ open, onOpenChange, userId, kidProfiles, language, on
             disabled={!name.trim() || !relation || saving}
             className="w-full bg-[#F97316] hover:bg-[#EA6C10] text-white rounded-2xl font-bold"
           >
-            {saving ? '...' : 'Hinzufügen & Aussehen definieren →'}
+            {saving ? '...' : t.myPeopleAddAndDefine}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -793,7 +795,7 @@ function AppearanceEditor({ character, language, onBack, t }: EditorProps) {
     setSaving(false);
     if (error) {
       console.error('[AppearanceEditor] Save error:', error.message);
-      toast.error('Fehler beim Speichern');
+      toast.error(t.myPeopleSaveError);
       return;
     }
     setSavedData({ ...data });
@@ -802,14 +804,14 @@ function AppearanceEditor({ character, language, onBack, t }: EditorProps) {
 
   const visibleSlots = APPEARANCE_SLOTS.filter(s => s.phase <= CURRENT_PHASE);
 
-  const ageBadge = AGE_LABELS[ageCategory]?.[language] || AGE_LABELS[ageCategory]?.de || ageCategory;
+  const ageBadge = (t as any)[AGE_CATEGORY_KEYS[ageCategory] || 'myPeopleAgeAdult'] || ageCategory;
 
   return (
     <div className="min-h-screen bg-[hsl(40,20%,98%)] pb-24">
       <div className="max-w-lg mx-auto px-4 pt-2">
         <FablinoPageHeader
           mascotImage="/mascot/6_Onboarding.png"
-          message={`So sieht ${character.character_name} aus!`}
+          message={t.myPeopleEditorHeader.replace('{name}', character.character_name)}
           mascotSize="sm"
           showBackButton
           onBack={onBack}
@@ -832,7 +834,7 @@ function AppearanceEditor({ character, language, onBack, t }: EditorProps) {
               <SelectContent>
                 {(['child', 'teen', 'adult', 'senior'] as AgeCategory[]).map(cat => (
                   <SelectItem key={cat} value={cat}>
-                    {AGE_LABELS[cat]?.[language] || AGE_LABELS[cat]?.de || cat}
+                    {(t as any)[AGE_CATEGORY_KEYS[cat] || 'myPeopleAgeAdult'] || cat}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -848,9 +850,9 @@ function AppearanceEditor({ character, language, onBack, t }: EditorProps) {
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">♂ Männlich</SelectItem>
-                <SelectItem value="female">♀ Weiblich</SelectItem>
-                <SelectItem value="none">⚪ k.A.</SelectItem>
+                <SelectItem value="male">{t.myPeopleGenderMale}</SelectItem>
+                <SelectItem value="female">{t.myPeopleGenderFemale}</SelectItem>
+                <SelectItem value="none">{t.myPeopleGenderNone}</SelectItem>
               </SelectContent>
             </Select>
           </div>
