@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 interface ConsistencyCheckResult {
   id: string;
+  story_id: string | null;
   story_title: string;
   story_length: string;
   difficulty: string;
@@ -31,9 +32,10 @@ interface UserProfile {
 
 interface ConsistencyCheckStatsProps {
   language: Language;
+  onStoryClick?: (storyId: string) => void;
 }
 
-const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
+const ConsistencyCheckStats = ({ language, onStoryClick }: ConsistencyCheckStatsProps) => {
   const t = useTranslations(language);
   const [results, setResults] = useState<ConsistencyCheckResult[]>([]);
   const [users, setUsers] = useState<Record<string, string>>({});
@@ -297,7 +299,16 @@ const ConsistencyCheckStats = ({ language }: ConsistencyCheckStatsProps) => {
                           {result.user_id ? users[result.user_id] || '—' : '—'}
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate" title={result.story_title}>
-                          {result.story_title}
+                          {result.story_id && onStoryClick ? (
+                            <button
+                              onClick={() => onStoryClick(result.story_id!)}
+                              className="text-primary hover:underline cursor-pointer text-left truncate block max-w-[200px]"
+                            >
+                              {result.story_title}
+                            </button>
+                          ) : (
+                            result.story_title
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">

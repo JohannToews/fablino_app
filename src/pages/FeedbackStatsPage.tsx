@@ -2039,7 +2039,7 @@ const FeedbackStatsPage = () => {
 
           {/* Consistency Check Tab */}
           <TabsContent value="consistency">
-            <ConsistencyCheckStats language={(user?.adminLanguage || 'de') as Language} />
+            <ConsistencyCheckStats language={(user?.adminLanguage || 'de') as Language} onStoryClick={openStoryPreview} />
           </TabsContent>
 
           {/* Classification Tab */}
