@@ -168,24 +168,11 @@ const useStoryStatsContent = () => {
     const crit = r.checker_critical ?? 0;
     const med = r.checker_medium ?? 0;
     const low = r.checker_low ?? 0;
-    if (crit === 0 && med === 0 && low === 0) return <span>✅</span>;
     return (
-      <span className="inline-flex items-center gap-1">
-        {crit > 0 && (
-          <Badge variant="destructive" className={cn("text-[10px] px-1.5 py-0", crit > 0 && "font-bold text-xs")}>
-            🔴{crit}
-          </Badge>
-        )}
-        {med > 0 && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500 text-yellow-600 dark:text-yellow-400">
-            🟡{med}
-          </Badge>
-        )}
-        {low > 0 && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-            ⚪{low}
-          </Badge>
-        )}
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap">
+        <span className={crit > 0 ? "text-destructive font-bold" : "text-muted-foreground"}>H{crit}</span>
+        <span className={med > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground"}>M{med}</span>
+        <span className={low > 0 ? "text-foreground" : "text-muted-foreground"}>L{low}</span>
       </span>
     );
   };
