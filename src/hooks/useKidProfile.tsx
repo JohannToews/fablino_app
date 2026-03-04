@@ -149,14 +149,15 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
         }));
         setKidProfiles(mappedProfiles);
 
-        // Auto-select first profile if none selected or selected doesn't exist
-        const currentSelection = sessionStorage.getItem('selected_kid_profile_id');
-        const profileExists = data.some(p => p.id === currentSelection);
+        // Keep state + sessionStorage always in sync with a valid profile id
+        const storedSelection = sessionStorage.getItem('selected_kid_profile_id');
+        const storedExists = storedSelection
+          ? mappedProfiles.some((profile) => profile.id === storedSelection)
+          : false;
 
-        if (!currentSelection || !profileExists) {
-          setSelectedProfileId(data[0].id);
-          sessionStorage.setItem('selected_kid_profile_id', data[0].id);
-        }
+        const resolvedSelection = storedExists ? storedSelection! : mappedProfiles[0].id;
+        setSelectedProfileId(resolvedSelection);
+        sessionStorage.setItem('selected_kid_profile_id', resolvedSelection);
       } else {
         setKidProfiles([]);
         setSelectedProfileId(null);
@@ -176,6 +177,21 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     loadKidProfiles();
   }, [loadKidProfiles]);
+
+  // Self-heal selection: if profiles exist, there must always be a valid active profile
+  useEffect(() => {
+    if (kidProfiles.length === 0) return;
+
+    const isSelectionValid = selectedProfileId
+      ? kidProfiles.some((profile) => profile.id === selectedProfileId)
+      : false;
+
+    if (!isSelectionValid) {
+      const fallbackId = kidProfiles[0].id;
+      setSelectedProfileId(fallbackId);
+      sessionStorage.setItem('selected_kid_profile_id', fallbackId);
+    }
+  }, [kidProfiles, selectedProfileId]);
 
   // Persist selection to sessionStorage
   const handleSetSelectedProfileId = (id: string | null) => {
