@@ -441,20 +441,8 @@ const StorySelectPage = () => {
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue={seriesStories.length > 0 ? "series" : "fiction"} className="w-full">
+          <Tabs defaultValue="fiction" className="w-full">
             <TabsList className="flex w-full mb-6 h-12 sm:h-14 bg-card/80 backdrop-blur-sm rounded-2xl p-1 overflow-x-auto scrollbar-hide gap-1">
-              <TabsTrigger 
-                value="series" 
-                className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground whitespace-nowrap px-2 sm:px-3"
-              >
-                <Layers className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="truncate">{t.tabSeries}</span>
-                {seriesStories.length > 0 && (
-                  <span className="ml-0.5 bg-background/30 text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
-                    {new Set(seriesStories.map(s => s.series_id)).size}
-                  </span>
-                )}
-              </TabsTrigger>
               <TabsTrigger 
                 value="fiction" 
                 className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground whitespace-nowrap px-2 sm:px-3"
@@ -464,6 +452,18 @@ const StorySelectPage = () => {
                 {fictionStories.length > 0 && (
                   <span className="ml-0.5 bg-background/30 text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
                     {fictionStories.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="series" 
+                className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base font-baloo rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground whitespace-nowrap px-2 sm:px-3"
+              >
+                <Layers className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="truncate">{t.tabSeries}</span>
+                {seriesStories.length > 0 && (
+                  <span className="ml-0.5 bg-background/30 text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    {new Set(seriesStories.map(s => s.series_id)).size}
                   </span>
                 )}
               </TabsTrigger>
@@ -483,6 +483,10 @@ const StorySelectPage = () => {
               */}
             </TabsList>
 
+            <TabsContent value="fiction">
+              <StoryGrid stories={fictionStories} t={t} navigate={navigate} storyStatuses={storyStatuses} />
+            </TabsContent>
+
             <TabsContent value="series">
               <SeriesGrid 
                 stories={seriesStories} 
@@ -492,10 +496,6 @@ const StorySelectPage = () => {
                 onGenerateNextEpisode={handleGenerateNextEpisode}
                 isGeneratingForSeries={isGeneratingForSeries}
               />
-            </TabsContent>
-
-            <TabsContent value="fiction">
-              <StoryGrid stories={fictionStories} t={t} navigate={navigate} storyStatuses={storyStatuses} />
             </TabsContent>
 
             {/* Non-Fiction content – temporarily hidden
