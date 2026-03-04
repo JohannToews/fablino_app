@@ -628,6 +628,51 @@ export interface Translations {
   appearanceStyleTwistOut: string;
   appearanceStyleTapered: string;
 
+  // My People page
+  myPeopleHeaderMessage: string;
+  myPeopleEmpty: string;
+  myPeopleEmptyHint: string;
+  myPeopleAddPerson: string;
+  myPeopleFamily: string;
+  myPeopleFriends: string;
+  myPeopleAppearanceIncomplete: string;
+  myPeopleNoAppearance: string;
+  myPeopleUsedBy: string;
+  myPeopleEditAppearance: string;
+  myPeopleDefineAppearance: string;
+  myPeopleNameLabel: string;
+  myPeopleNamePlaceholder: string;
+  myPeopleRelationLabel: string;
+  myPeopleSelectPlaceholder: string;
+  myPeopleGenderLabel: string;
+  myPeopleGenderMale: string;
+  myPeopleGenderFemale: string;
+  myPeopleGenderNone: string;
+  myPeopleForWhichKids: string;
+  myPeopleAddAndDefine: string;
+  myPeoplePersonAdded: string;
+  myPeopleAddError: string;
+  myPeopleEditorHeader: string;
+  myPeopleSaveError: string;
+  myPeopleCreateError: string;
+  myPeopleRelationMom: string;
+  myPeopleRelationDad: string;
+  myPeopleRelationGrandma: string;
+  myPeopleRelationGrandpa: string;
+  myPeopleRelationBrother: string;
+  myPeopleRelationSister: string;
+  myPeopleRelationAunt: string;
+  myPeopleRelationUncle: string;
+  myPeopleRelationCousinM: string;
+  myPeopleRelationCousinF: string;
+  myPeopleRelationFriendM: string;
+  myPeopleRelationFriendF: string;
+  myPeopleRelationOther: string;
+  myPeopleAgeChild: string;
+  myPeopleAgeTeen: string;
+  myPeopleAgeAdult: string;
+  myPeopleAgeSenior: string;
+
 }
 
 import de from './de';
