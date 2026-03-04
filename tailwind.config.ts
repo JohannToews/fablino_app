@@ -110,6 +110,14 @@ export default {
           "0%": { transform: "translateX(-33.33%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "wobble": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "15%": { transform: "rotate(-2deg)" },
+          "30%": { transform: "rotate(2deg)" },
+          "45%": { transform: "rotate(-1.5deg)" },
+          "60%": { transform: "rotate(1deg)" },
+          "75%": { transform: "rotate(-0.5deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -118,6 +126,7 @@ export default {
         "scroll-down": "scroll-down 30s linear infinite",
         "scroll-left": "scroll-left 40s linear infinite",
         "scroll-right": "scroll-right 40s linear infinite",
+        "wobble": "wobble 2s ease-in-out infinite",
       },
     },
   },
