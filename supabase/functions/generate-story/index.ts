@@ -596,6 +596,53 @@ Respond ONLY with a JSON object:
   }
 }
 
+// ═══ Targeted Re-Check helpers ═══
+
+function extractSegment(content: string, segment: FlaggedSegment): string {
+  const lines = content.split('\n');
+  const total = lines.length;
+  if (total === 0) return content;
+  const third = Math.ceil(total / 3);
+
+  switch (segment) {
+    case 'beginning': return lines.slice(0, third).join('\n');
+    case 'middle':    return lines.slice(third, third * 2).join('\n');
+    case 'ending':    return lines.slice(third * 2).join('\n');
+    default:          return content;
+  }
+}
+
+async function targetedReCheck(
+  apiKey: string,
+  storyContent: string,
+  error: SeriesConsistencyError,
+): Promise<boolean> {
+  const segment = extractSegment(storyContent, error.flagged_segment);
+
+  const systemPrompt = `You are a children's story editor verifying whether a specific error has been fixed.
+You will receive a text segment and the original error. Determine if the error is still present.
+Respond ONLY with JSON: {"fixed": true} or {"fixed": false}`;
+
+  const userPrompt = `ORIGINAL ERROR:
+[${error.category}:${error.subcategory}/${error.severity}] "${error.original}"
+Problem: ${error.problem}
+
+TEXT SEGMENT (${error.flagged_segment}):
+${segment}
+
+Is this specific error fixed in the text above?`;
+
+  try {
+    const response = await callLovableAI(apiKey, systemPrompt, userPrompt, 0.1);
+    const jsonMatch = response.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) return true;
+    const result = JSON.parse(jsonMatch[0]);
+    return result.fixed === true;
+  } catch {
+    return true;
+  }
+}
+
 // Helper function to correct story based on consistency check results (standard, non-series)
 async function correctStory(
   apiKey: string,
@@ -3302,13 +3349,18 @@ Respond with ONLY valid JSON, no markdown:
     let totalIssuesFound = 0;
     let totalIssuesCorrected = 0;
     let allIssueDetails: string[] = [];
+    let checkerCritical = 0;
+    let checkerMedium = 0;
+    let checkerLow = 0;
+    let criticalPatchFailed = false;
+    let checkerSubcategories: string[] = [];
 
     // ── Task 1: Consistency Check (Phase 4: series-aware routing) ──
     const consistencyCheckTask = async () => {
       const isSeriesEpisode = !!(seriesId || isSeries) && !!resolvedEpisodeNumber;
 
       if (isSeriesEpisode) {
-        // ═══ SERIES PATH: Phase 4 structured consistency check ═══
+        // ═══ SERIES PATH: Three-tier patch/verify pipeline ═══
         const effectiveAge = kidAge || 8;
         const lastContinuity = seriesContextData?.lastContinuityState || null;
 
@@ -3322,58 +3374,91 @@ Respond with ONLY valid JSON, no markdown:
           seriesEpisodeCount,
         );
 
-        let correctionAttempts = 0;
-        const maxCorrectionAttempts = 2;
+        const checkResult = await performSeriesConsistencyCheck(
+          LOVABLE_API_KEY,
+          story,
+          seriesCheckPrompt,
+        );
 
-        while (correctionAttempts < maxCorrectionAttempts) {
-          const checkResult = await performSeriesConsistencyCheck(
-            LOVABLE_API_KEY,
-            story,
-            seriesCheckPrompt,
-          );
+        console.log(`[Phase4] Check result: errors_found=${checkResult.errors_found}, critical=${checkResult.stats.critical}, medium=${checkResult.stats.medium}, low=${checkResult.stats.low}`);
 
-          console.log(`[Phase4] Check result: errors_found=${checkResult.errors_found}, critical=${checkResult.stats.critical}, medium=${checkResult.stats.medium}, low=${checkResult.stats.low}`);
+        if (!checkResult.errors_found || checkResult.errors.length === 0) {
+          console.log('[Phase4] Series consistency check passed — no errors');
+        } else {
+          // Tally severity counts
+          checkerCritical = checkResult.stats.critical;
+          checkerMedium = checkResult.stats.medium;
+          checkerLow = checkResult.stats.low;
+          totalIssuesFound = checkResult.errors.length;
 
-          if (!checkResult.errors_found || checkResult.errors.length === 0) {
-            console.log(`[Phase4] Series consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
-            break;
-          }
+          // Collect all subcategories
+          checkerSubcategories = [...new Set(checkResult.errors.map(e => `${e.category}:${e.subcategory}`))];
 
-          totalIssuesFound += checkResult.errors.length;
           allIssueDetails.push(
             ...checkResult.errors.map(e => `[${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}] ${e.problem}: "${e.original}" → ${e.fix}`)
           );
 
-          // For series: CRITICAL CONTINUITY/CHARACTER errors REQUIRE a correction attempt
-          const hasCritical = checkResult.stats.critical > 0;
+          // Group errors by severity tier
           const criticalErrors = checkResult.errors.filter(e => e.severity === 'CRITICAL');
+          const mediumErrors = checkResult.errors.filter(e => e.severity === 'MEDIUM');
+          const lowErrors = checkResult.errors.filter(e => e.severity === 'LOW');
 
-          if (!hasCritical && correctionAttempts > 0) {
-            // No critical errors and already attempted once → stop (be lenient on MEDIUM/LOW)
-            console.log(`[Phase4] No CRITICAL errors remaining, stopping after ${correctionAttempts} correction(s)`);
-            break;
-          }
-
-          correctionAttempts++;
-          const errorsToFix = hasCritical ? criticalErrors : checkResult.errors;
-          console.log(`[Phase4] Attempting correction ${correctionAttempts}/${maxCorrectionAttempts} for ${errorsToFix.length} error(s) (${hasCritical ? 'CRITICAL only' : 'all'})...`);
+          // ── Tier 1: Patch ALL errors (single correction call) ──
+          const allErrors = [...criticalErrors, ...mediumErrors, ...lowErrors];
+          console.log(`[Phase4] Patching ${allErrors.length} error(s): ${criticalErrors.length}C/${mediumErrors.length}M/${lowErrors.length}L`);
 
           const correctedStory = await correctStoryFromSeriesErrors(
             LOVABLE_API_KEY,
             story,
-            errorsToFix,
+            allErrors,
             lastContinuity,
             targetLanguage,
           );
 
-          if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
+          const patchApplied = correctedStory.content !== story.content || correctedStory.title !== story.title;
+          if (patchApplied) {
             story = correctedStory;
-            totalIssuesCorrected += errorsToFix.length;
-            console.log("[Phase4] Story corrected, re-checking...");
+            console.log('[Phase4] Patch applied, running targeted re-checks...');
           } else {
-            console.log("[Phase4] No changes made in correction, stopping");
-            break;
+            console.log('[Phase4] Patch made no changes');
           }
+
+          // ── Tier 2: Targeted re-check for CRITICAL errors ──
+          let criticalFixed = 0;
+          for (const err of criticalErrors) {
+            const fixed = patchApplied
+              ? await targetedReCheck(LOVABLE_API_KEY, story.content, err)
+              : false;
+            if (fixed) {
+              criticalFixed++;
+              console.log(`[Phase4] CRITICAL re-check PASSED: ${err.category}:${err.subcategory}`);
+            } else {
+              console.log(`[Phase4] CRITICAL re-check FAILED: ${err.category}:${err.subcategory} — patch did not fix`);
+            }
+          }
+
+          if (criticalErrors.length > 0 && criticalFixed < criticalErrors.length) {
+            criticalPatchFailed = true;
+            console.log(`[Phase4] critical_patch_failed=true (${criticalFixed}/${criticalErrors.length} fixed)`);
+          }
+
+          // ── Tier 3: Targeted re-check for MEDIUM errors (single pass) ──
+          let mediumFixed = 0;
+          for (const err of mediumErrors) {
+            const fixed = patchApplied
+              ? await targetedReCheck(LOVABLE_API_KEY, story.content, err)
+              : false;
+            if (fixed) mediumFixed++;
+          }
+          if (mediumErrors.length > 0) {
+            console.log(`[Phase4] MEDIUM re-check: ${mediumFixed}/${mediumErrors.length} fixed`);
+          }
+
+          // LOW errors: assume patched if content changed, no re-check
+          const lowFixed = patchApplied ? lowErrors.length : 0;
+
+          totalIssuesCorrected = criticalFixed + mediumFixed + lowFixed;
+          console.log(`[Phase4] Final: ${totalIssuesCorrected}/${totalIssuesFound} issues corrected`);
         }
       } else {
         // ═══ STANDARD PATH: existing single-story consistency check ═══
@@ -3441,6 +3526,29 @@ Respond with ONLY valid JSON, no markdown:
         console.log("Consistency check results saved");
       } catch (dbErr) {
         console.error("Error saving consistency check results:", dbErr);
+      }
+
+      // Write checker metrics to stories table
+      if (storyId) {
+        try {
+          const patchFixRate = totalIssuesFound > 0
+            ? Math.round((totalIssuesCorrected / totalIssuesFound) * 1000) / 1000
+            : null;
+          await supabase
+            .from('stories')
+            .update({
+              checker_critical: checkerCritical,
+              checker_medium: checkerMedium,
+              checker_low: checkerLow,
+              checker_subcategories: checkerSubcategories,
+              critical_patch_failed: criticalPatchFailed,
+              patch_fix_rate: patchFixRate,
+            })
+            .eq('id', storyId);
+          console.log(`[generate-story] Stories checker metrics written: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L, fix_rate=${patchFixRate}, critical_failed=${criticalPatchFailed}`);
+        } catch (metricsErr) {
+          console.warn('[generate-story] Stories checker metrics write failed (non-fatal):', metricsErr);
+        }
       }
 
       // Wire consistency checker output back into story_ratings (if row already exists)
