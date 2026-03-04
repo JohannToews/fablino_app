@@ -4441,6 +4441,15 @@ Respond with ONLY valid JSON, no markdown:
       prompt_warnings: promptWarnings.length > 0 ? promptWarnings : null,
       // B-14: Echo story_id so frontend can UPDATE existing row
       story_id: storyId ?? undefined,
+      // Phase 2d: Checker metrics for frontend to store on story row
+      checker_critical: checkerCritical,
+      checker_medium: checkerMedium,
+      checker_low: checkerLow,
+      checker_subcategories: checkerSubcategories.length > 0 ? checkerSubcategories : null,
+      critical_patch_failed: criticalPatchFailed,
+      patch_fix_rate: totalIssuesFound > 0
+        ? Math.round((totalIssuesCorrected / totalIssuesFound) * 1000) / 1000
+        : 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
