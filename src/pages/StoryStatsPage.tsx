@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -58,7 +59,7 @@ const FLAG: Record<string, string> = {
   hu: "🇭🇺", ca: "🏴", sl: "🇸🇮", pt: "🇵🇹", sk: "🇸🇰", uk: "🇺🇦", ru: "🇷🇺",
 };
 
-type ColumnKey = "datum" | "user" | "kind" | "story" | "lang" | "woerter" | "stufe" | "pfad" | "emotion" | "fehler" | "patch" | "detail" | "rating";
+type ColumnKey = "datum" | "user" | "kind" | "story" | "lang" | "woerter" | "stufe" | "pfad" | "emotion" | "err_h" | "err_m" | "err_l" | "patch" | "detail" | "rating";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "datum", label: "Datum" },
@@ -70,7 +71,9 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "stufe", label: "Stufe" },
   { key: "pfad", label: "Pfad" },
   { key: "emotion", label: "Emotion" },
-  { key: "fehler", label: "Fehler" },
+  { key: "err_h", label: "🔴 H" },
+  { key: "err_m", label: "🟡 M" },
+  { key: "err_l", label: "⚪ L" },
   { key: "patch", label: "Patch %" },
   { key: "detail", label: "Detail" },
   { key: "rating", label: "⭐ Rating" },
@@ -83,6 +86,8 @@ const useStoryStatsContent = () => {
   const [loading, setLoading] = useState(true);
   const [detailRow, setDetailRow] = useState<StoryStatRow | null>(null);
   const [visibleCols, setVisibleCols] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
+  const [sortCol, setSortCol] = useState<ColumnKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // filters
   const [langFilter, setLangFilter] = useState("all");
@@ -90,6 +95,15 @@ const useStoryStatsContent = () => {
   const [errorsOnly, setErrorsOnly] = useState(false);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  const handleSort = (col: ColumnKey) => {
+    if (sortCol === col) {
+      setSortDir(prev => prev === "desc" ? "asc" : "desc");
+    } else {
+      setSortCol(col);
+      setSortDir("desc");
+    }
+  };
 
   const toggleCol = (key: ColumnKey) => {
     setVisibleCols(prev => {
@@ -135,7 +149,7 @@ const useStoryStatsContent = () => {
   }, [rows]);
 
   const filtered = useMemo(() => {
-    return rows.filter((r) => {
+    let result = rows.filter((r) => {
       if (langFilter !== "all" && r.language !== langFilter) return false;
       if (diffFilter !== "all" && r.difficulty !== diffFilter) return false;
       if (errorsOnly && (r.checker_critical ?? 0) === 0) return false;
@@ -147,7 +161,32 @@ const useStoryStatsContent = () => {
       }
       return true;
     });
-  }, [rows, langFilter, diffFilter, errorsOnly, dateFrom, dateTo]);
+
+    // Sorting
+    if (sortCol) {
+      const getVal = (r: StoryStatRow): number | string => {
+        switch (sortCol) {
+          case "err_h": return r.checker_critical ?? 0;
+          case "err_m": return r.checker_medium ?? 0;
+          case "err_l": return r.checker_low ?? 0;
+          case "woerter": return r.word_count_approx ?? 0;
+          case "rating": return r.quality_rating ?? 0;
+          case "patch": return r.patch_fix_rate != null ? Number(r.patch_fix_rate) : -1;
+          case "datum": return r.story_created_at;
+          default: return 0;
+        }
+      };
+      result = [...result].sort((a, b) => {
+        const va = getVal(a);
+        const vb = getVal(b);
+        if (va < vb) return sortDir === "asc" ? -1 : 1;
+        if (va > vb) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [rows, langFilter, diffFilter, errorsOnly, dateFrom, dateTo, sortCol, sortDir]);
 
   const patchColor = (rate: number | null) => {
     if (rate == null) return "text-muted-foreground";
@@ -164,18 +203,6 @@ const useStoryStatsContent = () => {
     return `A${b ?? "?"}→M${m ?? "?"}→E${e ?? "?"}`;
   };
 
-  const renderErrors = (r: StoryStatRow) => {
-    const crit = r.checker_critical ?? 0;
-    const med = r.checker_medium ?? 0;
-    const low = r.checker_low ?? 0;
-    return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap">
-        <span className={crit > 0 ? "text-destructive font-bold" : "text-muted-foreground"}>H{crit}</span>
-        <span className={med > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground"}>M{med}</span>
-        <span className={low > 0 ? "text-foreground" : "text-muted-foreground"}>L{low}</span>
-      </span>
-    );
-  };
 
   const visibleCount = ALL_COLUMNS.filter(c => isVis(c.key)).length;
 
@@ -285,7 +312,9 @@ const useStoryStatsContent = () => {
                 {isVis("stufe") && <TableHead className="whitespace-nowrap">Stufe</TableHead>}
                 {isVis("pfad") && <TableHead className="whitespace-nowrap">Pfad</TableHead>}
                 {isVis("emotion") && <TableHead className="whitespace-nowrap">Emotion</TableHead>}
-                {isVis("fehler") && <TableHead className="whitespace-nowrap">Fehler</TableHead>}
+                {isVis("err_h") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_h")}>🔴 H{sortCol === "err_h" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
+                {isVis("err_m") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_m")}>🟡 M{sortCol === "err_m" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
+                {isVis("err_l") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_l")}>⚪ L{sortCol === "err_l" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
                 {isVis("patch") && <TableHead className="whitespace-nowrap">Patch %</TableHead>}
                 {isVis("detail") && <TableHead className="whitespace-nowrap">Detail</TableHead>}
                 {isVis("rating") && <TableHead className="whitespace-nowrap">⭐</TableHead>}
@@ -314,7 +343,9 @@ const useStoryStatsContent = () => {
                     {isVis("stufe") && <TableCell className="text-xs">{r.difficulty || "–"}</TableCell>}
                     {isVis("pfad") && <TableCell className="text-xs whitespace-nowrap font-mono">{formatPath(r)}</TableCell>}
                     {isVis("emotion") && <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>}
-                    {isVis("fehler") && <TableCell className="text-xs whitespace-nowrap">{renderErrors(r)}</TableCell>}
+                    {isVis("err_h") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_critical ?? 0) > 0 ? "text-destructive font-bold" : "text-muted-foreground")}>{r.checker_critical ?? 0}</TableCell>}
+                    {isVis("err_m") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_medium ?? 0) > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground")}>{r.checker_medium ?? 0}</TableCell>}
+                    {isVis("err_l") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_low ?? 0) > 0 ? "text-foreground" : "text-muted-foreground")}>{r.checker_low ?? 0}</TableCell>}
                     {isVis("patch") && (
                       <TableCell className={cn("text-xs font-medium", patchColor(r.patch_fix_rate != null ? Number(r.patch_fix_rate) : null))}>
                         {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate))}%` : "–"}
