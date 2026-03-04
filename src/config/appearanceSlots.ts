@@ -226,7 +226,6 @@ export const APPEARANCE_SLOTS: AppearanceSlot[] = [
   SLOT_HAIR_COLOR,
   SLOT_HAIR_TYPE,
   SLOT_HAIR_LENGTH,
-  SLOT_HAIR_STYLE,
   SLOT_BODY_TYPE,
   SLOT_FACIAL_HAIR,
 ];
@@ -235,19 +234,12 @@ export const APPEARANCE_SLOTS: AppearanceSlot[] = [
 
 const HAIR_COLOR_AGE_RESTRICTED = new Set(['gray', 'white', 'silver']);
 
-const HAIR_STYLE_BASE = new Set([
-  'loose', 'side_part', 'ponytail', 'braids', 'two_braids', 'bun', 'bob',
-  'afro', 'afro_puffs', 'twist_out', 'buzz_cut',
-]);
-const HAIR_STYLE_CHILD_TEEN_ONLY = new Set(['pigtails']);
-const HAIR_STYLE_ADULT_FEMALE = new Set(['updo', 'low_bun', 'pixie_cut', 'shoulder_layered']);
-const HAIR_STYLE_SENIOR_FEMALE = new Set(['short_permed', 'low_bun_senior']);
-const HAIR_STYLE_ADULT_MALE = new Set(['slicked_back', 'crew_cut', 'comb_over', 'receding', 'bald_top', 'bald']);
-const HAIR_STYLE_SENIOR_MALE = new Set(['thin_side_part', 'white_buzz']);
+/** Hair lengths not available for adult/senior males */
+const HAIR_LENGTH_EXCLUDE_ADULT_MALE = new Set(['very_long']);
 
 /**
  * Returns options for a slot given age category and gender.
- * Applies availableFor, genderFilter, and special rules for hair_color / hair_style.
+ * Applies availableFor, genderFilter, and special rules for hair_color / hair_length.
  */
 export function getFilteredOptions(
   slot: AppearanceSlot,
@@ -271,40 +263,11 @@ export function getFilteredOptions(
     }
   }
 
-  if (slot.key === 'hair_style') {
-    const isChildOrTeen = ageCategory === 'child' || ageCategory === 'teen';
+  if (slot.key === 'hair_length') {
     const isAdultOrSenior = ageCategory === 'adult' || ageCategory === 'senior';
-    const isSenior = ageCategory === 'senior';
-
-    const allowed = new Set(HAIR_STYLE_BASE);
-
-    if (isChildOrTeen) {
-      for (const v of HAIR_STYLE_CHILD_TEEN_ONLY) allowed.add(v);
+    if (isAdultOrSenior && gender === 'male') {
+      options = options.filter((opt) => !HAIR_LENGTH_EXCLUDE_ADULT_MALE.has(opt.value));
     }
-
-    if (isAdultOrSenior) {
-      if (gender === 'female') {
-        for (const v of HAIR_STYLE_ADULT_FEMALE) allowed.add(v);
-        if (isSenior) {
-          for (const v of HAIR_STYLE_SENIOR_FEMALE) allowed.add(v);
-        }
-      } else if (gender === 'male') {
-        for (const v of HAIR_STYLE_ADULT_MALE) allowed.add(v);
-        if (isSenior) {
-          for (const v of HAIR_STYLE_SENIOR_MALE) allowed.add(v);
-        }
-      } else {
-        // gender === null → show all adult/senior options
-        for (const v of HAIR_STYLE_ADULT_FEMALE) allowed.add(v);
-        for (const v of HAIR_STYLE_ADULT_MALE) allowed.add(v);
-        if (isSenior) {
-          for (const v of HAIR_STYLE_SENIOR_FEMALE) allowed.add(v);
-          for (const v of HAIR_STYLE_SENIOR_MALE) allowed.add(v);
-        }
-      }
-    }
-
-    options = options.filter((opt) => allowed.has(opt.value));
   }
 
   return options;
