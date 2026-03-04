@@ -190,14 +190,14 @@ const SLOT_BODY_TYPE: AppearanceSlot = {
   key: 'body_type',
   label: { de: 'Körperstatur', en: 'Body type', fr: 'Corpulence', es: 'Complexión', nl: 'Lichaamsbouw', it: 'Corporatura', bs: 'Građa tijela', tr: 'Vücut tipi', bg: 'Телосложение', ro: 'Constituție', pl: 'Budowa ciała', lt: 'Kūno sudėjimas', hu: 'Testalkat', ca: 'Complexió', sl: 'Postava', pt: 'Tipo físico', sk: 'Postava', ru: 'Телосложение', uk: 'Статура' },
   category: 'body',
-  pickerType: 'button_group',
+  pickerType: 'icon_carousel',
   phase: 1,
   required: false,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
-    { value: 'slim', label: { de: 'Schlank', en: 'Slim', fr: 'Mince', es: 'Delgado', nl: 'Slank', it: 'Magro', bs: 'Vitka', tr: 'İnce', bg: 'Слаба', ro: 'Slab', pl: 'Szczupła', lt: 'Liekna', hu: 'Vékony', ca: 'Prim', sl: 'Vitek', pt: 'Magro', sk: 'Štíhla', ru: 'Худое', uk: 'Худорлява' }, anchorFragment: 'slim build' },
-    { value: 'average', label: { de: 'Normal', en: 'Average', fr: 'Moyen', es: 'Normal', nl: 'Gemiddeld', it: 'Medio', bs: 'Prosječna', tr: 'Orta', bg: 'Средна', ro: 'Mediu', pl: 'Przeciętna', lt: 'Vidutinė', hu: 'Átlagos', ca: 'Mitjà', sl: 'Povprečen', pt: 'Médio', sk: 'Priemerná', ru: 'Среднее', uk: 'Середня' }, anchorFragment: 'average build' },
-    { value: 'stocky', label: { de: 'Kräftig', en: 'Stocky', fr: 'Robuste', es: 'Robusto', nl: 'Stevig', it: 'Robusto', bs: 'Krupna', tr: 'Tıknaz', bg: 'Набита', ro: 'Robust', pl: 'Krępa', lt: 'Stipri', hu: 'Zömök', ca: 'Robust', sl: 'Čokat', pt: 'Robusto', sk: 'Statná', ru: 'Крепкое', uk: 'Кремезна' }, anchorFragment: 'stocky build' },
+    { value: 'slim', label: { de: 'Schlank', en: 'Slim', fr: 'Mince', es: 'Delgado', nl: 'Slank', it: 'Magro', bs: 'Vitka', tr: 'İnce', bg: 'Слаба', ro: 'Slab', pl: 'Szczupła', lt: 'Liekna', hu: 'Vékony', ca: 'Prim', sl: 'Vitek', pt: 'Magro', sk: 'Štíhla', ru: 'Худое', uk: 'Худорлява' }, icon: 'body-slim.png', anchorFragment: 'slim build' },
+    { value: 'average', label: { de: 'Normal', en: 'Average', fr: 'Moyen', es: 'Normal', nl: 'Gemiddeld', it: 'Medio', bs: 'Prosječna', tr: 'Orta', bg: 'Средна', ro: 'Mediu', pl: 'Przeciętna', lt: 'Vidutinė', hu: 'Átlagos', ca: 'Mitjà', sl: 'Povprečen', pt: 'Médio', sk: 'Priemerná', ru: 'Среднее', uk: 'Середня' }, icon: 'body-average.png', anchorFragment: 'average build' },
+    { value: 'stocky', label: { de: 'Kräftig', en: 'Stocky', fr: 'Robuste', es: 'Robusto', nl: 'Stevig', it: 'Robusto', bs: 'Krupna', tr: 'Tıknaz', bg: 'Набита', ro: 'Robust', pl: 'Krępa', lt: 'Stipri', hu: 'Zömök', ca: 'Robust', sl: 'Čokat', pt: 'Robusto', sk: 'Statná', ru: 'Крепкое', uk: 'Кремезна' }, icon: 'body-stocky.png', anchorFragment: 'stocky build' },
   ],
 };
 
@@ -205,17 +205,17 @@ const SLOT_FACIAL_HAIR: AppearanceSlot = {
   key: 'facial_hair',
   label: { de: 'Bart', en: 'Facial hair', fr: 'Barbe', es: 'Barba', nl: 'Baard', it: 'Barba', bs: 'Brada', tr: 'Sakal', bg: 'Брада', ro: 'Barbă', pl: 'Zarost', lt: 'Barzda', hu: 'Szakáll', ca: 'Barba', sl: 'Brada', pt: 'Barba', sk: 'Fúzy', ru: 'Борода', uk: 'Борода' },
   category: 'details',
-  pickerType: 'button_group',
+  pickerType: 'icon_carousel',
   phase: 1,
   required: false,
   availableFor: ['adult', 'senior'],
   genderFilter: ['male'],
   options: [
-    { value: 'none', label: { de: 'Kein Bart', en: 'None', fr: 'Aucune', es: 'Ninguna', nl: 'Geen', it: 'Nessuna', bs: 'Bez brade', tr: 'Yok', bg: 'Без', ro: 'Fără', pl: 'Brak', lt: 'Nėra', hu: 'Nincs', ca: 'Cap', sl: 'Brez', pt: 'Nenhuma', sk: 'Žiadne', ru: 'Нет', uk: 'Немає' }, anchorFragment: '' },
-    { value: 'stubble', label: { de: 'Dreitagebart', en: 'Stubble', fr: 'Barbe de 3 jours', es: 'Barba corta', nl: 'Stoppels', it: 'Barba corta', bs: 'Trodnevna', tr: 'Sakal tıraşı', bg: 'Бръснат', ro: 'Barbă scurtă', pl: 'Trzydniowy', lt: 'Šeriai', hu: 'Borosta', ca: 'Barba curta', sl: 'Tridnevna', pt: 'Barba curta', sk: 'Strnisko', ru: 'Щетина', uk: 'Щетина' }, anchorFragment: 'with stubble' },
-    { value: 'short_beard', label: { de: 'Kurzbart', en: 'Short beard', fr: 'Barbe courte', es: 'Barba corta', nl: 'Korte baard', it: 'Barba corta', bs: 'Kratka brada', tr: 'Kısa sakal', bg: 'Къса брада', ro: 'Barbă scurtă', pl: 'Krótka broda', lt: 'Trumpa barzda', hu: 'Rövid szakáll', ca: 'Barba curta', sl: 'Kratka brada', pt: 'Barba curta', sk: 'Krátka brada', ru: 'Короткая борода', uk: 'Коротка борода' }, anchorFragment: 'with a short beard' },
-    { value: 'full_beard', label: { de: 'Vollbart', en: 'Full beard', fr: 'Barbe pleine', es: 'Barba completa', nl: 'Volle baard', it: 'Barba folta', bs: 'Puna brada', tr: 'Tam sakal', bg: 'Гъста брада', ro: 'Barbă plină', pl: 'Pełna broda', lt: 'Pilna barzda', hu: 'Teljes szakáll', ca: 'Barba plena', sl: 'Polna brada', pt: 'Barba cheia', sk: 'Plná brada', ru: 'Полная борода', uk: 'Повна борода' }, anchorFragment: 'with a full beard' },
-    { value: 'mustache', label: { de: 'Schnurrbart', en: 'Mustache', fr: 'Moustache', es: 'Bigote', nl: 'Snor', it: 'Baffi', bs: 'Brkovi', tr: 'Bıyık', bg: 'Мустак', ro: 'Mustață', pl: 'Wąsy', lt: 'Ūsai', hu: 'Bajusz', ca: 'Bigoti', sl: 'Brki', pt: 'Bigode', sk: 'Fúzy', ru: 'Усы', uk: 'Вуса' }, anchorFragment: 'with a mustache' },
+    { value: 'none', label: { de: 'Kein Bart', en: 'None', fr: 'Aucune', es: 'Ninguna', nl: 'Geen', it: 'Nessuna', bs: 'Bez brade', tr: 'Yok', bg: 'Без', ro: 'Fără', pl: 'Brak', lt: 'Nėra', hu: 'Nincs', ca: 'Cap', sl: 'Brez', pt: 'Nenhuma', sk: 'Žiadne', ru: 'Нет', uk: 'Немає' }, icon: 'beard-none.png', anchorFragment: '' },
+    { value: 'stubble', label: { de: 'Dreitagebart', en: 'Stubble', fr: 'Barbe de 3 jours', es: 'Barba corta', nl: 'Stoppels', it: 'Barba corta', bs: 'Trodnevna', tr: 'Sakal tıraşı', bg: 'Бръснат', ro: 'Barbă scurtă', pl: 'Trzydniowy', lt: 'Šeriai', hu: 'Borosta', ca: 'Barba curta', sl: 'Tridnevna', pt: 'Barba curta', sk: 'Strnisko', ru: 'Щетина', uk: 'Щетина' }, icon: 'beard-stubble.png', anchorFragment: 'with stubble' },
+    { value: 'short_beard', label: { de: 'Kurzbart', en: 'Short beard', fr: 'Barbe courte', es: 'Barba corta', nl: 'Korte baard', it: 'Barba corta', bs: 'Kratka brada', tr: 'Kısa sakal', bg: 'Къса брада', ro: 'Barbă scurtă', pl: 'Krótka broda', lt: 'Trumpa barzda', hu: 'Rövid szakáll', ca: 'Barba curta', sl: 'Kratka brada', pt: 'Barba curta', sk: 'Krátka brada', ru: 'Короткая борода', uk: 'Коротка борода' }, icon: 'beard-short.png', anchorFragment: 'with a short beard' },
+    { value: 'full_beard', label: { de: 'Vollbart', en: 'Full beard', fr: 'Barbe pleine', es: 'Barba completa', nl: 'Volle baard', it: 'Barba folta', bs: 'Puna brada', tr: 'Tam sakal', bg: 'Гъста брада', ro: 'Barbă plină', pl: 'Pełna broda', lt: 'Pilna barzda', hu: 'Teljes szakáll', ca: 'Barba plena', sl: 'Polna brada', pt: 'Barba cheia', sk: 'Plná brada', ru: 'Полная борода', uk: 'Повна борода' }, icon: 'beard-full.png', anchorFragment: 'with a full beard' },
+    { value: 'mustache', label: { de: 'Schnurrbart', en: 'Mustache', fr: 'Moustache', es: 'Bigote', nl: 'Snor', it: 'Baffi', bs: 'Brkovi', tr: 'Bıyık', bg: 'Мустак', ro: 'Mustață', pl: 'Wąsy', lt: 'Ūsai', hu: 'Bajusz', ca: 'Bigoti', sl: 'Brki', pt: 'Bigode', sk: 'Fúzy', ru: 'Усы', uk: 'Вуса' }, icon: 'beard-mustache.png', anchorFragment: 'with a mustache' },
   ],
 };
 
