@@ -83,7 +83,7 @@ No markdown, no explanation. Array length must be ${batch.length}.`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 4000, responseMimeType: 'application/json' },
+            generationConfig: { temperature: 0.3, maxOutputTokens: 4000 },
           }),
         }
       );
@@ -95,7 +95,7 @@ No markdown, no explanation. Array length must be ${batch.length}.`;
 
       const data = await response.json();
       let content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      content = content.trim();
+      content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 
       let translations: Record<string, string>[];
       try {

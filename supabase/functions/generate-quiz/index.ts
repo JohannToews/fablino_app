@@ -154,7 +154,6 @@ async function makeGeminiRequest(apiKey: string, systemPrompt: string, userPromp
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 500,
-            responseMimeType: 'application/json',
           },
         }),
       });
@@ -220,7 +219,7 @@ Deno.serve(async (req) => {
       const rawText = await makeGeminiRequest(GEMINI_API_KEY, config.systemPrompt, userPrompt);
       
       try {
-        const cleanJson = rawText.trim();
+        const cleanJson = rawText.replace(/```json\n?|\n?```/g, '').trim();
         result = JSON.parse(cleanJson);
       } catch {
         console.error('Failed to parse JSON:', rawText);

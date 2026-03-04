@@ -139,7 +139,6 @@ IMPORTANT: Mélange la position de la bonne réponse dans les options (pas toujo
           generationConfig: {
             temperature: 0.5,
             maxOutputTokens: 800,
-            responseMimeType: 'application/json',
           },
         }),
       }
@@ -159,7 +158,7 @@ IMPORTANT: Mélange la position de la bonne réponse dans les options (pas toujo
     
     let result;
     try {
-      const cleanJson = rawText.trim();
+      const cleanJson = rawText.replace(/```json\n?|\n?```/g, '').trim();
       result = JSON.parse(cleanJson);
     } catch {
       console.error('Failed to parse JSON:', rawText);

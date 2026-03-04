@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           systemInstruction: { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
+          generationConfig: { temperature: 0.3 },
         }),
       });
 
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const parsed = safeParseJson(text); // safeParseJson still handles edge cases
+      const parsed = safeParseJson(text);
       if (!parsed) {
         errors.push(`Story ${story.id}: Invalid JSON from Gemini`);
         console.error("[generate-inspiration-prompts] Invalid JSON, first 300 chars:", text.slice(0, 300));
