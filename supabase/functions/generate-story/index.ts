@@ -295,6 +295,7 @@ interface SeriesConsistencyError {
   subcategory: CheckerSubcategory;
   severity: 'CRITICAL' | 'MEDIUM' | 'LOW';
   flagged_segment: FlaggedSegment;
+  path_violation: boolean;
   original: string;
   problem: string;
   fix: string;
@@ -466,10 +467,32 @@ FLAGGED_SEGMENT: Indicate where in the story the error occurs:
 - "ending": the final third (climax, resolution)
 - "unspecified": if the error spans multiple segments or cannot be localized
 
+PATH CONFORMANCE CHECK:
+If a "Path: A#->M#->E#" line is provided in the user message, additionally verify:
+- A1 (In Medias Res): Story opens with immediate action, no slow setup.
+- A2 (Mystery Hook): A clear mystery or unanswered question appears in the first 3 sentences.
+- A3 (Character Moment): Protagonist is shown in a personal moment before any conflict.
+- A4 (World Building): A fascinating world with its own rules is introduced first.
+- A5 (Dialogue Hook): Story opens with a lively conversation that sets the goal.
+- A6 (Ordinary World): A normal day is depicted before anything unusual happens.
+- M1 (Escalation): Conflict escalates through at least 2 distinct steps of increasing difficulty.
+- M2 (Mystery Layers): 1-2 new clues are added; the mystery remains unsolved at mid-story.
+- M3 (Relationship Development): Characters learn about each other, overcome misunderstandings.
+- M4 (Parallel Plots): Two storylines develop separately, showing different perspectives.
+- M5 (Countdown): Time pressure builds, each attempt costs precious time.
+- M6 (Twist Chain): Multiple reversals, assumptions proven wrong, new facts emerge.
+- E1 (Classic): Solution uses an element planted in A or M; satisfying resolution.
+- E2 (Twist): The ending reveals something unexpected, but logical in retrospect.
+- E3 (Open): Story ends with a question to the reader, encouraging reflection.
+- E5 (Transformed Return): Character returns changed; growth emerged from M experiences.
+- E6 (Cliffhanger): Only for series episodes 1-4; story ends with unresolved tension.
+Path violations use category LOGIC, subcategory SETUP_PAYOFF, severity MEDIUM.
+Set "path_violation": true on any error that is a path conformance violation.
+
 Respond ONLY with this JSON:
 {"errors_found": boolean,
  "summary": "Brief summary in ${storyLanguage}",
- "errors": [{"category": "LOGIC|GRAMMAR|LANGUAGE|CHARACTER|CONTINUITY|EPISODE_FUNCTION|SIGNATURE", "subcategory": "RESOLUTION|MAGIC_RULES|KNOWLEDGE|CAUSE_EFFECT|CHARACTER_EXIT|OBJECT_TRACKING|SETUP_PAYOFF|OTHER", "severity": "CRITICAL|MEDIUM|LOW", "flagged_segment": "beginning|middle|ending|unspecified", "original": "exact quote from text", "problem": "what is wrong", "fix": "suggested correction"}],
+ "errors": [{"category": "LOGIC|GRAMMAR|LANGUAGE|CHARACTER|CONTINUITY|EPISODE_FUNCTION|SIGNATURE", "subcategory": "RESOLUTION|MAGIC_RULES|KNOWLEDGE|CAUSE_EFFECT|CHARACTER_EXIT|OBJECT_TRACKING|SETUP_PAYOFF|OTHER", "severity": "CRITICAL|MEDIUM|LOW", "flagged_segment": "beginning|middle|ending|unspecified", "path_violation": false, "original": "exact quote from text", "problem": "what is wrong", "fix": "suggested correction"}],
  "stats": {"critical": 0, "medium": 0, "low": 0}}`;
 }
 
@@ -481,10 +504,12 @@ async function performSeriesConsistencyCheck(
   apiKey: string,
   story: { title: string; content: string },
   systemPrompt: string,
+  pathCode?: string | null,
 ): Promise<SeriesConsistencyCheckResult> {
+  const pathLine = pathCode ? `Path: ${pathCode}\n\n` : '';
   const userPrompt = `CHECK THIS EPISODE:
 
-TITLE: ${story.title}
+${pathLine}TITLE: ${story.title}
 
 CONTENT:
 ${story.content}
@@ -509,6 +534,7 @@ Respond ONLY with the JSON object as specified.`;
           subcategory: (VALID_SUBCATEGORIES.has(e.subcategory) ? e.subcategory : 'OTHER') as CheckerSubcategory,
           severity: e.severity || 'LOW',
           flagged_segment: (VALID_SEGMENTS.has(e.flagged_segment) ? e.flagged_segment : 'unspecified') as FlaggedSegment,
+          path_violation: e.path_violation === true,
           original: e.original || '',
           problem: e.problem || '',
           fix: e.fix || '',
@@ -545,7 +571,7 @@ async function correctStoryFromSeriesErrors(
   targetLanguage: string,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   const errorList = errors
-    .map((e, i) => `${i + 1}. [${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}] "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`)
+    .map((e, i) => `${i + 1}. [${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}${e.path_violation ? '/PATH' : ''}] "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`)
     .join('\n');
 
   const continuityRef = continuityState
@@ -1746,6 +1772,7 @@ Deno.serve(async (req) => {
     let learningThemeApplied: string | null = null;
     let emotionFlowResult: EmotionFlowResult | null = null;
     let promptWarnings: string[] = [];
+    let selectedPathCode: string | null = null;
 
     // Resolve the effective story language (new param > textLanguage mapping > default)
     const effectiveStoryLanguage = storyLanguageParam
@@ -2168,6 +2195,7 @@ Deno.serve(async (req) => {
       const promptResult = await buildStoryPrompt(storyRequest, supabase);
       userMessageFinal = promptResult.prompt;
       promptWarnings = promptResult.warnings;
+      selectedPathCode = promptResult.selectedPath?.code || null;
       if (promptWarnings.length > 0) {
         console.warn(`[generate-story] Prompt builder warnings: ${promptWarnings.join('; ')}`);
       }
@@ -2727,17 +2755,17 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     // ── Block 2.3c: Robust parsing of new classification fields ──
     // Clamp structure values to match database CHECK constraints:
-    // - beginning: 1-5 (A1-A5)
-    // - middle: 1-6 (M1-M6, includes M6 Wendepunkt-Kette)
-    // - ending: 1-5 (E1-E5)
+    // - beginning: 1-6 (A1-A6)
+    // - middle: 1-6 (M1-M6)
+    // - ending: 1-6 (E1-E6)
     const structureBeginning = story.structure_beginning 
-      ? Math.min(5, Math.max(1, parseInt(String(story.structure_beginning).replace(/[^0-9]/g, '')) || 1))
+      ? Math.min(6, Math.max(1, parseInt(String(story.structure_beginning).replace(/[^0-9]/g, '')) || 1))
       : null;
     const structureMiddle = story.structure_middle 
       ? Math.min(6, Math.max(1, parseInt(String(story.structure_middle).replace(/[^0-9]/g, '')) || 1))
       : null;
     const structureEnding = story.structure_ending 
-      ? Math.min(5, Math.max(1, parseInt(String(story.structure_ending).replace(/[^0-9]/g, '')) || 1))
+      ? Math.min(6, Math.max(1, parseInt(String(story.structure_ending).replace(/[^0-9]/g, '')) || 1))
       : null;
     const emotionalColoring = story.emotional_coloring 
       ? String(story.emotional_coloring).match(/EM-[JTHWDC]/)?.[0] || null 
@@ -3378,6 +3406,7 @@ Respond with ONLY valid JSON, no markdown:
           LOVABLE_API_KEY,
           story,
           seriesCheckPrompt,
+          selectedPathCode,
         );
 
         console.log(`[Phase4] Check result: errors_found=${checkResult.errors_found}, critical=${checkResult.stats.critical}, medium=${checkResult.stats.medium}, low=${checkResult.stats.low}`);
@@ -3395,7 +3424,7 @@ Respond with ONLY valid JSON, no markdown:
           checkerSubcategories = [...new Set(checkResult.errors.map(e => `${e.category}:${e.subcategory}`))];
 
           allIssueDetails.push(
-            ...checkResult.errors.map(e => `[${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}] ${e.problem}: "${e.original}" → ${e.fix}`)
+            ...checkResult.errors.map(e => `[${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}${e.path_violation ? '/PATH' : ''}] ${e.problem}: "${e.original}" → ${e.fix}`)
           );
 
           // Group errors by severity tier
@@ -3425,6 +3454,7 @@ Respond with ONLY valid JSON, no markdown:
 
           // ── Tier 2: Targeted re-check for CRITICAL errors ──
           let criticalFixed = 0;
+          let criticalRemaining = 0;
           for (const err of criticalErrors) {
             const fixed = patchApplied
               ? await targetedReCheck(LOVABLE_API_KEY, story.content, err)
@@ -3433,32 +3463,45 @@ Respond with ONLY valid JSON, no markdown:
               criticalFixed++;
               console.log(`[Phase4] CRITICAL re-check PASSED: ${err.category}:${err.subcategory}`);
             } else {
+              criticalRemaining++;
               console.log(`[Phase4] CRITICAL re-check FAILED: ${err.category}:${err.subcategory} — patch did not fix`);
             }
           }
 
-          if (criticalErrors.length > 0 && criticalFixed < criticalErrors.length) {
+          if (criticalRemaining > 0) {
             criticalPatchFailed = true;
-            console.log(`[Phase4] critical_patch_failed=true (${criticalFixed}/${criticalErrors.length} fixed)`);
+            console.log(`[Phase4] critical_patch_failed=true (${criticalRemaining}/${criticalErrors.length} remaining)`);
           }
 
           // ── Tier 3: Targeted re-check for MEDIUM errors (single pass) ──
           let mediumFixed = 0;
+          let mediumRemaining = 0;
           for (const err of mediumErrors) {
             const fixed = patchApplied
               ? await targetedReCheck(LOVABLE_API_KEY, story.content, err)
               : false;
-            if (fixed) mediumFixed++;
+            if (fixed) {
+              mediumFixed++;
+            } else {
+              mediumRemaining++;
+            }
           }
           if (mediumErrors.length > 0) {
-            console.log(`[Phase4] MEDIUM re-check: ${mediumFixed}/${mediumErrors.length} fixed`);
+            console.log(`[Phase4] MEDIUM re-check: ${mediumFixed}/${mediumErrors.length} fixed, ${mediumRemaining} remaining`);
           }
 
           // LOW errors: assume patched if content changed, no re-check
           const lowFixed = patchApplied ? lowErrors.length : 0;
+          const lowRemaining = patchApplied ? 0 : lowErrors.length;
 
           totalIssuesCorrected = criticalFixed + mediumFixed + lowFixed;
-          console.log(`[Phase4] Final: ${totalIssuesCorrected}/${totalIssuesFound} issues corrected`);
+
+          // Update checker counts to reflect REMAINING (not original)
+          checkerCritical = criticalRemaining;
+          checkerMedium = mediumRemaining;
+          checkerLow = lowRemaining;
+
+          console.log(`[Phase4] Final: ${totalIssuesCorrected}/${totalIssuesFound} fixed, remaining: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L`);
         }
       } else {
         // ═══ STANDARD PATH: existing single-story consistency check ═══
@@ -3528,24 +3571,29 @@ Respond with ONLY valid JSON, no markdown:
         console.error("Error saving consistency check results:", dbErr);
       }
 
-      // Write checker metrics to stories table
+      // Write checker metrics to stories table (single update at end of pipeline)
       if (storyId) {
         try {
+          // patch_fix_rate = corrected / found, as NUMERIC(4,3)
+          // 0.000 if no errors found, null only if never checked
+          const issuesRemaining = checkerCritical + checkerMedium + checkerLow;
           const patchFixRate = totalIssuesFound > 0
             ? Math.round((totalIssuesCorrected / totalIssuesFound) * 1000) / 1000
-            : null;
+            : 0.000;
+
           await supabase
             .from('stories')
             .update({
-              checker_critical: checkerCritical,
-              checker_medium: checkerMedium,
-              checker_low: checkerLow,
+              checker_critical: checkerCritical,      // remaining after patches
+              checker_medium: checkerMedium,          // remaining after patches
+              checker_low: checkerLow,                // remaining after patches
               checker_subcategories: checkerSubcategories,
               critical_patch_failed: criticalPatchFailed,
               patch_fix_rate: patchFixRate,
             })
             .eq('id', storyId);
-          console.log(`[generate-story] Stories checker metrics written: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L, fix_rate=${patchFixRate}, critical_failed=${criticalPatchFailed}`);
+
+          console.log(`[generate-story] Stories checker metrics: found=${totalIssuesFound}, fixed=${totalIssuesCorrected}, remaining=${issuesRemaining} (${checkerCritical}C/${checkerMedium}M/${checkerLow}L), fix_rate=${patchFixRate}, critical_failed=${criticalPatchFailed}`);
         } catch (metricsErr) {
           console.warn('[generate-story] Stories checker metrics write failed (non-fatal):', metricsErr);
         }
@@ -4260,7 +4308,7 @@ Respond with ONLY valid JSON, no markdown:
     console.log(`Final story delivered with ${finalWordCount} words (min: ${minWordCount})`);
 
     console.log(`Story generated with ${story.vocabulary?.length || 0} vocabulary words`);
-    console.log(`Structure classification: beginning=${structureBeginning}, middle=${structureMiddle}, ending=${structureEnding}`);
+    console.log(`Structure classification: beginning=${structureBeginning}, middle=${structureMiddle}, ending=${structureEnding}, path=${selectedPathCode}`);
     console.log(`Emotional coloring: ${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}`);
 
     // ── DEBUG: Log final series values before response ──
@@ -4357,6 +4405,8 @@ Respond with ONLY valid JSON, no markdown:
       branch_options: branchOptionsParsed ?? null,
       // Modus B: Pass series_mode back so frontend can store it on the new episode
       series_mode: seriesMode || null,
+      // Story Path — selected narrative structure path
+      story_path_code: selectedPathCode,
       // Story Subtype (Themenvariation) — for frontend reference
       story_subtype: selectedSubtype ? {
         subtypeKey: selectedSubtype.subtypeKey,

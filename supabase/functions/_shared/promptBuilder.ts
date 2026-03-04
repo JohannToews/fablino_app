@@ -546,17 +546,66 @@ function classifyUserInput(text: string | undefined): UserInputLevel {
 
 // ─── Variety Block Builder ──────────────────────────────────────
 
-function buildVarietyBlock(recentStories: any[], headers: Record<string, string>): string {
-  if (recentStories.length === 0) return '';
+function ageToAgeGroup(age: number): AgeGroup {
+  if (age <= 6) return 'CE1';
+  if (age <= 8) return 'CE2';
+  if (age <= 10) return 'CM1';
+  return 'CM2';
+}
 
+interface VarietyBlockResult {
+  block: string;
+  selectedPath: StoryPath | null;
+}
+
+async function buildVarietyBlock(
+  recentStories: any[],
+  headers: Record<string, string>,
+  supabaseClient: any,
+  kidAge: number,
+  kidProfileId: string,
+): Promise<VarietyBlockResult> {
   const lines: string[] = [];
+  let selectedPath: StoryPath | null = null;
 
-  // Last 3 structure combinations → "avoid these"
-  const recentStructures = recentStories.slice(0, 3)
+  // Derive recent path codes for avoidance
+  const recentCodes = recentStories.slice(0, 3)
     .filter(s => s.structure_beginning && s.structure_middle && s.structure_ending)
-    .map(s => `A${s.structure_beginning}-M${s.structure_middle}-E${s.structure_ending}`);
-  if (recentStructures.length > 0) {
-    lines.push(`Avoid / Vermeide: ${recentStructures.join(', ')}`);
+    .map(s => `A${s.structure_beginning}->M${s.structure_middle}->E${s.structure_ending}`);
+
+  // Derive humor hint from recent stories
+  const recentHumor = recentStories.slice(0, 3).map(s => s.humor_level).filter(Boolean);
+  const avgHumor = recentHumor.length > 0
+    ? recentHumor.reduce((a: number, b: number) => a + b, 0) / recentHumor.length
+    : undefined;
+
+  // Get total story count for this child (for onboarding phase detection)
+  let storyCount = recentStories.length;
+  try {
+    const { count } = await supabaseClient
+      .from('stories')
+      .select('id', { count: 'exact', head: true })
+      .eq('kid_profile_id', kidProfileId);
+    if (typeof count === 'number') storyCount = count;
+  } catch { /* fall back to recentStories.length */ }
+
+  // Select next narrative path
+  const ageGroup = ageToAgeGroup(kidAge);
+  try {
+    selectedPath = await selectNextPath(
+      supabaseClient,
+      ageGroup,
+      storyCount,
+      recentCodes,
+      avgHumor != null ? Math.round(avgHumor) : undefined,
+    );
+    lines.push(`Structure: ${selectedPath.code}`);
+    lines.push(selectedPath.writing_instructions);
+  } catch (err) {
+    console.warn('[buildVarietyBlock] selectNextPath failed, using avoid-list fallback:', err);
+    if (recentCodes.length > 0) {
+      lines.push(`Avoid / Vermeide: ${recentCodes.join(', ')}`);
+    }
   }
 
   // Last 5 emotional colorings → identify dominant
@@ -567,16 +616,27 @@ function buildVarietyBlock(recentStories: any[], headers: Record<string, string>
   recentEmotions.forEach(e => { emotionCounts[e] = (emotionCounts[e] || 0) + 1; });
   const dominant = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1])[0];
   if (dominant && dominant[1] >= 2) {
-    lines.push(`Recent dominant: ${dominant[0]} → choose a different primary emotion.`);
+    // EM-C (Courage/Mut) tends to produce repetitive action stories early on —
+    // override with a more varied emotion during the first 20 stories
+    if (dominant[0] === 'EM-C' && storyCount <= 20) {
+      const alternatives = ['EM-W', 'EM-T', 'EM-D'];
+      const replacement = alternatives[Math.floor(Math.random() * alternatives.length)];
+      console.log(`[buildVarietyBlock] EM-C override: dominant was EM-C at storyCount=${storyCount}, replacing with ${replacement}`);
+      lines.push(`EMOTIONAL DIRECTIVE: The story MUST use emotional coloring ${replacement}. Do NOT use EM-C (Courage/Mut).`);
+    } else {
+      lines.push(`Recent dominant: ${dominant[0]} → choose a different primary emotion.`);
+    }
   }
 
   // Humor-level variation
-  const recentHumor = recentStories.slice(0, 3).map(s => s.humor_level).filter(Boolean);
-  const avgHumor = recentHumor.length > 0 ? recentHumor.reduce((a: number, b: number) => a + b, 0) / recentHumor.length : 0;
-  if (avgHumor > 3) {
-    lines.push('Recent stories were very humorous. Set humor_level to 1-2 this time.');
-  } else if (avgHumor < 2 && recentHumor.length >= 2) {
-    lines.push('Recent stories had little humor. Try humor_level 3-4 this time.');
+  if (storyCount <= 10 && (avgHumor == null || recentHumor.length === 0)) {
+    lines.push('Set humor_level to exactly 2 for this story.');
+  } else if (avgHumor != null) {
+    if (avgHumor > 3) {
+      lines.push('Recent stories were very humorous. Set humor_level to 1-2 this time.');
+    } else if (avgHumor < 2 && recentHumor.length >= 2) {
+      lines.push('Recent stories had little humor. Try humor_level 3-4 this time.');
+    }
   }
 
   // Theme repetition
@@ -602,7 +662,8 @@ function buildVarietyBlock(recentStories: any[], headers: Record<string, string>
     '- Settings must be CONCRETE and ATMOSPHERIC (e.g., "a floating library above a sleeping volcano" not "a magical forest")',
   );
 
-  return lines.length > 0 ? `## ${headers.variety}\n${lines.join('\n')}` : '';
+  const block = lines.length > 0 ? `## ${headers.variety}\n${lines.join('\n')}` : '';
+  return { block, selectedPath };
 }
 
 // ─── Phase 2: Episode Configuration (5-episode linear series) ───
@@ -1173,6 +1234,7 @@ function buildSeriesContextBlock(request: StoryRequest): string {
 export interface PromptBuildResult {
   prompt: string;
   warnings: string[];
+  selectedPath: StoryPath | null;
 }
 
 /** Build appearance description in the story language for the CHILD section (text-image consistency). */
@@ -1495,7 +1557,13 @@ export async function buildStoryPrompt(
   }
 
   // ── Build variety block ──
-  const varietyBlock = buildVarietyBlock(recentStories || [], headers);
+  const { block: varietyBlock, selectedPath } = await buildVarietyBlock(
+    recentStories || [],
+    headers,
+    supabaseClient,
+    request.kid_profile.age,
+    request.kid_profile.id,
+  );
 
   // ── Build the prompt sections ──
   const sections: string[] = [];
@@ -2084,6 +2152,24 @@ export async function buildStoryPrompt(
 
   sections.push(storytellingRulesBlock[lang] || storytellingRulesBlock.en);
 
+  // STRUCTURE DIRECTIVE (from story_paths — tells LLM how to structure A/M/E)
+  if (selectedPath) {
+    sections.push([
+      `## STRUCTURE DIRECTIVE`,
+      `Structure: ${selectedPath.code}`,
+      ``,
+      `Follow these rules strictly:`,
+      `- A (Beginning type) defines how the story MUST open`,
+      `- M (Middle type) defines the conflict development pattern`,
+      `- E (Ending type) defines how the resolution must work`,
+      `- The writing instructions below give concrete requirements for each section`,
+      `- Never deviate from the specified structure`,
+      `- Every element needed for E must be planted in A or M`,
+      ``,
+      selectedPath.writing_instructions,
+    ].join('\n'));
+  }
+
   // SPECIAL EFFECTS (only if non-empty)
   if (request.special_abilities && request.special_abilities.length > 0) {
     const abilityDescs = SPECIAL_ABILITIES_DESC[lang] || SPECIAL_ABILITIES_DESC['en'];
@@ -2327,7 +2413,7 @@ You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must pro
   // Hard word-count constraint (last thing the model reads)
   sections.push(`CRITICAL CONSTRAINT: The story MUST contain between ${minWords} and ${maxWords} words. This is a hard limit. Count your words carefully. A story that exceeds ${maxWords} words is a failure and will be rejected.`);
 
-  return { prompt: sections.join('\n\n'), warnings };
+  return { prompt: sections.join('\n\n'), warnings, selectedPath };
 }
 
 /**
@@ -2353,4 +2439,116 @@ export function injectLearningTheme(
   }
   // Fallback: append
   return `${prompt}\n\n${learningSection}`;
+}
+
+// ═══ Story Path Selection ═══
+
+export interface StoryPath {
+  id: string;
+  code: string;
+  label: string;
+  min_age_group: string;
+  hook_score: number | null;
+  is_onboarding: boolean;
+  humor_range_min: number;
+  humor_range_max: number;
+  writing_instructions: string;
+}
+
+const AGE_GROUP_ORDER = ['CE1', 'CE2', 'CM1', 'CM2'] as const;
+type AgeGroup = typeof AGE_GROUP_ORDER[number];
+
+const SAFETY_PATH_CODE = 'A3->M1->E1';
+
+export async function selectNextPath(
+  supabaseClient: any,
+  ageGroup: AgeGroup,
+  storyCount: number,
+  recentCodes: string[],
+  humorLevel?: number,
+): Promise<StoryPath> {
+  const ageIdx = AGE_GROUP_ORDER.indexOf(ageGroup);
+  const eligibleAgeGroups = AGE_GROUP_ORDER.slice(0, ageIdx + 1);
+
+  let query = supabaseClient
+    .from('story_paths')
+    .select('id, code, label, min_age_group, hook_score, is_onboarding, humor_range_min, humor_range_max, writing_instructions')
+    .eq('is_active', true)
+    .in('min_age_group', eligibleAgeGroups)
+    .order('hook_score', { ascending: false, nullsFirst: false });
+
+  // Phase filtering by storyCount
+  if (storyCount <= 5) {
+    query = query.eq('is_onboarding', true);
+  } else if (storyCount <= 10) {
+    // Prefer onboarding but allow all — fetch all, sort later
+  } else {
+    // storyCount 11+: all active paths for age group (no filter needed)
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data || data.length === 0) {
+    console.warn('[selectNextPath] Query failed or empty, using safety path:', error?.message);
+    return safetyPath(supabaseClient);
+  }
+
+  let candidates: StoryPath[] = data;
+
+  // Stories 1-5: always pick top onboarding path, repetition is allowed
+  if (storyCount <= 5) {
+    return candidates[0]; // already sorted by hook_score DESC, filtered to is_onboarding=true
+  }
+
+  // Exclude recently used paths (only after onboarding phase 1)
+  if (recentCodes.length > 0) {
+    const recentSet = new Set(recentCodes);
+    const filtered = candidates.filter(p => !recentSet.has(p.code));
+    if (filtered.length > 0) candidates = filtered;
+  }
+
+  // Humor compatibility filter
+  if (humorLevel != null) {
+    const humorFiltered = candidates.filter(
+      p => p.humor_range_min <= humorLevel && humorLevel <= p.humor_range_max
+    );
+    if (humorFiltered.length > 0) candidates = humorFiltered;
+  }
+
+  // For storyCount 6-10: sort onboarding paths first, then by hook_score
+  if (storyCount >= 6 && storyCount <= 10) {
+    candidates.sort((a, b) => {
+      if (a.is_onboarding !== b.is_onboarding) return a.is_onboarding ? -1 : 1;
+      return (b.hook_score ?? 0) - (a.hook_score ?? 0);
+    });
+  }
+
+  if (candidates.length === 0) {
+    console.warn('[selectNextPath] All candidates filtered out, using safety path');
+    return safetyPath(supabaseClient);
+  }
+
+  return candidates[0];
+}
+
+async function safetyPath(supabaseClient: any): Promise<StoryPath> {
+  const { data } = await supabaseClient
+    .from('story_paths')
+    .select('id, code, label, min_age_group, hook_score, is_onboarding, humor_range_min, humor_range_max, writing_instructions')
+    .eq('code', SAFETY_PATH_CODE)
+    .maybeSingle();
+
+  if (data) return data;
+
+  return {
+    id: '00000000-0000-0000-0000-000000000000',
+    code: SAFETY_PATH_CODE,
+    label: 'Charakter-Eskalation',
+    min_age_group: 'CE1',
+    hook_score: 4.00,
+    is_onboarding: true,
+    humor_range_min: 1,
+    humor_range_max: 3,
+    writing_instructions: 'A: Charaktermoment – zeige die Hauptfigur in einer vertrauten Situation. | M: Eskalation – das Problem wird Schritt für Schritt größer. | E: Klassisch – befriedigende Auflösung.',
+  };
 }
