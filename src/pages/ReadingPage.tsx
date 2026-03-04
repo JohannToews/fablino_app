@@ -1043,6 +1043,20 @@ const ReadingPage = () => {
         critical_patch_failed: data.critical_patch_failed ?? false,
         patch_fix_rate: data.patch_fix_rate ?? null,
       };
+
+      console.log('[DEBUG ReadingPage] basePayload checker fields:', {
+        checker_critical: basePayload.checker_critical,
+        checker_medium: basePayload.checker_medium,
+        checker_low: basePayload.checker_low,
+        patch_fix_rate: basePayload.patch_fix_rate,
+        critical_patch_failed: basePayload.critical_patch_failed,
+      });
+
+      console.log('[DEBUG ReadingPage] raw data from generate-story:', {
+        checker_critical: data.checker_critical,
+        patch_fix_rate: data.patch_fix_rate,
+      });
+
       const storyPayloadReading = useUpdateReading
         ? basePayload
         : { ...basePayload, cover_image_url: null as string | null, cover_image_status: 'pending' as const, story_images: null as string[] | null, story_images_status: 'pending' as const };
@@ -1410,6 +1424,20 @@ const ReadingPage = () => {
           critical_patch_failed: genData.critical_patch_failed ?? false,
           patch_fix_rate: genData.patch_fix_rate ?? null,
         };
+
+        console.log('[DEBUG ReadingPage Interactive] storyPayloadInteractive checker fields:', {
+          checker_critical: storyPayloadInteractive.checker_critical,
+          checker_medium: storyPayloadInteractive.checker_medium,
+          checker_low: storyPayloadInteractive.checker_low,
+          patch_fix_rate: storyPayloadInteractive.patch_fix_rate,
+          critical_patch_failed: storyPayloadInteractive.critical_patch_failed,
+        });
+
+        console.log('[DEBUG ReadingPage Interactive] raw genData from generate-story:', {
+          checker_critical: genData.checker_critical,
+          patch_fix_rate: genData.patch_fix_rate,
+        });
+
         const storyIdToUseInteractive = (genData.story_id ?? placeholderStoryIdInteractive) as string | null;
         const { data: newStory, error: storyError } = useUpdateInteractive && storyIdToUseInteractive
           ? await supabase.from("stories").update(storyPayloadInteractive).eq("id", storyIdToUseInteractive).select().single()

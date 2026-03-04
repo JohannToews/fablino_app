@@ -341,6 +341,20 @@ const OnboardingStoryPage = () => {
         critical_patch_failed: data.critical_patch_failed ?? false,
         patch_fix_rate: data.patch_fix_rate ?? null,
       };
+
+      console.log('[DEBUG OnboardingStoryPage] storyPayloadOnboarding checker fields:', {
+        checker_critical: storyPayloadOnboarding.checker_critical,
+        checker_medium: storyPayloadOnboarding.checker_medium,
+        checker_low: storyPayloadOnboarding.checker_low,
+        patch_fix_rate: storyPayloadOnboarding.patch_fix_rate,
+        critical_patch_failed: storyPayloadOnboarding.critical_patch_failed,
+      });
+
+      console.log('[DEBUG OnboardingStoryPage] raw data from generate-story:', {
+        checker_critical: data.checker_critical,
+        patch_fix_rate: data.patch_fix_rate,
+      });
+
       const storyIdToUseOnboarding = (data.story_id ?? placeholderStoryIdOnboarding) as string | null;
       const { data: saved, error: saveErr } = useUpdateOnboarding && storyIdToUseOnboarding
         ? await supabase.from("stories").update(storyPayloadOnboarding).eq("id", storyIdToUseOnboarding).select().single()

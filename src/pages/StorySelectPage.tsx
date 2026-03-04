@@ -334,6 +334,20 @@ const StorySelectPage = () => {
         critical_patch_failed: data.critical_patch_failed ?? false,
         patch_fix_rate: data.patch_fix_rate ?? null,
       };
+
+      console.log('[DEBUG StorySelectPage] storyPayloadSelect checker fields:', {
+        checker_critical: storyPayloadSelect.checker_critical,
+        checker_medium: storyPayloadSelect.checker_medium,
+        checker_low: storyPayloadSelect.checker_low,
+        patch_fix_rate: storyPayloadSelect.patch_fix_rate,
+        critical_patch_failed: storyPayloadSelect.critical_patch_failed,
+      });
+
+      console.log('[DEBUG StorySelectPage] raw data from generate-story:', {
+        checker_critical: data.checker_critical,
+        patch_fix_rate: data.patch_fix_rate,
+      });
+
       const storyIdToUseSelect = (data.story_id ?? placeholderStoryIdSelect) as string | null;
       const { data: newStory, error: insertError } = useUpdateSelect && storyIdToUseSelect
         ? await supabase.from("stories").update(storyPayloadSelect).eq("id", storyIdToUseSelect).select().single()
