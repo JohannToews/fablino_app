@@ -327,6 +327,7 @@ const StorySelectPage = () => {
         continuity_state: data.continuity_state ?? null,
         visual_style_sheet: data.visual_style_sheet ?? null,
         generation_status: data.imageWarning ? (data.imageWarning === 'cover_generation_failed' ? 'images_failed' : 'images_partial') : 'verified',
+        story_path_code: data.story_path_code ?? null,
         checker_critical: data.checker_critical ?? 0,
         checker_medium: data.checker_medium ?? 0,
         checker_low: data.checker_low ?? 0,
