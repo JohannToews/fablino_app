@@ -35,6 +35,8 @@ interface StoryStatRow {
   structure_beginning: number | null;
   structure_middle: number | null;
   structure_ending: number | null;
+  story_path_code: string | null;
+  story_path_label: string | null;
   checker_critical: number | null;
   checker_medium: number | null;
   checker_low: number | null;
@@ -195,12 +197,19 @@ const useStoryStatsContent = () => {
     return "text-orange-600 dark:text-orange-400";
   };
 
-  const formatPath = (r: StoryStatRow) => {
+  const formatPathCode = (r: StoryStatRow) => {
+    if (r.story_path_code) return r.story_path_code;
     const b = r.structure_beginning;
     const m = r.structure_middle;
     const e = r.structure_ending;
-    if (b == null && m == null && e == null) return "–";
-    return `A${b ?? "?"}→M${m ?? "?"}→E${e ?? "?"}`;
+    if (b == null && m == null && e == null) return null;
+    return `A${b ?? "?"}->M${m ?? "?"}->E${e ?? "?"}`;
+  };
+
+  const formatPathLabel = (r: StoryStatRow) => {
+    if (r.story_path_label) return r.story_path_label;
+    const code = formatPathCode(r);
+    return code || "–";
   };
 
 
@@ -341,7 +350,11 @@ const useStoryStatsContent = () => {
                     {isVis("lang") && <TableCell className="text-center">{FLAG[r.language || ""] || r.language}</TableCell>}
                     {isVis("woerter") && <TableCell className="text-xs text-right">{r.word_count_approx ?? "–"}</TableCell>}
                     {isVis("stufe") && <TableCell className="text-xs">{r.difficulty || "–"}</TableCell>}
-                    {isVis("pfad") && <TableCell className="text-xs whitespace-nowrap font-mono">{formatPath(r)}</TableCell>}
+                    {isVis("pfad") && (
+                      <TableCell className="text-xs whitespace-nowrap" title={formatPathCode(r) || undefined}>
+                        {formatPathLabel(r)}
+                      </TableCell>
+                    )}
                     {isVis("emotion") && <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>}
                     {isVis("err_h") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_critical ?? 0) > 0 ? "text-destructive font-bold" : "text-muted-foreground")}>{r.checker_critical ?? 0}</TableCell>}
                     {isVis("err_m") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_medium ?? 0) > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground")}>{r.checker_medium ?? 0}</TableCell>}
