@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Loader2, CalendarIcon, Star, FileWarning, ExternalLink } from "lucide-react";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Loader2, CalendarIcon, Star, FileWarning, ExternalLink, SlidersHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -57,10 +58,31 @@ const FLAG: Record<string, string> = {
   hu: "🇭🇺", ca: "🏴", sl: "🇸🇮", pt: "🇵🇹", sk: "🇸🇰", uk: "🇺🇦", ru: "🇷🇺",
 };
 
+type ColumnKey = "datum" | "user" | "kind" | "story" | "lang" | "woerter" | "stufe" | "pfad" | "emotion" | "fehler" | "patch" | "detail" | "rating";
+
+const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: "datum", label: "Datum" },
+  { key: "user", label: "User" },
+  { key: "kind", label: "Kind" },
+  { key: "story", label: "Story" },
+  { key: "lang", label: "🌐 Sprache" },
+  { key: "woerter", label: "Wörter" },
+  { key: "stufe", label: "Stufe" },
+  { key: "pfad", label: "Pfad" },
+  { key: "emotion", label: "Emotion" },
+  { key: "fehler", label: "Fehler" },
+  { key: "patch", label: "Patch %" },
+  { key: "detail", label: "Detail" },
+  { key: "rating", label: "⭐ Rating" },
+];
+
+const DEFAULT_VISIBLE: Set<ColumnKey> = new Set(ALL_COLUMNS.map(c => c.key));
+
 const useStoryStatsContent = () => {
   const [rows, setRows] = useState<StoryStatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailRow, setDetailRow] = useState<StoryStatRow | null>(null);
+  const [visibleCols, setVisibleCols] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
 
   // filters
   const [langFilter, setLangFilter] = useState("all");
@@ -68,6 +90,17 @@ const useStoryStatsContent = () => {
   const [errorsOnly, setErrorsOnly] = useState(false);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  const toggleCol = (key: ColumnKey) => {
+    setVisibleCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const isVis = (key: ColumnKey) => visibleCols.has(key);
 
   useEffect(() => {
     loadData();
@@ -91,13 +124,11 @@ const useStoryStatsContent = () => {
     setLoading(false);
   };
 
-  // unique languages for filter
   const languages = useMemo(() => {
     const set = new Set(rows.map((r) => r.language).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [rows]);
 
-  // unique difficulties
   const difficulties = useMemo(() => {
     const set = new Set(rows.map((r) => r.difficulty).filter(Boolean) as string[]);
     return Array.from(set).sort();
@@ -125,126 +156,184 @@ const useStoryStatsContent = () => {
     return "text-orange-600 dark:text-orange-400";
   };
 
+  const formatPath = (r: StoryStatRow) => {
+    const b = r.structure_beginning;
+    const m = r.structure_middle;
+    const e = r.structure_ending;
+    if (b == null && m == null && e == null) return "–";
+    return `A${b ?? "?"}→M${m ?? "?"}→E${e ?? "?"}`;
+  };
+
+  const renderErrors = (r: StoryStatRow) => {
+    const crit = r.checker_critical ?? 0;
+    const med = r.checker_medium ?? 0;
+    const low = r.checker_low ?? 0;
+    if (crit === 0 && med === 0 && low === 0) return <span>✅</span>;
+    return (
+      <span className="inline-flex items-center gap-1">
+        {crit > 0 && (
+          <Badge variant="destructive" className={cn("text-[10px] px-1.5 py-0", crit > 0 && "font-bold text-xs")}>
+            🔴{crit}
+          </Badge>
+        )}
+        {med > 0 && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500 text-yellow-600 dark:text-yellow-400">
+            🟡{med}
+          </Badge>
+        )}
+        {low > 0 && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            ⚪{low}
+          </Badge>
+        )}
+      </span>
+    );
+  };
+
+  const visibleCount = ALL_COLUMNS.filter(c => isVis(c.key)).length;
+
   const content = (
     <>
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 bg-card rounded-xl p-3 border">
-          <Select value={langFilter} onValueChange={setLangFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Sprache" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Sprachen</SelectItem>
-              {languages.map((l) => (
-                <SelectItem key={l} value={l}>
-                  {FLAG[l] || ""} {l.toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 bg-card rounded-xl p-3 border">
+        <Select value={langFilter} onValueChange={setLangFilter}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Sprache" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Sprachen</SelectItem>
+            {languages.map((l) => (
+              <SelectItem key={l} value={l}>
+                {FLAG[l] || ""} {l.toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Select value={diffFilter} onValueChange={setDiffFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Schwierigkeit" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Stufen</SelectItem>
-              {difficulties.map((d) => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Select value={diffFilter} onValueChange={setDiffFilter}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Schwierigkeit" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Stufen</SelectItem>
+            {difficulties.map((d) => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox checked={errorsOnly} onCheckedChange={(v) => setErrorsOnly(!!v)} />
-            Nur mit 🔴 Fehlern
-          </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox checked={errorsOnly} onCheckedChange={(v) => setErrorsOnly(!!v)} />
+          Nur mit 🔴 Fehlern
+        </label>
 
-          {/* Date from */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
-                <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                {dateFrom ? format(dateFrom, "dd.MM.yy") : "Von"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={de} className="p-3 pointer-events-auto" />
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
-                <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                {dateTo ? format(dateTo, "dd.MM.yy") : "Bis"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={de} className="p-3 pointer-events-auto" />
-            </PopoverContent>
-          </Popover>
-
-          {(langFilter !== "all" || diffFilter !== "all" || errorsOnly || dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" onClick={() => { setLangFilter("all"); setDiffFilter("all"); setErrorsOnly(false); setDateFrom(undefined); setDateTo(undefined); }}>
-              Reset
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+              <CalendarIcon className="mr-1 h-3.5 w-3.5" />
+              {dateFrom ? format(dateFrom, "dd.MM.yy") : "Von"}
             </Button>
-          )}
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={de} className="p-3 pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
 
-          <span className="ml-auto text-xs text-muted-foreground">{filtered.length} Stories</span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+              <CalendarIcon className="mr-1 h-3.5 w-3.5" />
+              {dateTo ? format(dateTo, "dd.MM.yy") : "Bis"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={de} className="p-3 pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
 
-        {/* Table */}
-        {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-        ) : (
-          <div className="rounded-xl border bg-card overflow-x-auto">
-            <Table>
-              <TableHeader>
+        {(langFilter !== "all" || diffFilter !== "all" || errorsOnly || dateFrom || dateTo) && (
+          <Button variant="ghost" size="sm" onClick={() => { setLangFilter("all"); setDiffFilter("all"); setErrorsOnly(false); setDateFrom(undefined); setDateTo(undefined); }}>
+            Reset
+          </Button>
+        )}
+
+        {/* Column visibility toggle */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-auto gap-1.5">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Spalten
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {ALL_COLUMNS.map(col => (
+              <DropdownMenuCheckboxItem
+                key={col.key}
+                checked={isVis(col.key)}
+                onCheckedChange={() => toggleCol(col.key)}
+              >
+                {col.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <span className="text-xs text-muted-foreground">{filtered.length} Stories</span>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-x-auto max-w-full">
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow>
+                {isVis("datum") && <TableHead className="whitespace-nowrap">Datum</TableHead>}
+                {isVis("user") && <TableHead className="whitespace-nowrap">User</TableHead>}
+                {isVis("kind") && <TableHead className="whitespace-nowrap">Kind</TableHead>}
+                {isVis("story") && <TableHead className="whitespace-nowrap">Story</TableHead>}
+                {isVis("lang") && <TableHead className="whitespace-nowrap">🌐</TableHead>}
+                {isVis("woerter") && <TableHead className="whitespace-nowrap">Wörter</TableHead>}
+                {isVis("stufe") && <TableHead className="whitespace-nowrap">Stufe</TableHead>}
+                {isVis("pfad") && <TableHead className="whitespace-nowrap">Pfad</TableHead>}
+                {isVis("emotion") && <TableHead className="whitespace-nowrap">Emotion</TableHead>}
+                {isVis("fehler") && <TableHead className="whitespace-nowrap">Fehler</TableHead>}
+                {isVis("patch") && <TableHead className="whitespace-nowrap">Patch %</TableHead>}
+                {isVis("detail") && <TableHead className="whitespace-nowrap">Detail</TableHead>}
+                {isVis("rating") && <TableHead className="whitespace-nowrap">⭐</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
                 <TableRow>
-                  <TableHead className="whitespace-nowrap">Datum</TableHead>
-                  <TableHead className="whitespace-nowrap">User</TableHead>
-                  <TableHead className="whitespace-nowrap">Kind</TableHead>
-                  <TableHead className="whitespace-nowrap">Story</TableHead>
-                  <TableHead className="whitespace-nowrap">🌐</TableHead>
-                  <TableHead className="whitespace-nowrap">Wörter</TableHead>
-                  <TableHead className="whitespace-nowrap">Stufe</TableHead>
-                  <TableHead className="whitespace-nowrap">Emotion</TableHead>
-                  <TableHead className="whitespace-nowrap">Fehler</TableHead>
-                  <TableHead className="whitespace-nowrap">Patch %</TableHead>
-                  <TableHead className="whitespace-nowrap">Detail</TableHead>
-                  <TableHead className="whitespace-nowrap">⭐</TableHead>
+                  <TableCell colSpan={visibleCount} className="text-center text-muted-foreground py-8">Keine Daten</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={12} className="text-center text-muted-foreground py-8">Keine Daten</TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map((r) => (
-                    <TableRow key={r.story_id}>
-                      <TableCell className="text-xs whitespace-nowrap">{format(new Date(r.story_created_at), "dd.MM.yy")}</TableCell>
-                      <TableCell className="text-xs max-w-[140px] truncate" title={r.user_email || ""}>{r.user_email || "–"}</TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">{r.child_name || "–"}</TableCell>
+              ) : (
+                filtered.map((r) => (
+                  <TableRow key={r.story_id}>
+                    {isVis("datum") && <TableCell className="text-xs whitespace-nowrap">{format(new Date(r.story_created_at), "dd.MM.yy")}</TableCell>}
+                    {isVis("user") && <TableCell className="text-xs max-w-[140px] truncate" title={r.user_email || ""}>{r.user_email || "–"}</TableCell>}
+                    {isVis("kind") && <TableCell className="text-xs whitespace-nowrap">{r.child_name || "–"}</TableCell>}
+                    {isVis("story") && (
                       <TableCell className="text-xs max-w-[180px]">
                         <Link to={`/read/${r.story_id}`} className="text-primary underline underline-offset-2 hover:no-underline truncate block" title={r.story_title}>
                           {r.story_title}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-center">{FLAG[r.language || ""] || r.language}</TableCell>
-                      <TableCell className="text-xs text-right">{r.word_count_approx ?? "–"}</TableCell>
-                      <TableCell className="text-xs">{r.difficulty || "–"}</TableCell>
-                      <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {(r.checker_critical ?? 0) > 0 && <span title="critical">🔴{r.checker_critical} </span>}
-                        {(r.checker_medium ?? 0) > 0 && <span title="medium">🟡{r.checker_medium} </span>}
-                        {(r.checker_low ?? 0) > 0 && <span title="low">⚪{r.checker_low}</span>}
-                        {(r.checker_critical ?? 0) === 0 && (r.checker_medium ?? 0) === 0 && (r.checker_low ?? 0) === 0 && "✅"}
-                      </TableCell>
+                    )}
+                    {isVis("lang") && <TableCell className="text-center">{FLAG[r.language || ""] || r.language}</TableCell>}
+                    {isVis("woerter") && <TableCell className="text-xs text-right">{r.word_count_approx ?? "–"}</TableCell>}
+                    {isVis("stufe") && <TableCell className="text-xs">{r.difficulty || "–"}</TableCell>}
+                    {isVis("pfad") && <TableCell className="text-xs whitespace-nowrap font-mono">{formatPath(r)}</TableCell>}
+                    {isVis("emotion") && <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>}
+                    {isVis("fehler") && <TableCell className="text-xs whitespace-nowrap">{renderErrors(r)}</TableCell>}
+                    {isVis("patch") && (
                       <TableCell className={cn("text-xs font-medium", patchColor(r.patch_fix_rate != null ? Number(r.patch_fix_rate) : null))}>
                         {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate))}%` : "–"}
                       </TableCell>
+                    )}
+                    {isVis("detail") && (
                       <TableCell>
                         {((r.checker_subcategories?.length ?? 0) > 0 || r.weakest_part || r.critical_patch_failed) ? (
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDetailRow(r)}>
@@ -254,6 +343,8 @@ const useStoryStatsContent = () => {
                           <span className="text-xs text-muted-foreground">–</span>
                         )}
                       </TableCell>
+                    )}
+                    {isVis("rating") && (
                       <TableCell className="text-xs">
                         {r.quality_rating != null ? (
                           <span className="flex items-center gap-0.5">
@@ -261,87 +352,88 @@ const useStoryStatsContent = () => {
                           </span>
                         ) : "–"}
                       </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </>
   );
 
-  // Detail Drawer (shared)
+  // Detail Drawer
   const drawer = (
-      <Sheet open={!!detailRow} onOpenChange={(open) => !open && setDetailRow(null)}>
-        <SheetContent className="w-[400px] sm:w-[480px] overflow-y-auto">
-          {detailRow && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="text-base">{detailRow.story_title}</SheetTitle>
-              </SheetHeader>
+    <Sheet open={!!detailRow} onOpenChange={(open) => !open && setDetailRow(null)}>
+      <SheetContent className="w-[400px] sm:w-[480px] overflow-y-auto">
+        {detailRow && (
+          <>
+            <SheetHeader>
+              <SheetTitle className="text-base">{detailRow.story_title}</SheetTitle>
+            </SheetHeader>
 
-              <div className="mt-4 space-y-4">
-                {detailRow.critical_patch_failed && (
-                  <Badge variant="destructive" className="text-xs">⚠️ Critical Patch Failed</Badge>
-                )}
+            <div className="mt-4 space-y-4">
+              {detailRow.critical_patch_failed && (
+                <Badge variant="destructive" className="text-xs">⚠️ Critical Patch Failed</Badge>
+              )}
 
-                {(detailRow.weakest_part || detailRow.weakness_reason) && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Schwächster Teil</p>
-                    {detailRow.weakest_part && <p className="text-sm font-medium">{detailRow.weakest_part}</p>}
-                    {detailRow.weakness_reason && <p className="text-sm text-muted-foreground">{detailRow.weakness_reason}</p>}
-                  </div>
-                )}
-
-                {(detailRow.checker_subcategories?.length ?? 0) > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Checker Subcategories</p>
-                    <ul className="space-y-1">
-                      {detailRow.checker_subcategories!.map((cat, i) => (
-                        <li key={i} className="text-sm flex items-start gap-1.5">
-                          <span className="text-muted-foreground">•</span>
-                          {cat}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {(detailRow.issues_found != null || detailRow.issues_corrected != null) && (
-                  <div className="flex gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Gefunden:</span>{" "}
-                      <span className="font-medium">{detailRow.issues_found ?? 0}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Korrigiert:</span>{" "}
-                      <span className="font-medium">{detailRow.issues_corrected ?? 0}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3 text-sm">
-                  <span>🔴 {detailRow.checker_critical ?? 0}</span>
-                  <span>🟡 {detailRow.checker_medium ?? 0}</span>
-                  <span>⚪ {detailRow.checker_low ?? 0}</span>
+              {(detailRow.weakest_part || detailRow.weakness_reason) && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Schwächster Teil</p>
+                  {detailRow.weakest_part && <p className="text-sm font-medium">{detailRow.weakest_part}</p>}
+                  {detailRow.weakness_reason && <p className="text-sm text-muted-foreground">{detailRow.weakness_reason}</p>}
                 </div>
+              )}
 
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Patch Fix Rate: </span>
-                  <span className={cn("font-medium", patchColor(detailRow.patch_fix_rate != null ? Number(detailRow.patch_fix_rate) : null))}>
-                    {detailRow.patch_fix_rate != null ? `${Math.round(Number(detailRow.patch_fix_rate))}%` : "–"}
-                  </span>
+              {(detailRow.checker_subcategories?.length ?? 0) > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Checker Subcategories</p>
+                  <ul className="space-y-1">
+                    {detailRow.checker_subcategories!.map((cat, i) => (
+                      <li key={i} className="text-sm flex items-start gap-1.5">
+                        <span className="text-muted-foreground">•</span>
+                        {cat}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+              )}
 
-                <Link to={`/read/${detailRow.story_id}`} className="inline-flex items-center gap-1 text-sm text-primary underline">
-                  <ExternalLink className="h-3.5 w-3.5" />Story öffnen
-                </Link>
+              {(detailRow.issues_found != null || detailRow.issues_corrected != null) && (
+                <div className="flex gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Gefunden:</span>{" "}
+                    <span className="font-medium">{detailRow.issues_found ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Korrigiert:</span>{" "}
+                    <span className="font-medium">{detailRow.issues_corrected ?? 0}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 text-sm">
+                <span>🔴 {detailRow.checker_critical ?? 0}</span>
+                <span>🟡 {detailRow.checker_medium ?? 0}</span>
+                <span>⚪ {detailRow.checker_low ?? 0}</span>
               </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+
+              <div className="text-sm">
+                <span className="text-muted-foreground">Patch Fix Rate: </span>
+                <span className={cn("font-medium", patchColor(detailRow.patch_fix_rate != null ? Number(detailRow.patch_fix_rate) : null))}>
+                  {detailRow.patch_fix_rate != null ? `${Math.round(Number(detailRow.patch_fix_rate))}%` : "–"}
+                </span>
+              </div>
+
+              <Link to={`/read/${detailRow.story_id}`} className="inline-flex items-center gap-1 text-sm text-primary underline">
+                <ExternalLink className="h-3.5 w-3.5" />Story öffnen
+              </Link>
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 
   return { content, drawer };
