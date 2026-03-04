@@ -2759,13 +2759,13 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
 
       console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
       
-      // Use Gemini API with JSON schema if available, fallback to Lovable AI Gateway
+      // Use Gemini API if available, fallback to Lovable AI Gateway
+      // NOTE: No jsonSchema passed — Gemini writes free-form JSON per prompt instructions.
+      // safeParseStoryResponse() handles parsing. STORY_RESPONSE_SCHEMA kept for future metadata-only call.
       let content: string;
       if (GEMINI_API_KEY) {
-        console.log(`[GENERATE] Using Gemini API with JSON schema`);
-        content = await callGemini(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8, {
-          jsonSchema: STORY_RESPONSE_SCHEMA
-        });
+        console.log(`[GENERATE] Using Gemini API (free-form JSON, no responseSchema)`);
+        content = await callGemini(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       } else {
         console.log(`[GENERATE] Falling back to Lovable AI Gateway`);
         content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
