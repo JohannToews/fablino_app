@@ -138,6 +138,7 @@ const SLOT_HAIR_LENGTH: AppearanceSlot = {
   required: true,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
+    { value: 'bald', label: { de: 'Keine Haare', en: 'Bald' }, anchorFragment: 'bald head, no hair' },
     { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short' }, anchorFragment: 'very short' },
     { value: 'short', label: { de: 'Kurz', en: 'Short' }, anchorFragment: 'short' },
     { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, anchorFragment: 'medium-length' },
@@ -231,7 +232,6 @@ export const APPEARANCE_SLOTS: AppearanceSlot[] = [
   SLOT_HAIR_COLOR,
   SLOT_HAIR_TYPE,
   SLOT_HAIR_LENGTH,
-  SLOT_BODY_TYPE,
   SLOT_FACIAL_HAIR,
 ];
 
@@ -241,6 +241,9 @@ const HAIR_COLOR_AGE_RESTRICTED = new Set(['gray', 'white', 'silver']);
 
 /** Hair lengths not available for adult/senior males */
 const HAIR_LENGTH_EXCLUDE_ADULT_MALE = new Set(['very_long']);
+
+/** Hair lengths only available for adult/senior males */
+const HAIR_LENGTH_MALE_ONLY = new Set(['bald']);
 
 /**
  * Returns options for a slot given age category and gender.
@@ -270,8 +273,12 @@ export function getFilteredOptions(
 
   if (slot.key === 'hair_length') {
     const isAdultOrSenior = ageCategory === 'adult' || ageCategory === 'senior';
-    if (isAdultOrSenior && gender === 'male') {
+    const isMale = gender === 'male';
+    if (isAdultOrSenior && isMale) {
       options = options.filter((opt) => !HAIR_LENGTH_EXCLUDE_ADULT_MALE.has(opt.value));
+    }
+    if (!isAdultOrSenior || !isMale) {
+      options = options.filter((opt) => !HAIR_LENGTH_MALE_ONLY.has(opt.value));
     }
   }
 

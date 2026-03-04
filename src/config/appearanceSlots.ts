@@ -133,6 +133,7 @@ const SLOT_HAIR_LENGTH: AppearanceSlot = {
   required: true,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
+    { value: 'bald', label: { de: 'Keine Haare', en: 'Bald', fr: 'Chauve', es: 'Calvo', nl: 'Kaal', it: 'Calvo', tr: 'Kel', pl: 'Łysy', ru: 'Лысый', uk: 'Лисий', bs: 'Ćelav', bg: 'Плешив', ro: 'Chel', lt: 'Plikas', hu: 'Kopasz', ca: 'Calb', sl: 'Plešast', pt: 'Careca', sk: 'Plešatý' }, icon: 'hair-length-bald.png', anchorFragment: 'bald head, no hair' },
     { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short', fr: 'Très court', es: 'Muy corto', nl: 'Heel kort', it: 'Molto corto', tr: 'Çok kısa', pl: 'Bardzo krótkie', ru: 'Очень короткие', uk: 'Дуже короткі', bs: 'Vrlo kratka', bg: 'Много къса', ro: 'Foarte scurt', lt: 'Labai trumpi', hu: 'Nagyon rövid', ca: 'Molt curt', sl: 'Zelo kratki', pt: 'Muito curto', sk: 'Veľmi krátke' }, icon: 'hair-length-veryshort.png', anchorFragment: 'very short' },
     { value: 'short', label: { de: 'Kurz', en: 'Short', fr: 'Court', es: 'Corto', nl: 'Kort', it: 'Corto', tr: 'Kısa', pl: 'Krótkie', ru: 'Короткие', uk: 'Короткі', bs: 'Kratka', bg: 'Къса', ro: 'Scurt', lt: 'Trumpi', hu: 'Rövid', ca: 'Curt', sl: 'Kratki', pt: 'Curto', sk: 'Krátke' }, icon: 'hair-length-short.png', anchorFragment: 'short' },
     { value: 'medium', label: { de: 'Mittel', en: 'Medium', fr: 'Moyen', es: 'Medio', nl: 'Middel', it: 'Medio', tr: 'Orta', pl: 'Średnie', ru: 'Средние', uk: 'Середні', bs: 'Srednja', bg: 'Средна', ro: 'Mediu', lt: 'Vidutiniai', hu: 'Közepes', ca: 'Mitjà', sl: 'Srednji', pt: 'Médio', sk: 'Stredné' }, icon: 'hair-length-medium.png', anchorFragment: 'medium-length' },
@@ -226,7 +227,6 @@ export const APPEARANCE_SLOTS: AppearanceSlot[] = [
   SLOT_HAIR_COLOR,
   SLOT_HAIR_TYPE,
   SLOT_HAIR_LENGTH,
-  SLOT_BODY_TYPE,
   SLOT_FACIAL_HAIR,
 ];
 
@@ -236,6 +236,9 @@ const HAIR_COLOR_AGE_RESTRICTED = new Set(['gray', 'white', 'silver']);
 
 /** Hair lengths not available for adult/senior males */
 const HAIR_LENGTH_EXCLUDE_ADULT_MALE = new Set(['very_long']);
+
+/** Hair lengths only available for adult/senior males */
+const HAIR_LENGTH_MALE_ONLY = new Set(['bald']);
 
 /**
  * Returns options for a slot given age category and gender.
@@ -265,8 +268,12 @@ export function getFilteredOptions(
 
   if (slot.key === 'hair_length') {
     const isAdultOrSenior = ageCategory === 'adult' || ageCategory === 'senior';
-    if (isAdultOrSenior && gender === 'male') {
+    const isMale = gender === 'male';
+    if (isAdultOrSenior && isMale) {
       options = options.filter((opt) => !HAIR_LENGTH_EXCLUDE_ADULT_MALE.has(opt.value));
+    }
+    if (!isAdultOrSenior || !isMale) {
+      options = options.filter((opt) => !HAIR_LENGTH_MALE_ONLY.has(opt.value));
     }
   }
 
