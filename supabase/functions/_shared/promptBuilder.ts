@@ -1571,6 +1571,24 @@ export async function buildStoryPrompt(
   // Instruction
   sections.push(headers.instruction);
 
+  // ═══ STRUCTURE DIRECTIVE (HIGH PRIORITY — at start of prompt) ═══
+  if (selectedPath) {
+    sections.push([
+      `## STRUCTURE DIRECTIVE (CRITICAL — READ FIRST)`,
+      ``,
+      `You MUST follow this exact narrative structure: ${selectedPath.code}`,
+      ``,
+      `- A (Beginning type) defines how the story MUST open`,
+      `- M (Middle type) defines the conflict development pattern`,
+      `- E (Ending type) defines how the resolution must work`,
+      ``,
+      `This is NON-NEGOTIABLE. The story will be rejected if it does not match this structure.`,
+      ``,
+      `Writing instructions for this structure:`,
+      selectedPath.writing_instructions,
+    ].join('\n'));
+  }
+
   // CHILD
   const childLines: string[] = [
     `## ${headers.child}`,
@@ -2152,24 +2170,6 @@ export async function buildStoryPrompt(
 
   sections.push(storytellingRulesBlock[lang] || storytellingRulesBlock.en);
 
-  // STRUCTURE DIRECTIVE (from story_paths — tells LLM how to structure A/M/E)
-  if (selectedPath) {
-    sections.push([
-      `## STRUCTURE DIRECTIVE`,
-      `Structure: ${selectedPath.code}`,
-      ``,
-      `Follow these rules strictly:`,
-      `- A (Beginning type) defines how the story MUST open`,
-      `- M (Middle type) defines the conflict development pattern`,
-      `- E (Ending type) defines how the resolution must work`,
-      `- The writing instructions below give concrete requirements for each section`,
-      `- Never deviate from the specified structure`,
-      `- Every element needed for E must be planted in A or M`,
-      ``,
-      selectedPath.writing_instructions,
-    ].join('\n'));
-  }
-
   // SPECIAL EFFECTS (only if non-empty)
   if (request.special_abilities && request.special_abilities.length > 0) {
     const abilityDescs = SPECIAL_ABILITIES_DESC[lang] || SPECIAL_ABILITIES_DESC['en'];
@@ -2405,6 +2405,20 @@ Respond with a single JSON object. The image_plan MUST use this exact structure 
 
 You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must provide a character_sheet array with one entry per character that appears in the story.`;
     sections.push(jsonSchemaSection);
+  }
+
+  // ═══ STRUCTURE DIRECTIVE REMINDER (at end — recency effect) ═══
+  if (selectedPath) {
+    sections.push([
+      `## REMINDER: STRUCTURE DIRECTIVE`,
+      ``,
+      `Before you write, confirm you are following: ${selectedPath.code}`,
+      `- A = Beginning type (how the story opens)`,
+      `- M = Middle type (conflict pattern)`,
+      `- E = Ending type (resolution pattern)`,
+      ``,
+      `DO NOT deviate. This structure is mandatory.`,
+    ].join('\n'));
   }
 
   // Final instruction

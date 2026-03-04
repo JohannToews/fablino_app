@@ -661,11 +661,11 @@ Is this specific error fixed in the text above?`;
   try {
     const response = await callLovableAI(apiKey, systemPrompt, userPrompt, 0.1);
     const jsonMatch = response.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) return true;
+    if (!jsonMatch) return false;  // pessimistic: assume not fixed if no valid JSON
     const result = JSON.parse(jsonMatch[0]);
     return result.fixed === true;
   } catch {
-    return true;
+    return false;  // pessimistic: assume not fixed on error
   }
 }
 

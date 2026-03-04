@@ -348,7 +348,7 @@ const useStoryStatsContent = () => {
                     {isVis("err_l") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_low ?? 0) > 0 ? "text-foreground" : "text-muted-foreground")}>{r.checker_low ?? 0}</TableCell>}
                     {isVis("patch") && (
                       <TableCell className={cn("text-xs font-medium", patchColor(r.patch_fix_rate != null ? Number(r.patch_fix_rate) : null))}>
-                        {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate))}%` : "–"}
+                        {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate) * 100)}%` : "–"}
                       </TableCell>
                     )}
                     {isVis("detail") && (
@@ -440,7 +440,7 @@ const useStoryStatsContent = () => {
               <div className="text-sm">
                 <span className="text-muted-foreground">Patch Fix Rate: </span>
                 <span className={cn("font-medium", patchColor(detailRow.patch_fix_rate != null ? Number(detailRow.patch_fix_rate) : null))}>
-                  {detailRow.patch_fix_rate != null ? `${Math.round(Number(detailRow.patch_fix_rate))}%` : "–"}
+                  {detailRow.patch_fix_rate != null ? `${Math.round(Number(detailRow.patch_fix_rate) * 100)}%` : "–"}
                 </span>
               </div>
 
