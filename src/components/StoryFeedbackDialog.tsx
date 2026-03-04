@@ -249,8 +249,6 @@ const StoryFeedbackDialog = ({
         quality_rating: rating,
         weakest_part: weakestPart,
         weakness_reason: comment || null,
-        issues_found: issuesFound,
-        issues_corrected: issuesCorrected,
       });
 
       if (error) throw error;
