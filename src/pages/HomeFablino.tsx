@@ -247,8 +247,9 @@ const HomeFablino = () => {
   const diamondStyle = getDiamondStyle(currentStreak);
   const todayIdx = getCurrentWeekdayIndex();
 
-  // ═══ GUARD: Show loading only during initial profile fetch ═══
-  if (profilesLoading) {
+  // ═══ GUARD: Never render dashboard while a valid active kid is unresolved ═══
+  const waitingForActiveProfile = kidProfiles.length > 0 && !selectedProfile;
+  if (profilesLoading || waitingForActiveProfile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <img src="/mascot/3_wating_story_generated.png" alt="" className="w-16 h-16 animate-pulse" />
