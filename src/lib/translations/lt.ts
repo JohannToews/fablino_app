@@ -484,6 +484,7 @@ const lt: Translations = {
   installModalLater: 'Vėliau',
 
   myLook: 'Mano išvaizda',
+  myPeople: 'Mano žmonės',
   appearanceTitle: 'Mano išvaizda',
   appearanceSubtitle: 'Taip atrodau savo istorijose!',
   appearanceMascotMessage: 'Parodyk, kaip atrodai! Taip tave piešiu istorijose.',

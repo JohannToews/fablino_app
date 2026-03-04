@@ -484,6 +484,7 @@ const nl: Translations = {
   installModalLater: 'Later',
 
   myLook: 'Mijn Look',
+  myPeople: 'Mijn mensen',
   appearanceTitle: 'Mijn Look',
   appearanceSubtitle: 'Zo zie ik eruit in mijn verhalen!',
   appearanceMascotMessage: 'Laat me zien hoe je eruitziet! Zo teken ik je in je verhalen.',

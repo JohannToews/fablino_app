@@ -3,6 +3,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useGamification } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvatarBuilderEnabled } from "@/hooks/useAvatarBuilderEnabled";
+import { useAvatarV2 } from "@/hooks/useFeatureFlags";
 import MigrationBanner from "@/components/MigrationBanner";
 import { Settings, BarChart3 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -131,6 +132,7 @@ const HomeFablino = () => {
   const location = useLocation();
   const { state: gamificationState, refreshProgress } = useGamification();
   const isAvatarBuilderEnabled = useAvatarBuilderEnabled();
+  const isAvatarV2Enabled = useAvatarV2();
 
   const {
     isInstalled,
@@ -385,6 +387,17 @@ const HomeFablino = () => {
               className={FABLINO_STYLES.secondaryButton}
             >
               ✨ {t.myLook}
+            </button>
+          )}
+
+          {/* Meine Leute - only when Avatar v2 flag on */}
+          {isAvatarV2Enabled && (
+            <button
+              onClick={() => navigate("/my-people")}
+              data-premium-button="secondary"
+              className={FABLINO_STYLES.secondaryButton}
+            >
+              👨‍👩‍👧‍👦 {t.myPeople}
             </button>
           )}
         </div>

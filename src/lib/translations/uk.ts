@@ -484,6 +484,7 @@ const uk: Translations = {
   installModalLater: 'Пізніше',
 
   myLook: 'Мій вигляд',
+  myPeople: 'Мої люди',
   appearanceTitle: 'Мій вигляд',
   appearanceSubtitle: 'Так я виглядаю в моїх історіях!',
   appearanceMascotMessage: 'Покажи мені, як ти виглядаєш! Так я буду малювати тебе в історіях.',

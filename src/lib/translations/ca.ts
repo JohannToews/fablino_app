@@ -484,6 +484,7 @@ const ca: Translations = {
   installModalLater: 'Més tard',
 
   myLook: 'El meu aspecte',
+  myPeople: 'La meva gent',
   appearanceTitle: 'El meu aspecte',
   appearanceSubtitle: 'Així apareixo a les meves històries!',
   appearanceMascotMessage: 'Mostra\'m com ets! Així et dibuixaré a les històries.',

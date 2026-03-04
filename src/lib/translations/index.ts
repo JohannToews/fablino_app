@@ -568,6 +568,7 @@ export interface Translations {
 
   // Home — Mein Look (Avatar Builder)
   myLook: string;
+  myPeople: string;
 
   // Appearance (Mein Look page)
   appearanceTitle: string;

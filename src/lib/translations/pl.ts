@@ -483,6 +483,7 @@ const pl: Translations = {
   installModalYes: 'Tak, zainstaluj! 🦊',
   installModalLater: 'Później',
   myLook: 'Mój wygląd',
+  myPeople: 'Moi ludzie',
   appearanceTitle: 'Mój wygląd',
   appearanceSubtitle: 'Tak wyglądam w moich historiach!',
   appearanceMascotMessage: 'Pokaż mi, jak wyglądasz! Tak będę cię rysować w historiach.',
