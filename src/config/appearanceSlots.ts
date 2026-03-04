@@ -133,10 +133,11 @@ const SLOT_HAIR_LENGTH: AppearanceSlot = {
   required: true,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
-    { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short' }, icon: 'hair-length-veryshort.png', anchorFragment: 'very short' },
-    { value: 'short', label: { de: 'Kurz', en: 'Short' }, icon: 'hair-length-short.png', anchorFragment: 'short' },
-    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, icon: 'hair-length-medium.png', anchorFragment: 'medium-length' },
-    { value: 'long', label: { de: 'Lang', en: 'Long' }, icon: 'hair-length-long.png', anchorFragment: 'long' },
+    { value: 'very_short', label: { de: 'Sehr kurz', en: 'Very short', fr: 'Très court', es: 'Muy corto', nl: 'Heel kort', it: 'Molto corto', tr: 'Çok kısa', pl: 'Bardzo krótkie', ru: 'Очень короткие', uk: 'Дуже короткі' }, icon: 'hair-length-veryshort.png', anchorFragment: 'very short' },
+    { value: 'short', label: { de: 'Kurz', en: 'Short', fr: 'Court', es: 'Corto', nl: 'Kort', it: 'Corto', tr: 'Kısa', pl: 'Krótkie', ru: 'Короткие', uk: 'Короткі' }, icon: 'hair-length-short.png', anchorFragment: 'short' },
+    { value: 'medium', label: { de: 'Mittel', en: 'Medium', fr: 'Moyen', es: 'Medio', nl: 'Middel', it: 'Medio', tr: 'Orta', pl: 'Średnie', ru: 'Средние', uk: 'Середні' }, icon: 'hair-length-medium.png', anchorFragment: 'medium-length' },
+    { value: 'long', label: { de: 'Lang', en: 'Long', fr: 'Long', es: 'Largo', nl: 'Lang', it: 'Lungo', tr: 'Uzun', pl: 'Długie', ru: 'Длинные', uk: 'Довгі' }, icon: 'hair-length-long.png', anchorFragment: 'long' },
+    { value: 'very_long', label: { de: 'Sehr lang', en: 'Very long', fr: 'Très long', es: 'Muy largo', nl: 'Heel lang', it: 'Molto lungo', tr: 'Çok uzun', pl: 'Bardzo długie', ru: 'Очень длинные', uk: 'Дуже довгі' }, icon: 'hair-length-verylong.png', anchorFragment: 'very long' },
   ],
 };
 

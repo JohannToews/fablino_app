@@ -60,6 +60,7 @@ export function buildAppearanceAnchor(
     short: "short",
     medium: "medium-length",
     long: "long",
+    very_long: "very long",
   };
   const typeMap: Record<string, string> = {
     straight: "straight",

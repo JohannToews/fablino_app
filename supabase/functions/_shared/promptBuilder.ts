@@ -1257,6 +1257,7 @@ function buildPromptAppearanceDesc(
     short: { de: 'kurze', fr: 'courts', en: 'short', es: 'corto', it: 'corti', bs: 'kratka', nl: 'kort' },
     medium: { de: 'mittellange', fr: 'mi-longs', en: 'medium-length', es: 'medio', it: 'medi', bs: 'srednje duga', nl: 'halflang' },
     long: { de: 'lange', fr: 'longs', en: 'long', es: 'largo', it: 'lunghi', bs: 'duga', nl: 'lang' },
+    very_long: { de: 'sehr lange', fr: 'très longs', en: 'very long', es: 'muy largo', it: 'molto lunghi', bs: 'vrlo duga', nl: 'zeer lang' },
   };
 
   const typeDesc: Record<string, Record<string, string>> = {
