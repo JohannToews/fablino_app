@@ -402,6 +402,20 @@ const CreateStoryPage = () => {
           critical_patch_failed: data.critical_patch_failed ?? false,
           patch_fix_rate: data.patch_fix_rate ?? null,
         };
+
+        console.log('[DEBUG] storyPayload checker fields:', {
+          checker_critical: storyPayload.checker_critical,
+          checker_medium: storyPayload.checker_medium,
+          checker_low: storyPayload.checker_low,
+          patch_fix_rate: storyPayload.patch_fix_rate,
+          critical_patch_failed: storyPayload.critical_patch_failed,
+        });
+
+        console.log('[DEBUG] raw data from generate-story:', {
+          checker_critical: data.checker_critical,
+          patch_fix_rate: data.patch_fix_rate,
+        });
+
         const storyIdToUse = (data.story_id ?? placeholderStoryId) as string | null;
         const { data: savedStory, error: saveError } = useUpdate && storyIdToUse
           ? await supabase.from("stories").update(storyPayload).eq("id", storyIdToUse).select().single()
