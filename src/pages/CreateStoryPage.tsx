@@ -418,13 +418,24 @@ const CreateStoryPage = () => {
         });
 
         const storyIdToUse = (data.story_id ?? placeholderStoryId) as string | null;
-        const { data: savedStory, error: saveError } = useUpdate && storyIdToUse
-          ? await supabase.from("stories").update(storyPayload).eq("id", storyIdToUse).select().single()
-          : await supabase.from("stories").insert(storyPayload).select().single();
+        
+        // Save with retry (1 automatic retry on transient errors)
+        let savedStory: any = null;
+        let saveError: any = null;
+        for (let saveAttempt = 0; saveAttempt < 2; saveAttempt++) {
+          const result = useUpdate && storyIdToUse
+            ? await supabase.from("stories").update(storyPayload).eq("id", storyIdToUse).select().single()
+            : await supabase.from("stories").insert(storyPayload).select().single();
+          savedStory = result.data;
+          saveError = result.error;
+          if (!saveError) break;
+          console.warn(`[CreateStory] Save attempt ${saveAttempt + 1} failed:`, saveError.message, saveError.code, saveError.details);
+          if (saveAttempt === 0) await new Promise(r => setTimeout(r, 1500));
+        }
 
         if (saveError) {
-          console.error("Save error:", saveError);
-          toast.error(t.toastSaveError);
+          console.error("Save error (final):", saveError.message, saveError.code, saveError.details, saveError.hint);
+          toast.error(`${t.toastSaveError}: ${saveError.message}`);
           stopGenerating();
           setCurrentScreen("entry");
           return;
@@ -876,13 +887,24 @@ const CreateStoryPage = () => {
           patch_fix_rate: data.patch_fix_rate ?? null,
         };
         const storyIdToUseFiction = (data.story_id ?? placeholderStoryIdFiction) as string | null;
-        const { data: savedStory, error: saveError } = useUpdateFiction && storyIdToUseFiction
-          ? await supabase.from("stories").update(storyPayloadFiction).eq("id", storyIdToUseFiction).select().single()
-          : await supabase.from("stories").insert(storyPayloadFiction).select().single();
+        
+        // Save with retry (1 automatic retry on transient errors)
+        let savedStory: any = null;
+        let saveError: any = null;
+        for (let saveAttempt = 0; saveAttempt < 2; saveAttempt++) {
+          const result = useUpdateFiction && storyIdToUseFiction
+            ? await supabase.from("stories").update(storyPayloadFiction).eq("id", storyIdToUseFiction).select().single()
+            : await supabase.from("stories").insert(storyPayloadFiction).select().single();
+          savedStory = result.data;
+          saveError = result.error;
+          if (!saveError) break;
+          console.warn(`[CreateStory] Save attempt ${saveAttempt + 1} failed:`, saveError.message, saveError.code, saveError.details);
+          if (saveAttempt === 0) await new Promise(r => setTimeout(r, 1500));
+        }
 
         if (saveError) {
-          console.error("Save error:", saveError);
-          toast.error(t.toastSaveError);
+          console.error("Save error (final):", saveError.message, saveError.code, saveError.details, saveError.hint);
+          toast.error(`${t.toastSaveError}: ${saveError.message}`);
           stopGenerating();
           setCurrentScreen("entry");
           return;
