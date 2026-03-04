@@ -55,7 +55,45 @@ const ConsistencyCheckStats = ({ language, onStoryClick }: ConsistencyCheckStats
         .limit(100);
 
       if (error) throw error;
-      setResults(checkResults || []);
+      const normalizedResults = (checkResults || []) as ConsistencyCheckResult[];
+
+      // Backfill story_id for legacy rows (older checks stored no story_id)
+      const rowsMissingStoryId = normalizedResults.filter((r) => !r.story_id && r.story_title);
+      let resolvedResults = normalizedResults;
+
+      if (rowsMissingStoryId.length > 0) {
+        const uniqueTitles = Array.from(new Set(rowsMissingStoryId.map((r) => r.story_title)));
+        const uniqueUserIds = Array.from(new Set(rowsMissingStoryId.map((r) => r.user_id).filter(Boolean))) as string[];
+
+        const { data: storiesData } = await supabase
+          .from("stories")
+          .select("id, title, user_id, created_at")
+          .in("title", uniqueTitles)
+          .in("user_id", uniqueUserIds)
+          .limit(10000);
+
+        if (storiesData) {
+          const byUserAndTitle = new Map<string, { id: string; created_at: string }>();
+
+          storiesData.forEach((story) => {
+            if (!story.user_id || !story.title) return;
+            const key = `${story.user_id}::${story.title}`;
+            const existing = byUserAndTitle.get(key);
+            if (!existing || new Date(story.created_at).getTime() > new Date(existing.created_at).getTime()) {
+              byUserAndTitle.set(key, { id: story.id, created_at: story.created_at });
+            }
+          });
+
+          resolvedResults = normalizedResults.map((result) => {
+            if (result.story_id || !result.user_id || !result.story_title) return result;
+            const key = `${result.user_id}::${result.story_title}`;
+            const match = byUserAndTitle.get(key);
+            return match ? { ...result, story_id: match.id } : result;
+          });
+        }
+      }
+
+      setResults(resolvedResults);
 
       // Load user profiles for display names
       const { data: usersData } = await invokeEdgeFunction("manage-users", {
@@ -302,7 +340,7 @@ const ConsistencyCheckStats = ({ language, onStoryClick }: ConsistencyCheckStats
                           {result.story_id && onStoryClick ? (
                             <button
                               onClick={() => onStoryClick(result.story_id!)}
-                              className="text-primary hover:underline cursor-pointer text-left truncate block max-w-[200px]"
+                              className="text-primary underline underline-offset-2 hover:no-underline cursor-pointer text-left truncate block max-w-[200px]"
                             >
                               {result.story_title}
                             </button>
