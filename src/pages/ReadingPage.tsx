@@ -2600,53 +2600,64 @@ const ReadingPage = () => {
                   onSubmit={async () => {
                     setShowFeedbackDialog(false);
                     
-                    const childId = story?.kid_profile_id || selectedProfile?.id || null;
+                    try {
+                      const childId = story?.kid_profile_id || selectedProfile?.id || null;
 
-                    // Mark story as completed in stories table
-                    await actions.markStoryComplete(id!);
-                    setIsMarkedAsRead(true);
-                    // Invalidate stories cache so SeriesGrid sees updated completion status
-                    queryClient.invalidateQueries({ queryKey: ['stories'] });
-
-                    // Log activity via RPC (handles stars, streak, badges, user_results)
-                    // M13: Retry up to 2 times if log_activity fails — stars must not be lost
-                    let logSuccess = false;
-                    for (let attempt = 0; attempt < 3 && !logSuccess; attempt++) {
+                      // Mark story as completed in stories table
                       try {
-                        const result = await supabase.rpc('log_activity', {
-                          p_child_id: childId,
-                          p_activity_type: 'story_read',
-                          p_stars: starRewards.stars_story_read,
-                          p_metadata: { story_id: id, difficulty: story?.difficulty || 'medium', language: story?.text_language || 'de' },
-                        });
-
-                        if (result.error) {
-                          console.error(`[M13] log_activity attempt ${attempt + 1} failed:`, result.error.message);
-                          if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-                          continue;
-                        }
-
-                        logSuccess = true;
-                        const data = result.data as any;
-                        if (data?.new_badges?.length > 0) {
-                          setPendingBadges(data.new_badges);
-                        }
+                        await actions.markStoryComplete(id!);
+                        setIsMarkedAsRead(true);
+                        queryClient.invalidateQueries({ queryKey: ['stories'] });
                       } catch (e) {
-                        console.error(`[M13] log_activity attempt ${attempt + 1} threw:`, e);
-                        if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                        console.error('[Feedback] markStoryComplete failed:', e);
                       }
+
+                      // Log activity via RPC (handles stars, streak, badges, user_results)
+                      if (childId) {
+                        let logSuccess = false;
+                        for (let attempt = 0; attempt < 3 && !logSuccess; attempt++) {
+                          try {
+                            const result = await supabase.rpc('log_activity', {
+                              p_child_id: childId,
+                              p_activity_type: 'story_read',
+                              p_stars: starRewards.stars_story_read,
+                              p_metadata: { story_id: id, difficulty: story?.difficulty || 'medium', language: story?.text_language || 'de' },
+                            });
+
+                            if (result.error) {
+                              console.error(`[M13] log_activity attempt ${attempt + 1} failed:`, result.error.message);
+                              if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                              continue;
+                            }
+
+                            logSuccess = true;
+                            const data = result.data as any;
+                            if (data?.new_badges?.length > 0) {
+                              setPendingBadges(data.new_badges);
+                            }
+                          } catch (e) {
+                            console.error(`[M13] log_activity attempt ${attempt + 1} threw:`, e);
+                            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                          }
+                        }
+                        if (!logSuccess) {
+                          console.error('[M13] log_activity failed after 3 attempts — stars may need manual recovery for story', id);
+                        }
+                      } else {
+                        console.warn('[Feedback] No childId available, skipping log_activity');
+                      }
+
+                      refreshProgress();
+                      
+                      // Show Fablino celebration
+                      setFablinoReaction({
+                        type: 'celebrate',
+                        message: t.fablinoStoryDone,
+                        stars: starRewards.stars_story_read,
+                      });
+                    } catch (e) {
+                      console.error('[Feedback] onSubmit crashed:', e);
                     }
-                    if (!logSuccess) {
-                      console.error('[M13] log_activity failed after 3 attempts — stars may need manual recovery for story', id);
-                    }
-                    refreshProgress();
-                    
-                    // Show Fablino celebration
-                    setFablinoReaction({
-                      type: 'celebrate',
-                      message: t.fablinoStoryDone,
-                      stars: starRewards.stars_story_read,
-                    });
                   }}
                   storyId={story.id}
                   storyTitle={story.title}
