@@ -31,8 +31,116 @@ const corsHeaders = {
 
 // API endpoints
 const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const VERTEX_AI_URL = "https://europe-west1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/europe-west1/endpoints/openapi/models/gemini-2.5-flash:generateContent";
+
+// JSON Schema for story generation response
+const STORY_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    content: { type: "string", description: "The full story text" },
+    title: { type: "string", description: "The story title" },
+    structure_beginning: { type: "integer", description: "Story structure beginning type (1-6)" },
+    structure_middle: { type: "integer", description: "Story structure middle type (1-6)" },
+    structure_ending: { type: "integer", description: "Story structure ending type (1-6)" },
+    emotional_coloring: { type: "string", description: "The emotional tone of the story" },
+    story_path_code: { type: "string", description: "The story path code" }
+  },
+  required: ["content", "title", "structure_beginning", "structure_middle", "structure_ending", "emotional_coloring", "story_path_code"]
+};
+
+interface GeminiCallOptions {
+  jsonSchema?: object;
+  maxRetries?: number;
+}
+
+// Helper function to call Gemini API directly with optional JSON schema
+async function callGemini(
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number = 0.8,
+  options: GeminiCallOptions = {}
+): Promise<string> {
+  const { jsonSchema, maxRetries = 3 } = options;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`[GEMINI] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+
+    try {
+      const requestBody: any = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: `${systemPrompt}\n\n${userPrompt}` }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature,
+        }
+      };
+
+      if (jsonSchema) {
+        requestBody.generationConfig.responseMimeType = "application/json";
+        requestBody.generationConfig.responseSchema = jsonSchema;
+      }
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.status === 429) {
+        console.log(`[GEMINI] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        lastError = new Error("Rate limited");
+        continue;
+      }
+
+      if (response.status === 400) {
+        const errorText = await response.text();
+        console.error("[GEMINI] Bad request:", errorText);
+        throw new Error(`Gemini API bad request: ${errorText.substring(0, 200)}`);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[GEMINI] API error:", response.status, errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!content) {
+        console.error("[GEMINI] No content in response. Data:", JSON.stringify(data).substring(0, 300));
+        lastError = new Error("No content in Gemini response");
+        await sleep(2000);
+        continue;
+      }
+
+      return content;
+    } catch (error) {
+      if (error instanceof Error && error.message === "Rate limited") {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError || new Error("[GEMINI] Max retries exceeded");
+}
 
 // Helper function to count words in a text
 function countWords(text: string): number {
@@ -352,7 +460,8 @@ async function performConsistencyCheck(
   apiKey: string,
   story: { title: string; content: string },
   checkPrompt: string,
-  seriesContext?: { previousEpisode?: string; episodeNumber?: number }
+  seriesContext?: { previousEpisode?: string; episodeNumber?: number },
+  geminiApiKey?: string
 ): Promise<ConsistencyCheckResult> {
   const seriesInfo = seriesContext?.previousEpisode 
     ? `\n\n--- SERIEN-KONTEXT (Episode ${seriesContext.episodeNumber}) ---\nVorherige Episode:\n${seriesContext.previousEpisode.substring(0, 1500)}...`
@@ -369,7 +478,9 @@ ${story.content}
 ${seriesInfo}`;
 
   try {
-    const response = await callLovableAI(apiKey, checkPrompt, userPrompt, 0.3);
+    const response = geminiApiKey
+      ? await callGemini(geminiApiKey, checkPrompt, userPrompt, 0.3)
+      : await callLovableAI(apiKey, checkPrompt, userPrompt, 0.3);
     
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -505,6 +616,7 @@ async function performSeriesConsistencyCheck(
   story: { title: string; content: string },
   systemPrompt: string,
   pathCode?: string | null,
+  geminiApiKey?: string
 ): Promise<SeriesConsistencyCheckResult> {
   const pathLine = pathCode ? `Path: ${pathCode}\n\n` : '';
   const userPrompt = `CHECK THIS EPISODE:
@@ -517,7 +629,9 @@ ${story.content}
 Respond ONLY with the JSON object as specified.`;
 
   try {
-    const response = await callLovableAI(apiKey, systemPrompt, userPrompt, 0.3);
+    const response = geminiApiKey
+      ? await callGemini(geminiApiKey, systemPrompt, userPrompt, 0.3)
+      : await callLovableAI(apiKey, systemPrompt, userPrompt, 0.3);
 
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -569,6 +683,7 @@ async function correctStoryFromSeriesErrors(
   errors: SeriesConsistencyError[],
   continuityState: any | null,
   targetLanguage: string,
+  geminiApiKey?: string,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   const errorList = errors
     .map((e, i) => `${i + 1}. [${e.category}:${e.subcategory}/${e.severity}@${e.flagged_segment}${e.path_violation ? '/PATH' : ''}] "${e.original}" → Problem: ${e.problem} → Fix: ${e.fix}`)
@@ -601,7 +716,9 @@ Respond ONLY with a JSON object:
 {"title": "Corrected title (or original if no title error)", "content": "The fully corrected text"}`;
 
   try {
-    const response = await callLovableAI(apiKey, correctionPrompt, userPrompt, 0.5);
+    const response = geminiApiKey
+      ? await callGemini(geminiApiKey, correctionPrompt, userPrompt, 0.5)
+      : await callLovableAI(apiKey, correctionPrompt, userPrompt, 0.5);
 
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -642,6 +759,7 @@ async function targetedReCheck(
   apiKey: string,
   storyContent: string,
   error: SeriesConsistencyError,
+  geminiApiKey?: string,
 ): Promise<boolean> {
   const segment = extractSegment(storyContent, error.flagged_segment);
 
@@ -659,7 +777,9 @@ ${segment}
 Is this specific error fixed in the text above?`;
 
   try {
-    const response = await callLovableAI(apiKey, systemPrompt, userPrompt, 0.1);
+    const response = geminiApiKey
+      ? await callGemini(geminiApiKey, systemPrompt, userPrompt, 0.1)
+      : await callLovableAI(apiKey, systemPrompt, userPrompt, 0.1);
     const jsonMatch = response.match(/\{[\s\S]*?\}/);
     if (!jsonMatch) return false;  // pessimistic: assume not fixed if no valid JSON
     const result = JSON.parse(jsonMatch[0]);
@@ -675,7 +795,8 @@ async function correctStory(
   story: { title: string; content: string; questions: any[]; vocabulary: any[] },
   issues: string[],
   suggestedFixes: string,
-  targetLanguage: string
+  targetLanguage: string,
+  geminiApiKey?: string,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   const correctionPrompt = `Du bist ein Texteditor. Korrigiere den folgenden Text basierend auf den gefundenen Problemen.
 
@@ -705,7 +826,9 @@ Antworte NUR mit einem JSON-Objekt:
 }`;
 
   try {
-    const response = await callLovableAI(apiKey, correctionPrompt, userPrompt, 0.5);
+    const response = geminiApiKey
+      ? await callGemini(geminiApiKey, correctionPrompt, userPrompt, 0.5)
+      : await callLovableAI(apiKey, correctionPrompt, userPrompt, 0.5);
     
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -2338,18 +2461,21 @@ Deno.serve(async (req) => {
     const baseSystemPrompt = fullSystemPromptFinal;
 
     // Get API keys - prefer VERTEX_SERVICE_ACCOUNT_JSON (proper SA JSON) for Vertex AI
-    const GEMINI_API_KEY = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
+    const VERTEX_API_KEY = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error("Neither GEMINI_API_KEY nor LOVABLE_API_KEY is configured");
     }
-    if (!GEMINI_API_KEY) {
-      console.warn("[generate-story] No VERTEX_API_KEY_NEW, GEMINI_API_KEY or GOOGLE_VERTEX_AI_KEY configured - image generation may fail");
+    if (!VERTEX_API_KEY) {
+      console.warn("[generate-story] No VERTEX_SERVICE_ACCOUNT_JSON, VERTEX_API_KEY_NEW, GEMINI_API_KEY or GOOGLE_VERTEX_AI_KEY configured - image generation may fail");
     } else {
-      // Log which key source is being used (first 20 chars for debugging)
-      const keyPreview = GEMINI_API_KEY.substring(0, 20);
-      console.log(`[generate-story] Image API key loaded, starts with: ${keyPreview}...`);
+      const keyPreview = VERTEX_API_KEY.substring(0, 20);
+      console.log(`[generate-story] Vertex API key loaded, starts with: ${keyPreview}...`);
+    }
+    if (GEMINI_API_KEY) {
+      console.log(`[generate-story] Gemini API key loaded for text generation`);
     }
 
     // Language mappings (used by both new and old paths)
@@ -2632,7 +2758,18 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
       console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
-      const content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+      
+      // Use Gemini API with JSON schema if available, fallback to Lovable AI Gateway
+      let content: string;
+      if (GEMINI_API_KEY) {
+        console.log(`[GENERATE] Using Gemini API with JSON schema`);
+        content = await callGemini(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8, {
+          jsonSchema: STORY_RESPONSE_SCHEMA
+        });
+      } else {
+        console.log(`[GENERATE] Falling back to Lovable AI Gateway`);
+        content = await callLovableAI(LOVABLE_API_KEY!, fullSystemPrompt, promptToUse, 0.8);
+      }
 
       // Parse the JSON from the response (robust, multi-fallback)
       const parsed = safeParseStoryResponse(content);
@@ -2736,7 +2873,9 @@ ${story.content}
 Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
         try {
-          const expandedContent = await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          const expandedContent = GEMINI_API_KEY
+            ? await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
+            : await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
           const newWordCount = countWords(expandedContent);
           console.log(`Expanded story word count: ${newWordCount}`);
           
@@ -3442,6 +3581,7 @@ Respond with ONLY valid JSON, no markdown:
             allErrors,
             lastContinuity,
             targetLanguage,
+            GEMINI_API_KEY,
           );
 
           const patchApplied = correctedStory.content !== story.content || correctedStory.title !== story.title;
@@ -3457,7 +3597,7 @@ Respond with ONLY valid JSON, no markdown:
           let criticalRemaining = 0;
           for (const err of criticalErrors) {
             const fixed = patchApplied
-              ? await targetedReCheck(LOVABLE_API_KEY, story.content, err)
+              ? await targetedReCheck(LOVABLE_API_KEY, story.content, err, GEMINI_API_KEY)
               : false;
             if (fixed) {
               criticalFixed++;
@@ -3478,7 +3618,7 @@ Respond with ONLY valid JSON, no markdown:
           let mediumRemaining = 0;
           for (const err of mediumErrors) {
             const fixed = patchApplied
-              ? await targetedReCheck(LOVABLE_API_KEY, story.content, err)
+              ? await targetedReCheck(LOVABLE_API_KEY, story.content, err, GEMINI_API_KEY)
               : false;
             if (fixed) {
               mediumFixed++;
@@ -3540,7 +3680,8 @@ Respond with ONLY valid JSON, no markdown:
             story,
             checkResult.issues,
             checkResult.suggestedFixes,
-            targetLanguage
+            targetLanguage,
+            GEMINI_API_KEY,
           );
 
           if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
@@ -3679,10 +3820,10 @@ Respond with ONLY valid JSON, no markdown:
           // 2. Generate image (Vertex AI FIRST → Lovable Gateway fallback)
           let imageUrl: string | null = null;
 
-          if (GEMINI_API_KEY) {
+          if (VERTEX_API_KEY) {
             try {
               console.log(`[IMAGE] Style: ${imageStyleData?.styleKey || 'default'}, negativePrompt: ${imgPrompt.negative_prompt?.substring(0, 100) || 'NONE'}`);
-              imageUrl = await callVertexImageAPI(GEMINI_API_KEY, imgPrompt.prompt, 3, imgPrompt.negative_prompt || undefined);
+              imageUrl = await callVertexImageAPI(VERTEX_API_KEY, imgPrompt.prompt, 3, imgPrompt.negative_prompt || undefined);
             } catch (vertexError) {
               console.log(`[IMAGE-PIPELINE] Vertex AI failed for ${imgPrompt.label}, trying Lovable Gateway`);
             }
@@ -3813,9 +3954,9 @@ Respond with ONLY valid JSON, no markdown:
       const comicPipelineStart = Date.now();
       const comicImageTask = async (prompt: string, gridLabel: string, negPrompt?: string): Promise<string> => {
         let comicBase64: string | null = null;
-        if (GEMINI_API_KEY) {
+        if (VERTEX_API_KEY) {
           try {
-            comicBase64 = await callVertexImageAPI(GEMINI_API_KEY, prompt, 3, negPrompt);
+            comicBase64 = await callVertexImageAPI(VERTEX_API_KEY, prompt, 3, negPrompt);
             if (comicBase64) {
               console.log(`[ComicStrip] Vertex succeeded for ${gridLabel}`);
             } else {
@@ -3825,7 +3966,7 @@ Respond with ONLY valid JSON, no markdown:
             console.warn(`[ComicStrip] Vertex threw for ${gridLabel}:`, vErr?.message || vErr);
           }
         } else {
-          console.log(`[ComicStrip] No GEMINI_API_KEY, skipping Vertex for ${gridLabel}`);
+          console.log(`[ComicStrip] No VERTEX_API_KEY, skipping Vertex for ${gridLabel}`);
         }
         if (!comicBase64 && LOVABLE_API_KEY) {
           console.log(`[ComicStrip] Trying Lovable AI Gateway fallback for ${gridLabel}...`);
