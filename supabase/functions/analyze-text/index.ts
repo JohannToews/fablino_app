@@ -46,6 +46,7 @@ Si aucune expression spéciale, retourne: {"specialExpressions": []}`;
           generationConfig: {
             temperature: 0.2,
             maxOutputTokens: 500,
+            responseMimeType: 'application/json',
           },
         }),
       }
@@ -66,8 +67,8 @@ Si aucune expression spéciale, retourne: {"specialExpressions": []}`;
     // Parse JSON from response
     let result;
     try {
-      // Clean potential markdown formatting
-      const cleanJson = rawText.replace(/```json\n?|\n?```/g, '').trim();
+      // Parse JSON from response (responseMimeType ensures clean JSON)
+      const cleanJson = rawText.trim();
       result = JSON.parse(cleanJson);
     } catch {
       console.error('Failed to parse JSON:', rawText);

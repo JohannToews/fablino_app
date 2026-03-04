@@ -105,6 +105,7 @@ Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
           generationConfig: {
             temperature: 0.3,
             maxOutputTokens: 200,
+            responseMimeType: 'application/json',
           },
         }),
       }
@@ -124,7 +125,7 @@ Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
     
     let result;
     try {
-      const cleanJson = rawText.replace(/```json\n?|\n?```/g, '').trim();
+      const cleanJson = rawText.trim();
       result = JSON.parse(cleanJson);
     } catch {
       console.error('Failed to parse JSON:', rawText);

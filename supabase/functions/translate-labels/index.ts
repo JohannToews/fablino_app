@@ -57,7 +57,7 @@ Return ONLY valid JSON (no markdown):
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1000, responseMimeType: 'application/json' },
         }),
       }
     );
@@ -75,7 +75,7 @@ Return ONLY valid JSON (no markdown):
     
     let translations;
     try {
-      const clean = rawText.replace(/```json\n?|\n?```/g, '').trim();
+      const clean = rawText.trim();
       translations = JSON.parse(clean);
     } catch {
       console.error('Failed to parse:', rawText);
