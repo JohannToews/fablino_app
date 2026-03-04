@@ -2463,7 +2463,7 @@ Deno.serve(async (req) => {
     // Get API keys - prefer VERTEX_SERVICE_ACCOUNT_JSON (proper SA JSON) for Vertex AI
     const VERTEX_API_KEY = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
     
     if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
       throw new Error("Neither GEMINI_API_KEY nor LOVABLE_API_KEY is configured");
@@ -2768,7 +2768,7 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         });
       } else {
         console.log(`[GENERATE] Falling back to Lovable AI Gateway`);
-        content = await callLovableAI(LOVABLE_API_KEY!, fullSystemPrompt, promptToUse, 0.8);
+        content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       }
 
       // Parse the JSON from the response (robust, multi-fallback)
