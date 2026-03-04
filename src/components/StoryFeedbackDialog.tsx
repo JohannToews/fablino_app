@@ -251,7 +251,10 @@ const StoryFeedbackDialog = ({
         weakness_reason: comment || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("story_ratings insert error:", JSON.stringify(error));
+        throw error;
+      }
 
       toast.success(t.thankYou);
       onSubmit();
