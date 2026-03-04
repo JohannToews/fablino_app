@@ -142,6 +142,7 @@ const SLOT_HAIR_LENGTH: AppearanceSlot = {
     { value: 'short', label: { de: 'Kurz', en: 'Short' }, anchorFragment: 'short' },
     { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, anchorFragment: 'medium-length' },
     { value: 'long', label: { de: 'Lang', en: 'Long' }, anchorFragment: 'long' },
+    { value: 'very_long', label: { de: 'Sehr lang', en: 'Very long' }, anchorFragment: 'very long' },
   ],
 };
 
