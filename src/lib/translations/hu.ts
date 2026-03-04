@@ -484,6 +484,7 @@ const hu: Translations = {
   installModalLater: 'Később',
 
   myLook: 'Kinézetem',
+  myPeople: 'Az embereim',
   appearanceTitle: 'Kinézetem',
   appearanceSubtitle: 'Így nézek ki a történeteimben!',
   appearanceMascotMessage: 'Mutasd meg, hogyan nézel ki! Így foglak rajzolni a történeteidben.',

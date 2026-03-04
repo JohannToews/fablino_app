@@ -484,6 +484,7 @@ const pt: Translations = {
   installModalLater: 'Mais tarde',
 
   myLook: 'O meu visual',
+  myPeople: 'As minhas pessoas',
   appearanceTitle: 'O meu visual',
   appearanceSubtitle: 'É assim que apareço nas minhas histórias!',
   appearanceMascotMessage: 'Mostra-me como és! É assim que te vou desenhar nas histórias.',

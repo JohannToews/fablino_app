@@ -484,6 +484,7 @@ const ru: Translations = {
   installModalLater: 'Позже',
 
   myLook: 'Мой образ',
+  myPeople: 'Мои люди',
   appearanceTitle: 'Мой образ',
   appearanceSubtitle: 'Так я выгляжу в моих историях!',
   appearanceMascotMessage: 'Покажи мне, как ты выглядишь! Так я буду рисовать тебя в историях.',

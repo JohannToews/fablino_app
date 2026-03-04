@@ -484,6 +484,7 @@ const ro: Translations = {
   installModalLater: 'Mai târziu',
 
   myLook: 'Aspectul meu',
+  myPeople: 'Oamenii mei',
   appearanceTitle: 'Aspectul meu',
   appearanceSubtitle: 'Așa arăt în poveștile mele!',
   appearanceMascotMessage: 'Arată-mi cum arăți! Așa te voi desena în povești.',

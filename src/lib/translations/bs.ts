@@ -484,6 +484,7 @@ const bs: Translations = {
   installModalLater: 'Kasnije',
 
   myLook: 'Moj Look',
+  myPeople: 'Moji ljudi',
   appearanceTitle: 'Moj Look',
   appearanceSubtitle: 'Ovako izgledam u mojim pričama!',
   appearanceMascotMessage: 'Pokaži mi kako izgledaš! Tako ću te crtati u tvojim pričama.',

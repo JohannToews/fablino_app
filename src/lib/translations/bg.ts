@@ -484,6 +484,7 @@ const bg: Translations = {
   installModalLater: 'По-късно',
 
   myLook: 'Моят вид',
+  myPeople: 'Моите хора',
   appearanceTitle: 'Моят вид',
   appearanceSubtitle: 'Така изглеждам в моите истории!',
   appearanceMascotMessage: 'Покажи ми как изглеждаш! Така ще те рисувам в историите.',

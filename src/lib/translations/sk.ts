@@ -484,6 +484,7 @@ const sk: Translations = {
   installModalLater: 'Neskôr',
 
   myLook: 'Môj vzhľad',
+  myPeople: 'Moji ľudia',
   appearanceTitle: 'Môj vzhľad',
   appearanceSubtitle: 'Takto vyzerám v mojich príbehoch!',
   appearanceMascotMessage: 'Ukáž mi, ako vyzeráš! Takto ťa budem kresliť v príbehoch.',

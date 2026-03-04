@@ -483,6 +483,7 @@ const tr: Translations = {
   installModalYes: 'Evet, yükle! 🦊',
   installModalLater: 'Sonra',
   myLook: 'Görünümüm',
+  myPeople: 'Benim insanlarım',
   appearanceTitle: 'Görünümüm',
   appearanceSubtitle: 'Hikayelerimde böyle görünüyorum!',
   appearanceMascotMessage: 'Nasıl göründüğünü göster! Hikayelerinde seni böyle çizeceğim.',
