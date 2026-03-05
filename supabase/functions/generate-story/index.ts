@@ -264,7 +264,7 @@ async function callClaudeVertex(
     throw new Error('Invalid service account JSON configuration');
   }
   const projectId = sa.project_id || "fablino-prod";
-  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/claude-sonnet-4-20250514:rawPredict`;
+  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/claude-sonnet-4@20250514:rawPredict`;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
