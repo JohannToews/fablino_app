@@ -1340,9 +1340,7 @@ export async function buildStoryPrompt(
 
   // ── Classify user input richness ──
   const userInputLevel = classifyUserInput(request.user_prompt);
-  if (userInputLevel !== 'none') {
-    console.log(`[promptBuilder] User input classified as: ${userInputLevel} (${request.user_prompt?.trim().split(/\s+/).length} words)`);
-  }
+  console.log(`[promptBuilder] classifyUserInput() → "${userInputLevel}" | user_prompt: "${(request.user_prompt || '').substring(0, 200)}" (${request.user_prompt?.trim().split(/\s+/).length ?? 0} words)`);
 
   // ── 1. Load age_rules (with fallback to 'de') ──
   // Clamp to min 6 for DB lookup — age_rules starts at min_age=6.

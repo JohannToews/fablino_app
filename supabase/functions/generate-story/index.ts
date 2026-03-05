@@ -1945,6 +1945,8 @@ Deno.serve(async (req) => {
     console.log('[generate-story] include_self:', includeSelf, 'kidProfileId:', kidProfileId ?? '(missing)');
     console.log('[generate-story] surprise_characters:', surpriseCharactersParam);
     console.log('[generate-story] storyType:', storyType);
+    console.log('[generate-story] userPromptParam:', userPromptParam ?? '(undefined)');
+    console.log('[generate-story] description:', description ?? '(undefined)');
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -2534,11 +2536,20 @@ Deno.serve(async (req) => {
         },
       };
 
+      console.log('[generate-story] storyRequest.user_prompt resolved to:', (storyRequest.user_prompt || '(empty)').substring(0, 300));
       // 3. Build dynamic user message
       const promptResult = await buildStoryPrompt(storyRequest, supabase);
       userMessageFinal = promptResult.prompt;
       promptWarnings = promptResult.warnings;
       selectedPathCode = promptResult.selectedPath?.code || null;
+
+      // Debug: Check if PRIMARY DIRECTIVE is in the built prompt
+      const hasPrimaryDirective = userMessageFinal.includes('PRIMARY') || userMessageFinal.includes('HÖCHSTE PRIORITÄT') || userMessageFinal.includes('PRIORITÉ MAXIMALE') || userMessageFinal.includes('MÁXIMA PRIORIDAD');
+      console.log(`[generate-story] PRIMARY DIRECTIVE in prompt: ${hasPrimaryDirective}`);
+      if (hasPrimaryDirective) {
+        const directiveMatch = userMessageFinal.match(/⚡[^\n]*\n[\s\S]{0,300}/);
+        console.log('[generate-story] PRIMARY DIRECTIVE excerpt:', directiveMatch?.[0]?.substring(0, 300) ?? '(match failed)');
+      }
       if (promptWarnings.length > 0) {
         console.warn(`[generate-story] Prompt builder warnings: ${promptWarnings.join('; ')}`);
       }
