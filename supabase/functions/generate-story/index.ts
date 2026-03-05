@@ -33,7 +33,6 @@ const corsHeaders = {
 const LOVABLE_AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-const VERTEX_AI_URL = "https://europe-west1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/europe-west1/endpoints/openapi/models/gemini-2.5-flash:generateContent";
 
 // JSON Schema for story generation response
 const STORY_RESPONSE_SCHEMA = {
@@ -75,12 +74,13 @@ async function callGemini(
 
     try {
       const requestBody: any = {
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
         contents: [
           {
             role: "user",
-            parts: [
-              { text: `${systemPrompt}\n\n${userPrompt}` }
-            ]
+            parts: [{ text: userPrompt }]
           }
         ],
         generationConfig: {
@@ -140,6 +140,115 @@ async function callGemini(
   }
 
   throw lastError || new Error("[GEMINI] Max retries exceeded");
+}
+
+// Vertex AI EU endpoint for text generation (europe-west1, OAuth2 Service Account auth)
+async function callGeminiVertex(
+  serviceAccountJson: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number = 0.8,
+  options: GeminiCallOptions = {}
+): Promise<string> {
+  const { jsonSchema, maxRetries = 3 } = options;
+  let lastError: Error | null = null;
+
+  let sa: any;
+  try {
+    sa = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    console.error('[VERTEX-TEXT] Failed to parse service account JSON:', (e as Error).message?.substring(0, 100));
+    throw new Error('Invalid service account JSON configuration');
+  }
+  const projectId = sa.project_id || "fablino-prod";
+  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.5-flash:generateContent`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`[VERTEX-TEXT] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+
+    try {
+      const accessToken = await getVertexAccessToken(serviceAccountJson);
+
+      const requestBody: any = {
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: userPrompt }]
+          }
+        ],
+        generationConfig: {
+          temperature,
+        }
+      };
+
+      if (jsonSchema) {
+        requestBody.generationConfig.responseMimeType = "application/json";
+        requestBody.generationConfig.responseSchema = jsonSchema;
+      }
+
+      const response = await fetch(vertexUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.status === 429) {
+        console.log(`[VERTEX-TEXT] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        lastError = new Error("Rate limited");
+        continue;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        const errorText = await response.text();
+        console.error(`[VERTEX-TEXT] Auth error (${response.status}):`, errorText);
+        cachedAccessToken = null;
+        lastError = new Error(`Vertex auth error: ${response.status}`);
+        continue;
+      }
+
+      if (response.status === 400) {
+        const errorText = await response.text();
+        console.error("[VERTEX-TEXT] Bad request:", errorText);
+        throw new Error(`Vertex API bad request: ${errorText.substring(0, 200)}`);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[VERTEX-TEXT] API error:", response.status, errorText);
+        throw new Error(`Vertex API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!content) {
+        console.error("[VERTEX-TEXT] No content in response. Data:", JSON.stringify(data).substring(0, 300));
+        lastError = new Error("No content in Vertex response");
+        await sleep(2000);
+        continue;
+      }
+
+      return content;
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Rate limited" || error.message.startsWith("Vertex auth error"))) {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError || new Error("[VERTEX-TEXT] Max retries exceeded");
 }
 
 // Helper function to count words in a text
@@ -2761,11 +2870,12 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
 
       console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
       
-      // Use Gemini API if available, fallback to Lovable AI Gateway
-      // NOTE: No jsonSchema passed — Gemini writes free-form JSON per prompt instructions.
-      // safeParseStoryResponse() handles parsing. STORY_RESPONSE_SCHEMA kept for future metadata-only call.
+      // Use Vertex AI EU (fastest, europe-west1) → Gemini API → Lovable AI Gateway
       let content: string;
-      if (GEMINI_API_KEY) {
+      if (VERTEX_API_KEY) {
+        console.log(`[GENERATE] Using Vertex AI EU (europe-west1)`);
+        content = await callGeminiVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+      } else if (GEMINI_API_KEY) {
         console.log(`[GENERATE] Using Gemini API (free-form JSON, no responseSchema)`);
         content = await callGemini(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       } else {
@@ -2884,9 +2994,11 @@ ${story.content}
 Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
         try {
-          const expandedContent = GEMINI_API_KEY
-            ? await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
-            : await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          const expandedContent = VERTEX_API_KEY
+            ? await callGeminiVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
+            : GEMINI_API_KEY
+              ? await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
+              : await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
           const newWordCount = countWords(expandedContent);
           console.log(`Expanded story word count: ${newWordCount}`);
           
