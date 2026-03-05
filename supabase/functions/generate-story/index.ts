@@ -727,9 +727,10 @@ Respond ONLY with a JSON object:
     }
 
     const corrected = JSON.parse(jsonMatch[0]);
+    const normalizedContent = (corrected.content || story.content).replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
     return {
       title: corrected.title || story.title,
-      content: corrected.content || story.content,
+      content: normalizedContent,
       questions: story.questions,
       vocabulary: story.vocabulary,
     };
@@ -837,9 +838,10 @@ Antworte NUR mit einem JSON-Objekt:
     }
     
     const corrected = JSON.parse(jsonMatch[0]);
+    const normalizedContent = (corrected.content || story.content).replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
     return {
       title: corrected.title || story.title,
-      content: corrected.content || story.content,
+      content: normalizedContent,
       questions: story.questions,
       vocabulary: story.vocabulary
     };
@@ -2820,6 +2822,9 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         throw new Error(`LLM response missing essential fields (title: ${!!story.title}, content: ${!!story.content})`);
       }
 
+      // ── Normalize spacing: ensure space after sentence-ending punctuation ──
+      story.content = story.content.replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
+
       // ── DEBUG: Log parsed response summary ──
       console.log('[GENERATE] Parsed response:', JSON.stringify({
         hasContent: !!story.content,
@@ -2886,7 +2891,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
           console.log(`Expanded story word count: ${newWordCount}`);
           
           if (newWordCount >= minWordCount) {
-            story.content = expandedContent;
+            story.content = expandedContent.replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
             console.log("Story successfully expanded");
             break;
           }
@@ -4608,7 +4613,7 @@ Respond with ONLY valid JSON, no markdown:
       critical_patch_failed: criticalPatchFailed,
       patch_fix_rate: totalIssuesFound > 0
         ? Math.round((totalIssuesCorrected / totalIssuesFound) * 1000) / 1000
-        : 0,
+        : null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
