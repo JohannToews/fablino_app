@@ -4,6 +4,7 @@ import PipelineTimingTable from "@/components/PipelineTimingTable";
 import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -216,7 +217,6 @@ const useStoryStatsContent = () => {
     return code || "–";
   };
 
-
   const visibleCount = ALL_COLUMNS.filter(c => isVis(c.key)).length;
 
   const content = (
@@ -308,96 +308,110 @@ const useStoryStatsContent = () => {
         <span className="text-xs text-muted-foreground">{filtered.length} Stories</span>
       </div>
 
-      {/* Table */}
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="rounded-xl border bg-card overflow-x-auto max-w-full">
-          <Table className="min-w-[900px]">
-            <TableHeader>
-              <TableRow>
-                {isVis("datum") && <TableHead className="whitespace-nowrap">Datum</TableHead>}
-                {isVis("user") && <TableHead className="whitespace-nowrap">User</TableHead>}
-                {isVis("kind") && <TableHead className="whitespace-nowrap">Kind</TableHead>}
-                {isVis("story") && <TableHead className="whitespace-nowrap">Story</TableHead>}
-                {isVis("lang") && <TableHead className="whitespace-nowrap">🌐</TableHead>}
-                {isVis("woerter") && <TableHead className="whitespace-nowrap">Wörter</TableHead>}
-                {isVis("stufe") && <TableHead className="whitespace-nowrap">Stufe</TableHead>}
-                {isVis("pfad") && <TableHead className="whitespace-nowrap">Pfad</TableHead>}
-                {isVis("emotion") && <TableHead className="whitespace-nowrap">Emotion</TableHead>}
-                {isVis("err_h") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_h")}>🔴 H{sortCol === "err_h" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
-                {isVis("err_m") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_m")}>🟡 M{sortCol === "err_m" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
-                {isVis("err_l") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_l")}>⚪ L{sortCol === "err_l" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
-                {isVis("patch") && <TableHead className="whitespace-nowrap">Patch %</TableHead>}
-                {isVis("detail") && <TableHead className="whitespace-nowrap">Detail</TableHead>}
-                {isVis("rating") && <TableHead className="whitespace-nowrap">⭐</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={visibleCount} className="text-center text-muted-foreground py-8">Keine Daten</TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((r) => (
-                  <TableRow key={r.story_id}>
-                    {isVis("datum") && <TableCell className="text-xs whitespace-nowrap">{format(new Date(r.story_created_at), "dd.MM.yy")}</TableCell>}
-                    {isVis("user") && <TableCell className="text-xs max-w-[140px] truncate" title={r.user_email || ""}>{r.user_email || "–"}</TableCell>}
-                    {isVis("kind") && <TableCell className="text-xs whitespace-nowrap">{r.child_name || "–"}</TableCell>}
-                    {isVis("story") && (
-                      <TableCell className="text-xs max-w-[180px]">
-                        <Link to={`/read/${r.story_id}`} className="text-primary underline underline-offset-2 hover:no-underline truncate block" title={r.story_title}>
-                          {r.story_title}
-                        </Link>
-                      </TableCell>
+        <Accordion type="multiple" defaultValue={["story-table", "pipeline-timing"]} className="space-y-3">
+          <AccordionItem value="story-table" className="border rounded-xl bg-card">
+            <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+              📊 Story-Übersicht ({filtered.length})
+            </AccordionTrigger>
+            <AccordionContent className="px-0 pb-0">
+              <div className="overflow-x-auto max-w-full">
+                <Table className="min-w-[900px]">
+                  <TableHeader>
+                    <TableRow>
+                      {isVis("datum") && <TableHead className="whitespace-nowrap">Datum</TableHead>}
+                      {isVis("user") && <TableHead className="whitespace-nowrap">User</TableHead>}
+                      {isVis("kind") && <TableHead className="whitespace-nowrap">Kind</TableHead>}
+                      {isVis("story") && <TableHead className="whitespace-nowrap">Story</TableHead>}
+                      {isVis("lang") && <TableHead className="whitespace-nowrap">🌐</TableHead>}
+                      {isVis("woerter") && <TableHead className="whitespace-nowrap">Wörter</TableHead>}
+                      {isVis("stufe") && <TableHead className="whitespace-nowrap">Stufe</TableHead>}
+                      {isVis("pfad") && <TableHead className="whitespace-nowrap">Pfad</TableHead>}
+                      {isVis("emotion") && <TableHead className="whitespace-nowrap">Emotion</TableHead>}
+                      {isVis("err_h") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_h")}>🔴 H{sortCol === "err_h" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
+                      {isVis("err_m") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_m")}>🟡 M{sortCol === "err_m" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
+                      {isVis("err_l") && <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => handleSort("err_l")}>⚪ L{sortCol === "err_l" ? (sortDir === "desc" ? " ↓" : " ↑") : ""}</TableHead>}
+                      {isVis("patch") && <TableHead className="whitespace-nowrap">Patch %</TableHead>}
+                      {isVis("detail") && <TableHead className="whitespace-nowrap">Detail</TableHead>}
+                      {isVis("rating") && <TableHead className="whitespace-nowrap">⭐</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={visibleCount} className="text-center text-muted-foreground py-8">Keine Daten</TableCell>
+                      </TableRow>
+                    ) : (
+                      filtered.map((r) => (
+                        <TableRow key={r.story_id}>
+                          {isVis("datum") && <TableCell className="text-xs whitespace-nowrap">{format(new Date(r.story_created_at), "dd.MM.yy")}</TableCell>}
+                          {isVis("user") && <TableCell className="text-xs max-w-[140px] truncate" title={r.user_email || ""}>{r.user_email || "–"}</TableCell>}
+                          {isVis("kind") && <TableCell className="text-xs whitespace-nowrap">{r.child_name || "–"}</TableCell>}
+                          {isVis("story") && (
+                            <TableCell className="text-xs max-w-[180px]">
+                              <Link to={`/read/${r.story_id}`} className="text-primary underline underline-offset-2 hover:no-underline truncate block" title={r.story_title}>
+                                {r.story_title}
+                              </Link>
+                            </TableCell>
+                          )}
+                          {isVis("lang") && <TableCell className="text-center">{FLAG[r.language || ""] || r.language}</TableCell>}
+                          {isVis("woerter") && <TableCell className="text-xs text-right">{r.word_count_approx ?? "–"}</TableCell>}
+                          {isVis("stufe") && <TableCell className="text-xs">{r.difficulty || "–"}</TableCell>}
+                          {isVis("pfad") && (
+                            <TableCell className="text-xs whitespace-nowrap" title={formatPathCode(r) || undefined}>
+                              {formatPathLabel(r)}
+                            </TableCell>
+                          )}
+                          {isVis("emotion") && <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>}
+                          {isVis("err_h") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_critical ?? 0) > 0 ? "text-destructive font-bold" : "text-muted-foreground")}>{r.checker_critical ?? 0}</TableCell>}
+                          {isVis("err_m") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_medium ?? 0) > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground")}>{r.checker_medium ?? 0}</TableCell>}
+                          {isVis("err_l") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_low ?? 0) > 0 ? "text-foreground" : "text-muted-foreground")}>{r.checker_low ?? 0}</TableCell>}
+                          {isVis("patch") && (
+                            <TableCell className={cn("text-xs font-medium", patchColor(r.patch_fix_rate != null ? Number(r.patch_fix_rate) : null))}>
+                              {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate) * 100)}%` : "–"}
+                            </TableCell>
+                          )}
+                          {isVis("detail") && (
+                            <TableCell>
+                              {((r.checker_subcategories?.length ?? 0) > 0 || r.weakest_part || r.critical_patch_failed) ? (
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDetailRow(r)}>
+                                  <FileWarning className="h-3.5 w-3.5 mr-1" />Report
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">–</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {isVis("rating") && (
+                            <TableCell className="text-xs">
+                              {r.quality_rating != null ? (
+                                <span className="flex items-center gap-0.5">
+                                  {r.quality_rating}<Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                </span>
+                              ) : "–"}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
                     )}
-                    {isVis("lang") && <TableCell className="text-center">{FLAG[r.language || ""] || r.language}</TableCell>}
-                    {isVis("woerter") && <TableCell className="text-xs text-right">{r.word_count_approx ?? "–"}</TableCell>}
-                    {isVis("stufe") && <TableCell className="text-xs">{r.difficulty || "–"}</TableCell>}
-                    {isVis("pfad") && (
-                      <TableCell className="text-xs whitespace-nowrap" title={formatPathCode(r) || undefined}>
-                        {formatPathLabel(r)}
-                      </TableCell>
-                    )}
-                    {isVis("emotion") && <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>}
-                    {isVis("err_h") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_critical ?? 0) > 0 ? "text-destructive font-bold" : "text-muted-foreground")}>{r.checker_critical ?? 0}</TableCell>}
-                    {isVis("err_m") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_medium ?? 0) > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground")}>{r.checker_medium ?? 0}</TableCell>}
-                    {isVis("err_l") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_low ?? 0) > 0 ? "text-foreground" : "text-muted-foreground")}>{r.checker_low ?? 0}</TableCell>}
-                    {isVis("patch") && (
-                      <TableCell className={cn("text-xs font-medium", patchColor(r.patch_fix_rate != null ? Number(r.patch_fix_rate) : null))}>
-                        {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate) * 100)}%` : "–"}
-                      </TableCell>
-                    )}
-                    {isVis("detail") && (
-                      <TableCell>
-                        {((r.checker_subcategories?.length ?? 0) > 0 || r.weakest_part || r.critical_patch_failed) ? (
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDetailRow(r)}>
-                            <FileWarning className="h-3.5 w-3.5 mr-1" />Report
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">–</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {isVis("rating") && (
-                      <TableCell className="text-xs">
-                        {r.quality_rating != null ? (
-                          <span className="flex items-center gap-0.5">
-                            {r.quality_rating}<Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                          </span>
-                        ) : "–"}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                  </TableBody>
+                </Table>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-      {/* Pipeline Timing Table */}
-      <PipelineTimingTable rows={filtered} />
+          <AccordionItem value="pipeline-timing" className="border rounded-xl bg-card">
+            <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+              ⏱️ Pipeline Timing
+            </AccordionTrigger>
+            <AccordionContent className="px-0 pb-0">
+              <PipelineTimingTable rows={filtered} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
     </>
   );
 
