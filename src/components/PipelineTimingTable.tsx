@@ -17,6 +17,8 @@ interface TimingRow {
   checker_critical: number | null;
   checker_medium: number | null;
   checker_low: number | null;
+  issues_found: number | null;
+  issues_corrected: number | null;
 }
 
 interface PipelineTimingTableProps {
@@ -58,7 +60,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
 
   return (
     <div className="overflow-x-auto max-w-full">
-      <Table className="min-w-[900px]">
+      <Table className="min-w-[950px]">
           <TableHeader>
             <TableRow>
               <TableHead className="whitespace-nowrap">Datum</TableHead>
@@ -66,7 +68,8 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
               <TableHead className="whitespace-nowrap">Length</TableHead>
               <TableHead className="whitespace-nowrap text-right">Story Gen</TableHead>
               <TableHead className="whitespace-nowrap text-right">Check</TableHead>
-              <TableHead className="whitespace-nowrap text-center">Errors</TableHead>
+              <TableHead className="whitespace-nowrap text-center">Fehler</TableHead>
+              <TableHead className="whitespace-nowrap text-center">nach Patch</TableHead>
               <TableHead className="whitespace-nowrap text-right">Patch</TableHead>
               <TableHead className="whitespace-nowrap text-right">ReCheck</TableHead>
               <TableHead className="whitespace-nowrap text-right">Bilder</TableHead>
@@ -94,14 +97,18 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.story_generation_ms)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.consistency_check_only_ms)}</TableCell>
                   <TableCell className="text-xs text-center font-mono">
-                    {(r.checker_critical ?? 0) + (r.checker_medium ?? 0) + (r.checker_low ?? 0) > 0 ? (
-                      <span>
-                        <span className="text-destructive">{r.checker_critical ?? 0}</span>
-                        /
-                        <span className="text-orange-600 dark:text-orange-400">{r.checker_medium ?? 0}</span>
-                        /
-                        <span className="text-muted-foreground">{r.checker_low ?? 0}</span>
-                      </span>
+                    {r.issues_found != null && r.issues_found > 0 ? (
+                      <span className="text-destructive font-semibold">{r.issues_found}</span>
+                    ) : "–"}
+                  </TableCell>
+                  <TableCell className="text-xs text-center font-mono">
+                    {r.issues_found != null && r.issues_corrected != null ? (
+                      (() => {
+                        const remaining = r.issues_found - r.issues_corrected;
+                        return remaining > 0
+                          ? <span className="text-destructive font-semibold">{remaining}</span>
+                          : <span className="text-emerald-600 dark:text-emerald-400">0</span>;
+                      })()
                     ) : "–"}
                   </TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.patch_ms)}</TableCell>
