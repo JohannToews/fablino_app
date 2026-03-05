@@ -3880,9 +3880,9 @@ Respond with ONLY valid JSON, no markdown:
               checker_subcategories: checkerSubcategories,
               critical_patch_failed: criticalPatchFailed,
               patch_fix_rate: patchFixRate,
-              consistency_check_only_ms: checkOnlyMs || null,
-              patch_ms: patchMs || null,
-              recheck_ms: recheckMs || null,
+              consistency_check_only_ms: checkOnlyMs ?? null,
+              patch_ms: patchMs ?? null,
+              recheck_ms: recheckMs ?? null,
             })
             .eq('id', storyId);
 
