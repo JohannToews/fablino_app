@@ -246,6 +246,100 @@ async function callGeminiVertex(
   throw lastError || new Error("[VERTEX-TEXT] Max retries exceeded");
 }
 
+// Vertex AI Claude Sonnet 4.6 endpoint (europe-west1, OAuth2 Service Account auth via rawPredict)
+async function callClaudeVertex(
+  serviceAccountJson: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number = 0.8,
+  maxRetries: number = 3
+): Promise<string> {
+  let lastError: Error | null = null;
+
+  let sa: any;
+  try {
+    sa = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    console.error('[VERTEX-CLAUDE] Failed to parse service account JSON:', (e as Error).message?.substring(0, 100));
+    throw new Error('Invalid service account JSON configuration');
+  }
+  const projectId = sa.project_id || "fablino-prod";
+  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/claude-sonnet-4-6:rawPredict`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`[VERTEX-CLAUDE] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      await sleep(waitTime);
+    }
+
+    try {
+      const accessToken = await getVertexAccessToken(serviceAccountJson);
+
+      const response = await fetch(vertexUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          anthropic_version: "vertex-2023-10-16",
+          max_tokens: 8192,
+          temperature,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        }),
+      });
+
+      if (response.status === 429) {
+        console.log(`[VERTEX-CLAUDE] Rate limited (attempt ${attempt + 1}/${maxRetries})`);
+        lastError = new Error("Rate limited");
+        continue;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        const errorText = await response.text();
+        console.error(`[VERTEX-CLAUDE] Auth error (${response.status}):`, errorText);
+        cachedAccessToken = null;
+        lastError = new Error(`Vertex auth error: ${response.status}`);
+        continue;
+      }
+
+      if (response.status === 400) {
+        const errorText = await response.text();
+        console.error("[VERTEX-CLAUDE] Bad request:", errorText);
+        throw new Error(`Vertex Claude bad request: ${errorText.substring(0, 200)}`);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[VERTEX-CLAUDE] API error:", response.status, errorText);
+        throw new Error(`Vertex Claude error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.content?.[0]?.text;
+
+      if (!content) {
+        console.error("[VERTEX-CLAUDE] No content in response. Data:", JSON.stringify(data).substring(0, 300));
+        lastError = new Error("No content in Claude response");
+        await sleep(2000);
+        continue;
+      }
+
+      return content;
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Rate limited" || error.message.startsWith("Vertex auth error"))) {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError || new Error("[VERTEX-CLAUDE] Max retries exceeded");
+}
+
 // Helper function to count words in a text
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(word => word.length > 0).length;
@@ -396,6 +490,26 @@ export async function isVisualDirectorEnabled(userId: string, supabase: any): Pr
     return Array.isArray(users) && users.includes(userId);
   } catch {
     return false;
+  }
+}
+
+// Per-user story generator model selection.
+// Reads 'story_generator_model' from app_settings.
+// Value: JSON object mapping userId → model name, e.g. {"uuid-1": "sonnet"}
+// Unset users or missing key → "gemini" (default).
+async function getStoryGeneratorModel(userId: string, supabase: any): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'story_generator_model')
+      .maybeSingle();
+    if (!data?.value) return 'gemini';
+    const mapping = JSON.parse(data.value);
+    if (typeof mapping !== 'object' || mapping === null) return 'gemini';
+    return mapping[userId] || mapping['*'] || 'gemini';
+  } catch {
+    return 'gemini';
   }
 }
 
@@ -2864,17 +2978,19 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
       console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
-      
-      // Use Vertex AI EU (fastest, europe-west1) → Gemini API → Lovable AI Gateway
+
+      // Per-user model selection: "sonnet" → Claude Sonnet 4.6, default → Gemini 2.5 Flash
+      const storyModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
+      console.log(`[GENERATE] model=${storyModel}, user=${userId}`);
+
       let content: string;
-      if (VERTEX_API_KEY) {
-        console.log(`[GENERATE] Using Vertex AI EU (europe-west1)`);
+      if (storyModel === 'sonnet' && VERTEX_API_KEY) {
+        content = await callClaudeVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+      } else if (VERTEX_API_KEY) {
         content = await callGeminiVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       } else if (GEMINI_API_KEY) {
-        console.log(`[GENERATE] Using Gemini API (free-form JSON, no responseSchema)`);
         content = await callGemini(GEMINI_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       } else {
-        console.log(`[GENERATE] Falling back to Lovable AI Gateway`);
         content = await callLovableAI(LOVABLE_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       }
 
@@ -2989,11 +3105,13 @@ ${story.content}
 Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
         try {
-          const expandedContent = VERTEX_API_KEY
-            ? await callGeminiVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
-            : GEMINI_API_KEY
-              ? await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
-              : await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          const expandedContent = storyModel === 'sonnet' && VERTEX_API_KEY
+            ? await callClaudeVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
+            : VERTEX_API_KEY
+              ? await callGeminiVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
+              : GEMINI_API_KEY
+                ? await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
+                : await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
           const newWordCount = countWords(expandedContent);
           console.log(`Expanded story word count: ${newWordCount}`);
           
