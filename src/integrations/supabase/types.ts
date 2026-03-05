@@ -1611,6 +1611,7 @@ export type Database = {
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
+          consistency_check_only_ms: number | null
           content: string
           continuity_state: Json | null
           cover_image_status: string | null
@@ -1639,7 +1640,9 @@ export type Database = {
           moral_topic: string | null
           parent_prompt_text: string | null
           patch_fix_rate: number | null
+          patch_ms: number | null
           prompt: string | null
+          recheck_ms: number | null
           regenerate_count: number | null
           series_episode_count: number | null
           series_id: string | null
@@ -1679,6 +1682,7 @@ export type Database = {
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
+          consistency_check_only_ms?: number | null
           content: string
           continuity_state?: Json | null
           cover_image_status?: string | null
@@ -1707,7 +1711,9 @@ export type Database = {
           moral_topic?: string | null
           parent_prompt_text?: string | null
           patch_fix_rate?: number | null
+          patch_ms?: number | null
           prompt?: string | null
+          recheck_ms?: number | null
           regenerate_count?: number | null
           series_episode_count?: number | null
           series_id?: string | null
@@ -1747,6 +1753,7 @@ export type Database = {
           completed?: boolean | null
           concrete_theme?: string | null
           consistency_check_ms?: number | null
+          consistency_check_only_ms?: number | null
           content?: string
           continuity_state?: Json | null
           cover_image_status?: string | null
@@ -1775,7 +1782,9 @@ export type Database = {
           moral_topic?: string | null
           parent_prompt_text?: string | null
           patch_fix_rate?: number | null
+          patch_ms?: number | null
           prompt?: string | null
+          recheck_ms?: number | null
           regenerate_count?: number | null
           series_episode_count?: number | null
           series_id?: string | null
@@ -2561,6 +2570,7 @@ export type Database = {
           child_class: string
           child_name: string
           consistency_check_ms: number
+          consistency_check_only_ms: number
           critical_patch_failed: boolean
           difficulty: string
           emotional_coloring: string
@@ -2572,7 +2582,9 @@ export type Database = {
           issues_found: number
           language: string
           patch_fix_rate: number
+          patch_ms: number
           quality_rating: number
+          recheck_ms: number
           story_created_at: string
           story_generation_ms: number
           story_id: string
@@ -2641,6 +2653,7 @@ export type Database = {
           completed: boolean | null
           concrete_theme: string | null
           consistency_check_ms: number | null
+          consistency_check_only_ms: number | null
           content: string
           continuity_state: Json | null
           cover_image_status: string | null
@@ -2669,7 +2682,9 @@ export type Database = {
           moral_topic: string | null
           parent_prompt_text: string | null
           patch_fix_rate: number | null
+          patch_ms: number | null
           prompt: string | null
+          recheck_ms: number | null
           regenerate_count: number | null
           series_episode_count: number | null
           series_id: string | null

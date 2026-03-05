@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import PipelineTimingTable from "@/components/PipelineTimingTable";
 import PageHeader from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,9 @@ interface StoryStatRow {
   story_generation_ms: number | null;
   image_generation_ms: number | null;
   consistency_check_ms: number | null;
+  consistency_check_only_ms: number | null;
+  patch_ms: number | null;
+  recheck_ms: number | null;
   story_created_at: string;
 }
 
@@ -391,6 +395,9 @@ const useStoryStatsContent = () => {
           </Table>
         </div>
       )}
+
+      {/* Pipeline Timing Table */}
+      <PipelineTimingTable rows={filtered} />
     </>
   );
 
