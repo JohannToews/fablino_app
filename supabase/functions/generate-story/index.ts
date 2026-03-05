@@ -2832,6 +2832,12 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         keys: Object.keys(story).join(', '),
       }));
 
+      // ── Fallback for missing title ──
+      if (!story.title || story.title === 'Untitled Story') {
+        story.title = `Eine Geschichte für ${resolvedKidName || 'dich'}`;
+        console.log(`[GENERATE] Applied fallback title: "${story.title}"`);
+      }
+
       // ── DEBUG: Log raw LLM response for series episodes ──
       if (isSeries || seriesId) {
         console.log(`[generate-story] [SERIES-DEBUG] Raw LLM response keys: ${Object.keys(story).join(', ')}`);
@@ -2925,10 +2931,16 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     console.log(`[generate-story] Classifications: structure=${structureBeginning}-${structureMiddle}-${structureEnding}, emotion=${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}, theme=${concreteTheme}`);
 
-    // ── Ensure story_path_code is set: prefer selectedPathCode from buildStoryPrompt(), fallback to LLM or structure fields ──
-    if (!selectedPathCode && structureBeginning && structureMiddle && structureEnding) {
-      selectedPathCode = `A${structureBeginning}->M${structureMiddle}->E${structureEnding}`;
-      console.log(`[generate-story] Built story_path_code from structure fields: ${selectedPathCode}`);
+    // ── Ensure story_path_code is set: prefer selectedPathCode from buildStoryPrompt(), fallback to LLM structure fields or safety path ──
+    if (!selectedPathCode) {
+      if (structureBeginning && structureMiddle && structureEnding) {
+        selectedPathCode = `A${structureBeginning}->M${structureMiddle}->E${structureEnding}`;
+        console.log(`[generate-story] Built story_path_code from structure fields: ${selectedPathCode}`);
+      } else {
+        // Ultimate fallback: safety path A3->M1->E1
+        selectedPathCode = 'A3->M1->E1';
+        console.log(`[generate-story] Applied safety fallback story_path_code: ${selectedPathCode}`);
+      }
     }
 
     // ── Phase 2: Parse series-specific fields from LLM response ──
