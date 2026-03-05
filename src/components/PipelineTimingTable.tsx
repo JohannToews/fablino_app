@@ -57,12 +57,8 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
   if (timingRows.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        Pipeline Timing
-      </h3>
-      <div className="rounded-xl border bg-card overflow-x-auto max-w-full">
-        <Table className="min-w-[800px]">
+    <div className="overflow-x-auto max-w-full">
+      <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
               <TableHead className="whitespace-nowrap">Datum</TableHead>
