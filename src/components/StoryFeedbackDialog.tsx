@@ -8,19 +8,19 @@ import { toast } from "sonner";
 import { Language } from "@/lib/translations";
 
 function deriveWeakestPart(issueDetails: string[]): string | null {
-  const counts: Record<string, number> = { beginning: 0, middle: 0, ending: 0 };
+  const counts: Record<string, number> = { beginning: 0, development: 0, ending: 0 };
   const beginningRe = /\b(anfang|beginning|einleitung|intro|eröffnung|A[1-6])\b/i;
   const endingRe = /\b(ende|ending|schluss|abschluss|resolution|E[1-6])\b/i;
   for (const detail of issueDetails) {
     if (beginningRe.test(detail)) counts.beginning++;
     else if (endingRe.test(detail)) counts.ending++;
-    else counts.middle++;
+    else counts.development++;
   }
-  const max = Math.max(counts.beginning, counts.middle, counts.ending);
+  const max = Math.max(counts.beginning, counts.development, counts.ending);
   if (max === 0) return null;
   if (counts.beginning === max) return "beginning";
   if (counts.ending === max) return "ending";
-  return "middle";
+  return "development";
 }
 
 interface StoryFeedbackDialogProps {
