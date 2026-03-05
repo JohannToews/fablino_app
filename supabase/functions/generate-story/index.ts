@@ -2925,6 +2925,12 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
     console.log(`[generate-story] Classifications: structure=${structureBeginning}-${structureMiddle}-${structureEnding}, emotion=${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}, theme=${concreteTheme}`);
 
+    // ── Ensure story_path_code is set: prefer selectedPathCode from buildStoryPrompt(), fallback to LLM or structure fields ──
+    if (!selectedPathCode && structureBeginning && structureMiddle && structureEnding) {
+      selectedPathCode = `A${structureBeginning}->M${structureMiddle}->E${structureEnding}`;
+      console.log(`[generate-story] Built story_path_code from structure fields: ${selectedPathCode}`);
+    }
+
     // ── Phase 2: Parse series-specific fields from LLM response ──
     let episodeSummary: string | null = null;
     let continuityState: any | null = null;
