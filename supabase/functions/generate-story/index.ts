@@ -3948,7 +3948,7 @@ Respond with ONLY valid JSON, no markdown:
 
           // LOW errors: assume patched if content changed, no re-check
           const lowFixed = patchApplied ? lowErrors.length : 0;
-          const lowRemaining = patchApplied ? 0 : lowErrors.length;
+          let lowRemaining = patchApplied ? 0 : lowErrors.length;
 
           totalIssuesCorrected = criticalFixed + mediumFixed + lowFixed;
 
@@ -3956,6 +3956,17 @@ Respond with ONLY valid JSON, no markdown:
           checkerCritical = criticalRemaining;
           checkerMedium = mediumRemaining;
           checkerLow = lowRemaining;
+
+          // Invariant check: remaining must equal found - corrected
+          const expectedRemaining = totalIssuesFound - totalIssuesCorrected;
+          const actualRemaining = checkerCritical + checkerMedium + checkerLow;
+          if (expectedRemaining !== actualRemaining) {
+            console.warn(`[Phase4] Invariant mismatch: expected ${expectedRemaining} remaining, got ${actualRemaining} (${checkerCritical}C/${checkerMedium}M/${checkerLow}L)`);
+            // Assign unaccounted errors to LOW as fallback
+            checkerLow = expectedRemaining - checkerCritical - checkerMedium;
+            if (checkerLow < 0) checkerLow = 0;
+            console.log(`[Phase4] Corrected checkerLow to ${checkerLow}`);
+          }
 
           console.log(`[Phase4] Final: ${totalIssuesCorrected}/${totalIssuesFound} fixed, remaining: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L`);
         }
@@ -4054,11 +4065,26 @@ Respond with ONLY valid JSON, no markdown:
               recheckMs += Date.now() - stdRecheckStart;
 
               // Update counts based on recheck results
+              // LOW errors: assume patched if content changed, no re-check (same as Series path)
               const lowErrors = structuredErrors.filter(e => e.severity === 'LOW');
-              totalIssuesCorrected = criticalFixed + mediumFixed + lowErrors.length;
+              const lowFixed = lowErrors.length; // LOW assumed fixed since patch was applied
+              const lowRemaining = 0;
+
+              totalIssuesCorrected = criticalFixed + mediumFixed + lowFixed;
               checkerCritical = criticalRemaining;
               checkerMedium = mediumRemaining;
-              checkerLow = 0; // LOW assumed fixed if patch applied
+              checkerLow = lowRemaining;
+
+              // Invariant check: remaining must equal found - corrected
+              const expectedRemaining = structuredErrors.length - totalIssuesCorrected;
+              const actualRemaining = checkerCritical + checkerMedium + checkerLow;
+              if (expectedRemaining !== actualRemaining) {
+                console.warn(`[Standard] Invariant mismatch: expected ${expectedRemaining} remaining, got ${actualRemaining} (${checkerCritical}C/${checkerMedium}M/${checkerLow}L)`);
+                // Assign unaccounted errors to LOW as fallback
+                checkerLow = expectedRemaining - checkerCritical - checkerMedium;
+                if (checkerLow < 0) checkerLow = 0;
+                console.log(`[Standard] Corrected checkerLow to ${checkerLow}`);
+              }
 
               console.log(`[Standard] Final: ${totalIssuesCorrected}/${structuredErrors.length} fixed, remaining: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L`);
             } else {

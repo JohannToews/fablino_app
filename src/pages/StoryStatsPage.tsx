@@ -13,7 +13,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Loader2, CalendarIcon, Star, FileWarning, ExternalLink, SlidersHorizontal } from "lucide-react";
+import { Loader2, CalendarIcon, Star, FileWarning, ExternalLink, SlidersHorizontal, AlertTriangle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -202,6 +203,13 @@ const useStoryStatsContent = () => {
     return "text-orange-600 dark:text-orange-400";
   };
 
+  const hasDataInconsistency = (r: StoryStatRow): boolean => {
+    if (r.issues_found == null || r.issues_corrected == null) return false;
+    const nachPatch = r.issues_found - r.issues_corrected;
+    const hmlSum = (r.checker_critical ?? 0) + (r.checker_medium ?? 0) + (r.checker_low ?? 0);
+    return nachPatch !== hmlSum && nachPatch > 0;
+  };
+
   const formatPathCode = (r: StoryStatRow) => {
     if (r.story_path_code) return r.story_path_code;
     const b = r.structure_beginning;
@@ -367,7 +375,29 @@ const useStoryStatsContent = () => {
                           {isVis("emotion") && <TableCell className="text-xs">{r.emotional_coloring || "–"}</TableCell>}
                           {isVis("err_h") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_critical ?? 0) > 0 ? "text-destructive font-bold" : "text-muted-foreground")}>{r.checker_critical ?? 0}</TableCell>}
                           {isVis("err_m") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_medium ?? 0) > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : "text-muted-foreground")}>{r.checker_medium ?? 0}</TableCell>}
-                          {isVis("err_l") && <TableCell className={cn("text-xs text-center font-medium", (r.checker_low ?? 0) > 0 ? "text-foreground" : "text-muted-foreground")}>{r.checker_low ?? 0}</TableCell>}
+                          {isVis("err_l") && (
+                            <TableCell className={cn("text-xs text-center font-medium", (r.checker_low ?? 0) > 0 ? "text-foreground" : "text-muted-foreground")}>
+                              <span className="inline-flex items-center gap-1">
+                                {r.checker_low ?? 0}
+                                {hasDataInconsistency(r) && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <AlertTriangle className="h-3 w-3 text-orange-500" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Datenfehler: Kategorien stimmen nicht</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          H+M+L = {(r.checker_critical ?? 0) + (r.checker_medium ?? 0) + (r.checker_low ?? 0)}, 
+                                          erwartet: {(r.issues_found ?? 0) - (r.issues_corrected ?? 0)}
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </span>
+                            </TableCell>
+                          )}
                           {isVis("patch") && (
                             <TableCell className={cn("text-xs font-medium", patchColor(r.patch_fix_rate != null ? Number(r.patch_fix_rate) : null))}>
                               {r.patch_fix_rate != null ? `${Math.round(Number(r.patch_fix_rate) * 100)}%` : "–"}
