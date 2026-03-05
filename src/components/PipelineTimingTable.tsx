@@ -14,6 +14,9 @@ interface TimingRow {
   recheck_ms: number | null;
   image_generation_ms: number | null;
   story_created_at: string;
+  checker_critical: number | null;
+  checker_medium: number | null;
+  checker_low: number | null;
 }
 
 interface PipelineTimingTableProps {
@@ -67,6 +70,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
               <TableHead className="whitespace-nowrap">Length</TableHead>
               <TableHead className="whitespace-nowrap text-right">Story Gen</TableHead>
               <TableHead className="whitespace-nowrap text-right">Check</TableHead>
+              <TableHead className="whitespace-nowrap text-center">Errors</TableHead>
               <TableHead className="whitespace-nowrap text-right">Patch</TableHead>
               <TableHead className="whitespace-nowrap text-right">ReCheck</TableHead>
               <TableHead className="whitespace-nowrap text-right">Bilder</TableHead>
@@ -93,6 +97,17 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
                   <TableCell className="text-xs">{r.story_length || "–"}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.story_generation_ms)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.consistency_check_only_ms)}</TableCell>
+                  <TableCell className="text-xs text-center font-mono">
+                    {(r.checker_critical ?? 0) + (r.checker_medium ?? 0) + (r.checker_low ?? 0) > 0 ? (
+                      <span>
+                        <span className="text-destructive">{r.checker_critical ?? 0}</span>
+                        /
+                        <span className="text-orange-600 dark:text-orange-400">{r.checker_medium ?? 0}</span>
+                        /
+                        <span className="text-muted-foreground">{r.checker_low ?? 0}</span>
+                      </span>
+                    ) : "–"}
+                  </TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.patch_ms)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.recheck_ms)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.image_generation_ms)}</TableCell>
