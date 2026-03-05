@@ -608,6 +608,7 @@ interface ConsistencyCheckResult {
   hasIssues: boolean;
   issues: string[];
   suggestedFixes: string;
+  structuredErrors?: SeriesConsistencyError[];  // For recheck support
 }
 
 // Interface for series consistency check result (Phase 4)
@@ -713,6 +714,22 @@ ${seriesInfo}`;
       ? rawIssues.map((f: any) => typeof f === 'string' ? f : `[${f.kategorie || f.category}] ${f.problem}: "${f.originaltext || f.original}" → ${f.korrektur || f.fix}`)
       : [];
 
+    // Extract structured errors for recheck (convert to SeriesConsistencyError format)
+    const structuredErrors: SeriesConsistencyError[] = Array.isArray(rawIssues)
+      ? rawIssues
+          .filter((f: any) => typeof f === 'object' && f !== null)
+          .map((f: any) => ({
+            category: (f.category || f.kategorie || 'LOGIC').toUpperCase() as SeriesConsistencyError['category'],
+            subcategory: (f.subcategory || f.unterkategorie || 'OTHER').toUpperCase() as SeriesConsistencyError['subcategory'],
+            severity: (f.severity || f.schweregrad || 'MEDIUM').toUpperCase() as SeriesConsistencyError['severity'],
+            flagged_segment: (f.flagged_segment || f.segment || 'middle') as SeriesConsistencyError['flagged_segment'],
+            path_violation: f.path_violation || false,
+            original: f.original || f.originaltext || '',
+            problem: f.problem || '',
+            fix: f.fix || f.korrektur || '',
+          }))
+      : [];
+
     const stats = result.stats || result.statistik || {};
     const statsCount = Number(stats.critical || stats.kritisch || 0) + Number(stats.medium || stats.mittel || 0) + Number(stats.low || stats.gering || 0);
     const hasIssues =
@@ -723,8 +740,8 @@ ${seriesInfo}`;
       statsCount > 0;
 
     const suggestedFixes = result.suggestedFixes || result.zusammenfassung || result.summary || "";
-    console.log(`[Consistency] Parsed result: hasIssues=${hasIssues}, issues=${issues.length}, statsCount=${statsCount}`);
-    return { hasIssues, issues, suggestedFixes };
+    console.log(`[Consistency] Parsed result: hasIssues=${hasIssues}, issues=${issues.length}, structuredErrors=${structuredErrors.length}, statsCount=${statsCount}`);
+    return { hasIssues, issues, suggestedFixes, structuredErrors };
   } catch (error) {
     console.error("Error in consistency check:", error);
     return { hasIssues: false, issues: [], suggestedFixes: "" };
@@ -3987,10 +4004,67 @@ Respond with ONLY valid JSON, no markdown:
           );
           patchMs += Date.now() - stdPatchStart;
 
-          if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
+          const stdPatchApplied = correctedStory.content !== story.content || correctedStory.title !== story.title;
+          if (stdPatchApplied) {
             story = correctedStory;
-            totalIssuesCorrected += checkResult.issues.length;
-            console.log("Story corrected, re-checking...");
+            console.log("Story corrected, running targeted re-checks...");
+
+            // ── Targeted re-check for structured errors (same logic as Series path) ──
+            const structuredErrors = checkResult.structuredErrors || [];
+            if (structuredErrors.length > 0) {
+              const stdRecheckStart = Date.now();
+
+              const criticalErrors = structuredErrors.filter(e => e.severity === 'CRITICAL');
+              const mediumErrors = structuredErrors.filter(e => e.severity === 'MEDIUM');
+
+              // Re-check CRITICAL errors
+              let criticalFixed = 0;
+              let criticalRemaining = 0;
+              for (const err of criticalErrors) {
+                const fixed = await targetedReCheck(LOVABLE_API_KEY, story.content, err, GEMINI_API_KEY);
+                if (fixed) {
+                  criticalFixed++;
+                  console.log(`[Standard] CRITICAL re-check PASSED: ${err.category}:${err.subcategory}`);
+                } else {
+                  criticalRemaining++;
+                  console.log(`[Standard] CRITICAL re-check FAILED: ${err.category}:${err.subcategory} — patch did not fix`);
+                }
+              }
+
+              if (criticalRemaining > 0) {
+                criticalPatchFailed = true;
+                console.log(`[Standard] critical_patch_failed=true (${criticalRemaining}/${criticalErrors.length} remaining)`);
+              }
+
+              // Re-check MEDIUM errors
+              let mediumFixed = 0;
+              let mediumRemaining = 0;
+              for (const err of mediumErrors) {
+                const fixed = await targetedReCheck(LOVABLE_API_KEY, story.content, err, GEMINI_API_KEY);
+                if (fixed) {
+                  mediumFixed++;
+                } else {
+                  mediumRemaining++;
+                }
+              }
+              if (mediumErrors.length > 0) {
+                console.log(`[Standard] MEDIUM re-check: ${mediumFixed}/${mediumErrors.length} fixed, ${mediumRemaining} remaining`);
+              }
+
+              recheckMs += Date.now() - stdRecheckStart;
+
+              // Update counts based on recheck results
+              const lowErrors = structuredErrors.filter(e => e.severity === 'LOW');
+              totalIssuesCorrected = criticalFixed + mediumFixed + lowErrors.length;
+              checkerCritical = criticalRemaining;
+              checkerMedium = mediumRemaining;
+              checkerLow = 0; // LOW assumed fixed if patch applied
+
+              console.log(`[Standard] Final: ${totalIssuesCorrected}/${structuredErrors.length} fixed, remaining: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L`);
+            } else {
+              // No structured errors available, use string-based count
+              totalIssuesCorrected += checkResult.issues.length;
+            }
           } else {
             console.log("No changes made in correction, stopping");
             break;
