@@ -1,0 +1,1 @@
+DELETE FROM stories WHERE generation_status = 'text_failed' AND title = 'Generating...';
