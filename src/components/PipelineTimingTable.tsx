@@ -114,8 +114,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
               );
             })}
           </TableBody>
-        </Table>
-      </div>
+      </Table>
     </div>
   );
 };
