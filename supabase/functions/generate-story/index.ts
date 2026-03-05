@@ -153,15 +153,13 @@ async function callGeminiVertex(
   const { jsonSchema, maxRetries = 3 } = options;
   let lastError: Error | null = null;
 
-  let sa: any;
-  try {
-    sa = JSON.parse(serviceAccountJson);
-  } catch (e) {
-    console.error('[VERTEX-TEXT] Failed to parse service account JSON:', (e as Error).message?.substring(0, 100));
-    throw new Error('Invalid service account JSON configuration');
+  // Use global Gemini API endpoint instead of Vertex AI
+  const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!geminiApiKey) {
+    throw new Error("GEMINI_API_KEY not configured");
   }
-  const projectId = sa.project_id || "fablino-prod";
-  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.5-flash:generateContent`;
+  const geminiModel = "gemini-3.1-flash-lite-preview";
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
@@ -171,8 +169,6 @@ async function callGeminiVertex(
     }
 
     try {
-      const accessToken = await getVertexAccessToken(serviceAccountJson);
-
       const requestBody: any = {
         systemInstruction: {
           parts: [{ text: systemPrompt }]
@@ -193,11 +189,10 @@ async function callGeminiVertex(
         requestBody.generationConfig.responseSchema = jsonSchema;
       }
 
-      const response = await fetch(vertexUrl, {
+      const response = await fetch(geminiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify(requestBody),
       });
