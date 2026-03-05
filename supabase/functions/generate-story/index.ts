@@ -161,7 +161,7 @@ async function callGeminiVertex(
     throw new Error('Invalid service account JSON configuration');
   }
   const projectId = sa.project_id || "fablino-prod";
-  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-2.5-flash:generateContent`;
+  const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/google/models/gemini-3.1-flash-lite-preview:generateContent`;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
