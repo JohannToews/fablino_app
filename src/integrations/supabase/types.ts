@@ -1648,6 +1648,7 @@ export type Database = {
           story_images: string[] | null
           story_images_status: string | null
           story_length: string | null
+          story_path_code: string | null
           structure_beginning: number | null
           structure_ending: number | null
           structure_middle: number | null
@@ -1715,6 +1716,7 @@ export type Database = {
           story_images?: string[] | null
           story_images_status?: string | null
           story_length?: string | null
+          story_path_code?: string | null
           structure_beginning?: number | null
           structure_ending?: number | null
           structure_middle?: number | null
@@ -1782,6 +1784,7 @@ export type Database = {
           story_images?: string[] | null
           story_images_status?: string | null
           story_length?: string | null
+          story_path_code?: string | null
           structure_beginning?: number | null
           structure_ending?: number | null
           structure_middle?: number | null
@@ -2675,6 +2678,7 @@ export type Database = {
           story_images: string[] | null
           story_images_status: string | null
           story_length: string | null
+          story_path_code: string | null
           structure_beginning: number | null
           structure_ending: number | null
           structure_middle: number | null
