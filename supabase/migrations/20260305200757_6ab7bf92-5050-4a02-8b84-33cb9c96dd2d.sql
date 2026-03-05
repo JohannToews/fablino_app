@@ -1,0 +1,1 @@
+ALTER TABLE public.stories ADD COLUMN IF NOT EXISTS debug_log jsonb DEFAULT NULL;
