@@ -3734,11 +3734,11 @@ Respond with ONLY valid JSON, no markdown:
       if (storyId) {
         try {
           // patch_fix_rate = corrected / found, as NUMERIC(4,3)
-          // 0.000 if no errors found, null only if never checked
+          // null if no errors found (nothing to fix)
           const issuesRemaining = checkerCritical + checkerMedium + checkerLow;
           const patchFixRate = totalIssuesFound > 0
             ? Math.round((totalIssuesCorrected / totalIssuesFound) * 1000) / 1000
-            : 0.000;
+            : null;
 
           await supabase
             .from('stories')
