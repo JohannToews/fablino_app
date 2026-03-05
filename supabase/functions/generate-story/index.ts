@@ -2114,6 +2114,7 @@ Deno.serve(async (req) => {
     let fullSystemPromptFinal: string = "";
     let userMessageFinal: string = "";
     let usedNewPromptPath = false;
+    let debugLog: Record<string, unknown> = {};
     let learningThemeApplied: string | null = null;
     let emotionFlowResult: EmotionFlowResult | null = null;
     let promptWarnings: string[] = [];
@@ -2546,10 +2547,25 @@ Deno.serve(async (req) => {
       // Debug: Check if PRIMARY DIRECTIVE is in the built prompt
       const hasPrimaryDirective = userMessageFinal.includes('PRIMARY') || userMessageFinal.includes('HÖCHSTE PRIORITÄT') || userMessageFinal.includes('PRIORITÉ MAXIMALE') || userMessageFinal.includes('MÁXIMA PRIORIDAD');
       console.log(`[generate-story] PRIMARY DIRECTIVE in prompt: ${hasPrimaryDirective}`);
+      let primaryDirectiveExcerpt: string | null = null;
       if (hasPrimaryDirective) {
         const directiveMatch = userMessageFinal.match(/⚡[^\n]*\n[\s\S]{0,300}/);
-        console.log('[generate-story] PRIMARY DIRECTIVE excerpt:', directiveMatch?.[0]?.substring(0, 300) ?? '(match failed)');
+        primaryDirectiveExcerpt = directiveMatch?.[0]?.substring(0, 500) ?? null;
+        console.log('[generate-story] PRIMARY DIRECTIVE excerpt:', primaryDirectiveExcerpt ?? '(match failed)');
       }
+
+      // Build persistent debug_log object
+      debugLog = {
+        userPromptParam: userPromptParam ?? null,
+        resolvedUserPrompt: (storyRequest.user_prompt || '').substring(0, 500),
+        classifyUserInput: promptResult.userInputLevel,
+        hasPrimaryDirective,
+        primaryDirectiveExcerpt,
+        promptLength: userMessageFinal.length,
+        promptWarnings: promptWarnings.length > 0 ? promptWarnings : undefined,
+        timestamp: new Date().toISOString(),
+      };
+
       if (promptWarnings.length > 0) {
         console.warn(`[generate-story] Prompt builder warnings: ${promptWarnings.join('; ')}`);
       }
@@ -3342,6 +3358,7 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             content: story.content ?? null,
             story_generation_ms: storyGenerationTime,
             generation_status: 'text_complete',
+            debug_log: debugLog,
           })
           .eq('id', storyId);
         if (updateErr) console.warn('[generate-story] Phase 2 status update failed:', updateErr.message);

@@ -1618,6 +1618,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           critical_patch_failed: boolean | null
+          debug_log: Json | null
           deleted_at: string | null
           difficulty: string | null
           emotional_coloring: string | null
@@ -1689,6 +1690,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           critical_patch_failed?: boolean | null
+          debug_log?: Json | null
           deleted_at?: string | null
           difficulty?: string | null
           emotional_coloring?: string | null
@@ -1760,6 +1762,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           critical_patch_failed?: boolean | null
+          debug_log?: Json | null
           deleted_at?: string | null
           difficulty?: string | null
           emotional_coloring?: string | null
@@ -2660,6 +2663,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           critical_patch_failed: boolean | null
+          debug_log: Json | null
           deleted_at: string | null
           difficulty: string | null
           emotional_coloring: string | null

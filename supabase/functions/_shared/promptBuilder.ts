@@ -1235,6 +1235,7 @@ export interface PromptBuildResult {
   prompt: string;
   warnings: string[];
   selectedPath: StoryPath | null;
+  userInputLevel: string;
 }
 
 /** Build appearance description in the story language for the CHILD section (text-image consistency). */
@@ -2426,7 +2427,7 @@ You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must pro
   // Hard word-count constraint (last thing the model reads)
   sections.push(`CRITICAL CONSTRAINT: The story MUST contain between ${minWords} and ${maxWords} words. This is a hard limit. Count your words carefully. A story that exceeds ${maxWords} words is a failure and will be rejected.`);
 
-  return { prompt: sections.join('\n\n'), warnings, selectedPath };
+  return { prompt: sections.join('\n\n'), warnings, selectedPath, userInputLevel };
 }
 
 /**
