@@ -3546,6 +3546,10 @@ Respond with ONLY valid JSON, no markdown:
     let checkerSubcategories: string[] = [];
 
     // ── Task 1: Consistency Check (Phase 4: series-aware routing) ──
+    let checkOnlyMs = 0;
+    let patchMs = 0;
+    let recheckMs = 0;
+
     const consistencyCheckTask = async () => {
       const isSeriesEpisode = !!(seriesId || isSeries) && !!resolvedEpisodeNumber;
 
@@ -3564,14 +3568,16 @@ Respond with ONLY valid JSON, no markdown:
           seriesEpisodeCount,
         );
 
+        const checkStart = Date.now();
         const checkResult = await performSeriesConsistencyCheck(
           LOVABLE_API_KEY,
           story,
           seriesCheckPrompt,
           selectedPathCode,
         );
+        checkOnlyMs = Date.now() - checkStart;
 
-        console.log(`[Phase4] Check result: errors_found=${checkResult.errors_found}, critical=${checkResult.stats.critical}, medium=${checkResult.stats.medium}, low=${checkResult.stats.low}`);
+        console.log(`[Phase4] Check result: errors_found=${checkResult.errors_found}, critical=${checkResult.stats.critical}, medium=${checkResult.stats.medium}, low=${checkResult.stats.low}, check_ms=${checkOnlyMs}`);
 
         if (!checkResult.errors_found || checkResult.errors.length === 0) {
           console.log('[Phase4] Series consistency check passed — no errors');
@@ -3598,6 +3604,7 @@ Respond with ONLY valid JSON, no markdown:
           const allErrors = [...criticalErrors, ...mediumErrors, ...lowErrors];
           console.log(`[Phase4] Patching ${allErrors.length} error(s): ${criticalErrors.length}C/${mediumErrors.length}M/${lowErrors.length}L`);
 
+          const patchStart = Date.now();
           const correctedStory = await correctStoryFromSeriesErrors(
             LOVABLE_API_KEY,
             story,
@@ -3606,6 +3613,7 @@ Respond with ONLY valid JSON, no markdown:
             targetLanguage,
             GEMINI_API_KEY,
           );
+          patchMs = Date.now() - patchStart;
 
           const patchApplied = correctedStory.content !== story.content || correctedStory.title !== story.title;
           if (patchApplied) {
@@ -3616,6 +3624,7 @@ Respond with ONLY valid JSON, no markdown:
           }
 
           // ── Tier 2: Targeted re-check for CRITICAL errors ──
+          const recheckStart = Date.now();
           let criticalFixed = 0;
           let criticalRemaining = 0;
           for (const err of criticalErrors) {
@@ -3652,6 +3661,7 @@ Respond with ONLY valid JSON, no markdown:
           if (mediumErrors.length > 0) {
             console.log(`[Phase4] MEDIUM re-check: ${mediumFixed}/${mediumErrors.length} fixed, ${mediumRemaining} remaining`);
           }
+          recheckMs = Date.now() - recheckStart;
 
           // LOW errors: assume patched if content changed, no re-check
           const lowFixed = patchApplied ? lowErrors.length : 0;
@@ -3681,11 +3691,13 @@ Respond with ONLY valid JSON, no markdown:
         const maxCorrectionAttempts = 2;
 
         while (correctionAttempts < maxCorrectionAttempts) {
+          const stdCheckStart = Date.now();
           const checkResult = await performConsistencyCheck(
             LOVABLE_API_KEY,
             story,
             consistencyCheckPrompt,
           );
+          checkOnlyMs += Date.now() - stdCheckStart;
 
           if (!checkResult.hasIssues) {
             console.log(`Consistency check passed${correctionAttempts > 0 ? ' after correction' : ''}`);
@@ -3698,6 +3710,7 @@ Respond with ONLY valid JSON, no markdown:
           correctionAttempts++;
           console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
 
+          const stdPatchStart = Date.now();
           const correctedStory = await correctStory(
             LOVABLE_API_KEY,
             story,
@@ -3706,6 +3719,7 @@ Respond with ONLY valid JSON, no markdown:
             targetLanguage,
             GEMINI_API_KEY,
           );
+          patchMs += Date.now() - stdPatchStart;
 
           if (correctedStory.content !== story.content || correctedStory.title !== story.title) {
             story = correctedStory;
@@ -3754,10 +3768,13 @@ Respond with ONLY valid JSON, no markdown:
               checker_subcategories: checkerSubcategories,
               critical_patch_failed: criticalPatchFailed,
               patch_fix_rate: patchFixRate,
+              consistency_check_only_ms: checkOnlyMs || null,
+              patch_ms: patchMs || null,
+              recheck_ms: recheckMs || null,
             })
             .eq('id', storyId);
 
-          console.log(`[generate-story] Stories checker metrics: found=${totalIssuesFound}, fixed=${totalIssuesCorrected}, remaining=${issuesRemaining} (${checkerCritical}C/${checkerMedium}M/${checkerLow}L), fix_rate=${patchFixRate}, critical_failed=${criticalPatchFailed}`);
+          console.log(`[generate-story] Stories checker metrics: found=${totalIssuesFound}, fixed=${totalIssuesCorrected}, remaining=${issuesRemaining} (${checkerCritical}C/${checkerMedium}M/${checkerLow}L), fix_rate=${patchFixRate}, critical_failed=${criticalPatchFailed}, timing: check=${checkOnlyMs}ms/patch=${patchMs}ms/recheck=${recheckMs}ms`);
         } catch (metricsErr) {
           console.warn('[generate-story] Stories checker metrics write failed (non-fatal):', metricsErr);
         }
