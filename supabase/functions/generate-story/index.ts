@@ -2985,7 +2985,12 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
 
       let content: string;
       if (storyModel === 'sonnet' && VERTEX_API_KEY) {
-        content = await callClaudeVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+        try {
+          content = await callClaudeVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+        } catch (err) {
+          console.warn('[GENERATE] Sonnet unavailable, falling back to Gemini:', err instanceof Error ? err.message : err);
+          content = await callGeminiVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
+        }
       } else if (VERTEX_API_KEY) {
         content = await callGeminiVertex(VERTEX_API_KEY, fullSystemPrompt, promptToUse, 0.8);
       } else if (GEMINI_API_KEY) {
@@ -3105,13 +3110,21 @@ ${story.content}
 Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
 
         try {
-          const expandedContent = storyModel === 'sonnet' && VERTEX_API_KEY
-            ? await callClaudeVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
-            : VERTEX_API_KEY
-              ? await callGeminiVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
-              : GEMINI_API_KEY
-                ? await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8)
-                : await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          let expandedContent: string;
+          if (storyModel === 'sonnet' && VERTEX_API_KEY) {
+            try {
+              expandedContent = await callClaudeVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+            } catch (err) {
+              console.warn('[GENERATE] Sonnet expansion unavailable, falling back to Gemini:', err instanceof Error ? err.message : err);
+              expandedContent = await callGeminiVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+            }
+          } else if (VERTEX_API_KEY) {
+            expandedContent = await callGeminiVertex(VERTEX_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          } else if (GEMINI_API_KEY) {
+            expandedContent = await callGemini(GEMINI_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          } else {
+            expandedContent = await callLovableAI(LOVABLE_API_KEY, expansionSystemPrompt, expansionUserPrompt, 0.8);
+          }
           const newWordCount = countWords(expandedContent);
           console.log(`Expanded story word count: ${newWordCount}`);
           
