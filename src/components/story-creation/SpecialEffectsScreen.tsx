@@ -455,17 +455,105 @@ const SpecialEffectsScreen = ({
   const t = translations[uiLang] || translations.de;
   const st = settingsTranslations[uiLang] || settingsTranslations.de;
 
+  // Compatibility matrix: which options can coexist
+  const compatibilityMap: Record<string, SpecialAttribute[]> = {
+    superpowers: ["heroes_villains", "talents"],
+    magic: ["transformations", "heroes_villains"],
+    transformations: ["magic", "heroes_villains"],
+    heroes_villains: ["superpowers", "magic", "transformations", "talents"], // compatible with any ONE other
+    talents: ["heroes_villains"],
+    normal: [], // exclusive
+  };
+
+  const getIncompatibleReason = (attr: SpecialAttribute): string | null => {
+    if (selectedAttributes.length === 0) return null;
+    if (selectedAttributes.includes(attr)) return null; // already selected, can deselect
+
+    // If "normal" is selected, everything else is incompatible
+    if (selectedAttributes.includes("normal")) {
+      const normalLabel = t.normal;
+      return `${incompatiblePrefix} ${normalLabel}`;
+    }
+
+    // If trying to select "normal" while others are selected
+    if (attr === "normal" && selectedAttributes.length > 0) {
+      return `${incompatiblePrefix} ${selectedAttributes.map(a => {
+        const opt = attributeOptions.find(o => o.id === a);
+        return opt ? t[opt.labelKey] : a;
+      }).join(", ")}`;
+    }
+
+    // Max 2 selections
+    if (selectedAttributes.length >= 2) {
+      return incompatiblePrefix + " (max 2)";
+    }
+
+    // Check compatibility with each selected attribute
+    for (const selected of selectedAttributes) {
+      const compatList = compatibilityMap[selected] || [];
+      if (!compatList.includes(attr)) {
+        const opt = attributeOptions.find(o => o.id === selected);
+        const selectedLabel = opt ? t[opt.labelKey] : selected;
+        return `${incompatiblePrefix} ${selectedLabel}`;
+      }
+      // heroes_villains can only combine with ONE other
+      if (attr === "heroes_villains" || selected === "heroes_villains") {
+        // already checked above via max 2
+      }
+    }
+
+    // Check reverse: is the attr compatible with all selected?
+    const attrCompatList = compatibilityMap[attr] || [];
+    for (const selected of selectedAttributes) {
+      if (!attrCompatList.includes(selected)) {
+        const opt = attributeOptions.find(o => o.id === selected);
+        const selectedLabel = opt ? t[opt.labelKey] : selected;
+        return `${incompatiblePrefix} ${selectedLabel}`;
+      }
+    }
+
+    return null;
+  };
+
+  // Localized "Doesn't go with" prefix
+  const incompatiblePrefixes: Record<string, string> = {
+    de: "Passt nicht zu",
+    en: "Incompatible with",
+    fr: "Incompatible avec",
+    es: "Incompatible con",
+    nl: "Past niet bij",
+    it: "Incompatibile con",
+    bs: "Ne ide uz",
+    tr: "Uyumsuz:",
+    bg: "Несъвместимо с",
+    ro: "Incompatibil cu",
+    pl: "Nie pasuje do",
+    lt: "Nesuderinama su",
+    hu: "Nem illik:",
+    ca: "Incompatible amb",
+    sl: "Ni združljivo z",
+    uk: "Не поєднується з",
+    ru: "Не сочетается с",
+    pt: "Incompatível com",
+    sk: "Nekompatibilné s",
+  };
+  const incompatiblePrefix = incompatiblePrefixes[uiLang] || incompatiblePrefixes.de;
+
   const toggleAttribute = (attr: SpecialAttribute) => {
+    // Allow deselection always
+    if (selectedAttributes.includes(attr)) {
+      setSelectedAttributes((prev) => prev.filter((a) => a !== attr));
+      return;
+    }
+
+    // Block if incompatible
+    if (getIncompatibleReason(attr) !== null) return;
+
     if (attr === "normal") {
-      setSelectedAttributes((prev) =>
-        prev.includes("normal") ? [] : ["normal"]
-      );
+      setSelectedAttributes(["normal"]);
     } else {
       setSelectedAttributes((prev) => {
         const filtered = prev.filter((a) => a !== "normal");
-        if (filtered.includes(attr)) {
-          return filtered.filter((a) => a !== attr);
-        }
         return [...filtered, attr];
       });
     }
@@ -722,17 +810,22 @@ const SpecialEffectsScreen = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 animate-fade-in">
               {attributeOptions.map((option) => {
                 const isSelected = selectedAttributes.includes(option.id);
+                const incompatibleReason = getIncompatibleReason(option.id);
+                const isDisabled = incompatibleReason !== null;
                 return (
                   <button
                     key={option.id}
                     onClick={() => toggleAttribute(option.id)}
+                    title={isDisabled ? incompatibleReason! : undefined}
                     className={cn(
                       "flex flex-col items-center justify-center gap-1 w-full min-h-[56px] py-3 rounded-xl",
-                      "transition-all duration-150 cursor-pointer",
-                      "active:scale-95",
+                      "transition-all duration-150",
+                      isDisabled
+                        ? "opacity-40 cursor-not-allowed border border-gray-200 bg-white"
+                        : "cursor-pointer active:scale-95",
                       isSelected
                         ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
-                        : "border border-gray-200 bg-white hover:border-gray-300"
+                        : !isDisabled && "border border-gray-200 bg-white hover:border-gray-300"
                     )}
                   >
                     <span className="text-xl leading-none">{option.emoji}</span>
