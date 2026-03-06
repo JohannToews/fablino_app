@@ -2038,12 +2038,20 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ── Auth ID lookup for feature flags (userId is profile ID, authId is auth.users ID) ──
+    const { data: authProfile } = await supabase
+      .from('user_profiles')
+      .select('auth_id')
+      .eq('id', userId)
+      .single();
+    const authId = authProfile?.auth_id ?? userId;
+
     // ── Comic-Strip Feature Flag Check ──
     let useComicStrip = false;
     let comicLayout: ComicLayout | null = null;
     if (userId) {
       try {
-        useComicStrip = await isComicStripEnabled(userId, supabase);
+        useComicStrip = await isComicStripEnabled(authId, supabase);
         if (useComicStrip) {
           comicLayout = selectLayout();
           console.log(`[ComicStrip] Enabled for user ${userId}, layout: ${comicLayout.layoutKey}`);
@@ -2062,7 +2070,7 @@ Deno.serve(async (req) => {
 
     let useVisualDirector = false;
     try {
-      useVisualDirector = await isVisualDirectorEnabled(userId, supabase);
+      useVisualDirector = await isVisualDirectorEnabled(authId, supabase);
       console.log(`[VisualDirector] enabled=${useVisualDirector} for user=${userId}`);
     } catch (e) {
       console.warn('[VisualDirector] Flag check failed, defaulting to false', e);
@@ -2466,7 +2474,7 @@ Deno.serve(async (req) => {
       }
 
       // ═══ AVATAR V2: Character Appearances ═══
-      const avatarV2 = kidProfileId ? await isAvatarV2Enabled(supabase, userId) : false;
+      const avatarV2 = kidProfileId ? await isAvatarV2Enabled(supabase, authId) : false;
 
       if (avatarV2 && kidProfileId) {
         try {
@@ -2682,7 +2690,7 @@ Deno.serve(async (req) => {
 
       // ── Emotion-Flow Engine ──
       if (userId) {
-        let useEmotionFlow = await isEmotionFlowEnabled(userId, supabase);
+        let useEmotionFlow = await isEmotionFlowEnabled(authId, supabase);
         // === TEMPORARILY DISABLED (2026-03-02) ===
         // Feature: Emotion Flow Engine (runEmotionFlowEngine)
         // Reason: Simplifying generate-story flow for Visual Director development
@@ -2768,7 +2776,7 @@ Deno.serve(async (req) => {
 
       const storyPlannerEnabled =
         storyPlannerEnabledUsers.includes('*') ||
-        storyPlannerEnabledUsers.includes(userId);
+        storyPlannerEnabledUsers.includes(authId);
 
       if (storyPlannerEnabled) {
         try {
@@ -2777,7 +2785,7 @@ Deno.serve(async (req) => {
             buildPlanPrompt(storyRequest);
 
           let planContent: string | null = null;
-          const plannerModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
+          const plannerModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
           if (plannerModel === 'sonnet' && plannerVertexKey) {
             planContent = await callClaudeVertex(plannerVertexKey, planSystem, planUser, 0.8);
           } else if (plannerVertexKey) {
@@ -3144,7 +3152,7 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
 
       // Per-user model selection: "sonnet" → Claude Sonnet 4.6, default → Gemini 2.5 Flash
-      const storyModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
+      const storyModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
       console.log(`[GENERATE] model=${storyModel}, user=${userId}`);
 
       let content: string;
