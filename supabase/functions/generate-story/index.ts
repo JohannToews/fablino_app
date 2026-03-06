@@ -2778,6 +2778,10 @@ Deno.serve(async (req) => {
         storyPlannerEnabledUsers.includes('*') ||
         storyPlannerEnabledUsers.includes(authId);
 
+      console.log('[StoryPlanner-DEBUG] authId:', authId, 
+        'enabled:', storyPlannerEnabled, 
+        'users:', JSON.stringify(storyPlannerEnabledUsers));
+
       if (storyPlannerEnabled) {
         try {
           const planStart = Date.now();
