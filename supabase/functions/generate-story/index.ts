@@ -4355,7 +4355,7 @@ Respond with ONLY valid JSON, no markdown:
             return { label: imgPrompt.label, url: cached, cached: true };
           }
           console.log(`[generate-story] Cache MISS for ${imgPrompt.label}`);
-          console.log(`[IMAGE-PROMPT-FULL] ${imgPrompt.label}: ${imgPrompt.prompt}`);
+          console.log('[IMAGE-PROMPT-FULL] truncated for logging');
 
           // 2. Generate image (Vertex AI FIRST → Lovable Gateway fallback)
           let imageUrl: string | null = null;
