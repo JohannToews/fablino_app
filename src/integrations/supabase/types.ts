@@ -1642,6 +1642,7 @@ export type Database = {
           parent_prompt_text: string | null
           patch_fix_rate: number | null
           patch_ms: number | null
+          plan_generation_ms: number | null
           prompt: string | null
           recheck_ms: number | null
           regenerate_count: number | null
@@ -1715,6 +1716,7 @@ export type Database = {
           parent_prompt_text?: string | null
           patch_fix_rate?: number | null
           patch_ms?: number | null
+          plan_generation_ms?: number | null
           prompt?: string | null
           recheck_ms?: number | null
           regenerate_count?: number | null
@@ -1788,6 +1790,7 @@ export type Database = {
           parent_prompt_text?: string | null
           patch_fix_rate?: number | null
           patch_ms?: number | null
+          plan_generation_ms?: number | null
           prompt?: string | null
           recheck_ms?: number | null
           regenerate_count?: number | null
@@ -2690,6 +2693,7 @@ export type Database = {
           parent_prompt_text: string | null
           patch_fix_rate: number | null
           patch_ms: number | null
+          plan_generation_ms: number | null
           prompt: string | null
           recheck_ms: number | null
           regenerate_count: number | null
