@@ -2812,6 +2812,34 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Append Story Plan to System Prompt (if generated) ──
+      if (storyPlan) {
+        const planSection = `
+
+## STORY PLAN — MANDATORY
+This plan was created before writing. Follow it exactly.
+Every element listed here MUST appear in the story.
+Deviation from this plan = failed story.
+
+Conflict: ${storyPlan.central_conflict}
+Resolution: ${storyPlan.resolution}
+
+Required setups:
+${(storyPlan.setups_required as any[]).map((s: any) => `  Scene ${s.scene}: ${s.element}`).join('\n')}
+
+Characters & exits:
+${(storyPlan.characters as any[]).map((c: any) => `  ${c.name} (${c.role}): ${c.exit}`).join('\n')}
+
+Objects & fates:
+${(storyPlan.objects as any[]).map((o: any) => `  ${o.name} (introduced scene ${o.introduced_scene}): ${o.fate}`).join('\n')}
+
+${storyPlan.magic_rules ? `Magic rules: ${storyPlan.magic_rules}` : ''}
+${storyPlan.villain_role ? `Villain role: ${storyPlan.villain_role}` : ''}`;
+
+        fullSystemPromptFinal = fullSystemPromptFinal + planSection;
+        console.log('[StoryPlanner] System prompt with plan:', fullSystemPromptFinal.slice(-500));
+      }
+
     } catch (promptError: any) {
       // ── FALLBACK: Old prompt loading logic ──
       console.warn('[generate-story] FALLBACK to old prompts:', promptError.message);
