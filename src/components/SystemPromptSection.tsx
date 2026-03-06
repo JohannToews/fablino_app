@@ -49,6 +49,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [consistencyCheckSeriesAddon, setConsistencyCheckSeriesAddon] = useState("");
   const [elternModulPrompt, setElternModulPrompt] = useState("");
   const [kinderModulPrompt, setKinderModulPrompt] = useState("");
+  const [plannerPrompt, setPlannerPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
@@ -57,6 +58,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [isSavingConsistencyCheckV2, setIsSavingConsistencyCheckV2] = useState(false);
   const [isSavingElternModul, setIsSavingElternModul] = useState(false);
   const [isSavingKinderModul, setIsSavingKinderModul] = useState(false);
+  const [isSavingPlanner, setIsSavingPlanner] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     system: false,
     continuation: false,
@@ -65,6 +67,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     consistencyCheckV2: false,
     elternModul: false,
     kinderModul: false,
+    planner: false,
   });
 
   useEffect(() => {
