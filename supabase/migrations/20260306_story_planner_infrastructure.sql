@@ -6,7 +6,12 @@ ALTER TABLE stories ADD COLUMN IF NOT EXISTS story_plan JSONB;
 
 COMMENT ON COLUMN stories.story_plan IS 'JSON plan from Story Planner LLM step (pre-generation planning)';
 
--- 2. Add feature flag and system prompt for Story Planner
+-- 2. Add plan_generation_ms column to stories table
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS plan_generation_ms INTEGER;
+
+COMMENT ON COLUMN stories.plan_generation_ms IS 'Time in milliseconds for Story Planner LLM call';
+
+-- 3. Add feature flag and system prompt for Story Planner
 INSERT INTO app_settings (key, value)
 VALUES 
   ('story_planner_enabled_users', '[]'),

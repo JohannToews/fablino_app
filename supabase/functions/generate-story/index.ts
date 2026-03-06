@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { buildStoryPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG, getEpisodeConfig, getDefaultEpisodeCount, type PromptBuildResult } from '../_shared/promptBuilder.ts';
+import { buildStoryPrompt, buildPlanPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG, getEpisodeConfig, getDefaultEpisodeCount, type PromptBuildResult } from '../_shared/promptBuilder.ts';
 import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
 import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, getStyleForAge, ImagePromptResult, SeriesImageContext, mapVisualDirectorToImagePlan } from '../_shared/imagePromptBuilder.ts';
 import { callVisualDirector } from '../_shared/visualDirector.ts';
@@ -2625,6 +2625,54 @@ Deno.serve(async (req) => {
       console.log('[generate-story] storyRequest.user_prompt resolved to:', (storyRequest.user_prompt || '(empty)').substring(0, 300));
       // 3. Build dynamic user message
       const promptResult = await buildStoryPrompt(storyRequest, supabase);
+
+      // Story Planner feature flag
+      const storyPlannerEnabledUsers: string[] = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'story_planner_enabled_users')
+        .single()
+        .then((r: { data: { value: string } | null }) => JSON.parse(r.data?.value ?? '[]'));
+
+      const storyPlannerEnabled =
+        storyPlannerEnabledUsers.includes('*') ||
+        storyPlannerEnabledUsers.includes(userId);
+
+      // Story Planner call
+      let storyPlan: Record<string, unknown> | null = null;
+      let planGenerationMs = 0;
+
+      if (storyPlannerEnabled) {
+        try {
+          const planStart = Date.now();
+          const { systemPrompt: planSystem, userMessage: planUser } = 
+            buildPlanPrompt(storyRequest);
+
+          // Use same model routing as story call
+          let planContent: string | null = null;
+          const storyModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
+          if (storyModel === 'sonnet' && VERTEX_API_KEY) {
+            planContent = await callClaudeVertex(VERTEX_API_KEY, planSystem, planUser, 0.8);
+          } else if (VERTEX_API_KEY) {
+            planContent = await callGeminiVertex(VERTEX_API_KEY, planSystem, planUser, 0.8);
+          } else if (GEMINI_API_KEY) {
+            planContent = await callGemini(GEMINI_API_KEY, planSystem, planUser, 0.8);
+          }
+
+          planGenerationMs = Date.now() - planStart;
+
+          if (planContent) {
+            const cleaned = planContent.replace(/```json|```/g, '').trim();
+            storyPlan = JSON.parse(cleaned);
+            console.log('[StoryPlanner] Plan generated:', JSON.stringify(storyPlan));
+          }
+        } catch (err) {
+          // Fallback: continue without plan, log error
+          console.error('[StoryPlanner] Plan generation failed, falling back to 1-call:', err);
+          storyPlan = null;
+        }
+      }
+
       userMessageFinal = promptResult.prompt;
       promptWarnings = promptResult.warnings;
       selectedPathCode = promptResult.selectedPath?.code || null;
@@ -3444,6 +3492,8 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
             story_generation_ms: storyGenerationTime,
             generation_status: 'text_complete',
             debug_log: debugLog,
+            story_plan: storyPlan ?? null,
+            plan_generation_ms: planGenerationMs,
           })
           .eq('id', storyId);
         if (updateErr) console.warn('[generate-story] Phase 2 status update failed:', updateErr.message);
