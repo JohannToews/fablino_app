@@ -3159,6 +3159,10 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         const plan = storyPlan as any;
         const planLines: string[] = [];
 
+        planLines.push(`PROTAGONIST NAME (MANDATORY): ${resolvedKidName || kidName || 'Child'}`);
+        planLines.push(`Do not use any other name for the protagonist.`);
+        planLines.push(`The story_plan may contain a different name — IGNORE IT and use the name above.`);
+        planLines.push(``);
         planLines.push(`IMPORTANT: The following plan was created by the Story Planner. Follow it exactly.`);
         planLines.push(`All elements listed below MUST be introduced in the story BEFORE they are used in the resolution or climax.`);
         planLines.push(`Never introduce a magical ability, superpower, villain weakness, or absurd object for the first time in the resolution scene.`);

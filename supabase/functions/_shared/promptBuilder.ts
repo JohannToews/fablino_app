@@ -2599,6 +2599,10 @@ Rules:
 - villain_rules.weakness MUST be hinted at or discoverable BEFORE the defeat scene
 - every character in characters[] MUST have a non-empty exit
 - every object in objects[] MUST have a non-empty fate
+- characters[].name MUST exactly match the input character names
+- NEVER invent a new protagonist name
+- If input says 'Mateo', characters[].name MUST be 'Mateo'
+- Using any other name is a critical error
 - if no magic exists: magic_rules = []
 - if no superpowers exist: superpower_rules = []
 - if no villain exists: villain_rules = null
@@ -2618,16 +2622,24 @@ Rules:
 
 Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
 
-  const charactersBlock = request.protagonists?.characters
-    ?.map(c => {
+  const protagonistName = request.kid_profile?.first_name || 'Child';
+  const protagonistAge = request.kid_profile?.age;
+  
+  const charactersLines: string[] = [];
+  if (request.protagonists?.include_self) {
+    charactersLines.push(`- ${protagonistName}${protagonistAge ? `, ${protagonistAge} years old` : ''} (PROTAGONIST — main character)`);
+  }
+  if (request.protagonists?.characters) {
+    for (const c of request.protagonists.characters) {
       let entry = `- ${c.name}`;
       if (c.age) entry += `, ${c.age} years old`;
       if (c.relation) entry += ` (${c.relation})`;
       else if (c.role) entry += ` (${c.role})`;
       if (c.description) entry += `: ${c.description}`;
-      return entry;
-    })
-    .join('\n') ?? 'none';
+      charactersLines.push(entry);
+    }
+  }
+  const charactersBlock = charactersLines.length > 0 ? charactersLines.join('\n') : 'none';
 
   const specialAbilitiesBlock = request.special_abilities?.join(', ') ?? 'none';
 
@@ -2650,7 +2662,7 @@ Difficulty: ${request.kid_profile?.difficulty_level ?? 'unknown'}
 Category: ${request.theme_key || 'unknown'}
 User input / theme: ${request.user_prompt ?? 'none'}
 
-Characters (USE THESE EXACT NAMES — do not rename or invent new characters):
+Characters (YOU MUST USE THESE EXACT NAMES — do not rename, do not invent new names, do not use placeholders):
 ${charactersBlock}
 
 Special effects / villain: ${specialAbilitiesBlock}
