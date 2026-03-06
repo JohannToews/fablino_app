@@ -2759,6 +2759,44 @@ Deno.serve(async (req) => {
       usedNewPromptPath = true;
       console.log('[generate-story] Using NEW prompt path (CORE Slim + dynamic context)');
 
+      // ── Writer Prompt Version Selection (v2 = Core Slim, v3 = Plan-Optimized) ──
+      const writerVersionResult = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'story_writer_prompt_version')
+        .single();
+
+      const writerVersionRaw = writerVersionResult.data?.value ?? '"v2"';
+
+      let writerVersion = 'v2';
+      try {
+        const parsed = JSON.parse(writerVersionRaw);
+        if (typeof parsed === 'object' && parsed !== null) {
+          writerVersion = parsed[authId] ?? parsed['*'] ?? 'v2';
+        } else {
+          writerVersion = parsed;
+        }
+      } catch {
+        writerVersion = 'v2';
+      }
+
+      if (writerVersion === 'v3') {
+        const coreV3Result = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'system_prompt_core_v3')
+          .single();
+        const coreV3 = coreV3Result.data?.value;
+        if (coreV3 && coreV3.trim().length > 0) {
+          fullSystemPromptFinal = coreV3;
+          console.log('[WriterPrompt] Using system_prompt_core_v3');
+        } else {
+          console.warn('[WriterPrompt] system_prompt_core_v3 is empty, falling back to v2');
+        }
+      } else {
+        console.log('[WriterPrompt] Using system_prompt_core_v2');
+      }
+
       // Story Planner feature flag and call (inside try block where storyRequest is in scope)
       const plannerVertexKey = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
       const plannerGeminiKey = Deno.env.get("GEMINI_API_KEY");

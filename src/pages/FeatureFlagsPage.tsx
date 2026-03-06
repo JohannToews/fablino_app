@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Flag, ShieldCheck, Search } from "lucide-react";
+import { Loader2, Flag, ShieldCheck, Search, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,6 +64,10 @@ const FeatureFlagsPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  
+  // Writer Prompt Version state
+  const [writerVersion, setWriterVersion] = useState<"v2" | "v3">("v2");
+  const [coreV3Empty, setCoreV3Empty] = useState(true);
 
   useEffect(() => {
     if (!authLoading && user && user.role !== "admin") {
@@ -76,10 +82,29 @@ const FeatureFlagsPage = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [settingsRes, usersRes] = await Promise.all([
+      const [settingsRes, usersRes, writerVersionRes, coreV3Res] = await Promise.all([
         (supabase as any).from("app_settings").select("key, value").in("key", ALL_SETTING_KEYS),
         (supabase as any).from("user_profiles").select("id, display_name, email, username").order("display_name"),
+        (supabase as any).from("app_settings").select("value").eq("key", "story_writer_prompt_version").single(),
+        (supabase as any).from("app_settings").select("value").eq("key", "system_prompt_core_v3").single(),
       ]);
+
+      // Parse writer version
+      if (writerVersionRes.data?.value) {
+        try {
+          const parsed = JSON.parse(writerVersionRes.data.value);
+          if (typeof parsed === "string" && (parsed === "v2" || parsed === "v3")) {
+            setWriterVersion(parsed);
+          } else if (typeof parsed === "object" && parsed !== null) {
+            setWriterVersion(parsed["*"] === "v3" ? "v3" : "v2");
+          }
+        } catch {
+          setWriterVersion("v2");
+        }
+      }
+
+      // Check if core v3 is empty
+      setCoreV3Empty(!coreV3Res.data?.value || coreV3Res.data.value.trim().length === 0);
 
       if (settingsRes.data) {
         const parsed: Record<string, string[]> = {};
@@ -173,6 +198,22 @@ const FeatureFlagsPage = () => {
     }
   };
 
+  const saveWriterVersion = async (version: "v2" | "v3") => {
+    setWriterVersion(version);
+    const { error } = await (supabase as any)
+      .from("app_settings")
+      .upsert(
+        { key: "story_writer_prompt_version", value: JSON.stringify(version), updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+    if (error) {
+      toast.error("Fehler beim Speichern: " + error.message);
+      loadData();
+    } else {
+      toast.success(`Writer Prompt Version auf ${version.toUpperCase()} gesetzt`);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
@@ -224,6 +265,52 @@ const FeatureFlagsPage = () => {
       </header>
 
       <div className="max-w-4xl mx-auto p-4 space-y-6 pb-24">
+        {/* Writer Prompt Version Toggle */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">✍️ Writer Prompt Version</CardTitle>
+                <Badge variant={writerVersion === "v3" ? "default" : "secondary"}>
+                  {writerVersion.toUpperCase()} aktiv
+                </Badge>
+              </div>
+            </div>
+            <CardDescription>
+              Wähle die System-Prompt Version für den Story Writer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button
+                variant={writerVersion === "v2" ? "default" : "outline"}
+                size="sm"
+                onClick={() => saveWriterVersion("v2")}
+              >
+                v2 (Core Slim)
+              </Button>
+              <Button
+                variant={writerVersion === "v3" ? "default" : "outline"}
+                size="sm"
+                onClick={() => saveWriterVersion("v3")}
+                className="flex items-center gap-1"
+              >
+                v3 (Plan-Optimized)
+                {coreV3Empty && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
+              </Button>
+            </div>
+            {coreV3Empty && (
+              <p className="text-xs text-yellow-600 mt-2 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                system_prompt_core_v3 ist leer — muss im Prompt Editor gefüllt werden
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              v3 verwendet system_prompt_core_v3 statt system_prompt_core_v2
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Global-Only Toggles */}
         <Card>
           <CardHeader className="pb-3">
