@@ -83,6 +83,7 @@ const translations: Record<string, {
 };
 
 const DEFAULT_STYLE_KEY = 'storybook_soft';
+const STYLE_QUERY_TIMEOUT_MS = 12000;
 
 /** Client-side fallback when DB image_styles.labels lack uk/ru (e.g. migration not applied or styles 3d_adventure/vintage_retro) */
 const FALLBACK_STYLE_LABELS_UK_RU: Record<string, { uk: string; ru: string }> = {
@@ -104,6 +105,26 @@ function getAgeGroup(age: number): string {
   return "10-11";
 }
 
+function buildEmergencyFallbackStyles(): ImageStyle[] {
+  const keys = [DEFAULT_STYLE_KEY, "adventure_cartoon", "manga_anime"];
+  return keys.map((styleKey, idx) => ({
+    id: `emergency-${styleKey}`,
+    style_key: styleKey,
+    labels: {
+      de: styleKey,
+      en: styleKey,
+      fr: styleKey,
+      uk: FALLBACK_STYLE_LABELS_UK_RU[styleKey]?.uk || styleKey,
+      ru: FALLBACK_STYLE_LABELS_UK_RU[styleKey]?.ru || styleKey,
+    },
+    description: {},
+    preview_image_url: null,
+    age_groups: ["6-7", "8-9", "10-11"],
+    default_for_ages: idx === 0 ? ["6-7", "8-9", "10-11"] : null,
+    sort_order: idx,
+  }));
+}
+
 const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
   kidAge,
   kidProfileImageStyle,
@@ -119,64 +140,90 @@ const ImageStylePicker: React.FC<ImageStylePickerProps> = ({
   const ageGroup = getAgeGroup(kidAge);
 
   useEffect(() => {
-    const loadStyles = async () => {
-      const { data, error } = await supabase
-        .from("image_styles")
-        .select("id, style_key, labels, description, preview_image_url, age_groups, default_for_ages, sort_order")
-        .eq("is_active", true)
-        .order("sort_order");
+    let cancelled = false;
 
-      if (error) {
-        console.error("[ImageStylePicker] Error loading styles:", error);
-        setLoading(false);
-        return;
-      }
-
-      const allActiveStyles = (data || []).map((s) => ({
-        ...s,
-        labels: (s.labels ?? {}) as Record<string, string>,
-        description: (s.description ?? {}) as Record<string, string>,
-        age_groups: s.age_groups as string[],
-        default_for_ages: s.default_for_ages as string[] | null,
-      }));
-      const filtered = allActiveStyles.filter((s) => (s.age_groups as string[])?.includes(ageGroup));
-      let stylesToShow = filtered.length > 0 ? filtered : allActiveStyles;
-      if (stylesToShow.length === 0) {
-        const fallbackStyle: ImageStyle = {
-          id: 'default-fallback',
-          style_key: DEFAULT_STYLE_KEY,
-          labels: { de: 'Standardstil', en: 'Default style', fr: 'Style par défaut', uk: 'Стандартний стиль', ru: 'Стандартный стиль' },
-          description: {},
-          preview_image_url: null,
-          age_groups: [],
-          default_for_ages: null,
-          sort_order: 0,
-        };
-        stylesToShow = [fallbackStyle];
-      }
-
-      setStyles(stylesToShow);
-
-      const preferredMatch = kidProfileImageStyle
-        ? stylesToShow.find((s: any) => s.style_key === kidProfileImageStyle)
+    const setSafeFallback = () => {
+      const fallbackStyles = buildEmergencyFallbackStyles();
+      const preferred = kidProfileImageStyle
+        ? fallbackStyles.find((s) => s.style_key === kidProfileImageStyle)
         : null;
 
-      if (preferredMatch) {
-        setSelectedKey(preferredMatch.style_key);
-      } else {
-        const defaultMatch = stylesToShow.find((s: any) =>
-          s.default_for_ages?.includes(ageGroup)
-        );
-        const fallbackKey = stylesToShow.length > 0
-          ? (defaultMatch?.style_key || stylesToShow[0]?.style_key)
-          : DEFAULT_STYLE_KEY;
-        setSelectedKey(fallbackKey || null);
+      if (!cancelled) {
+        setStyles(fallbackStyles);
+        setSelectedKey(preferred?.style_key || DEFAULT_STYLE_KEY);
+        setLoading(false);
       }
+    };
 
-      setLoading(false);
+    const loadStyles = async () => {
+      try {
+        const dbQuery = supabase
+          .from("image_styles")
+          .select("id, style_key, labels, description, preview_image_url, age_groups, default_for_ages, sort_order")
+          .eq("is_active", true)
+          .order("sort_order");
+
+        const result: any = await Promise.race([
+          dbQuery,
+          new Promise((resolve) =>
+            setTimeout(
+              () => resolve({ data: null, error: { message: "Image styles query timeout" } }),
+              STYLE_QUERY_TIMEOUT_MS
+            )
+          ),
+        ]);
+
+        if (cancelled) return;
+
+        if (result?.error) {
+          console.error("[ImageStylePicker] Error loading styles:", result.error);
+          setSafeFallback();
+          return;
+        }
+
+        const allActiveStyles = ((result?.data as any[]) || []).map((s) => ({
+          ...s,
+          labels: (s.labels ?? {}) as Record<string, string>,
+          description: (s.description ?? {}) as Record<string, string>,
+          age_groups: s.age_groups as string[],
+          default_for_ages: s.default_for_ages as string[] | null,
+        }));
+
+        const filtered = allActiveStyles.filter((s) => (s.age_groups as string[])?.includes(ageGroup));
+        let stylesToShow = filtered.length > 0 ? filtered : allActiveStyles;
+
+        if (stylesToShow.length === 0) {
+          stylesToShow = buildEmergencyFallbackStyles();
+        }
+
+        setStyles(stylesToShow);
+
+        const preferredMatch = kidProfileImageStyle
+          ? stylesToShow.find((s: any) => s.style_key === kidProfileImageStyle)
+          : null;
+
+        if (preferredMatch) {
+          setSelectedKey(preferredMatch.style_key);
+        } else {
+          const defaultMatch = stylesToShow.find((s: any) => s.default_for_ages?.includes(ageGroup));
+          const fallbackKey = stylesToShow.length > 0
+            ? (defaultMatch?.style_key || stylesToShow[0]?.style_key)
+            : DEFAULT_STYLE_KEY;
+          setSelectedKey(fallbackKey || null);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("[ImageStylePicker] Unexpected loading error:", error);
+        setSafeFallback();
+      }
     };
 
     loadStyles();
+
+    return () => {
+      cancelled = true;
+    };
   }, [ageGroup, kidProfileImageStyle]);
 
   const defaultStyleKey = useMemo(() => {
