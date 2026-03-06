@@ -1653,6 +1653,7 @@ export type Database = {
           story_images_status: string | null
           story_length: string | null
           story_path_code: string | null
+          story_plan: Json | null
           structure_beginning: number | null
           structure_ending: number | null
           structure_middle: number | null
@@ -1725,6 +1726,7 @@ export type Database = {
           story_images_status?: string | null
           story_length?: string | null
           story_path_code?: string | null
+          story_plan?: Json | null
           structure_beginning?: number | null
           structure_ending?: number | null
           structure_middle?: number | null
@@ -1797,6 +1799,7 @@ export type Database = {
           story_images_status?: string | null
           story_length?: string | null
           story_path_code?: string | null
+          story_plan?: Json | null
           structure_beginning?: number | null
           structure_ending?: number | null
           structure_middle?: number | null
@@ -2698,6 +2701,7 @@ export type Database = {
           story_images_status: string | null
           story_length: string | null
           story_path_code: string | null
+          story_plan: Json | null
           structure_beginning: number | null
           structure_ending: number | null
           structure_middle: number | null
