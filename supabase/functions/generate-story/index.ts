@@ -1945,6 +1945,7 @@ async function loadSeriesContext(
 }
 
 Deno.serve(async (req) => {
+  console.log('[ENTRY-DEBUG] Handler entered, version=2');
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
