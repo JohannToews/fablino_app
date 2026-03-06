@@ -141,6 +141,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     if (kinderModulResult.data && !kinderModulResult.error) {
       setKinderModulPrompt(kinderModulResult.data.value);
     }
+
+    if (plannerResult.data && !plannerResult.error) {
+      setPlannerPrompt(plannerResult.data.value);
+    }
     
     setIsLoading(false);
   };
