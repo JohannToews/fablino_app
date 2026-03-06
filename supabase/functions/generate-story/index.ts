@@ -635,6 +635,42 @@ interface SeriesConsistencyCheckResult {
   stats: { critical: number; medium: number; low: number };
 }
 
+// Default severity based on category (when LLM doesn't provide severity)
+function getDefaultSeverity(category: string): 'CRITICAL' | 'MEDIUM' | 'LOW' {
+  const cat = category.toUpperCase();
+  if (cat === 'CONTINUITY' || cat === 'EPISODE_FUNCTION') return 'CRITICAL';
+  if (cat === 'LOGIC' || cat === 'CHARACTER') return 'MEDIUM';
+  if (cat === 'GRAMMAR' || cat === 'LANGUAGE' || cat === 'SIGNATURE') return 'LOW';
+  return 'MEDIUM';
+}
+
+// Parse category string that might be in various formats:
+// - "LOGIC" → { category: "LOGIC", subcategory: null }
+// - "LOGIC_ZEITLICH" → { category: "LOGIC", subcategory: "ZEITLICH" }
+// - "LOGIC:ZEITLICH" → { category: "LOGIC", subcategory: "ZEITLICH" }
+function parseCategoryString(raw: string): { category: string; subcategory: string | null } {
+  const upper = (raw || 'LOGIC').toUpperCase().trim();
+  
+  // Format: CATEGORY:SUBCATEGORY
+  if (upper.includes(':')) {
+    const [cat, sub] = upper.split(':');
+    return { category: cat, subcategory: sub || null };
+  }
+  
+  // Format: CATEGORY_SUBCATEGORY (e.g. LOGIC_ZEITLICH)
+  // Known categories to split on
+  const knownCategories = ['LOGIC', 'GRAMMAR', 'LANGUAGE', 'CHARACTER', 'CONTINUITY', 'EPISODE_FUNCTION', 'SIGNATURE'];
+  for (const cat of knownCategories) {
+    if (upper.startsWith(cat + '_')) {
+      const sub = upper.slice(cat.length + 1);
+      return { category: cat, subcategory: sub || null };
+    }
+  }
+  
+  // Plain category (e.g. "LOGIC")
+  return { category: upper, subcategory: null };
+}
+
 // Helper function to fetch consistency check prompt from database
 async function getConsistencyCheckPrompt(language: string): Promise<string | null> {
   try {
@@ -710,24 +746,56 @@ ${seriesInfo}`;
     const result = JSON.parse(jsonMatch[0]);
     // Support all known response formats: hasIssues/issues, fehler_gefunden/fehler, errors_found/errors
     const rawIssues = result.issues || result.errors || result.fehler || [];
+    
+    // Format issues with full [CATEGORY:SUBCATEGORY/SEVERITY@segment] format
     const issues = Array.isArray(rawIssues)
-      ? rawIssues.map((f: any) => typeof f === 'string' ? f : `[${f.kategorie || f.category}] ${f.problem}: "${f.originaltext || f.original}" → ${f.korrektur || f.fix}`)
+      ? rawIssues.map((f: any) => {
+          if (typeof f === 'string') return f;
+          
+          // Parse category (handles CATEGORY, CATEGORY_SUB, CATEGORY:SUB formats)
+          const rawCat = f.category || f.kategorie || 'LOGIC';
+          const parsed = parseCategoryString(rawCat);
+          const category = parsed.category;
+          const subcategory = parsed.subcategory || f.subcategory || f.unterkategorie || 'OTHER';
+          
+          // Get severity (use provided or default based on category)
+          const rawSeverity = f.severity || f.schweregrad;
+          const severity = rawSeverity ? rawSeverity.toUpperCase() : getDefaultSeverity(category);
+          
+          // Get segment
+          const segment = f.flagged_segment || f.segment || 'middle';
+          
+          // Format: [CATEGORY:SUBCATEGORY/SEVERITY@segment] problem: "original" → fix
+          return `[${category}:${subcategory}/${severity}@${segment}] ${f.problem || ''}: "${f.originaltext || f.original || ''}" → ${f.korrektur || f.fix || ''}`;
+        })
       : [];
 
     // Extract structured errors for recheck (convert to SeriesConsistencyError format)
     const structuredErrors: SeriesConsistencyError[] = Array.isArray(rawIssues)
       ? rawIssues
           .filter((f: any) => typeof f === 'object' && f !== null)
-          .map((f: any) => ({
-            category: (f.category || f.kategorie || 'LOGIC').toUpperCase() as SeriesConsistencyError['category'],
-            subcategory: (f.subcategory || f.unterkategorie || 'OTHER').toUpperCase() as SeriesConsistencyError['subcategory'],
-            severity: (f.severity || f.schweregrad || 'MEDIUM').toUpperCase() as SeriesConsistencyError['severity'],
-            flagged_segment: (f.flagged_segment || f.segment || 'middle') as SeriesConsistencyError['flagged_segment'],
-            path_violation: f.path_violation || false,
-            original: f.original || f.originaltext || '',
-            problem: f.problem || '',
-            fix: f.fix || f.korrektur || '',
-          }))
+          .map((f: any) => {
+            // Parse category (handles CATEGORY, CATEGORY_SUB, CATEGORY:SUB formats)
+            const rawCat = f.category || f.kategorie || 'LOGIC';
+            const parsed = parseCategoryString(rawCat);
+            const category = parsed.category;
+            const subcategory = parsed.subcategory || f.subcategory || f.unterkategorie || 'OTHER';
+            
+            // Get severity (use provided or default based on category)
+            const rawSeverity = f.severity || f.schweregrad;
+            const severity = rawSeverity ? rawSeverity.toUpperCase() : getDefaultSeverity(category);
+            
+            return {
+              category: category as SeriesConsistencyError['category'],
+              subcategory: subcategory.toUpperCase() as SeriesConsistencyError['subcategory'],
+              severity: severity as SeriesConsistencyError['severity'],
+              flagged_segment: (f.flagged_segment || f.segment || 'middle') as SeriesConsistencyError['flagged_segment'],
+              path_violation: f.path_violation || false,
+              original: f.original || f.originaltext || '',
+              problem: f.problem || '',
+              fix: f.fix || f.korrektur || '',
+            };
+          })
       : [];
 
     const stats = result.stats || result.statistik || {};

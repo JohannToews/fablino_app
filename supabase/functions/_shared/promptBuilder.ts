@@ -2566,3 +2566,73 @@ async function safetyPath(supabaseClient: any): Promise<StoryPath> {
     writing_instructions: 'A: Charaktermoment – zeige die Hauptfigur in einer vertrauten Situation. | M: Eskalation – das Problem wird Schritt für Schritt größer. | E: Klassisch – befriedigende Auflösung.',
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STORY PLANNER — Pre-generation planning step
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Build prompts for the Story Planner LLM call.
+ * This creates a structured plan BEFORE story generation to ensure:
+ * - Setups are established before payoffs
+ * - All characters have proper exits
+ * - Objects are tracked from introduction to fate
+ * - Magic rules are consistent
+ */
+export function buildPlanPrompt(
+  request: StoryRequest
+): { systemPrompt: string; userMessage: string } {
+  const systemPrompt = `You are a children's story architect.
+Your job is NOT to write a story. Your job is to plan one.
+
+You receive story inputs and output ONLY a JSON plan — no prose, no story text.
+The plan will be given to a story writer in the next step.
+
+Rules:
+- resolution MUST use only elements listed in setups_required
+- magic_rules MUST be established before the climax scene
+- every character in characters[] MUST have a non-empty exit
+- every object in objects[] MUST have a non-empty fate
+- villain_role MUST reflect the special_abilities input exactly
+- if no magic or villain exists, set those fields to null
+
+Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
+
+  const charactersBlock = request.protagonists?.characters
+    ?.map(c => `- ${c.name} (${c.relation || 'unknown'})`)
+    .join('\n') ?? 'none';
+
+  const specialAbilitiesBlock = request.special_abilities?.join(', ') ?? 'none';
+
+  const userMessage = `Create a story plan for the following inputs:
+
+Language: ${request.story_language}
+Age: ${request.kid_profile?.age ?? 'unknown'}
+Difficulty: ${request.kid_profile?.difficulty_level ?? 'unknown'}
+Category: ${request.theme_key || 'unknown'}
+User input / theme: ${request.user_prompt ?? 'none'}
+
+Characters:
+${charactersBlock}
+
+Special effects / villain: ${specialAbilitiesBlock}
+
+Output this exact JSON:
+{
+  "central_conflict": "string",
+  "resolution": "string — must only use elements from setups_required",
+  "setups_required": [
+    { "scene": 1, "element": "string" }
+  ],
+  "characters": [
+    { "name": "string", "role": "string", "exit": "string" }
+  ],
+  "objects": [
+    { "name": "string", "introduced_scene": 1, "fate": "string" }
+  ],
+  "magic_rules": "string or null",
+  "villain_role": "string or null"
+}`;
+
+  return { systemPrompt, userMessage };
+}
