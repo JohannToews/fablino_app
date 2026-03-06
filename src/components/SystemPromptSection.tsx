@@ -83,8 +83,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const elternModulKey = `system_prompt_story_creation_${language}`;
     const kinderModulKey = `system_prompt_kid_creation_${language}`;
     
-    // Load all prompts in parallel (including v2 consistency check prompts)
-    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, elternModulResult, kinderModulResult, consistencyV2Result, seriesAddonResult] = await Promise.all([
+    // Load all prompts in parallel (including v2 consistency check prompts + planner)
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, elternModulResult, kinderModulResult, consistencyV2Result, seriesAddonResult, plannerResult] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
@@ -92,7 +92,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       supabase.from("app_settings").select("value").eq("key", elternModulKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", kinderModulKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "consistency_check_prompt_v2").maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", "consistency_check_series_addon_v2").maybeSingle()
+      supabase.from("app_settings").select("value").eq("key", "consistency_check_series_addon_v2").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "system_prompt_planner").maybeSingle()
     ]);
 
     if (promptResult.data && !promptResult.error) {
