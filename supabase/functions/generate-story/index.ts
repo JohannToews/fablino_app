@@ -4042,10 +4042,15 @@ Respond with ONLY valid JSON, no markdown:
 
           // ── Tier 1: Patch ALL errors (single correction call) ──
           const allErrors = [...criticalErrors, ...mediumErrors, ...lowErrors];
-          console.log(`[Phase4] Patching ${allErrors.length} error(s): ${criticalErrors.length}C/${mediumErrors.length}M/${lowErrors.length}L`);
+          
+          const elapsedMs = Date.now() - startTime;
+          if (elapsedMs > 90000) {
+            console.log('[Check] 90s elapsed, skipping patch entirely');
+          } else {
+            console.log('[Check] Starting patch round, errors:', allErrors.length, 'elapsed:', elapsedMs + 'ms');
 
-          const patchStart = Date.now();
-          const correctedStory = await correctStoryFromSeriesErrors(
+            const patchStart = Date.now();
+            const correctedStory = await correctStoryFromSeriesErrors(
             LOVABLE_API_KEY,
             story,
             allErrors,
@@ -4126,6 +4131,7 @@ Respond with ONLY valid JSON, no markdown:
           }
 
           console.log(`[Phase4] Final: ${totalIssuesCorrected}/${totalIssuesFound} fixed, remaining: ${checkerCritical}C/${checkerMedium}M/${checkerLow}L`);
+          }
         }
       } else {
         // ═══ STANDARD PATH: existing single-story consistency check ═══
@@ -4139,7 +4145,7 @@ Respond with ONLY valid JSON, no markdown:
         console.log("Starting standard consistency check...");
 
         let correctionAttempts = 0;
-        const maxCorrectionAttempts = 2;
+        const maxCorrectionAttempts = 1;
 
         while (correctionAttempts < maxCorrectionAttempts) {
           const stdCheckStart = Date.now();
@@ -4159,7 +4165,14 @@ Respond with ONLY valid JSON, no markdown:
           allIssueDetails.push(...checkResult.issues);
 
           correctionAttempts++;
-          console.log(`Consistency check found ${checkResult.issues.length} issue(s), attempting correction ${correctionAttempts}/${maxCorrectionAttempts}...`);
+          
+          const elapsedMs = Date.now() - startTime;
+          if (elapsedMs > 90000) {
+            console.log('[Check] 90s elapsed, skipping patch entirely');
+            break;
+          }
+          
+          console.log('[Check] Starting patch round, errors:', checkResult.issues.length, 'elapsed:', elapsedMs + 'ms');
 
           const stdPatchStart = Date.now();
           const correctedStory = await correctStory(
