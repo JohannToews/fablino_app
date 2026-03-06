@@ -2625,54 +2625,6 @@ Deno.serve(async (req) => {
       console.log('[generate-story] storyRequest.user_prompt resolved to:', (storyRequest.user_prompt || '(empty)').substring(0, 300));
       // 3. Build dynamic user message
       const promptResult = await buildStoryPrompt(storyRequest, supabase);
-
-      // Story Planner feature flag
-      const storyPlannerEnabledUsers: string[] = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'story_planner_enabled_users')
-        .single()
-        .then((r: { data: { value: string } | null }) => JSON.parse(r.data?.value ?? '[]'));
-
-      const storyPlannerEnabled =
-        storyPlannerEnabledUsers.includes('*') ||
-        storyPlannerEnabledUsers.includes(userId);
-
-      // Story Planner call
-      let storyPlan: Record<string, unknown> | null = null;
-      let planGenerationMs = 0;
-
-      if (storyPlannerEnabled) {
-        try {
-          const planStart = Date.now();
-          const { systemPrompt: planSystem, userMessage: planUser } = 
-            buildPlanPrompt(storyRequest);
-
-          // Use same model routing as story call
-          let planContent: string | null = null;
-          const storyModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
-          if (storyModel === 'sonnet' && VERTEX_API_KEY) {
-            planContent = await callClaudeVertex(VERTEX_API_KEY, planSystem, planUser, 0.8);
-          } else if (VERTEX_API_KEY) {
-            planContent = await callGeminiVertex(VERTEX_API_KEY, planSystem, planUser, 0.8);
-          } else if (GEMINI_API_KEY) {
-            planContent = await callGemini(GEMINI_API_KEY, planSystem, planUser, 0.8);
-          }
-
-          planGenerationMs = Date.now() - planStart;
-
-          if (planContent) {
-            const cleaned = planContent.replace(/```json|```/g, '').trim();
-            storyPlan = JSON.parse(cleaned);
-            console.log('[StoryPlanner] Plan generated:', JSON.stringify(storyPlan));
-          }
-        } catch (err) {
-          // Fallback: continue without plan, log error
-          console.error('[StoryPlanner] Plan generation failed, falling back to 1-call:', err);
-          storyPlan = null;
-        }
-      }
-
       userMessageFinal = promptResult.prompt;
       promptWarnings = promptResult.warnings;
       selectedPathCode = promptResult.selectedPath?.code || null;
@@ -2840,6 +2792,10 @@ Deno.serve(async (req) => {
 
     const baseSystemPrompt = fullSystemPromptFinal;
 
+    // Story Planner variables (declared here for scope, assigned after API keys are available)
+    let storyPlan: Record<string, unknown> | null = null;
+    let planGenerationMs = 0;
+
     // Get API keys - prefer VERTEX_SERVICE_ACCOUNT_JSON (proper SA JSON) for Vertex AI
     const VERTEX_API_KEY = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -2856,6 +2812,53 @@ Deno.serve(async (req) => {
     }
     if (GEMINI_API_KEY) {
       console.log(`[generate-story] Gemini API key loaded for text generation`);
+    }
+
+    // Story Planner feature flag and call
+    const storyPlannerEnabledUsers: string[] = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'story_planner_enabled_users')
+      .single()
+      .then((r: { data: { value: string } | null }) => {
+        try {
+          return JSON.parse(r.data?.value ?? '[]');
+        } catch {
+          return [];
+        }
+      });
+
+    const storyPlannerEnabled =
+      storyPlannerEnabledUsers.includes('*') ||
+      storyPlannerEnabledUsers.includes(userId);
+
+    if (storyPlannerEnabled) {
+      try {
+        const planStart = Date.now();
+        const { systemPrompt: planSystem, userMessage: planUser } = 
+          buildPlanPrompt(storyRequest);
+
+        let planContent: string | null = null;
+        const plannerModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
+        if (plannerModel === 'sonnet' && VERTEX_API_KEY) {
+          planContent = await callClaudeVertex(VERTEX_API_KEY, planSystem, planUser, 0.8);
+        } else if (VERTEX_API_KEY) {
+          planContent = await callGeminiVertex(VERTEX_API_KEY, planSystem, planUser, 0.8);
+        } else if (GEMINI_API_KEY) {
+          planContent = await callGemini(GEMINI_API_KEY, planSystem, planUser, 0.8);
+        }
+
+        planGenerationMs = Date.now() - planStart;
+
+        if (planContent) {
+          const cleaned = planContent.replace(/```json|```/g, '').trim();
+          storyPlan = JSON.parse(cleaned);
+          console.log('[StoryPlanner] Plan generated:', JSON.stringify(storyPlan));
+        }
+      } catch (err) {
+        console.error('[StoryPlanner] Plan generation failed, falling back to 1-call:', err);
+        storyPlan = null;
+      }
     }
 
     // Language mappings (used by both new and old paths)
