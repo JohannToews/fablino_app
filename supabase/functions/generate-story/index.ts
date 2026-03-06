@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { buildStoryPrompt, buildPlanPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG, getEpisodeConfig, getDefaultEpisodeCount, type PromptBuildResult } from '../_shared/promptBuilder.ts';
+import { buildStoryPrompt, buildPlanPrompt, injectLearningTheme, StoryRequest, EPISODE_CONFIG, getEpisodeConfig, getDefaultEpisodeCount, type PromptBuildResult, type StoryPath } from '../_shared/promptBuilder.ts';
 import { shouldApplyLearningTheme } from '../_shared/learningThemeRotation.ts';
 import { buildImagePrompts, buildFallbackImagePrompt, loadImageRules, getStyleForAge, ImagePromptResult, SeriesImageContext, mapVisualDirectorToImagePlan } from '../_shared/imagePromptBuilder.ts';
 import { callVisualDirector } from '../_shared/visualDirector.ts';
@@ -2639,6 +2639,7 @@ Deno.serve(async (req) => {
       userMessageFinal = promptResult.prompt;
       promptWarnings = promptResult.warnings;
       selectedPathCode = promptResult.selectedPath?.code || null;
+      const selectedPath = promptResult.selectedPath || null;
 
       // Debug: Check if PRIMARY DIRECTIVE is in the built prompt
       const hasPrimaryDirective = userMessageFinal.includes('PRIMARY') || userMessageFinal.includes('HÖCHSTE PRIORITÄT') || userMessageFinal.includes('PRIORITÉ MAXIMALE') || userMessageFinal.includes('MÁXIMA PRIORIDAD');
@@ -2787,7 +2788,7 @@ Deno.serve(async (req) => {
         try {
           const planStart = Date.now();
           const { systemPrompt: planSystem, userMessage: planUser } = 
-            buildPlanPrompt(storyRequest);
+            buildPlanPrompt(storyRequest, selectedPath);
 
           let planContent: string | null = null;
           const plannerModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
@@ -3155,23 +3156,89 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
         : `${userPrompt}\n\n**ACHTUNG:** Der vorherige Versuch hatte zu wenige Wörter. Schreibe einen LÄNGEREN Text mit mindestens ${minWordCount} Wörtern!`;
 
       if (storyPlan) {
-        const planSection = `
-## STORY PLAN — MANDATORY
-This plan was created before writing. Follow it exactly.
-Every element listed here MUST appear in the story.
-Deviation from this plan = failed story.
+        const plan = storyPlan as any;
+        const planLines: string[] = [];
 
-Conflict: ${storyPlan.central_conflict}
-Resolution: ${storyPlan.resolution}
-Required setups:
-${(storyPlan.setups_required as any[]).map((s: any) => `  Scene ${s.scene}: ${s.element}`).join('\n')}
-Characters & exits (THESE NAMES ARE FIXED — use exactly):
-${(storyPlan.characters as any[]).map((c: any) => `  ${c.name} (${c.role}): exit → ${c.exit}`).join('\n')}
-Objects & fates:
-${(storyPlan.objects as any[]).map((o: any) => `  ${o.name} (introduced scene ${o.introduced_scene}): ${o.fate}`).join('\n')}
-${storyPlan.magic_rules ? `Magic rules: ${storyPlan.magic_rules}` : ''}
-${storyPlan.villain_role ? `Villain role: ${storyPlan.villain_role}` : ''}`;
+        planLines.push(`IMPORTANT: The following plan was created by the Story Planner. Follow it exactly.`);
+        planLines.push(`All elements listed below MUST be introduced in the story BEFORE they are used in the resolution or climax.`);
+        planLines.push(`Never introduce a magical ability, superpower, villain weakness, or absurd object for the first time in the resolution scene.`);
+        planLines.push(``);
 
+        if (plan.story_path) {
+          planLines.push(`NARRATIVE STRUCTURE (MANDATORY): ${plan.story_path} (confirmed by Planner)`);
+          planLines.push(``);
+        }
+
+        planLines.push(`CENTRAL CONFLICT: ${plan.central_conflict}`);
+        planLines.push(`RESOLUTION: ${plan.resolution}`);
+        planLines.push(``);
+
+        planLines.push(`SETUPS REQUIRED (establish each element as described before using it):`);
+        if (plan.setups_required?.length > 0) {
+          plan.setups_required.forEach((s: any) => {
+            planLines.push(`- Scene ${s.scene}: ${s.element}${s.how ? ` — HOW: ${s.how}` : ''}`);
+          });
+        }
+        planLines.push(``);
+
+        if (plan.magic_rules?.length > 0) {
+          planLines.push(`MAGIC RULES (establish each element before the climax):`);
+          planLines.push(JSON.stringify(plan.magic_rules, null, 2));
+          planLines.push(``);
+        }
+
+        if (plan.superpower_rules?.length > 0) {
+          planLines.push(`SUPERPOWER RULES (demonstrate the power in an early scene before using it in the resolution):`);
+          planLines.push(JSON.stringify(plan.superpower_rules, null, 2));
+          planLines.push(``);
+        }
+
+        if (plan.villain_rules) {
+          planLines.push(`VILLAIN RULES (hint at the weakness before the defeat scene):`);
+          planLines.push(JSON.stringify(plan.villain_rules, null, 2));
+          planLines.push(``);
+        }
+
+        if (plan.absurd_elements?.length > 0) {
+          planLines.push(`ABSURD ELEMENTS (introduce each element before the resolution):`);
+          planLines.push(JSON.stringify(plan.absurd_elements, null, 2));
+          planLines.push(``);
+        }
+
+        if (plan.locations?.length > 0) {
+          planLines.push(`LOCATIONS (Writer must not introduce unlisted locations):`);
+          planLines.push(JSON.stringify(plan.locations, null, 2));
+          planLines.push(``);
+        }
+
+        if (plan.protagonist_goal) {
+          planLines.push(`PROTAGONIST GOAL: ${plan.protagonist_goal}`);
+          planLines.push(`GOAL RESOLUTION: ${plan.goal_resolution || '(not specified)'}`);
+          planLines.push(``);
+        }
+
+        if (plan.key_discoveries?.length > 0) {
+          planLines.push(`KEY DISCOVERIES (protagonist may only act on knowledge with an established source):`);
+          planLines.push(JSON.stringify(plan.key_discoveries, null, 2));
+          planLines.push(``);
+        }
+
+        planLines.push(`CHARACTERS (THESE NAMES ARE FIXED — use exactly):`);
+        if (plan.characters?.length > 0) {
+          plan.characters.forEach((c: any) => {
+            planLines.push(`- ${c.name} (${c.role}) → exit: ${c.exit}`);
+          });
+        }
+        planLines.push(``);
+
+        planLines.push(`OBJECTS:`);
+        if (plan.objects?.length > 0) {
+          plan.objects.forEach((o: any) => {
+            planLines.push(`- ${o.name} introduced in scene ${o.introduced_scene} → fate: ${o.fate}`);
+          });
+        }
+
+        const planSection = planLines.join('\n');
         promptToUse = planSection + '\n\n' + promptToUse;
         console.log('[StoryPlanner] Plan prepended to user prompt');
       }

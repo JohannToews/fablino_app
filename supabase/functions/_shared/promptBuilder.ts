@@ -2580,21 +2580,41 @@ async function safetyPath(supabaseClient: any): Promise<StoryPath> {
  * - Magic rules are consistent
  */
 export function buildPlanPrompt(
-  request: StoryRequest
+  request: StoryRequest,
+  selectedPath?: StoryPath | null
 ): { systemPrompt: string; userMessage: string } {
   const systemPrompt = `You are a children's story architect.
 Your job is NOT to write a story. Your job is to plan one.
-
 You receive story inputs and output ONLY a JSON plan — no prose, no story text.
 The plan will be given to a story writer in the next step.
 
 Rules:
+- story_path: echo back exactly the mandatory path received. Never choose or change it.
+- central_conflict MUST fit the M (middle) emotion of story_path
+- resolution MUST fit the E (ending) emotion of story_path
 - resolution MUST use only elements listed in setups_required
-- magic_rules MUST be established before the climax scene
+- every setup in setups_required MUST include a "how" field describing the exact establishing action
+- magic_rules, superpower_rules, villain_rules, absurd_elements MUST be filled if those elements exist in the request
+- every rule/power/weakness in those fields MUST have a corresponding entry in setups_required
+- villain_rules.weakness MUST be hinted at or discoverable BEFORE the defeat scene
 - every character in characters[] MUST have a non-empty exit
 - every object in objects[] MUST have a non-empty fate
-- villain_role MUST reflect the special_abilities input exactly
-- if no magic or villain exists, set those fields to null
+- if no magic exists: magic_rules = []
+- if no superpowers exist: superpower_rules = []
+- if no villain exists: villain_rules = null
+- if no absurd humor elements exist: absurd_elements = []
+- every location used in the story MUST be listed in locations[]
+- introduced_scene defines when the location first appears
+- leads_to must be set if the protagonist moves from this location to another
+- the Writer may NOT introduce a new location that is not in locations[]
+- spatial progression must be traceable: each location must connect logically to the next via leads_to
+- protagonist_goal must be distinct from central_conflict (conflict = what stands in the way, goal = what the protagonist is trying to do)
+- goal_resolution must reference a specific action or moment in the story
+- resolution field must align with goal_resolution — they cannot contradict each other
+- if the protagonist carries an object (map, key, compass), its role in achieving the goal must be explicit
+- any knowledge the protagonist acts on must be listed in key_discoveries[]
+- key_discoveries[].how is mandatory — a character cannot simply "understand" or "realize" something without an in-story source
+- forbidden: "Er wusste nun, dass..." without a prior information source in the story
 
 Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
 
@@ -2611,6 +2631,17 @@ Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
 
   const specialAbilitiesBlock = request.special_abilities?.join(', ') ?? 'none';
 
+  const pathLines: string[] = [];
+  if (selectedPath) {
+    pathLines.push(`Narrative structure (MANDATORY): ${selectedPath.code}`);
+    pathLines.push(`Writing instructions for this structure: ${selectedPath.writing_instructions}`);
+    pathLines.push(`The plan's central_conflict and resolution MUST fit this emotional arc.`);
+    pathLines.push(`- A (Beginning) defines the emotional tone of the opening`);
+    pathLines.push(`- M (Middle) defines how the conflict develops`);
+    pathLines.push(`- E (Ending) defines the emotional resolution`);
+    pathLines.push(`Do NOT plan a story that contradicts this structure.`);
+  }
+
   const userMessage = `Create a story plan for the following inputs:
 
 Language: ${request.story_language}
@@ -2623,13 +2654,19 @@ Characters (USE THESE EXACT NAMES — do not rename or invent new characters):
 ${charactersBlock}
 
 Special effects / villain: ${specialAbilitiesBlock}
+${pathLines.length > 0 ? '\n' + pathLines.join('\n') : ''}
 
 Output this exact JSON:
 {
-  "central_conflict": "string",
-  "resolution": "string — must only use elements from setups_required",
+  "story_path": "echo back the mandatory path received as input — e.g. A2->M2->E1",
+  "central_conflict": "string — must fit the M (middle) of story_path",
+  "resolution": "string — must fit the E (ending) of story_path, and only use elements from setups_required",
   "setups_required": [
-    { "scene": 1, "element": "string" }
+    {
+      "scene": 1,
+      "element": "string",
+      "how": "string — exact action or sentence that establishes this element in the story"
+    }
   ],
   "characters": [
     { "name": "string", "role": "string", "exit": "string" }
@@ -2637,9 +2674,65 @@ Output this exact JSON:
   "objects": [
     { "name": "string", "introduced_scene": 1, "fate": "string" }
   ],
-  "magic_rules": "string or null",
-  "villain_role": "string or null"
-}`;
+  "magic_rules": [
+    {
+      "element": "string — name of magical object or phenomenon",
+      "rule": "string — what it can do and what it cannot do",
+      "setup_scene": "string — when and how it is introduced before the climax",
+      "payoff_scene": "string — how it resolves the conflict"
+    }
+  ],
+  "superpower_rules": [
+    {
+      "power": "string — exact description of what the power does",
+      "limit": "string — what it cannot do or costs the protagonist",
+      "setup_scene": "string — when and how it is first demonstrated (not just mentioned)",
+      "payoff_scene": "string — how it solves the central conflict"
+    }
+  ],
+  "villain_rules": {
+    "name": "string",
+    "power": "string — what makes them dangerous",
+    "weakness": "string — what can defeat them",
+    "setup_scene": "string — when and how their power is demonstrated",
+    "defeat_scene": "string — how the weakness is used to defeat them"
+  },
+  "absurd_elements": [
+    {
+      "element": "string — name of absurd object or ability used in resolution",
+      "setup_scene": "string — when and how it is introduced before the climax",
+      "payoff_scene": "string — how it resolves the conflict"
+    }
+  ],
+  "locations": [
+    {
+      "name": "string — name of the location",
+      "introduced_scene": 1,
+      "leads_to": "string — which location or exit this connects to, or null"
+    }
+  ],
+  "protagonist_goal": "string — what exactly the protagonist wants to achieve (not the conflict, but their concrete objective)",
+  "goal_resolution": "string — how and when the goal is achieved or consciously abandoned",
+  "key_discoveries": [
+    {
+      "what": "string — what the protagonist learns or understands",
+      "how": "string — the exact in-story mechanism by which they learn it (e.g. villain says it aloud, inscription on wall, another character explains)"
+    }
+  ]
+}
+
+Rules for filling the JSON:
+- story_path: echo back exactly the path received as input. Never change it.
+- magic_rules: fill if story contains magic, enchanted objects, or fantastical phenomena. Empty array [] if none.
+- superpower_rules: fill if protagonist has a superpower. Empty array [] if none.
+- villain_rules: fill if story contains a villain or antagonist. null if none.
+- absurd_elements: fill if story is humorous and uses absurd objects or abilities in the resolution. Empty array [] if none.
+- Any element used to resolve the conflict MUST appear in setups_required AND in the relevant rules field.
+- villain_rules.weakness MUST appear in setups_required before the defeat scene.
+- No magical ability, superpower, villain weakness, or absurd object may appear for the first time in the resolution.
+- locations: list all locations used in the story. leads_to defines spatial flow. Empty array [] if single location.
+- protagonist_goal: what the protagonist wants (distinct from conflict). goal_resolution: when/how achieved.
+- key_discoveries: list any knowledge the protagonist acts on, with explicit in-story source. Empty array [] if none.`;
 
   return { systemPrompt, userMessage };
 }
