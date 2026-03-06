@@ -28,7 +28,8 @@ type FeatureKey =
   | "avatar_builder_enabled_users"
   | "visual_director_enabled_users"
   | "avatar_v2_enabled_users"
-  | "story_generator_model";
+  | "story_generator_model"
+  | "story_planner_enabled_users";
 
 const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string; description?: string }[] = [
   { key: "emotion_flow_enabled_users", label: "Emotion-Flow", globalLabel: "Emotion-Flow für ALLE" },
@@ -39,6 +40,7 @@ const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string; de
   { key: "visual_director_enabled_users", label: "Visual Director", globalLabel: "Visual Director für ALLE" },
   { key: "avatar_v2_enabled_users", label: "Avatar v2", globalLabel: "Avatar v2 für ALLE" },
   { key: "story_generator_model", label: "Sonnet 4.6", globalLabel: "Sonnet 4.6 für ALLE", description: "Claude Sonnet 4.6 statt Gemini für Story-Text" },
+  { key: "story_planner_enabled_users", label: "Story Planner", globalLabel: "Story Planner für ALLE", description: "Strukturierten Story-Plan vor Textgenerierung erstellen" },
 ];
 
 // These flags are global-only (no per-user column in the grid)
