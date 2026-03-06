@@ -2824,9 +2824,25 @@ Deno.serve(async (req) => {
 
       if (storyPlannerEnabled) {
         try {
+          // Load custom planner prompt from app_settings (if set)
+          let customPlannerPrompt: string | null = null;
+          try {
+            const { data: plannerPromptRow } = await supabase
+              .from('app_settings')
+              .select('value')
+              .eq('key', 'system_prompt_planner')
+              .maybeSingle();
+            if (plannerPromptRow?.value && plannerPromptRow.value.trim().length > 0) {
+              customPlannerPrompt = plannerPromptRow.value;
+              console.log('[StoryPlanner] Using custom planner prompt from DB');
+            }
+          } catch (e) {
+            console.warn('[StoryPlanner] Failed to load custom prompt, using default:', e);
+          }
+
           const planStart = Date.now();
           const { systemPrompt: planSystem, userMessage: planUser } = 
-            buildPlanPrompt(storyRequest, selectedPath);
+            buildPlanPrompt(storyRequest, selectedPath, customPlannerPrompt);
 
           let planContent: string | null = null;
           const plannerModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
