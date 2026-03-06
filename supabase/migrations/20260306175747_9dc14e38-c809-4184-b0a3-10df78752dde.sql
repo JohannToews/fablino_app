@@ -1,0 +1,1 @@
+UPDATE app_settings SET value = '["16f7bbde-5904-467c-8f5a-c1a8db6927bc"]', updated_at = now() WHERE key = 'story_planner_enabled_users';
