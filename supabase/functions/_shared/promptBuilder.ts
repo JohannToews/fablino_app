@@ -2623,6 +2623,10 @@ Rules:
 
 Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
 
+  const systemPrompt = (customSystemPrompt && customSystemPrompt.trim().length > 0) 
+    ? customSystemPrompt 
+    : defaultSystemPrompt;
+
   const protagonistName = request.kid_profile?.first_name || 'Child';
   const protagonistAge = request.kid_profile?.age;
   

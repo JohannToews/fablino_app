@@ -1010,6 +1010,119 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
           </CollapsibleContent>
         </Card>
       </Collapsible>
+
+      {/* Story Planner Prompt (language-independent) */}
+      <Collapsible open={openSections.planner} onOpenChange={() => toggleSection('planner')}>
+        <Card className="border-2 border-violet-500/50 bg-violet-50/30 dark:bg-violet-950/20">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.planner ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <ClipboardList className="h-5 w-5 text-violet-500" />
+                  {language === 'de' ? 'Story Planner Prompt' : 
+                   language === 'fr' ? 'Prompt Story Planner' : 
+                   'Story Planner Prompt'}
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-500 text-white rounded-full">
+                    PLANNER
+                  </span>
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {language === 'de' ? '(Alle Sprachen)' : 
+                   language === 'fr' ? '(Toutes langues)' : 
+                   '(All Languages)'}
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="p-3 bg-violet-100/50 dark:bg-violet-900/30 rounded-md border border-violet-300/50">
+                <p className="text-sm text-violet-800 dark:text-violet-200">
+                  {language === 'de' 
+                    ? '🗺️ Der Planner erstellt VOR der Story-Generierung einen strukturierten Plan (JSON). Dieser wird dann an den Writer übergeben. Feature-Flag: story_planner_enabled_users'
+                    : language === 'fr'
+                    ? '🗺️ Le Planner crée un plan structuré (JSON) AVANT la génération. Ce plan est ensuite transmis au Writer. Feature-Flag: story_planner_enabled_users'
+                    : '🗺️ The Planner creates a structured plan (JSON) BEFORE story generation. This plan is then passed to the Writer. Feature flag: story_planner_enabled_users'}
+                </p>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={plannerPrompt}
+                    onChange={(e) => setPlannerPrompt(e.target.value)}
+                    className="min-h-[350px] text-sm font-mono leading-relaxed"
+                    placeholder="You are a children's story architect. Your job is NOT to write a story..."
+                  />
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={async () => {
+                        setIsSavingPlanner(true);
+                        try {
+                          const { error } = await invokeEdgeFunction("manage-users", {
+                            action: "updateSystemPrompt",
+                            promptKey: "system_prompt_planner",
+                            promptValue: plannerPrompt,
+                          });
+                          if (error) {
+                            toast.error(language === 'de' ? "Fehler beim Speichern" : 
+                                        language === 'fr' ? "Erreur lors de la sauvegarde" :
+                                        "Error saving");
+                          } else {
+                            toast.success(language === 'de' ? "Planner-Prompt gespeichert" : 
+                                          language === 'fr' ? "Prompt Planner sauvegardé" :
+                                          "Planner prompt saved");
+                          }
+                        } catch (err) {
+                          console.error("Error:", err);
+                          toast.error(language === 'de' ? "Fehler beim Speichern" : 
+                                      language === 'fr' ? "Erreur lors de la sauvegarde" :
+                                      "Error saving");
+                        } finally {
+                          setIsSavingPlanner(false);
+                        }
+                      }}
+                      disabled={isSavingPlanner}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingPlanner ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 
+                           language === 'fr' ? 'Sauvegarde...' : 
+                           'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 
+                           language === 'fr' ? 'Sauvegarder' : 
+                           'Save'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground italic">
+                    {language === 'de' 
+                      ? '💡 Leer lassen = Hardcoded-Prompt wird verwendet. Der User-Message-Teil (JSON-Schema) ist fest implementiert.'
+                      : language === 'fr'
+                      ? '💡 Laisser vide = le prompt codé en dur sera utilisé. La partie user-message (schéma JSON) est implémentée en dur.'
+                      : '💡 Leave empty = hardcoded prompt is used. The user-message part (JSON schema) is hardcoded.'}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 };
