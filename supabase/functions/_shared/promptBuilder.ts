@@ -2599,7 +2599,14 @@ Rules:
 Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
 
   const charactersBlock = request.protagonists?.characters
-    ?.map(c => `- ${c.name} (${c.relation || 'unknown'})`)
+    ?.map(c => {
+      let entry = `- ${c.name}`;
+      if (c.age) entry += `, ${c.age} years old`;
+      if (c.relation) entry += ` (${c.relation})`;
+      else if (c.role) entry += ` (${c.role})`;
+      if (c.description) entry += `: ${c.description}`;
+      return entry;
+    })
     .join('\n') ?? 'none';
 
   const specialAbilitiesBlock = request.special_abilities?.join(', ') ?? 'none';
@@ -2612,7 +2619,7 @@ Difficulty: ${request.kid_profile?.difficulty_level ?? 'unknown'}
 Category: ${request.theme_key || 'unknown'}
 User input / theme: ${request.user_prompt ?? 'none'}
 
-Characters:
+Characters (USE THESE EXACT NAMES — do not rename or invent new characters):
 ${charactersBlock}
 
 Special effects / villain: ${specialAbilitiesBlock}

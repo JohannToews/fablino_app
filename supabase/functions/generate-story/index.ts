@@ -3165,8 +3165,8 @@ Conflict: ${storyPlan.central_conflict}
 Resolution: ${storyPlan.resolution}
 Required setups:
 ${(storyPlan.setups_required as any[]).map((s: any) => `  Scene ${s.scene}: ${s.element}`).join('\n')}
-Characters & exits:
-${(storyPlan.characters as any[]).map((c: any) => `  ${c.name} (${c.role}): ${c.exit}`).join('\n')}
+Characters & exits (THESE NAMES ARE FIXED — use exactly):
+${(storyPlan.characters as any[]).map((c: any) => `  ${c.name} (${c.role}): exit → ${c.exit}`).join('\n')}
 Objects & fates:
 ${(storyPlan.objects as any[]).map((o: any) => `  ${o.name} (introduced scene ${o.introduced_scene}): ${o.fate}`).join('\n')}
 ${storyPlan.magic_rules ? `Magic rules: ${storyPlan.magic_rules}` : ''}
