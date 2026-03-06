@@ -2581,9 +2581,10 @@ async function safetyPath(supabaseClient: any): Promise<StoryPath> {
  */
 export function buildPlanPrompt(
   request: StoryRequest,
-  selectedPath?: StoryPath | null
+  selectedPath?: StoryPath | null,
+  customSystemPrompt?: string | null
 ): { systemPrompt: string; userMessage: string } {
-  const systemPrompt = `You are a children's story architect.
+  const defaultSystemPrompt = `You are a children's story architect.
 Your job is NOT to write a story. Your job is to plan one.
 You receive story inputs and output ONLY a JSON plan — no prose, no story text.
 The plan will be given to a story writer in the next step.
@@ -2621,6 +2622,10 @@ Rules:
 - forbidden: "Er wusste nun, dass..." without a prior information source in the story
 
 Output ONLY valid JSON. No preamble, no markdown, no explanation.`;
+
+  const systemPrompt = (customSystemPrompt && customSystemPrompt.trim().length > 0) 
+    ? customSystemPrompt 
+    : defaultSystemPrompt;
 
   const protagonistName = request.kid_profile?.first_name || 'Child';
   const protagonistAge = request.kid_profile?.age;
