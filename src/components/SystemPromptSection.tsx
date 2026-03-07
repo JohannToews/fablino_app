@@ -42,6 +42,7 @@ ANTWORTE NUR mit gültigem JSON:
 const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const t = useTranslations(language);
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [writerCoreV2Prompt, setWriterCoreV2Prompt] = useState("");
   const [continuationPrompt, setContinuationPrompt] = useState("");
   const [wordExplanationPrompt, setWordExplanationPrompt] = useState("");
   const [consistencyCheckPrompt, setConsistencyCheckPrompt] = useState("");
@@ -52,6 +53,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [plannerPrompt, setPlannerPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingWriterCoreV2, setIsSavingWriterCoreV2] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
   const [isSavingWordExplanation, setIsSavingWordExplanation] = useState(false);
   const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
