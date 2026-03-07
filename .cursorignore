@@ -1,0 +1,15 @@
+﻿# Docs - nur 3 behalten
+docs/*.md
+!docs/architecture.md
+!docs/daten-model.md
+!docs/architecture-story-pipeline.md
+
+# Alte Migrations
+supabase/migrations/*.sql
+!supabase/migrations/20260304_*.sql
+!supabase/migrations/20260303_*.sql
+
+# Standard
+node_modules/
+dist/
+.next/

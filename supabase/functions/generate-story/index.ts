@@ -3307,6 +3307,8 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       const storyModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
       console.log(`[GENERATE] model=${storyModel}, user=${userId}`);
 
+      console.log('[WriterPrompt] system_prompt_key=system_prompt_core_v2 language=' + storyRequest.story_language + ' prompt_start=' + fullSystemPromptFinal.substring(0, 80));
+
       let content: string;
       if (storyModel === 'sonnet' && VERTEX_API_KEY) {
         try {
