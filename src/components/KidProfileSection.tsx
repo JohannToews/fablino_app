@@ -16,6 +16,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useFarsiEnabled } from "@/hooks/useFarsiEnabled";
 import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
 import { STORY_LANGUAGES } from "@/lib/languages";
+import KidLanguageSettingsSection from "@/components/KidLanguageSettingsSection";
 
 interface KidCharacterDB {
   id: string;
