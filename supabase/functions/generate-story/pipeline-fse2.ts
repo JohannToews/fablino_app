@@ -219,6 +219,13 @@ export async function runPipelineFSE2(
     // -----------------------------------------------------------------------
     // 7. Planner call
     // -----------------------------------------------------------------------
+    console.log('[FSE2-PLANNER-INPUT]', JSON.stringify({
+      storyType: requestBody.storyType,
+      subtype: requestBody.subtype,
+      characters: requestBody.characters,
+      description: requestBody.description,
+    }));
+
     const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt);
     console.log('[FSE2-PLANNER] Calling LLM...');
     const storyPlan = await callGemini(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
