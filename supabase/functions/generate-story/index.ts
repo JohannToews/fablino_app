@@ -2836,10 +2836,12 @@ Deno.serve(async (req) => {
               .maybeSingle();
             if (plannerPromptRow?.value && plannerPromptRow.value.trim().length > 0) {
               customPlannerPrompt = plannerPromptRow.value;
-              console.log('[StoryPlanner] Using custom planner prompt from DB');
+              console.log('[Planner] system_prompt loaded from=DB key=system_prompt_planner chars=' + customPlannerPrompt.length);
+            } else {
+              console.log('[Planner] system_prompt loaded from=hardcoded fallback (DB key empty or missing)');
             }
           } catch (e) {
-            console.warn('[StoryPlanner] Failed to load custom prompt, using default:', e);
+            console.warn('[Planner] Failed to load custom prompt, using hardcoded fallback:', e);
           }
 
           const planStart = Date.now();
