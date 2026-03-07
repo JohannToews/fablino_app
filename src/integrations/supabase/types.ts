@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      age_level_defaults: {
+        Row: {
+          age: number
+          default_level: number | null
+        }
+        Insert: {
+          age: number
+          default_level?: number | null
+        }
+        Update: {
+          age?: number
+          default_level?: number | null
+        }
+        Relationships: []
+      }
       age_rules: {
         Row: {
           allowed_tenses: string[]
@@ -1156,6 +1171,41 @@ export type Database = {
           },
         ]
       }
+      kid_language_settings: {
+        Row: {
+          content_level: number | null
+          kid_profile_id: string
+          language: string
+          language_class: number | null
+          language_level: number | null
+          length_level: number | null
+        }
+        Insert: {
+          content_level?: number | null
+          kid_profile_id: string
+          language: string
+          language_class?: number | null
+          language_level?: number | null
+          length_level?: number | null
+        }
+        Update: {
+          content_level?: number | null
+          kid_profile_id?: string
+          language?: string
+          language_class?: number | null
+          language_level?: number | null
+          length_level?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kid_language_settings_kid_profile_id_fkey"
+            columns: ["kid_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kid_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kid_profiles: {
         Row: {
           age: number | null
@@ -1928,6 +1978,96 @@ export type Database = {
           is_active?: boolean | null
           labels?: Json | null
           weight?: number | null
+        }
+        Relationships: []
+      }
+      story_length_levels: {
+        Row: {
+          complexity_level: number
+          length_level: number
+          paragraph_count: number | null
+          word_approx: number | null
+        }
+        Insert: {
+          complexity_level: number
+          length_level: number
+          paragraph_count?: number | null
+          word_approx?: number | null
+        }
+        Update: {
+          complexity_level?: number
+          length_level?: number
+          paragraph_count?: number | null
+          word_approx?: number | null
+        }
+        Relationships: []
+      }
+      story_levels: {
+        Row: {
+          allow_foreign_words: string | null
+          allow_subplot: boolean | null
+          allowed_tenses: string[] | null
+          cliffhanger_allowed: boolean | null
+          description: Json | null
+          dialogue_ratio: string | null
+          figurative_language: string | null
+          id: number
+          idiom_usage: string | null
+          label: Json | null
+          max_characters: number | null
+          max_plot_twists: number | null
+          max_sentence_length: number | null
+          narrative_perspective: string | null
+          new_words_per_story: number | null
+          paragraph_length: string | null
+          plot_complexity: string | null
+          repetition_strategy: string | null
+          sentence_structures: string | null
+          tense_switch_allowed: boolean | null
+        }
+        Insert: {
+          allow_foreign_words?: string | null
+          allow_subplot?: boolean | null
+          allowed_tenses?: string[] | null
+          cliffhanger_allowed?: boolean | null
+          description?: Json | null
+          dialogue_ratio?: string | null
+          figurative_language?: string | null
+          id: number
+          idiom_usage?: string | null
+          label?: Json | null
+          max_characters?: number | null
+          max_plot_twists?: number | null
+          max_sentence_length?: number | null
+          narrative_perspective?: string | null
+          new_words_per_story?: number | null
+          paragraph_length?: string | null
+          plot_complexity?: string | null
+          repetition_strategy?: string | null
+          sentence_structures?: string | null
+          tense_switch_allowed?: boolean | null
+        }
+        Update: {
+          allow_foreign_words?: string | null
+          allow_subplot?: boolean | null
+          allowed_tenses?: string[] | null
+          cliffhanger_allowed?: boolean | null
+          description?: Json | null
+          dialogue_ratio?: string | null
+          figurative_language?: string | null
+          id?: number
+          idiom_usage?: string | null
+          label?: Json | null
+          max_characters?: number | null
+          max_plot_twists?: number | null
+          max_sentence_length?: number | null
+          narrative_perspective?: string | null
+          new_words_per_story?: number | null
+          paragraph_length?: string | null
+          plot_complexity?: string | null
+          repetition_strategy?: string | null
+          sentence_structures?: string | null
+          tense_switch_allowed?: boolean | null
         }
         Relationships: []
       }
