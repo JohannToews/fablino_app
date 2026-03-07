@@ -42,6 +42,7 @@ ANTWORTE NUR mit gültigem JSON:
 const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const t = useTranslations(language);
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [writerCoreV2Prompt, setWriterCoreV2Prompt] = useState("");
   const [continuationPrompt, setContinuationPrompt] = useState("");
   const [wordExplanationPrompt, setWordExplanationPrompt] = useState("");
   const [consistencyCheckPrompt, setConsistencyCheckPrompt] = useState("");
@@ -52,6 +53,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [plannerPrompt, setPlannerPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingWriterCoreV2, setIsSavingWriterCoreV2] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
   const [isSavingWordExplanation, setIsSavingWordExplanation] = useState(false);
   const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
@@ -83,8 +85,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const elternModulKey = `system_prompt_story_creation_${language}`;
     const kinderModulKey = `system_prompt_kid_creation_${language}`;
     
-    // Load all prompts in parallel (including v2 consistency check prompts + planner)
-    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, elternModulResult, kinderModulResult, consistencyV2Result, seriesAddonResult, plannerResult] = await Promise.all([
+    // Load all prompts in parallel (including v2 consistency check prompts + planner + writer core v2)
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, elternModulResult, kinderModulResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
@@ -93,7 +95,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       supabase.from("app_settings").select("value").eq("key", kinderModulKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "consistency_check_prompt_v2").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "consistency_check_series_addon_v2").maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", "system_prompt_planner").maybeSingle()
+      supabase.from("app_settings").select("value").eq("key", "system_prompt_planner").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v2").maybeSingle(),
     ]);
 
     if (promptResult.data && !promptResult.error) {
@@ -144,6 +147,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
     if (plannerResult.data && !plannerResult.error) {
       setPlannerPrompt(plannerResult.data.value);
+    }
+
+    if (writerCoreV2Result.data && !writerCoreV2Result.error) {
+      setWriterCoreV2Prompt(writerCoreV2Result.data.value);
     }
     
     setIsLoading(false);
@@ -391,20 +398,210 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Main System Prompt - CORE SLIM (AKTIV) */}
-      <Collapsible open={openSections.system} onOpenChange={() => toggleSection('system')}>
+      {/* ══════════ 1. Writer Prompt (Active) — system_prompt_core_v2 ══════════ */}
+      <Collapsible open={openSections.writerCoreV2} onOpenChange={() => toggleSection('writerCoreV2')}>
         <Card className="border-2 border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20">
           <CollapsibleTrigger asChild>
             <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-lg">
-                  {openSections.system ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  {openSections.writerCoreV2 ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                   <FileText className="h-5 w-5 text-emerald-500" />
-                  {language === 'de' ? 'CORE SLIM System-Prompt' : 
-                   language === 'fr' ? 'Prompt Système CORE SLIM' : 
-                   'CORE SLIM System Prompt'}
+                  Writer Prompt (Active)
                   <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-emerald-500 text-white rounded-full">
-                    AKTIV
+                    ✅ AKTIV
+                  </span>
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({language === 'de' ? 'Alle Sprachen' : language === 'fr' ? 'Toutes langues' : 'All Languages'})
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-md border border-emerald-300/50">
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                  ✅ Active — used for all story generation
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-mono">
+                  DB Key: system_prompt_core_v2
+                </p>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={writerCoreV2Prompt}
+                    onChange={(e) => setWriterCoreV2Prompt(e.target.value)}
+                    className="min-h-[350px] text-sm font-mono leading-relaxed"
+                    placeholder="Writer system prompt (system_prompt_core_v2)..."
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={async () => {
+                        setIsSavingWriterCoreV2(true);
+                        try {
+                          const { error } = await invokeEdgeFunction("manage-users", {
+                            action: "updateSystemPrompt",
+                            promptKey: "system_prompt_core_v2",
+                            promptValue: writerCoreV2Prompt,
+                          });
+                          if (error) {
+                            toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                          } else {
+                            toast.success(language === 'de' ? "Writer Prompt gespeichert" : "Writer prompt saved");
+                          }
+                        } catch (err) {
+                          console.error("Error:", err);
+                          toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                        } finally {
+                          setIsSavingWriterCoreV2(false);
+                        }
+                      }}
+                      disabled={isSavingWriterCoreV2}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingWriterCoreV2 ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 'Save'}
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={loadPrompts} disabled={isLoading}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {language === 'de' ? 'Neu laden' : 'Reload'}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* ══════════ 2. Planner Prompt (Active) — system_prompt_planner ══════════ */}
+      <Collapsible open={openSections.planner} onOpenChange={() => toggleSection('planner')}>
+        <Card className="border-2 border-violet-500/50 bg-violet-50/30 dark:bg-violet-950/20">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.planner ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <ClipboardList className="h-5 w-5 text-violet-500" />
+                  Planner Prompt (Active)
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-500 text-white rounded-full">
+                    ✅ AKTIV
+                  </span>
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({language === 'de' ? 'Alle Sprachen' : language === 'fr' ? 'Toutes langues' : 'All Languages'})
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="p-3 bg-violet-100/50 dark:bg-violet-900/30 rounded-md border border-violet-300/50">
+                <p className="text-sm text-violet-800 dark:text-violet-200">
+                  ✅ Active — used for story planning (Call 1)
+                </p>
+                <p className="text-xs text-violet-700 dark:text-violet-300 mt-1 font-mono">
+                  DB Key: system_prompt_planner
+                </p>
+                <p className="text-xs text-violet-600 dark:text-violet-400 mt-1">
+                  {language === 'de' 
+                    ? '🗺️ Der Planner erstellt VOR der Story-Generierung einen strukturierten Plan (JSON). Feature-Flag: story_planner_enabled_users'
+                    : '🗺️ The Planner creates a structured plan (JSON) BEFORE story generation. Feature flag: story_planner_enabled_users'}
+                </p>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={plannerPrompt}
+                    onChange={(e) => setPlannerPrompt(e.target.value)}
+                    className="min-h-[350px] text-sm font-mono leading-relaxed"
+                    placeholder="You are a children's story architect. Your job is NOT to write a story..."
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={async () => {
+                        setIsSavingPlanner(true);
+                        try {
+                          const { error } = await invokeEdgeFunction("manage-users", {
+                            action: "updateSystemPrompt",
+                            promptKey: "system_prompt_planner",
+                            promptValue: plannerPrompt,
+                          });
+                          if (error) {
+                            toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                          } else {
+                            toast.success(language === 'de' ? "Planner-Prompt gespeichert" : "Planner prompt saved");
+                          }
+                        } catch (err) {
+                          console.error("Error:", err);
+                          toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                        } finally {
+                          setIsSavingPlanner(false);
+                        }
+                      }}
+                      disabled={isSavingPlanner}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingPlanner ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 'Save'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    {language === 'de' 
+                      ? '💡 Leer lassen = Hardcoded-Prompt wird verwendet.'
+                      : '💡 Leave empty = hardcoded prompt is used.'}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* ══════════ Legacy Writer Prompt (unused) — system_prompt_{language} ══════════ */}
+      <Collapsible open={openSections.system} onOpenChange={() => toggleSection('system')}>
+        <Card className="border border-dashed border-muted-foreground/30 opacity-70">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.system ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  Legacy Writer Prompt (unused)
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-amber-500 text-white rounded-full">
+                    ⚠️ INAKTIV
                   </span>
                 </div>
                 <span className="text-sm font-normal text-muted-foreground">
@@ -415,22 +612,14 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4 pt-0">
-              <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-md border border-emerald-300/50">
-                <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                  {language === 'de' 
-                    ? '✨ CORE SLIM: Kompakter Basis-Prompt für Story-Generierung. Wird mit dynamischem Kontext (Kategorien, Charaktere, Spezialeffekte) kombiniert.'
-                    : language === 'fr'
-                    ? '✨ CORE SLIM: Prompt de base compact pour la génération d\'histoires. Combiné avec un contexte dynamique (catégories, personnages, effets spéciaux).'
-                    : '✨ CORE SLIM: Compact base prompt for story generation. Combined with dynamic context (categories, characters, special effects).'}
+              <div className="p-3 bg-amber-100/50 dark:bg-amber-900/30 rounded-md border border-amber-300/50">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  ⚠️ Not active — system_prompt_core_v2 is used instead
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 font-mono">
+                  DB Key: system_prompt_{language}
                 </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {language === 'de' 
-                  ? 'Dieser globale System-Prompt wird bei der Generierung aller Lesetexte verwendet. Er definiert die pädagogischen Richtlinien für verschiedene Schulklassen und Schwierigkeitsgrade. Fordere explizit den Ende-Typ an (A=Abgeschlossen, B=Offen, C=Cliffhanger).'
-                  : language === 'fr'
-                  ? 'Ce prompt système global est utilisé lors de la génération de tous les textes de lecture. Il définit les directives pédagogiques. Demandez explicitement le type de fin (A=Terminé, B=Ouvert, C=Cliffhanger).'
-                  : 'This global system prompt is used when generating all reading texts. It defines the pedagogical guidelines. Explicitly request the ending type (A=Complete, B=Open, C=Cliffhanger).'}
-              </p>
 
               {isLoading ? (
                 <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
@@ -442,43 +631,30 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                   <Textarea
                     value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
-                    className="min-h-[350px] text-sm font-mono leading-relaxed"
-                    placeholder={language === 'de' ? "System-Prompt hier eingeben..." : 
-                                language === 'fr' ? "Entrez le prompt système ici..." :
-                                "Enter system prompt here..."}
+                    className="min-h-[200px] text-sm font-mono leading-relaxed"
+                    placeholder={language === 'de' ? "System-Prompt hier eingeben..." : "Enter system prompt here..."}
                   />
-
                   <div className="flex items-center gap-3">
                     <Button
                       onClick={saveSystemPrompt}
                       disabled={isSaving}
-                      className="btn-primary-kid"
+                      variant="outline"
                     >
                       {isSaving ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
                         </>
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
+                          {language === 'de' ? 'Speichern' : 'Save'}
                         </>
                       )}
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={loadPrompts}
-                      disabled={isLoading}
-                    >
+                    <Button variant="outline" onClick={loadPrompts} disabled={isLoading}>
                       <RefreshCw className="h-4 w-4 mr-2" />
-                      {language === 'de' ? 'Neu laden' : 
-                       language === 'fr' ? 'Recharger' : 
-                       'Reload'}
+                      {language === 'de' ? 'Neu laden' : 'Reload'}
                     </Button>
                   </div>
                 </>
@@ -1003,119 +1179,6 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       : language === 'fr'
                       ? '💡 Utilisation: CORE + MODULE ENFANTS (+ optionnel MODULE SÉRIES)'
                       : '💡 Usage: CORE + CHILD MODULE (+ optional SERIES MODULE)'}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
-      {/* Story Planner Prompt (language-independent) */}
-      <Collapsible open={openSections.planner} onOpenChange={() => toggleSection('planner')}>
-        <Card className="border-2 border-violet-500/50 bg-violet-50/30 dark:bg-violet-950/20">
-          <CollapsibleTrigger asChild>
-            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-lg">
-                  {openSections.planner ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  <ClipboardList className="h-5 w-5 text-violet-500" />
-                  {language === 'de' ? 'Story Planner Prompt' : 
-                   language === 'fr' ? 'Prompt Story Planner' : 
-                   'Story Planner Prompt'}
-                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-500 text-white rounded-full">
-                    PLANNER
-                  </span>
-                </div>
-                <span className="text-sm font-normal text-muted-foreground">
-                  {language === 'de' ? '(Alle Sprachen)' : 
-                   language === 'fr' ? '(Toutes langues)' : 
-                   '(All Languages)'}
-                </span>
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4 pt-0">
-              <div className="p-3 bg-violet-100/50 dark:bg-violet-900/30 rounded-md border border-violet-300/50">
-                <p className="text-sm text-violet-800 dark:text-violet-200">
-                  {language === 'de' 
-                    ? '🗺️ Der Planner erstellt VOR der Story-Generierung einen strukturierten Plan (JSON). Dieser wird dann an den Writer übergeben. Feature-Flag: story_planner_enabled_users'
-                    : language === 'fr'
-                    ? '🗺️ Le Planner crée un plan structuré (JSON) AVANT la génération. Ce plan est ensuite transmis au Writer. Feature-Flag: story_planner_enabled_users'
-                    : '🗺️ The Planner creates a structured plan (JSON) BEFORE story generation. This plan is then passed to the Writer. Feature flag: story_planner_enabled_users'}
-                </p>
-              </div>
-
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>{t.loading}</span>
-                </div>
-              ) : (
-                <>
-                  <Textarea
-                    value={plannerPrompt}
-                    onChange={(e) => setPlannerPrompt(e.target.value)}
-                    className="min-h-[350px] text-sm font-mono leading-relaxed"
-                    placeholder="You are a children's story architect. Your job is NOT to write a story..."
-                  />
-
-                  <div className="flex items-center gap-3">
-                    <Button
-                      onClick={async () => {
-                        setIsSavingPlanner(true);
-                        try {
-                          const { error } = await invokeEdgeFunction("manage-users", {
-                            action: "updateSystemPrompt",
-                            promptKey: "system_prompt_planner",
-                            promptValue: plannerPrompt,
-                          });
-                          if (error) {
-                            toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                                        language === 'fr' ? "Erreur lors de la sauvegarde" :
-                                        "Error saving");
-                          } else {
-                            toast.success(language === 'de' ? "Planner-Prompt gespeichert" : 
-                                          language === 'fr' ? "Prompt Planner sauvegardé" :
-                                          "Planner prompt saved");
-                          }
-                        } catch (err) {
-                          console.error("Error:", err);
-                          toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                                      language === 'fr' ? "Erreur lors de la sauvegarde" :
-                                      "Error saving");
-                        } finally {
-                          setIsSavingPlanner(false);
-                        }
-                      }}
-                      disabled={isSavingPlanner}
-                      className="btn-primary-kid"
-                    >
-                      {isSavingPlanner ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground italic">
-                    {language === 'de' 
-                      ? '💡 Leer lassen = Hardcoded-Prompt wird verwendet. Der User-Message-Teil (JSON-Schema) ist fest implementiert.'
-                      : language === 'fr'
-                      ? '💡 Laisser vide = le prompt codé en dur sera utilisé. La partie user-message (schéma JSON) est implémentée en dur.'
-                      : '💡 Leave empty = hardcoded prompt is used. The user-message part (JSON schema) is hardcoded.'}
                   </p>
                 </>
               )}
