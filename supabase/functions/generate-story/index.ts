@@ -2797,6 +2797,8 @@ Deno.serve(async (req) => {
         console.log('[WriterPrompt] Using system_prompt_core_v2');
       }
 
+      console.log('[WriterPrompt] system_prompt_key=' + (writerVersion === 'v3' ? 'system_prompt_core_v3' : 'system_prompt_core_v2') + ' language=' + storyRequest.story_language + ' prompt_start=' + fullSystemPromptFinal.substring(0, 80));
+
       // Story Planner feature flag and call (inside try block where storyRequest is in scope)
       const plannerVertexKey = Deno.env.get("VERTEX_SERVICE_ACCOUNT_JSON") || Deno.env.get("VERTEX_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_VERTEX_AI_KEY");
       const plannerGeminiKey = Deno.env.get("GEMINI_API_KEY");
@@ -3306,8 +3308,6 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       // Per-user model selection: "sonnet" → Claude Sonnet 4.6, default → Gemini 2.5 Flash
       const storyModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
       console.log(`[GENERATE] model=${storyModel}, user=${userId}`);
-
-      console.log('[WriterPrompt] system_prompt_key=system_prompt_core_v2 language=' + effectiveStoryLanguage + ' prompt_start=' + fullSystemPromptFinal.substring(0, 80));
 
       let content: string;
       if (storyModel === 'sonnet' && VERTEX_API_KEY) {
