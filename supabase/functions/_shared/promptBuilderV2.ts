@@ -168,6 +168,7 @@ export function buildPlanPromptV2(
   lengthLevel: StoryLengthLevel,
   request: any,
   plannerPrompt: string,
+  selectedSubtype?: { subtypeKey: string; promptHint: string; titleSeed: string; settingIdea: string } | null,
 ): { systemPrompt: string; userMessage: string } {
   const constraints = buildPlanConstraints(storyLevel, lengthLevel);
 
@@ -175,16 +176,23 @@ export function buildPlanPromptV2(
 
 ${constraints}`;
 
-  const userMessage = JSON.stringify({
+  const userMessageObj: Record<string, unknown> = {
     kidName: request.kidName,
     age: request.age,
     language: request.language,
     topic: request.topic,
     characters: request.characters,
     genre: request.genre,
-  });
+  };
 
-  return { systemPrompt, userMessage };
+  if (selectedSubtype) {
+    userMessageObj.subtype = selectedSubtype.subtypeKey;
+    userMessageObj.subtypeHint = selectedSubtype.promptHint;
+    userMessageObj.titleSeed = selectedSubtype.titleSeed;
+    userMessageObj.settingIdea = selectedSubtype.settingIdea;
+  }
+
+  return { systemPrompt, userMessage: JSON.stringify(userMessageObj) };
 }
 
 export function buildStoryPromptV2(

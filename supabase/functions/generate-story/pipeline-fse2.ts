@@ -14,6 +14,7 @@ import {
   buildStoryPromptV2,
   type KidLanguageSettings,
 } from '../_shared/promptBuilderV2.ts';
+import { selectStorySubtype, type SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
 
 // ---------------------------------------------------------------------------
 // LLM call — reuses the same Gemini global-API pattern from index.ts
@@ -217,16 +218,34 @@ export async function runPipelineFSE2(
     // console.log(`[FSE2] Writer prompt loaded from DB (${writerPrompt.length} chars)`);
 
     // -----------------------------------------------------------------------
+    // 6b. Select story subtype
+    // -----------------------------------------------------------------------
+    const themeKey = requestBody.storyType || 'surprise';
+    let selectedSubtype: SelectedSubtype | null = null;
+    try {
+      selectedSubtype = await selectStorySubtype(
+        supabase,
+        themeKey,
+        kidProfileId,
+        age || 8,
+        language,
+      );
+    } catch (err) {
+      console.warn('[FSE2] SubtypeSelector error, continuing without subtype:', err);
+    }
+    console.log('[FSE2-SUBTYPE]', JSON.stringify(selectedSubtype));
+
+    // -----------------------------------------------------------------------
     // 7. Planner call
     // -----------------------------------------------------------------------
     console.log('[FSE2-PLANNER-INPUT]', JSON.stringify({
       storyType: requestBody.storyType,
-      subtype: requestBody.subtype,
+      subtype: selectedSubtype?.subtypeKey ?? null,
       characters: requestBody.characters,
       description: requestBody.description,
     }));
 
-    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt);
+    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt, selectedSubtype);
     console.log('[FSE2-PLANNER] Calling LLM...');
     const storyPlan = await callGemini(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
