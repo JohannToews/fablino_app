@@ -48,11 +48,11 @@ const SLOT_SKIN_TONE: AppearanceSlot = {
   required: true,
   availableFor: ['child', 'teen', 'adult', 'senior'],
   options: [
-    { value: 'light', label: { de: 'Hell', en: 'Light' }, hex: '#FDDBB4', anchorFragment: 'light skin' },
+    { value: 'light', label: { de: 'Hell', en: 'Light' }, hex: '#FDDBB4', anchorFragment: 'very fair, light skin' },
     { value: 'medium_light', label: { de: 'Hell-Mittel', en: 'Light medium' }, hex: '#E8B88A', anchorFragment: 'light-medium skin' },
-    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, hex: '#C68E6A', anchorFragment: 'medium skin tone' },
-    { value: 'medium_dark', label: { de: 'Mittel-Dunkel', en: 'Medium dark' }, hex: '#A0674B', anchorFragment: 'medium-dark skin' },
-    { value: 'dark', label: { de: 'Dunkel', en: 'Dark' }, hex: '#6B3F2E', anchorFragment: 'dark skin' },
+    { value: 'medium', label: { de: 'Mittel', en: 'Medium' }, hex: '#C68E6A', anchorFragment: 'medium brown skin tone' },
+    { value: 'medium_dark', label: { de: 'Mittel-Dunkel', en: 'Medium dark' }, hex: '#A0674B', anchorFragment: 'deep brown, medium-dark skin' },
+    { value: 'dark', label: { de: 'Dunkel', en: 'Dark' }, hex: '#6B3F2E', anchorFragment: 'very dark brown, deep ebony skin' },
   ],
 };
 

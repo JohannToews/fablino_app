@@ -33,11 +33,11 @@ export function buildAppearanceAnchor(
   parts.push(genderAdj ? `${kidAge}-year-old ${genderWord} with a ${genderAdj} face` : `${kidAge}-year-old ${genderWord}`);
 
   const skinMap: Record<string, string> = {
-    light: "light skin",
+    light: "very fair, light skin",
     medium_light: "light-medium skin",
-    medium: "medium skin tone",
-    medium_dark: "medium-dark skin",
-    dark: "dark skin",
+    medium: "medium brown skin tone",
+    medium_dark: "deep brown, medium-dark skin",
+    dark: "very dark brown, deep ebony skin",
   };
   if (appearance.skin_tone && skinMap[appearance.skin_tone]) {
     parts.push(`${skinMap[appearance.skin_tone]}`);
