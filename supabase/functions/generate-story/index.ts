@@ -15,6 +15,8 @@ import type { EmotionFlowResult } from '../_shared/emotionFlow/types.ts';
 import { buildAppearanceAnchor, extractClothingFromAnchor, buildAnchorFromSlots } from '../_shared/appearanceAnchor.ts';
 import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearanceSlots.ts';
 import { isAvatarV2Enabled } from '../_shared/featureFlags.ts';
+import { isFse2Enabled } from '../_shared/fse2FeatureFlag.ts';
+import { runPipelineFSE2 } from './pipeline-fse2.ts';
 
 interface CharacterSheetEntry {
   name: string;
@@ -2046,6 +2048,14 @@ Deno.serve(async (req) => {
       .eq('id', userId)
       .single();
     const authId = authProfile?.auth_id ?? userId;
+
+    // ── FSE2 Feature Flag — routes to separate pipeline ──
+    const fse2Enabled = await isFse2Enabled(authId, supabase);
+    console.log(`[FSE] version=${fse2Enabled ? 'v2' : 'v1'}, user=${userId}`);
+    if (fse2Enabled) {
+      return await runPipelineFSE2(req, supabase, body);
+    }
+    // FSE1 continues below unchanged
 
     // ── Comic-Strip Feature Flag Check ──
     let useComicStrip = false;
