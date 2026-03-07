@@ -113,7 +113,6 @@ export async function runPipelineFSE2(
   const {
     kidProfileId,
     language = 'de',
-    age,
     kidName,
     topic,
     characters,
@@ -122,9 +121,23 @@ export async function runPipelineFSE2(
   } = requestBody;
 
   // 1. Entry log
-  console.log('[FSE2-ENTRY] user=' + userId + ' kid=' + kidProfileId + ' language=' + language + ' age=' + age);
+  console.log('[FSE2-ENTRY] user=' + userId + ' kid=' + kidProfileId + ' language=' + language);
 
   try {
+    // -----------------------------------------------------------------------
+    // 1b. Fetch kid age from kid_profiles
+    // -----------------------------------------------------------------------
+    let age: number | null = null;
+    if (kidProfileId) {
+      const { data: kidProfile } = await supabase
+        .from('kid_profiles')
+        .select('age')
+        .eq('id', kidProfileId)
+        .maybeSingle();
+      age = kidProfile?.age ?? null;
+    }
+    console.log('[FSE2] kid age=' + age);
+
     // -----------------------------------------------------------------------
     // 2. Load kid language settings — fall back to age-based defaults
     // -----------------------------------------------------------------------
