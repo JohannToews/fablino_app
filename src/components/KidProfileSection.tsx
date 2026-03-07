@@ -16,6 +16,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useFarsiEnabled } from "@/hooks/useFarsiEnabled";
 import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
 import { STORY_LANGUAGES } from "@/lib/languages";
+import KidLanguageSettingsSection from "@/components/KidLanguageSettingsSection";
 
 interface KidCharacterDB {
   id: string;
@@ -1067,6 +1068,18 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
             </div>
           </AccordionContent>
         </AccordionItem>
+
+        {/* ── Accordion 2b: Spracheinstellungen (per language) ── */}
+        {currentProfile?.id && (
+          <AccordionItem value="language-settings" className="border border-orange-100 rounded-xl bg-white overflow-hidden">
+            <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-[#2D1810] hover:no-underline hover:bg-orange-50/50">
+              📊 {sectionLanguage === 'de' ? 'Sprachniveau & Textlänge' : sectionLanguage === 'fr' ? 'Niveau & longueur' : 'Language Level & Length'}
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <KidLanguageSettingsSection kidProfileId={currentProfile.id} language={sectionLanguage} />
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
         {/* ── Accordion 3: Wichtige Personen ── */}
         {currentProfile?.id && (
