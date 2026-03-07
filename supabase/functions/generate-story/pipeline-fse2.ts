@@ -149,7 +149,7 @@ export async function runPipelineFSE2(
 
     if (!langSettings) {
       console.log('[FSE2] No kid_language_settings found, falling back to age_level_defaults');
-      const defaultLevel = await loadAgeLevelDefault(supabase, age);
+      const defaultLevel = await loadAgeLevelDefault(supabase, age ?? 6);
       const level = defaultLevel ?? 1;
 
       langSettings = {
