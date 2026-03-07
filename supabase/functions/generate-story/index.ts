@@ -2041,17 +2041,9 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ── Auth ID lookup for feature flags (userId is profile ID, authId is auth.users ID) ──
-    const { data: authProfile } = await supabase
-      .from('user_profiles')
-      .select('auth_id')
-      .eq('id', userId)
-      .single();
-    const authId = authProfile?.auth_id ?? userId;
-
     // ── FSE2 Feature Flag — routes to separate pipeline ──
-    const fse2Raw = await isFse2Enabled(authId, supabase);
-    console.log('[FSE2-DEBUG] raw=', fse2Raw, 'authId=', authId, 'userId=', userId);
+    const fse2Raw = await isFse2Enabled(userId, supabase);
+    console.log('[FSE2-DEBUG] raw=', fse2Raw, 'userId=', userId);
     const fse2Enabled = fse2Raw ?? false;
     console.log('[FSE2-DEBUG] fse2Enabled=', fse2Enabled, 'userId=', userId);
     if (fse2Enabled) {
@@ -2064,7 +2056,7 @@ Deno.serve(async (req) => {
     let comicLayout: ComicLayout | null = null;
     if (userId) {
       try {
-        useComicStrip = await isComicStripEnabled(authId, supabase);
+        useComicStrip = await isComicStripEnabled(userId, supabase);
         if (useComicStrip) {
           comicLayout = selectLayout();
           console.log(`[ComicStrip] Enabled for user ${userId}, layout: ${comicLayout.layoutKey}`);
@@ -2083,7 +2075,7 @@ Deno.serve(async (req) => {
 
     let useVisualDirector = false;
     try {
-      useVisualDirector = await isVisualDirectorEnabled(authId, supabase);
+      useVisualDirector = await isVisualDirectorEnabled(userId, supabase);
       console.log(`[VisualDirector] enabled=${useVisualDirector} for user=${userId}`);
     } catch (e) {
       console.warn('[VisualDirector] Flag check failed, defaulting to false', e);
@@ -2487,7 +2479,7 @@ Deno.serve(async (req) => {
       }
 
       // ═══ AVATAR V2: Character Appearances ═══
-      const avatarV2 = kidProfileId ? await isAvatarV2Enabled(supabase, authId) : false;
+      const avatarV2 = kidProfileId ? await isAvatarV2Enabled(supabase, userId) : false;
 
       if (avatarV2 && kidProfileId) {
         try {
@@ -2704,7 +2696,7 @@ Deno.serve(async (req) => {
 
       // ── Emotion-Flow Engine ──
       if (userId) {
-        let useEmotionFlow = await isEmotionFlowEnabled(authId, supabase);
+        let useEmotionFlow = await isEmotionFlowEnabled(userId, supabase);
         // === TEMPORARILY DISABLED (2026-03-02) ===
         // Feature: Emotion Flow Engine (runEmotionFlowEngine)
         // Reason: Simplifying generate-story flow for Visual Director development
@@ -2784,7 +2776,7 @@ Deno.serve(async (req) => {
       try {
         const parsed = JSON.parse(writerVersionRaw);
         if (typeof parsed === 'object' && parsed !== null) {
-          writerVersion = parsed[authId] ?? parsed['*'] ?? 'v2';
+          writerVersion = parsed[userId] ?? parsed['*'] ?? 'v2';
         } else {
           writerVersion = parsed;
         }
@@ -2830,9 +2822,9 @@ Deno.serve(async (req) => {
 
       const storyPlannerEnabled =
         storyPlannerEnabledUsers.includes('*') ||
-        storyPlannerEnabledUsers.includes(authId);
+        storyPlannerEnabledUsers.includes(userId);
 
-      console.log('[StoryPlanner-DEBUG] authId:', authId, 
+      console.log('[StoryPlanner-DEBUG] userId:', userId, 
         'enabled:', storyPlannerEnabled, 
         'users:', JSON.stringify(storyPlannerEnabledUsers));
 
@@ -2861,7 +2853,7 @@ Deno.serve(async (req) => {
             buildPlanPrompt(storyRequest, selectedPath, customPlannerPrompt);
 
           let planContent: string | null = null;
-          const plannerModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
+          const plannerModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
           if (plannerModel === 'sonnet' && plannerVertexKey) {
             planContent = await callClaudeVertex(plannerVertexKey, planSystem, planUser, 0.8);
           } else if (plannerVertexKey) {
@@ -3320,7 +3312,7 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       console.log(`[Flow] useVisualDirector=${useVisualDirector}`);
 
       // Per-user model selection: "sonnet" → Claude Sonnet 4.6, default → Gemini 2.5 Flash
-      const storyModel = userId ? await getStoryGeneratorModel(authId, supabase) : 'gemini';
+      const storyModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
       console.log(`[GENERATE] model=${storyModel}, user=${userId}`);
 
       let content: string;
