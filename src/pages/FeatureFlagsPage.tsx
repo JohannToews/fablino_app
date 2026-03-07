@@ -29,10 +29,12 @@ type FeatureKey =
   | "visual_director_enabled_users"
   | "avatar_v2_enabled_users"
   | "story_generator_model"
-  | "story_planner_enabled_users";
+  | "story_planner_enabled_users"
+  | "fse2_enabled_users";
 
 const FEATURES_CONFIG: { key: FeatureKey; label: string; globalLabel: string; description?: string }[] = [
   { key: "emotion_flow_enabled_users", label: "Emotion-Flow", globalLabel: "Emotion-Flow für ALLE" },
+  { key: "fse2_enabled_users", label: "FSE2 (Story Engine v2)", globalLabel: "FSE2 für ALLE", description: "Story Engine v2 Pipeline aktivieren" },
   { key: "comic_strip_enabled_users", label: "Comic-Strip", globalLabel: "Comic-Strip für ALLE" },
   { key: "premium_ui_enabled_users", label: "Premium UI", globalLabel: "Premium UI für ALLE" },
   { key: "farsi_enabled_users", label: "Farsi (فارسی)", globalLabel: "Farsi für ALLE" },
