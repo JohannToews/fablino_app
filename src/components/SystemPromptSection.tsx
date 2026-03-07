@@ -1186,12 +1186,11 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
           </CollapsibleContent>
         </Card>
       </Collapsible>
+    </div>
+  );
+};
 
-      {/* Story Planner Prompt (language-independent) */}
-      <Collapsible open={openSections.planner} onOpenChange={() => toggleSection('planner')}>
-        <Card className="border-2 border-violet-500/50 bg-violet-50/30 dark:bg-violet-950/20">
-          <CollapsibleTrigger asChild>
-            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+export default SystemPromptSection;
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-lg">
                   {openSections.planner ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
