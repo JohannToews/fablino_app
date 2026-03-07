@@ -2050,8 +2050,10 @@ Deno.serve(async (req) => {
     const authId = authProfile?.auth_id ?? userId;
 
     // ── FSE2 Feature Flag — routes to separate pipeline ──
-    const fse2Enabled = await isFse2Enabled(authId, supabase);
-    console.log(`[FSE] version=${fse2Enabled ? 'v2' : 'v1'}, user=${userId}`);
+    const fse2Raw = await isFse2Enabled(authId, supabase);
+    console.log('[FSE2-DEBUG] raw=', fse2Raw, 'authId=', authId, 'userId=', userId);
+    const fse2Enabled = fse2Raw ?? false;
+    console.log('[FSE2-DEBUG] fse2Enabled=', fse2Enabled, 'userId=', userId);
     if (fse2Enabled) {
       return await runPipelineFSE2(req, supabase, body);
     }
