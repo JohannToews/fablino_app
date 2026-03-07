@@ -148,6 +148,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     if (plannerResult.data && !plannerResult.error) {
       setPlannerPrompt(plannerResult.data.value);
     }
+
+    if (writerCoreV2Result.data && !writerCoreV2Result.error) {
+      setWriterCoreV2Prompt(writerCoreV2Result.data.value);
+    }
     
     setIsLoading(false);
   };
