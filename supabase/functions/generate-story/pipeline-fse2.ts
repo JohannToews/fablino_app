@@ -208,21 +208,23 @@ export async function runPipelineFSE2(
     const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt);
     console.log('[FSE2-PLANNER] Calling LLM...');
     const storyPlan = await callGemini(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
-    console.log(`[FSE2-PLANNER] Done (${storyPlan.length} chars). Output:\n${storyPlan}`);
+    console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
 
     // -----------------------------------------------------------------------
-    // 8. Writer call
+    // 8. Writer call — TEMPORARILY SKIPPED: return storyPlan directly
     // -----------------------------------------------------------------------
-    const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, requestBody, writerPrompt);
-    console.log('[FSE2-WRITER] Calling LLM...');
-    const content = await callGemini(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
-    console.log(`[FSE2-WRITER] Done (${content.length} chars). Preview: ${content.substring(0, 200)}`);
+    // const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, requestBody, writerPrompt);
+    // console.log('[FSE2-WRITER] Calling LLM...');
+    // const content = await callGemini(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
+    // console.log(`[FSE2-WRITER] Done (${content.length} chars). Preview: ${content.substring(0, 200)}`);
+
+    const content = storyPlan;
 
     // -----------------------------------------------------------------------
     // 9. Return response (matches FSE1 shape for frontend compatibility)
     // -----------------------------------------------------------------------
     const totalTime = Date.now() - startTime;
-    console.log(`[FSE2] Pipeline complete in ${totalTime}ms`);
+    console.log(`[FSE2] Pipeline complete in ${totalTime}ms (Writer skipped)`);
 
     return new Response(JSON.stringify({
       content,
