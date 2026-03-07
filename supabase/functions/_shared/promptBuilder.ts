@@ -1246,11 +1246,11 @@ function buildPromptAppearanceDesc(
   const parts: string[] = [];
 
   const skinDesc: Record<string, Record<string, string>> = {
-    light: { de: 'helle Haut', fr: 'peau claire', en: 'light skin', es: 'piel clara', it: 'pelle chiara', bs: 'svijetla koža', nl: 'lichte huid' },
+    light: { de: 'sehr helle Haut', fr: 'peau très claire', en: 'very fair, light skin', es: 'piel muy clara', it: 'pelle molto chiara', bs: 'vrlo svijetla koža', nl: 'zeer lichte huid' },
     medium_light: { de: 'hell-mittlere Haut', fr: 'peau claire-moyenne', en: 'light-medium skin', es: 'piel clara-media', it: 'pelle chiara-media', bs: 'svijetlo-srednja koža', nl: 'licht-medium huid' },
-    medium: { de: 'mittlere Hautfarbe', fr: 'peau mate', en: 'medium skin tone', es: 'piel media', it: 'pelle media', bs: 'srednja boja kože', nl: 'medium huidskleur' },
-    medium_dark: { de: 'dunklere Hautfarbe', fr: 'peau foncée', en: 'medium-dark skin', es: 'piel morena', it: 'pelle scura', bs: 'tamnija koža', nl: 'donkerder huidskleur' },
-    dark: { de: 'dunkle Haut', fr: 'peau foncée', en: 'dark skin', es: 'piel oscura', it: 'pelle scura', bs: 'tamna koža', nl: 'donkere huid' },
+    medium: { de: 'mittlere braune Hautfarbe', fr: 'peau mate brune', en: 'medium brown skin tone', es: 'piel morena media', it: 'pelle marrone media', bs: 'srednje smeđa koža', nl: 'medium bruine huidskleur' },
+    medium_dark: { de: 'dunkelbraune Haut', fr: 'peau brun foncé', en: 'deep brown, medium-dark skin', es: 'piel morena oscura', it: 'pelle marrone scura', bs: 'tamno smeđa koža', nl: 'donkerbruine huid' },
+    dark: { de: 'sehr dunkle, tiefbraune Haut', fr: 'peau très foncée, ébène', en: 'very dark brown, deep ebony skin', es: 'piel muy oscura, ébano', it: 'pelle molto scura, ebano', bs: 'vrlo tamna koža, ebanovina', nl: 'zeer donkere, ebbenhouten huid' },
   };
 
   const lengthDesc: Record<string, Record<string, string>> = {
