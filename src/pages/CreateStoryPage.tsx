@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
 import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
+import VillainSelectionScreen from "@/components/story-creation/VillainSelectionScreen";
 import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import {
@@ -18,6 +19,7 @@ import {
   EducationalTopic,
   SelectedCharacter,
   SpecialAttribute,
+  VillainData,
   storyTypeSelectionTranslations,
   characterSelectionTranslations,
   StoryLength,
@@ -53,7 +55,7 @@ const dailyLimitLabels: Record<string, { remaining: string; limitReached: string
 };
 
 // Screen states for the wizard
-type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "image-style" | "generating";
+type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "villain" | "image-style" | "generating";
 
 // Wizard path: free (Weg A) or guided (Weg B)
 type WizardPath = "free" | "guided" | null;
@@ -135,6 +137,7 @@ const CreateStoryPage = () => {
   const [selectedImageStyleKey, setSelectedImageStyleKey] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [selectedVillain, setSelectedVillain] = useState<VillainData | null>(null);
 
   // AbortController for story generation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -563,8 +566,33 @@ const CreateStoryPage = () => {
     settingsOverride?: StorySettingsFromEffects;
   } | null>(null);
 
-  // Handle special effects selection complete
+  // Handle special effects selection complete (without villain)
   const handleEffectsComplete = async (
+    attributes: SpecialAttribute[],
+    description: string,
+    settingsFromEffects?: StorySettingsFromEffects
+  ) => {
+    setSelectedAttributes(attributes);
+    setAdditionalDescription(description);
+    setSelectedVillain(null);
+    
+    if (settingsFromEffects) {
+      setStorySettings({
+        length: settingsFromEffects.length,
+        difficulty: settingsFromEffects.difficulty,
+        isSeries: settingsFromEffects.isSeries,
+        seriesMode: settingsFromEffects.seriesMode,
+        storyLanguage: settingsFromEffects.storyLanguage,
+      });
+    }
+    
+    // Stash effects data and navigate to image style picker
+    setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
+    setCurrentScreen("image-style");
+  };
+
+  // Handle effects complete WITH villain — go to villain screen first
+  const handleEffectsWithVillain = (
     attributes: SpecialAttribute[],
     description: string,
     settingsFromEffects?: StorySettingsFromEffects
@@ -582,8 +610,13 @@ const CreateStoryPage = () => {
       });
     }
     
-    // Stash effects data and navigate to image style picker
     setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
+    setCurrentScreen("villain");
+  };
+
+  // Handle villain selection complete
+  const handleVillainComplete = (villain: VillainData) => {
+    setSelectedVillain(villain);
     setCurrentScreen("image-style");
   };
 
@@ -655,6 +688,7 @@ const CreateStoryPage = () => {
       description = characterNames;
     }
     if (attributeNames) description += description ? `. Besondere Eigenschaften: ${attributeNames}` : `Besondere Eigenschaften: ${attributeNames}`;
+    if (selectedVillain) description += `. Bösewicht: ${selectedVillain.name}${selectedVillain.description ? ` (${selectedVillain.description})` : ''}`;
     if (selectedSubElements.length > 0) description += `. Themen-Elemente: ${selectedSubElements.join(", ")}`;
     if (humorLevel && humorLevel > 50) description += `. Humor-Level: ${humorLevel}%`;
     if (userDescription) description += description ? `. Zusätzliche Wünsche: ${userDescription}` : userDescription;
@@ -750,6 +784,7 @@ const CreateStoryPage = () => {
               difficultyLevel: selectedProfile?.difficulty_level,
               contentSafetyLevel: selectedProfile?.content_safety_level,
               image_style_key: imageStyleKey || undefined,
+              ...(selectedVillain ? { villain: selectedVillain } : {}),
               ...(placeholderStoryIdFiction ? { story_id: placeholderStoryIdFiction } : {}),
             },
           }),
@@ -1011,9 +1046,13 @@ const CreateStoryPage = () => {
       } else {
         setCurrentScreen("characters");
       }
+    } else if (currentScreen === "villain") {
+      setCurrentScreen("effects");
     } else if (currentScreen === "image-style") {
       if (selectedStoryType === 'educational') {
         setCurrentScreen("story-type");
+      } else if (selectedVillain) {
+        setCurrentScreen("villain");
       } else {
         setCurrentScreen("effects");
       }
@@ -1133,11 +1172,20 @@ const CreateStoryPage = () => {
       {currentScreen === "effects" && (
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
+          onContinueWithVillain={handleEffectsWithVillain}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
           isAdmin={isSeriesEnabled(user?.role)}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
+        />
+      )}
+
+      {currentScreen === "villain" && (
+        <VillainSelectionScreen
+          selectedCharacters={selectedCharacters}
+          onComplete={handleVillainComplete}
+          onBack={handleBack}
         />
       )}
 
