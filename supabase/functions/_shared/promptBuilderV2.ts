@@ -184,13 +184,29 @@ export function buildPlanPromptV2(
   selectedSubtype?: { subtypeKey: string; promptHint: string; titleSeed: string; settingIdea: string } | null,
   heroesVillains = false,
 ): { systemPrompt: string; userMessage: string } {
-  const constraints = buildPlanConstraints(storyLevel, lengthLevel, heroesVillains);
+  // Check if characters[] contains an explicit villain — if so, that takes priority over heroesVillains flag
+  const chars: any[] = Array.isArray(request.characters) ? request.characters : [];
+  const hasExplicitVillain = chars.some((c: any) => c.role === 'villain');
+  const effectiveHeroesVillains = hasExplicitVillain ? true : heroesVillains;
+
+  const constraints = buildPlanConstraints(storyLevel, lengthLevel, effectiveHeroesVillains);
 
   const systemPrompt = `${plannerPrompt}
 
 ${constraints}
 
-If special_abilities or user wishes are provided, they MUST appear in magic_rules and/or character traits. Do NOT add forbidden_in_writer rules that contradict them.`;
+If special_abilities or user wishes are provided, they MUST appear in magic_rules and/or character traits. Do NOT add forbidden_in_writer rules that contradict them.
+If a character has role VILLAIN, they MUST appear as antagonist in characters[] with exits_at defined. Their description MUST be reflected in the conflict.`;
+
+  // Format characters with role and description
+  const charactersBlock = chars.length > 0
+    ? chars.map((c: any) => {
+        const base = `${c.name} (age ${c.age ?? '?'})`;
+        const role = c.role === 'villain' ? ' — VILLAIN' : '';
+        const desc = c.description ? `: ${c.description}` : '';
+        return base + role + desc;
+      }).join(', ')
+    : 'none';
 
   const specialAbilitiesBlock = Array.isArray(request.specialAbilities) && request.specialAbilities.length > 0
     ? request.specialAbilities.join(', ')
@@ -201,7 +217,7 @@ If special_abilities or user wishes are provided, they MUST appear in magic_rule
     age: request.age,
     language: request.language,
     topic: request.topic,
-    characters: request.characters,
+    characters: charactersBlock,
     genre: request.genre,
     specialAbilities: specialAbilitiesBlock,
     userWishes: request.description ?? 'none',
