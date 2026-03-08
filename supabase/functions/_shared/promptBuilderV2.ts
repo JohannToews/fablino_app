@@ -188,7 +188,13 @@ export function buildPlanPromptV2(
 
   const systemPrompt = `${plannerPrompt}
 
-${constraints}`;
+${constraints}
+
+If special_abilities or user wishes are provided, they MUST appear in magic_rules and/or character traits. Do NOT add forbidden_in_writer rules that contradict them.`;
+
+  const specialAbilitiesBlock = Array.isArray(request.specialAbilities) && request.specialAbilities.length > 0
+    ? request.specialAbilities.join(', ')
+    : 'none';
 
   const userMessageObj: Record<string, unknown> = {
     kidName: request.kidName,
@@ -197,6 +203,8 @@ ${constraints}`;
     topic: request.topic,
     characters: request.characters,
     genre: request.genre,
+    specialAbilities: specialAbilitiesBlock,
+    userWishes: request.description ?? 'none',
   };
 
   if (selectedSubtype) {
