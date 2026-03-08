@@ -56,7 +56,7 @@ const dailyLimitLabels: Record<string, { remaining: string; limitReached: string
 };
 
 // Screen states for the wizard
-type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "image-style" | "generating";
+type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "villain" | "image-style" | "generating";
 
 // Wizard path: free (Weg A) or guided (Weg B)
 type WizardPath = "free" | "guided" | null;
