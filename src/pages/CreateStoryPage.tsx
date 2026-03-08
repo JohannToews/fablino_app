@@ -1170,11 +1170,20 @@ const CreateStoryPage = () => {
       {currentScreen === "effects" && (
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
+          onContinueWithVillain={handleEffectsWithVillain}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
           isAdmin={isSeriesEnabled(user?.role)}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
+        />
+      )}
+
+      {currentScreen === "villain" && (
+        <VillainSelectionScreen
+          selectedCharacters={selectedCharacters}
+          onComplete={handleVillainComplete}
+          onBack={handleBack}
         />
       )}
 
