@@ -20,6 +20,7 @@ import {
   EducationalTopic,
   SelectedCharacter,
   SpecialAttribute,
+  VillainData,
   storyTypeSelectionTranslations,
   characterSelectionTranslations,
   StoryLength,
