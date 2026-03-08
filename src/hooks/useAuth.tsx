@@ -218,15 +218,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const loadSupabaseProfile = (authUser: User) => {
+      if (isMounted) setIsLoading(true);
+
       void (async () => {
         try {
-          const profile = await fetchUserProfile(authUser);
+          let profile = await fetchUserProfile(authUser);
+
+          // Retry once: on some domains/storage restore paths auth token can lag briefly
+          // and the first profile query returns null.
+          if (!profile) {
+            await new Promise((resolve) => setTimeout(resolve, 700));
+            profile = await fetchUserProfile(authUser);
+          }
+
           if (!isMounted) return;
-          setUser(profile);
+          setUser((prev) => profile ?? prev ?? null);
         } catch (error) {
           console.error('Error loading Supabase profile:', error);
           if (!isMounted) return;
-          setUser(null);
+          setUser((prev) => prev ?? null);
         } finally {
           if (isMounted) setIsLoading(false);
         }

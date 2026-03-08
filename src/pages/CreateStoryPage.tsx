@@ -552,18 +552,11 @@ const CreateStoryPage = () => {
   // Track surprise_characters flag (Block 2.3e)
   const [surpriseCharactersFlag, setSurpriseCharactersFlag] = useState(false);
 
-  // Handle character selection complete (without villain)
+  // Handle character selection complete
   const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
     setSelectedCharacters(characters);
     setSurpriseCharactersFlag(surpriseChars || false);
     setCurrentScreen("effects");
-  };
-
-  // Handle character selection complete WITH villain — go to villain screen first
-  const handleCharactersWithVillain = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
-    setSelectedCharacters(characters);
-    setSurpriseCharactersFlag(surpriseChars || false);
-    setCurrentScreen("villain");
   };
   
   // Stashed effects data — used after image style selection to trigger generation
@@ -597,12 +590,34 @@ const CreateStoryPage = () => {
     setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
     setCurrentScreen("image-style");
   };
-  // (handleEffectsWithVillain removed — villain split is now on character screen)
 
-  // Handle villain selection complete — go to effects
+  // Handle effects complete WITH villain — go to villain screen first
+  const handleEffectsWithVillain = (
+    attributes: SpecialAttribute[],
+    description: string,
+    settingsFromEffects?: StorySettingsFromEffects
+  ) => {
+    setSelectedAttributes(attributes);
+    setAdditionalDescription(description);
+    
+    if (settingsFromEffects) {
+      setStorySettings({
+        length: settingsFromEffects.length,
+        difficulty: settingsFromEffects.difficulty,
+        isSeries: settingsFromEffects.isSeries,
+        seriesMode: settingsFromEffects.seriesMode,
+        storyLanguage: settingsFromEffects.storyLanguage,
+      });
+    }
+    
+    setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
+    setCurrentScreen("villain");
+  };
+
+  // Handle villain selection complete
   const handleVillainComplete = (villain: VillainData) => {
     setSelectedVillain(villain);
-    setCurrentScreen("effects");
+    setCurrentScreen("image-style");
   };
 
   // Handle image style selection — triggers story generation
@@ -1032,10 +1047,12 @@ const CreateStoryPage = () => {
         setCurrentScreen("characters");
       }
     } else if (currentScreen === "villain") {
-      setCurrentScreen("characters");
+      setCurrentScreen("effects");
     } else if (currentScreen === "image-style") {
       if (selectedStoryType === 'educational') {
         setCurrentScreen("story-type");
+      } else if (selectedVillain) {
+        setCurrentScreen("villain");
       } else {
         setCurrentScreen("effects");
       }
@@ -1148,7 +1165,6 @@ const CreateStoryPage = () => {
           kidName={selectedProfile?.name}
           kidAge={selectedProfile?.age}
           onComplete={handleCharactersComplete}
-          onCompleteWithVillain={handleCharactersWithVillain}
           onBack={handleBack}
         />
       )}
@@ -1156,6 +1172,7 @@ const CreateStoryPage = () => {
       {currentScreen === "effects" && (
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
+          onContinueWithVillain={handleEffectsWithVillain}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
           isAdmin={isSeriesEnabled(user?.role)}

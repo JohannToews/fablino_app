@@ -49,7 +49,6 @@ interface CharacterSelectionScreenProps {
   kidName?: string;
   kidAge?: number | null;
   onComplete: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
-  onCompleteWithVillain?: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
   onBack: () => void;
   fablinoMessage?: string;
 }
@@ -62,7 +61,6 @@ const CharacterSelectionScreen = ({
   kidName,
   kidAge,
   onComplete,
-  onCompleteWithVillain,
   onBack,
   fablinoMessage,
 }: CharacterSelectionScreenProps) => {
@@ -317,14 +315,6 @@ const CharacterSelectionScreen = ({
     onComplete(selectedCharacters, surpriseCharacters);
   };
 
-  const handleContinueWithVillain = () => {
-    if (viewState === "family") {
-      setViewState("main");
-      return;
-    }
-    onCompleteWithVillain?.(selectedCharacters, surpriseCharacters);
-  };
-
   const isSelected = (type: CharacterType | FamilyMember) => {
     return selectedCharacters.some((c) => c.type === type);
   };
@@ -438,9 +428,7 @@ const CharacterSelectionScreen = ({
         characters={selectedCharacters}
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
-        onContinueWithVillain={onCompleteWithVillain ? handleContinueWithVillain : undefined}
         translations={translations}
-        uiLanguage={kidAppLanguage}
       />
 
       {/* Saved Characters Modal (for family/friends) */}
