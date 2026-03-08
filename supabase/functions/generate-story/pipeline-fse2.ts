@@ -236,6 +236,13 @@ export async function runPipelineFSE2(
     console.log('[FSE2-SUBTYPE]', JSON.stringify(selectedSubtype));
 
     // -----------------------------------------------------------------------
+    // 6c. Check heroes_villains flag
+    // -----------------------------------------------------------------------
+    const specialAbilities: string[] = requestBody.specialAbilities || [];
+    const heroesVillains = specialAbilities.includes('heroes_villains');
+    console.log('[FSE2] heroesVillains=' + heroesVillains + ' specialAbilities=' + JSON.stringify(specialAbilities));
+
+    // -----------------------------------------------------------------------
     // 7. Planner call
     // -----------------------------------------------------------------------
     console.log('[FSE2-PLANNER-INPUT]', JSON.stringify({
@@ -243,9 +250,10 @@ export async function runPipelineFSE2(
       subtype: selectedSubtype?.subtypeKey ?? null,
       characters: requestBody.characters,
       description: requestBody.description,
+      heroesVillains,
     }));
 
-    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt, selectedSubtype);
+    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt, selectedSubtype, heroesVillains);
     console.log('[FSE2-PLANNER] Calling LLM...');
     const storyPlan = await callGemini(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));

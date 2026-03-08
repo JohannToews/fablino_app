@@ -129,8 +129,9 @@ export async function loadAgeLevelDefault(
 export function buildPlanConstraints(
   storyLevel: StoryLevel,
   lengthLevel: StoryLengthLevel,
+  heroesVillains = false,
 ): string {
-  return `STRUCTURE CONSTRAINTS — MANDATORY:
+  let block = `STRUCTURE CONSTRAINTS — MANDATORY:
 - Paragraphs: ${lengthLevel.paragraph_count}
 - Approx. words: ~${lengthLevel.word_approx}
 - Max plot twists: ${storyLevel.max_plot_twists}
@@ -138,6 +139,18 @@ export function buildPlanConstraints(
 - Subplot allowed: ${storyLevel.allow_subplot}
 - Cliffhanger allowed: ${storyLevel.cliffhanger_allowed}
 - Plot complexity: ${storyLevel.plot_complexity}`;
+
+  if (heroesVillains) {
+    block += `
+
+VILLAIN REQUIRED: true
+- The story MUST include at least one character with role "antagonist"
+- This requirement overrides any subtype hint
+- forbidden_in_writer must NOT block or remove the antagonist
+- The antagonist must be relevant to the conflict or resolution`;
+  }
+
+  return block;
 }
 
 export function buildGradeRulesBlock(
@@ -169,8 +182,9 @@ export function buildPlanPromptV2(
   request: any,
   plannerPrompt: string,
   selectedSubtype?: { subtypeKey: string; promptHint: string; titleSeed: string; settingIdea: string } | null,
+  heroesVillains = false,
 ): { systemPrompt: string; userMessage: string } {
-  const constraints = buildPlanConstraints(storyLevel, lengthLevel);
+  const constraints = buildPlanConstraints(storyLevel, lengthLevel, heroesVillains);
 
   const systemPrompt = `${plannerPrompt}
 
