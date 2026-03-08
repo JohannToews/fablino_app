@@ -621,10 +621,10 @@ const CreateStoryPage = () => {
     setCurrentScreen("villain");
   };
 
-  // Handle villain selection complete
+  // Handle villain selection complete — go to effects
   const handleVillainComplete = (villain: VillainData) => {
     setSelectedVillain(villain);
-    setCurrentScreen("image-style");
+    setCurrentScreen("effects");
   };
 
   // Handle image style selection — triggers story generation
