@@ -71,24 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ]);
     };
 
-    try {
-      const { data: profile, error } = await withTimeout(
-        async () => await supabase
-          .from('user_profiles')
-          .select('id, username, display_name, email, auth_id, auth_migrated, admin_language, app_language, text_language, system_prompt, created_at, updated_at')
-          .eq('auth_id', authUser.id)
-          .order('auth_migrated', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        10000
-      );
-
-      if (error || !profile) {
-        console.error('Error fetching user profile:', error);
-        return null;
-      }
-
-      // Fetch user role (optional; fallback to standard if missing)
+    const mapProfile = async (profile: any): Promise<UserSettings> => {
       const { data: roleData, error: roleError } = await withTimeout(
         async () => await supabase
           .from('user_roles')
@@ -114,6 +97,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email: profile.email,
         authMigrated: profile.auth_migrated,
       };
+    };
+
+    try {
+      const { data: profileByAuthId, error: authIdError } = await withTimeout(
+        async () => await supabase
+          .from('user_profiles')
+          .select('id, username, display_name, email, auth_id, auth_migrated, admin_language, app_language, text_language, system_prompt, created_at, updated_at')
+          .eq('auth_id', authUser.id)
+          .order('auth_migrated', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        10000
+      );
+
+      if (profileByAuthId) {
+        return await mapProfile(profileByAuthId);
+      }
+
+      if (authIdError) {
+        console.error('Error fetching user profile by auth_id:', authIdError);
+      }
+
+      // Fallback path for policy/session timing edge cases
+      const { data: profileId, error: profileIdError } = await withTimeout(
+        async () => await supabase.rpc('get_user_profile_id'),
+        8000
+      );
+
+      if (profileIdError || !profileId) {
+        if (profileIdError) console.error('Error resolving profile id:', profileIdError);
+        return null;
+      }
+
+      const { data: profileById, error: profileByIdError } = await withTimeout(
+        async () => await supabase
+          .from('user_profiles')
+          .select('id, username, display_name, email, auth_id, auth_migrated, admin_language, app_language, text_language, system_prompt, created_at, updated_at')
+          .eq('id', profileId)
+          .maybeSingle(),
+        10000
+      );
+
+      if (profileByIdError || !profileById) {
+        if (profileByIdError) console.error('Error fetching user profile by id:', profileByIdError);
+        return null;
+      }
+
+      return await mapProfile(profileById);
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
@@ -307,11 +338,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data.user) {
-        const profile = await fetchUserProfile(data.user);
+        let profile = await fetchUserProfile(data.user);
+
+        // Extra retry window right after password sign-in (session restore/race)
         if (!profile) {
-          await supabase.auth.signOut();
+          await new Promise((resolve) => setTimeout(resolve, 900));
+          profile = await fetchUserProfile(data.user);
+        }
+
+        if (!profile) {
+          // Do not force sign-out here; auth listener may still hydrate shortly.
           return { success: false, error: t().hookProfileNotFound };
         }
+
         setSession(data.session);
         setUser(profile);
         setAuthMode('supabase');
