@@ -552,11 +552,18 @@ const CreateStoryPage = () => {
   // Track surprise_characters flag (Block 2.3e)
   const [surpriseCharactersFlag, setSurpriseCharactersFlag] = useState(false);
 
-  // Handle character selection complete
+  // Handle character selection complete (without villain)
   const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
     setSelectedCharacters(characters);
     setSurpriseCharactersFlag(surpriseChars || false);
     setCurrentScreen("effects");
+  };
+
+  // Handle character selection complete WITH villain — go to villain screen first
+  const handleCharactersWithVillain = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
+    setSelectedCharacters(characters);
+    setSurpriseCharactersFlag(surpriseChars || false);
+    setCurrentScreen("villain");
   };
   
   // Stashed effects data — used after image style selection to trigger generation
