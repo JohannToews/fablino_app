@@ -416,7 +416,6 @@ const LENGTH_EMOJIS: Record<string, string> = {
 
 const SpecialEffectsScreen = ({
   onComplete,
-  onContinueWithVillain,
   onBack,
   showSettings = false,
   isAdmin = false,
