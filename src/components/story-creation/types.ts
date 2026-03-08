@@ -2345,6 +2345,13 @@ export interface SelectedCharacter {
   description?: string; // optional description (from DB)
 }
 
+export interface VillainData {
+  name: string;
+  role: "villain";
+  description?: string;
+  type: "family" | "special";
+}
+
 export interface CharacterSelectionTranslations {
   header: string;
   me: string;
