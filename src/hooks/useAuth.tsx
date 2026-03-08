@@ -338,11 +338,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data.user) {
-        const profile = await fetchUserProfile(data.user);
+        let profile = await fetchUserProfile(data.user);
+
+        // Extra retry window right after password sign-in (session restore/race)
         if (!profile) {
-          await supabase.auth.signOut();
+          await new Promise((resolve) => setTimeout(resolve, 900));
+          profile = await fetchUserProfile(data.user);
+        }
+
+        if (!profile) {
+          // Do not force sign-out here; auth listener may still hydrate shortly.
           return { success: false, error: t().hookProfileNotFound };
         }
+
         setSession(data.session);
         setUser(profile);
         setAuthMode('supabase');
