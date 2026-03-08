@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import StoryTypeSelectionScreen from "@/components/story-creation/StoryTypeSelectionScreen";
 import CharacterSelectionScreen from "@/components/story-creation/CharacterSelectionScreen";
 import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
+import VillainSelectionScreen from "@/components/story-creation/VillainSelectionScreen";
+import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
 import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import {
