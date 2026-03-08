@@ -688,6 +688,7 @@ const CreateStoryPage = () => {
       description = characterNames;
     }
     if (attributeNames) description += description ? `. Besondere Eigenschaften: ${attributeNames}` : `Besondere Eigenschaften: ${attributeNames}`;
+    if (selectedVillain) description += `. Bösewicht: ${selectedVillain.name}${selectedVillain.description ? ` (${selectedVillain.description})` : ''}`;
     if (selectedSubElements.length > 0) description += `. Themen-Elemente: ${selectedSubElements.join(", ")}`;
     if (humorLevel && humorLevel > 50) description += `. Humor-Level: ${humorLevel}%`;
     if (userDescription) description += description ? `. Zusätzliche Wünsche: ${userDescription}` : userDescription;
