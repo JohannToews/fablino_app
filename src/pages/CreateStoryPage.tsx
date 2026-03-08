@@ -1172,6 +1172,7 @@ const CreateStoryPage = () => {
           kidName={selectedProfile?.name}
           kidAge={selectedProfile?.age}
           onComplete={handleCharactersComplete}
+          onCompleteWithVillain={handleCharactersWithVillain}
           onBack={handleBack}
         />
       )}
