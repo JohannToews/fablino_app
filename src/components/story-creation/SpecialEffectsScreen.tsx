@@ -911,17 +911,6 @@ const SpecialEffectsScreen = ({
               </button>
             )}
           </div>
-          {/* Show single full-width button when no villain callback */}
-          {!onContinueWithVillain && (
-            <button
-              onClick={handleContinue}
-              data-premium-button="primary"
-              className="w-full min-h-[56px] rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98] -mt-[56px]"
-              style={{ display: 'none' }}
-            >
-              {FEATURES.SERIES_UI_ENABLED && isSeries ? t.continueEpisode1 : t.continue} ✨
-            </button>
-          )}
         </div>
       </div>
     </div>
