@@ -399,7 +399,6 @@ export interface StorySettingsFromEffects {
 
 interface SpecialEffectsScreenProps {
   onComplete: (attributes: SpecialAttribute[], additionalDescription: string, settings?: StorySettingsFromEffects) => void;
-  onContinueWithVillain?: (attributes: SpecialAttribute[], additionalDescription: string, settings?: StorySettingsFromEffects) => void;
   onBack: () => void;
   showSettings?: boolean;
   isAdmin?: boolean;
@@ -407,28 +406,6 @@ interface SpecialEffectsScreenProps {
   defaultLanguage?: string;
   fablinoMessage?: string;
 }
-
-const villainButtonLabels: Record<string, string> = {
-  de: "Mit Bösewicht",
-  fr: "Avec un méchant",
-  en: "With a villain",
-  es: "Con un villano",
-  nl: "Met een schurk",
-  it: "Con un cattivo",
-  bs: "Sa zlikovcem",
-  tr: "Bir kötü ile",
-  bg: "С злодей",
-  ro: "Cu un răufăcător",
-  pl: "Ze złoczyńcą",
-  lt: "Su piktadariu",
-  hu: "Gonosszal",
-  ca: "Amb un malvat",
-  sl: "Z zlikovcem",
-  uk: "З лиходієм",
-  ru: "Со злодеем",
-  pt: "Com um vilão",
-  sk: "So zloduchom",
-};
 
 const LENGTH_EMOJIS: Record<string, string> = {
   short: "📖",
