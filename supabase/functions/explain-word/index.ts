@@ -376,7 +376,34 @@ EXEMPLE PERFECTE:
 - "magnific" → "Foarte foarte frumos"
 
 RĂSPUNDE DOAR cu JSON valid (explicația în română):
-{"correctedWord": "cuvânt_corectat_sau_original", "explanation": "explicație scurtă"}`
+{"correctedWord": "cuvânt_corectat_sau_original", "explanation": "explicație scurtă"}`,
+
+  ca: (word: string, context?: string) => `Ets un diccionari vivent per a nens de 8 anys (en català).
+
+La paraula o expressió a explicar: "${word}"
+${context ? `Context de la frase: "${context}"` : ''}
+
+MISSIÓ:
+1. Si la paraula està mal escrita, corregeix-la
+2. Dona una explicació SIMPLE i CLARA en un màxim de 8 paraules
+
+REGLES ESTRICTES:
+1. Màxim 8 paraules per a l'explicació, no més
+2. Fes servir paraules molt senzilles que un nen de 8 anys coneix
+3. Sense puntuació al final (ni punt, ni coma)
+4. No repeteixis la paraula a explicar
+5. Per a verbs: explica l'acció
+6. Per a noms: digues concretament què és
+7. Per a adjectius: dona un sinònim senzill o descriu
+8. L'explicació HA DE SER en català, mai en anglès ni castellà
+
+EXEMPLES PERFECTES:
+- "valent" → "Algú que no té por"
+- "devorar" → "Menjar molt ràpid i amb gana"
+- "magnífic" → "Molt molt bonic"
+
+RESPON NOMÉS amb JSON vàlid (explicació en català):
+{"correctedWord": "paraula_corregida_o_original", "explanation": "explicació curta"}`
 };
 
 // Helper: sleep for exponential backoff
