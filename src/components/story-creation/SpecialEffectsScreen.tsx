@@ -859,16 +859,44 @@ const SpecialEffectsScreen = ({
         )}
       </div>
 
-      {/* Create Story Button — fixed at bottom, always visible */}
+      {/* Bottom buttons — fixed */}
       <div className="fixed bottom-0 left-0 right-0 z-30 pb-safe">
         <div className="max-w-[600px] mx-auto px-4 pt-3 pb-3 bg-gradient-to-t from-[#FFF8F0] via-[#FFF8F0]/95 to-transparent">
-          <button
-            onClick={handleContinue}
-            data-premium-button="primary"
-            className="w-full min-h-[56px] rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98]"
-          >
-            {FEATURES.SERIES_UI_ENABLED && isSeries ? t.continueEpisode1 : t.continue} ✨
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleContinue}
+              className="flex-1 min-h-[56px] rounded-2xl text-base font-semibold border-2 border-[#E8863A]/30 bg-white text-[#2D1810] hover:bg-orange-50 transition-colors shadow-sm active:scale-[0.98]"
+            >
+              {FEATURES.SERIES_UI_ENABLED && isSeries ? t.continueEpisode1 : t.continue} →
+            </button>
+            {onContinueWithVillain && (
+              <button
+                onClick={handleContinueVillain}
+                data-premium-button="primary"
+                className="flex-1 min-h-[56px] rounded-2xl text-base font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98]"
+              >
+                😈 {villainButtonLabels[uiLang] || villainButtonLabels.de} →
+              </button>
+            )}
+            {!onContinueWithVillain && (
+              <button
+                onClick={handleContinue}
+                data-premium-button="primary"
+                className="hidden"
+              />
+            )}
+          </div>
+          {/* Show single full-width button when no villain callback */}
+          {!onContinueWithVillain && (
+            <button
+              onClick={handleContinue}
+              data-premium-button="primary"
+              className="w-full min-h-[56px] rounded-2xl text-lg font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98] -mt-[56px]"
+              style={{ display: 'none' }}
+            >
+              {FEATURES.SERIES_UI_ENABLED && isSeries ? t.continueEpisode1 : t.continue} ✨
+            </button>
+          )}
         </div>
       </div>
     </div>
