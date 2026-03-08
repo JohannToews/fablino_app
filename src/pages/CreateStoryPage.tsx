@@ -1054,12 +1054,10 @@ const CreateStoryPage = () => {
         setCurrentScreen("characters");
       }
     } else if (currentScreen === "villain") {
-      setCurrentScreen("effects");
+      setCurrentScreen("characters");
     } else if (currentScreen === "image-style") {
       if (selectedStoryType === 'educational') {
         setCurrentScreen("story-type");
-      } else if (selectedVillain) {
-        setCurrentScreen("villain");
       } else {
         setCurrentScreen("effects");
       }
