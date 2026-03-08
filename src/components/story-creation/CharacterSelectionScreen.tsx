@@ -438,7 +438,9 @@ const CharacterSelectionScreen = ({
         characters={selectedCharacters}
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
+        onContinueWithVillain={onCompleteWithVillain ? handleContinueWithVillain : undefined}
         translations={translations}
+        uiLanguage={kidAppLanguage}
       />
 
       {/* Saved Characters Modal (for family/friends) */}
