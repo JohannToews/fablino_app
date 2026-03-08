@@ -62,6 +62,7 @@ const CharacterSelectionScreen = ({
   kidName,
   kidAge,
   onComplete,
+  onCompleteWithVillain,
   onBack,
   fablinoMessage,
 }: CharacterSelectionScreenProps) => {
