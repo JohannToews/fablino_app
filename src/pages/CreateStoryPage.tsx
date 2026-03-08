@@ -12,7 +12,6 @@ import CharacterSelectionScreen from "@/components/story-creation/CharacterSelec
 import SpecialEffectsScreen, { StorySettingsFromEffects } from "@/components/story-creation/SpecialEffectsScreen";
 import VillainSelectionScreen from "@/components/story-creation/VillainSelectionScreen";
 import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
-import ImageStylePicker from "@/components/story-creation/ImageStylePicker";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import {
   StoryType,
