@@ -259,6 +259,24 @@ export async function runPipelineFSE2(
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
 
     // -----------------------------------------------------------------------
+    // 7b. Persist story_plan to DB (before Writer, so plan survives Writer errors)
+    // -----------------------------------------------------------------------
+    const storyId = requestBody.story_id ?? null;
+    if (storyId) {
+      const { error: planUpdateErr } = await supabase
+        .from('stories')
+        .update({ story_plan: storyPlan ?? null })
+        .eq('id', storyId);
+      if (planUpdateErr) {
+        console.warn('[FSE2] story_plan DB write failed:', planUpdateErr.message);
+      } else {
+        console.log('[FSE2] story_plan written to DB for storyId=' + storyId);
+      }
+    } else {
+      console.log('[FSE2] No story_id in request, skipping DB write');
+    }
+
+    // -----------------------------------------------------------------------
     // 8. Writer call — TEMPORARILY SKIPPED: return storyPlan directly
     // -----------------------------------------------------------------------
     // const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, requestBody, writerPrompt);
