@@ -784,6 +784,7 @@ const CreateStoryPage = () => {
               difficultyLevel: selectedProfile?.difficulty_level,
               contentSafetyLevel: selectedProfile?.content_safety_level,
               image_style_key: imageStyleKey || undefined,
+              ...(selectedVillain ? { villain: selectedVillain } : {}),
               ...(placeholderStoryIdFiction ? { story_id: placeholderStoryIdFiction } : {}),
             },
           }),
