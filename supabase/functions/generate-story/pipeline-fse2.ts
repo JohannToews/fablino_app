@@ -930,6 +930,9 @@ export async function runPipelineFSE2(
     // 8b. Consistency Check (standard path, no series logic)
     // -----------------------------------------------------------------------
     let ccMs = 0;
+    let checkOnlyMs = 0;
+    let patchMs = 0;
+    let recheckMs = 0;
     const ccStart = Date.now();
 
     const { data: ccPromptRow } = await supabase
@@ -943,21 +946,31 @@ export async function runPipelineFSE2(
       const story = { title: writerJson.title ?? '', content: writerJson.content ?? '' };
 
       // Initial check
+      const ccCheckStart = Date.now();
       const initialResult = await performConsistencyCheck(story, ccPrompt);
-      const criticalCount = initialResult.structuredErrors?.filter(e => e.severity === 'CRITICAL').length ?? 0;
-      const mediumCount = initialResult.structuredErrors?.filter(e => e.severity === 'MEDIUM').length ?? 0;
-      const lowCount = initialResult.structuredErrors?.filter(e => e.severity === 'LOW').length ?? 0;
+      checkOnlyMs = Date.now() - ccCheckStart;
+
+      const initialCritical = initialResult.structuredErrors?.filter(e => e.severity === 'CRITICAL').length ?? 0;
+      const initialMedium = initialResult.structuredErrors?.filter(e => e.severity === 'MEDIUM').length ?? 0;
+      const initialLow = initialResult.structuredErrors?.filter(e => e.severity === 'LOW').length ?? 0;
+      const initialIssueCount = initialResult.structuredErrors?.length ?? 0;
       console.log('[FSE2-CC] initial check:', {
         hasIssues: initialResult.hasIssues,
-        criticalCount,
-        mediumCount,
-        lowCount,
+        criticalCount: initialCritical,
+        mediumCount: initialMedium,
+        lowCount: initialLow,
+        checkOnlyMs,
       });
 
       let fixedCount = 0;
+      let recheckCritical = 0;
+      let recheckMedium = 0;
+      let recheckLow = 0;
+      let recheckIssueCount = 0;
 
       if (initialResult.hasIssues) {
         // Patch
+        const patchStart = Date.now();
         const targetLanguage = requestBody.language || 'DE';
         const corrected = await correctStory(
           { ...story, questions: writerJson.questions ?? [], vocabulary: writerJson.vocabulary ?? [] },
@@ -965,35 +978,51 @@ export async function runPipelineFSE2(
           initialResult.suggestedFixes,
           targetLanguage,
         );
+        patchMs = Date.now() - patchStart;
         writerJson.title = corrected.title;
         writerJson.content = corrected.content;
         content = corrected.content;
-        console.log('[FSE2-CC] story patched');
+        console.log(`[FSE2-CC] story patched in ${patchMs}ms`);
 
         // Targeted recheck on each structured error
-        const recheckResults: Array<{ fixed: boolean }> = [];
+        const recheckStart = Date.now();
+        const recheckResults: Array<{ error: SeriesConsistencyError; fixed: boolean }> = [];
         for (const err of initialResult.structuredErrors ?? []) {
           const fixed = await targetedReCheck(writerJson.content, err);
-          recheckResults.push({ fixed });
+          recheckResults.push({ error: err, fixed });
         }
+        recheckMs = Date.now() - recheckStart;
+
         fixedCount = recheckResults.filter(r => r.fixed).length;
-        const unfixedCount = recheckResults.length - fixedCount;
+        const unfixedErrors = recheckResults.filter(r => !r.fixed);
+        recheckCritical = unfixedErrors.filter(r => r.error.severity === 'CRITICAL').length;
+        recheckMedium = unfixedErrors.filter(r => r.error.severity === 'MEDIUM').length;
+        recheckLow = unfixedErrors.filter(r => r.error.severity === 'LOW').length;
+        recheckIssueCount = unfixedErrors.length;
+
         console.log('[FSE2-CC] recheck:', {
           total: recheckResults.length,
           fixed: fixedCount,
-          unfixed: unfixedCount,
+          unfixed: recheckIssueCount,
+          recheckCritical,
+          recheckMedium,
+          recheckLow,
+          recheckMs,
         });
       }
 
       ccMs = Date.now() - ccStart;
-      console.log(`[FSE2-CC] completed in ${ccMs}ms`);
+      const patchFixRate = initialIssueCount > 0 ? (initialIssueCount - recheckIssueCount) / initialIssueCount : 0;
+      console.log(`[FSE2-CC] completed in ${ccMs}ms (check=${checkOnlyMs}ms, patch=${patchMs}ms, recheck=${recheckMs}ms, fixRate=${patchFixRate.toFixed(2)})`);
 
       // Save to consistency_check_results
       try {
         await supabase.from('consistency_check_results').insert({
           story_id: storyId || null,
           story_title: writerJson.title ?? '',
-          issues_found: initialResult.hasIssues ? (initialResult.structuredErrors?.length ?? 0) : 0,
+          story_length: requestBody.length ?? null,
+          difficulty: requestBody.difficulty ?? null,
+          issues_found: initialIssueCount,
           issues_corrected: fixedCount,
           issue_details: initialResult.issues,
           user_id: requestBody.user_id || null,
@@ -1003,14 +1032,19 @@ export async function runPipelineFSE2(
         console.warn('[FSE2-CC] Error saving CC results:', dbErr);
       }
 
-      // Write metrics to stories table
+      // Write metrics to stories table (counts from recheck = remaining unfixed issues)
       if (storyId) {
         try {
           await supabase.from('stories').update({
             consistency_check_ms: ccMs,
-            checker_critical: criticalCount,
-            checker_medium: mediumCount,
-            checker_low: lowCount,
+            checker_critical: recheckCritical,
+            checker_medium: recheckMedium,
+            checker_low: recheckLow,
+            consistency_check_only_ms: checkOnlyMs,
+            patch_ms: patchMs,
+            recheck_ms: recheckMs,
+            patch_fix_rate: patchFixRate,
+            critical_patch_failed: recheckCritical > 0,
           }).eq('id', storyId);
           console.log('[FSE2-CC] metrics written to stories table');
         } catch (dbErr) {
