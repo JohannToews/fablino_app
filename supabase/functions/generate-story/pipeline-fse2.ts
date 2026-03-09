@@ -216,14 +216,15 @@ async function callLLM(
     }
   }
 
-  // ── Fallback: Gemini 2.5 Flash ──
+  // ── Fallback: Gemini 2.5 Flash via Vertex AI ──
   console.log('[FSE2-LLM] using model: gemini-fallback');
 
-  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-  if (!geminiApiKey) throw new Error('GEMINI_API_KEY not configured');
+  if (!serviceAccountJson) throw new Error('VERTEX_SERVICE_ACCOUNT_JSON not configured for Gemini fallback');
 
-  const model = 'gemini-2.5-flash-preview-05-20';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+  const gSa = JSON.parse(serviceAccountJson);
+  const gProjectId = gSa.project_id || 'fablino-prod';
+  const geminiModel = 'gemini-2.5-flash-preview-05-20';
+  const geminiUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${gProjectId}/locations/europe-west1/publishers/google/models/${geminiModel}:generateContent`;
 
   let lastError: Error | null = null;
 
@@ -235,9 +236,14 @@ async function callLLM(
     }
 
     try {
-      const response = await fetch(url, {
+      const accessToken = await getVertexAccessToken(serviceAccountJson);
+
+      const response = await fetch(geminiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
@@ -250,9 +256,17 @@ async function callLLM(
         continue;
       }
 
+      if (response.status === 401 || response.status === 403) {
+        const errorBody = await response.text();
+        console.log('[FSE2-LLM] Gemini auth error:', response.status, errorBody.substring(0, 300));
+        cachedAccessToken = null;
+        lastError = new Error(`Vertex auth error: ${response.status}`);
+        continue;
+      }
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[FSE2-LLM] Gemini API error ${response.status}:`, errorText.substring(0, 300));
+        const errorBody = await response.text();
+        console.error(`[FSE2-LLM] Gemini API error ${response.status}:`, errorBody.substring(0, 300));
         throw new Error(`Gemini API error: ${response.status}`);
       }
 
@@ -268,7 +282,7 @@ async function callLLM(
 
       return content;
     } catch (error) {
-      if (error instanceof Error && error.message === 'Rate limited') {
+      if (error instanceof Error && (error.message === 'Rate limited' || error.message.startsWith('Vertex auth error'))) {
         lastError = error;
         continue;
       }
