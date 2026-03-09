@@ -277,6 +277,26 @@ export async function runPipelineFSE2(
     }
 
     // -----------------------------------------------------------------------
+    // 7c. Extract villain name from storyPlan and persist
+    // -----------------------------------------------------------------------
+    if (storyId) {
+      try {
+        const planJson = JSON.parse(storyPlan);
+        const villainChar = planJson?.characters?.find((c: any) => c.role === 'antagonist');
+        const villainName = villainChar?.name ?? null;
+        if (villainName) {
+          await supabase
+            .from('stories')
+            .update({ villain_name: villainName })
+            .eq('id', storyId);
+          console.log(`[FSE2] villain_name written to DB: ${villainName}`);
+        }
+      } catch (parseErr) {
+        console.warn('[FSE2] Could not parse storyPlan for villain extraction:', parseErr);
+      }
+    }
+
+    // -----------------------------------------------------------------------
     // 8. Writer call — TEMPORARILY SKIPPED: return storyPlan directly
     // -----------------------------------------------------------------------
     // const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, requestBody, writerPrompt);
