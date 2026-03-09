@@ -317,6 +317,20 @@ const CharacterSelectionScreen = ({
     onComplete(selectedCharacters, surpriseCharacters);
   };
 
+  const handleContinueVillain = () => {
+    if (viewState === "family") {
+      setViewState("main");
+      return;
+    }
+
+    if (onContinueWithVillain) {
+      onContinueWithVillain(selectedCharacters, surpriseCharacters);
+      return;
+    }
+
+    onComplete(selectedCharacters, surpriseCharacters);
+  };
+
   const isSelected = (type: CharacterType | FamilyMember) => {
     return selectedCharacters.some((c) => c.type === type);
   };
