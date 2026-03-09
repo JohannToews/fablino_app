@@ -90,6 +90,7 @@ const LABELS: Record<string, { title: string; langue: string; type: string; nive
 const getL = (lang: string) => LABELS[lang] || LABELS.fr;
 
 const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language, onSchoolLanguageChange }: Props) => {
+  const { refreshProfiles } = useKidProfile();
   const [rows, setRows] = useState<LangRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const l = getL(language);
@@ -116,7 +117,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
       .from("kid_profiles")
       .update({ story_languages: langs } as any)
       .eq("id", kidProfileId);
-  }, [kidProfileId]);
+    // Refresh global profile cache so CreateStoryPage sees updated languages
+    await refreshProfiles();
+  }, [kidProfileId, refreshProfiles]);
 
   const upsertRow = async (row: LangRow) => {
     await supabase
