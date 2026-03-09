@@ -88,11 +88,11 @@ const LABELS: Record<string, { title: string; langue: string; type: string; nive
 
 const getL = (lang: string) => LABELS[lang] || LABELS.fr;
 
-const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language, onSchoolLanguageChange }: Props) => {
+const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language, onSchoolLanguageChange }: Props) => {
   const [rows, setRows] = useState<LangRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const l = getL(language);
-  const ageStd = getAgeStandard(kidAge);
+  const gradeStd = extractGradeLevel(schoolClass);
 
   const load = useCallback(async () => {
     setIsLoading(true);
