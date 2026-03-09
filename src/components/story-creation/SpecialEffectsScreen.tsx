@@ -424,6 +424,7 @@ const SpecialEffectsScreen = ({
   availableLanguages = [],
   defaultLanguage = 'fr',
   fablinoMessage,
+  hasVillain = false,
 }: SpecialEffectsScreenProps) => {
   const { kidAppLanguage, kidReadingLanguage, selectedProfile } = useKidProfile();
   const [storyLanguage, setStoryLanguage] = useState<string>(defaultLanguage);
