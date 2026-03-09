@@ -2132,9 +2132,8 @@ const ReadingPage = () => {
     );
   }
 
-  const storyContent = useMemo(() => {
+  const storyContent = (() => {
     const raw = story.content ?? '';
-    // If the LLM returned raw JSON instead of plain text, extract the content field
     const trimmed = raw.trimStart();
     if (trimmed.startsWith('```json') || trimmed.startsWith('{"')) {
       try {
@@ -2148,12 +2147,10 @@ const ReadingPage = () => {
             return parsed.content;
           }
         }
-      } catch {
-        // Not valid JSON, use raw content
-      }
+      } catch { /* not JSON, use raw */ }
     }
     return raw;
-  }, [story.content]);
+  })();
 
   // ── Immersive Reader Mode ─────────────────────────────────
   if (viewMode === 'immersive') {
