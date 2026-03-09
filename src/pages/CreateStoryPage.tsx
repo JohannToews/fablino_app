@@ -553,10 +553,15 @@ const CreateStoryPage = () => {
   const [surpriseCharactersFlag, setSurpriseCharactersFlag] = useState(false);
 
   // Handle character selection complete
-  const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
+  const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean, withVillain?: boolean) => {
     setSelectedCharacters(characters);
     setSurpriseCharactersFlag(surpriseChars || false);
-    setCurrentScreen("effects");
+    if (withVillain) {
+      setCurrentScreen("villain");
+    } else {
+      setSelectedVillain(null);
+      setCurrentScreen("effects");
+    }
   };
   
   // Stashed effects data — used after image style selection to trigger generation
@@ -591,33 +596,11 @@ const CreateStoryPage = () => {
     setCurrentScreen("image-style");
   };
 
-  // Handle effects complete WITH villain — go to villain screen first
-  const handleEffectsWithVillain = (
-    attributes: SpecialAttribute[],
-    description: string,
-    settingsFromEffects?: StorySettingsFromEffects
-  ) => {
-    setSelectedAttributes(attributes);
-    setAdditionalDescription(description);
-    
-    if (settingsFromEffects) {
-      setStorySettings({
-        length: settingsFromEffects.length,
-        difficulty: settingsFromEffects.difficulty,
-        isSeries: settingsFromEffects.isSeries,
-        seriesMode: settingsFromEffects.seriesMode,
-        storyLanguage: settingsFromEffects.storyLanguage,
-      });
-    }
-    
-    setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
-    setCurrentScreen("villain");
-  };
+  // Handle villain selection complete — go to effects
 
-  // Handle villain selection complete
   const handleVillainComplete = (villain: VillainData) => {
     setSelectedVillain(villain);
-    setCurrentScreen("image-style");
+    setCurrentScreen("effects");
   };
 
   // Handle image style selection — triggers story generation
@@ -1043,16 +1026,16 @@ const CreateStoryPage = () => {
     } else if (currentScreen === "effects") {
       if (wizardPath === "free") {
         setCurrentScreen("entry");
+      } else if (selectedVillain) {
+        setCurrentScreen("villain");
       } else {
         setCurrentScreen("characters");
       }
     } else if (currentScreen === "villain") {
-      setCurrentScreen("effects");
+      setCurrentScreen("characters");
     } else if (currentScreen === "image-style") {
       if (selectedStoryType === 'educational') {
         setCurrentScreen("story-type");
-      } else if (selectedVillain) {
-        setCurrentScreen("villain");
       } else {
         setCurrentScreen("effects");
       }
@@ -1172,7 +1155,6 @@ const CreateStoryPage = () => {
       {currentScreen === "effects" && (
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
-          onContinueWithVillain={handleEffectsWithVillain}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
           isAdmin={isSeriesEnabled(user?.role)}

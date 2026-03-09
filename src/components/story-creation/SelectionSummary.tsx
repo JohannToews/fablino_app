@@ -1,12 +1,35 @@
-import { X, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { SelectedCharacter, CharacterSelectionTranslations } from "./types";
 import { cn } from "@/lib/utils";
+import { useKidProfile } from "@/hooks/useKidProfile";
+
+const villainButtonLabels: Record<string, string> = {
+  de: "Mit Bösewicht",
+  fr: "Avec un méchant",
+  en: "With a villain",
+  es: "Con un villano",
+  nl: "Met een schurk",
+  it: "Con un cattivo",
+  bs: "Sa zlikovcem",
+  tr: "Bir kötü ile",
+  bg: "С злодей",
+  ro: "Cu un răufăcător",
+  pl: "Ze złoczyńcą",
+  lt: "Su piktadariu",
+  hu: "Gonosszal",
+  ca: "Amb un malvat",
+  sl: "Z zlikovcem",
+  uk: "З лиходієм",
+  ru: "Со злодеем",
+  pt: "Com um vilão",
+  sk: "So zloduchom",
+};
 
 interface SelectionSummaryProps {
   characters: SelectedCharacter[];
   onRemove: (id: string) => void;
   onContinue: () => void;
+  onContinueWithVillain?: () => void;
   translations: CharacterSelectionTranslations;
   className?: string;
 }
@@ -15,9 +38,12 @@ const SelectionSummary = ({
   characters,
   onRemove,
   onContinue,
+  onContinueWithVillain,
   translations,
   className,
 }: SelectionSummaryProps) => {
+  const { kidAppLanguage } = useKidProfile();
+
   if (characters.length === 0) return null;
 
   return (
@@ -56,14 +82,28 @@ const SelectionSummary = ({
           ))}
         </div>
 
-        {/* Continue Button */}
-        <Button
-          onClick={onContinue}
-          className="w-full h-12 text-base font-baloo rounded-xl btn-primary-kid"
-        >
-          {translations.continue}
-          <ArrowRight className="ml-2 w-5 h-5" />
-        </Button>
+        {/* Continue Buttons — split if villain option available */}
+        <div className="flex gap-2">
+          <button
+            onClick={onContinue}
+            className={cn(
+              "min-h-[52px] rounded-2xl text-base font-semibold transition-colors active:scale-[0.98]",
+              onContinueWithVillain
+                ? "flex-1 border-2 border-[#E8863A]/30 bg-white text-[#2D1810] hover:bg-orange-50 shadow-sm"
+                : "w-full bg-[#E8863A] hover:bg-[#D4752E] text-white shadow-lg"
+            )}
+          >
+            {translations.continue} →
+          </button>
+          {onContinueWithVillain && (
+            <button
+              onClick={onContinueWithVillain}
+              className="flex-1 min-h-[52px] rounded-2xl text-base font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98]"
+            >
+              😈 {villainButtonLabels[kidAppLanguage] || villainButtonLabels.de} →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -48,7 +48,7 @@ interface CharacterSelectionScreenProps {
   kidProfileId?: string;
   kidName?: string;
   kidAge?: number | null;
-  onComplete: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
+  onComplete: (characters: SelectedCharacter[], surpriseCharacters?: boolean, withVillain?: boolean) => void;
   onBack: () => void;
   fablinoMessage?: string;
 }
@@ -312,7 +312,11 @@ const CharacterSelectionScreen = ({
       setViewState("main");
       return;
     }
-    onComplete(selectedCharacters, surpriseCharacters);
+    onComplete(selectedCharacters, surpriseCharacters, false);
+  };
+
+  const handleContinueWithVillain = () => {
+    onComplete(selectedCharacters, surpriseCharacters, true);
   };
 
   const isSelected = (type: CharacterType | FamilyMember) => {
@@ -428,6 +432,7 @@ const CharacterSelectionScreen = ({
         characters={selectedCharacters}
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
+        onContinueWithVillain={handleContinueWithVillain}
         translations={translations}
       />
 
