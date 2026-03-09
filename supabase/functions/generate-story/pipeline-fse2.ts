@@ -223,7 +223,7 @@ async function callLLM(
 
   const gSa = JSON.parse(serviceAccountJson);
   const gProjectId = gSa.project_id || 'fablino-prod';
-  const geminiModel = 'gemini-2.5-flash-preview-05-20';
+  const geminiModel = 'gemini-2.5-flash';
   const geminiUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${gProjectId}/locations/europe-west1/publishers/google/models/${geminiModel}:generateContent`;
 
   let lastError: Error | null = null;
