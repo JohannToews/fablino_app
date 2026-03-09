@@ -200,43 +200,85 @@ export async function runPipelineFSE2(
     const rawChars: any[] = Array.isArray(requestBody.characters) ? requestBody.characters : [];
     let enrichedCharacters = rawChars;
 
-    if (kidProfileId && rawChars.length > 0) {
+    if (kidProfileId) {
+      const anchorMap = new Map<string, string>();
+
+      // 5b-i: Load kid protagonist appearance from kid_appearance table ("My Look")
       try {
-        const { data: charsWithAppearance } = await supabase
-          .from('kid_characters')
-          .select(`
-            name, role, relation,
-            character_appearances!character_appearance_id (
-              appearance_data, age_category, gender
-            )
-          `)
+        // Load kid profile name + gender for anchor building
+        const { data: kidProfileData } = await supabase
+          .from('kid_profiles')
+          .select('name, gender')
+          .eq('id', kidProfileId)
+          .maybeSingle();
+        const kidProfileName = kidProfileData?.name || kidName || 'Child';
+        const kidGenderRaw = kidProfileData?.gender || '';
+        const kidGender = (kidGenderRaw === 'male' || kidGenderRaw === 'm' || kidGenderRaw === 'boy')
+          ? 'male'
+          : (kidGenderRaw === 'female' || kidGenderRaw === 'f' || kidGenderRaw === 'girl')
+            ? 'female'
+            : null;
+
+        const { data: kidApp } = await supabase
+          .from('kid_appearance')
+          .select('appearance_data')
           .eq('kid_profile_id', kidProfileId)
-          .eq('is_active', true)
-          .not('character_appearance_id', 'is', null);
+          .maybeSingle();
 
-        if (charsWithAppearance) {
-          const anchorMap = new Map<string, string>();
-          for (const char of charsWithAppearance as any[]) {
-            const ca = char.character_appearances;
-            if (ca?.appearance_data && Object.keys(ca.appearance_data).length > 0) {
-              anchorMap.set(char.name, buildAnchorFromSlots(
-                char.name,
-                'adult',
-                ca.gender || inferGenderFromRelation(char.relation),
-                ca.age_category || inferAgeCategory(char.role, char.relation),
-                ca.appearance_data,
-              ));
-            }
-          }
-
-          enrichedCharacters = rawChars.map((c: any) => {
-            const anchor = anchorMap.get(c.name);
-            return anchor ? { ...c, appearance_anchor: anchor } : c;
-          });
+        if (kidApp?.appearance_data && Object.keys(kidApp.appearance_data).length > 0) {
+          anchorMap.set(kidProfileName, buildAnchorFromSlots(
+            kidProfileName,
+            age || 8,
+            kidGender,
+            'child',
+            kidApp.appearance_data,
+          ));
+          console.log(`[FSE2-ANCHOR-DEBUG] kid protagonist anchor set for "${kidProfileName}"`);
         }
       } catch (err: any) {
-        console.warn('[FSE2] Avatar V2 appearance load failed, continuing without:', err?.message);
+        console.warn('[FSE2] kid_appearance load failed:', err?.message);
       }
+
+      // 5b-ii: Load side character appearances from kid_characters + character_appearances
+      if (rawChars.length > 0) {
+        try {
+          const { data: charsWithAppearance } = await supabase
+            .from('kid_characters')
+            .select(`
+              name, role, relation,
+              character_appearances!character_appearance_id (
+                appearance_data, age_category, gender
+              )
+            `)
+            .eq('kid_profile_id', kidProfileId)
+            .eq('is_active', true)
+            .not('character_appearance_id', 'is', null);
+
+          if (charsWithAppearance) {
+            for (const char of charsWithAppearance as any[]) {
+              const ca = char.character_appearances;
+              if (ca?.appearance_data && Object.keys(ca.appearance_data).length > 0) {
+                anchorMap.set(char.name, buildAnchorFromSlots(
+                  char.name,
+                  'adult',
+                  ca.gender || inferGenderFromRelation(char.relation),
+                  ca.age_category || inferAgeCategory(char.role, char.relation),
+                  ca.appearance_data,
+                ));
+              }
+            }
+          }
+        } catch (err: any) {
+          console.warn('[FSE2] Avatar V2 character appearance load failed, continuing without:', err?.message);
+        }
+      }
+
+      console.log('[FSE2-ANCHOR-DEBUG] anchorMap:', JSON.stringify([...anchorMap.entries()]));
+
+      enrichedCharacters = rawChars.map((c: any) => {
+        const anchor = anchorMap.get(c.name);
+        return anchor ? { ...c, appearance_anchor: anchor } : c;
+      });
     }
 
     console.log('[FSE2] characters enriched with appearance_anchor:',
