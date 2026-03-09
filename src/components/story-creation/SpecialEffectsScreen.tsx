@@ -399,7 +399,6 @@ export interface StorySettingsFromEffects {
 
 interface SpecialEffectsScreenProps {
   onComplete: (attributes: SpecialAttribute[], additionalDescription: string, settings?: StorySettingsFromEffects) => void;
-  onContinueWithVillain?: (attributes: SpecialAttribute[], additionalDescription: string, settings?: StorySettingsFromEffects) => void;
   onBack: () => void;
   showSettings?: boolean;
   isAdmin?: boolean;
