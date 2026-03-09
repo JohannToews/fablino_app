@@ -166,6 +166,7 @@ async function callLLM(
           }
 
           if (response.status === 429) {
+            console.log('[FSE2-LLM] Sonnet HTTP status:', response.status, 'attempt:', attempt);
             lastError = new Error('Rate limited');
             continue;
           }
