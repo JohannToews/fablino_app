@@ -158,8 +158,8 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
   };
 
   const handleClassChange = (lang: string, newClass: number) => {
-    const newLevel = newClass === 1 ? ageStd : Math.max(1, ageStd - 1);
-    updateRow(lang, { language_class: newClass, language_level: newLevel });
+    const newLevel = newClass === 1 ? gradeStd : Math.max(1, gradeStd - 1);
+    updateRow(lang, { language_class: newClass, language_level: newLevel, content_level: gradeStd });
     // If setting as school language, notify parent to update app language
     if (newClass === 1 && onSchoolLanguageChange) {
       onSchoolLanguageChange(lang);
