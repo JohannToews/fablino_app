@@ -56,31 +56,33 @@ const SelectionSummary = ({
       )}
     >
       <div className="container max-w-lg mx-auto space-y-3">
-        {/* Label */}
-        <p className="text-sm font-bold text-foreground">
-          {translations.yourCharacters}
-        </p>
-
-        {/* Character Bubbles */}
-        <div className="flex flex-wrap gap-2">
-          {characters.map((char) => (
-            <div
-              key={char.id}
-              className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-200"
-            >
-              <span className="text-sm font-medium text-foreground">
-                {char.name || char.label}
-              </span>
-              <button
-                onClick={() => onRemove(char.id)}
-                className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
-                aria-label={`Remove ${char.name || char.label}`}
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-              </button>
+        {/* Label + Character Bubbles — only when characters selected */}
+        {hasCharacters && (
+          <>
+            <p className="text-sm font-bold text-foreground">
+              {translations.yourCharacters}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {characters.map((char) => (
+                <div
+                  key={char.id}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-200"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {char.name || char.label}
+                  </span>
+                  <button
+                    onClick={() => onRemove(char.id)}
+                    className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                    aria-label={`Remove ${char.name || char.label}`}
+                  >
+                    <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         {/* Continue Buttons — split if villain option available */}
         <div className="flex gap-2">
