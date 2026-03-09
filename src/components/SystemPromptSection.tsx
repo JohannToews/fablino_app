@@ -143,6 +143,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     if (writerCoreV3Result.data && !writerCoreV3Result.error) {
       setWriterCoreV3Prompt(writerCoreV3Result.data.value);
     }
+
+    if (writerPromptVersionResult.data && !writerPromptVersionResult.error) {
+      setWriterPromptVersion(writerPromptVersionResult.data.value);
+    }
     
     setIsLoading(false);
   };
