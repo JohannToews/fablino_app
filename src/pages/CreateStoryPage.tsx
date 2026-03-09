@@ -1160,6 +1160,7 @@ const CreateStoryPage = () => {
           isAdmin={isSeriesEnabled(user?.role)}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
+          hasVillain={!!selectedVillain}
         />
       )}
 
