@@ -7,26 +7,18 @@ interface SelectionSummaryProps {
   characters: SelectedCharacter[];
   onRemove: (id: string) => void;
   onContinue: () => void;
-  onContinueWithVillain?: () => void;
-  continueWithVillainLabel?: string;
   translations: CharacterSelectionTranslations;
   className?: string;
-  alwaysVisible?: boolean;
 }
 
 const SelectionSummary = ({
   characters,
   onRemove,
   onContinue,
-  onContinueWithVillain,
-  continueWithVillainLabel = "😈 Mit Bösewicht",
   translations,
   className,
-  alwaysVisible = false,
 }: SelectionSummaryProps) => {
-  const hasSelections = characters.length > 0;
-
-  if (!hasSelections && !alwaysVisible) return null;
+  if (characters.length === 0) return null;
 
   return (
     <div
@@ -38,64 +30,43 @@ const SelectionSummary = ({
       )}
     >
       <div className="container max-w-lg mx-auto space-y-3">
-        <p className="text-sm font-bold text-foreground">{translations.yourCharacters}</p>
+        {/* Label */}
+        <p className="text-sm font-bold text-foreground">
+          {translations.yourCharacters}
+        </p>
 
-        {hasSelections && (
-          <div className="flex flex-wrap gap-2">
-            {characters.map((char) => (
-              <div
-                key={char.id}
-                className="flex items-center gap-1 px-3 py-1.5 bg-secondary rounded-full border border-border"
+        {/* Character Bubbles */}
+        <div className="flex flex-wrap gap-2">
+          {characters.map((char) => (
+            <div
+              key={char.id}
+              className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-200"
+            >
+              <span className="text-sm font-medium text-foreground">
+                {char.name || char.label}
+              </span>
+              <button
+                onClick={() => onRemove(char.id)}
+                className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                aria-label={`Remove ${char.name || char.label}`}
               >
-                <span className="text-sm font-medium text-foreground">
-                  {char.name || char.label}
-                </span>
-                <button
-                  onClick={() => onRemove(char.id)}
-                  className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
-                  aria-label={`Remove ${char.name || char.label}`}
-                >
-                  <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            </div>
+          ))}
+        </div>
 
-        {onContinueWithVillain ? (
-          <div className="flex gap-2">
-            <Button
-              onClick={onContinue}
-              variant="outline"
-              disabled={!hasSelections}
-              className="flex-1 h-12 text-sm sm:text-base font-baloo rounded-xl"
-            >
-              {translations.continue}
-              <ArrowRight className="ml-1 w-4 h-4" />
-            </Button>
-            <Button
-              onClick={onContinueWithVillain}
-              disabled={!hasSelections}
-              className="flex-1 h-12 text-sm sm:text-base font-baloo rounded-xl btn-primary-kid"
-            >
-              {continueWithVillainLabel}
-              <ArrowRight className="ml-1 w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <Button
-            onClick={onContinue}
-            disabled={!hasSelections}
-            className="w-full h-12 text-base font-baloo rounded-xl btn-primary-kid"
-          >
-            {translations.continue}
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-        )}
+        {/* Continue Button */}
+        <Button
+          onClick={onContinue}
+          className="w-full h-12 text-base font-baloo rounded-xl btn-primary-kid"
+        >
+          {translations.continue}
+          <ArrowRight className="ml-2 w-5 h-5" />
+        </Button>
       </div>
     </div>
   );
 };
 
 export default SelectionSummary;
-

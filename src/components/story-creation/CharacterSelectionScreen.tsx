@@ -49,7 +49,6 @@ interface CharacterSelectionScreenProps {
   kidName?: string;
   kidAge?: number | null;
   onComplete: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
-  onContinueWithVillain?: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
   onBack: () => void;
   fablinoMessage?: string;
 }
@@ -62,7 +61,6 @@ const CharacterSelectionScreen = ({
   kidName,
   kidAge,
   onComplete,
-  onContinueWithVillain,
   onBack,
   fablinoMessage,
 }: CharacterSelectionScreenProps) => {
@@ -317,20 +315,6 @@ const CharacterSelectionScreen = ({
     onComplete(selectedCharacters, surpriseCharacters);
   };
 
-  const handleContinueVillain = () => {
-    if (viewState === "family") {
-      setViewState("main");
-      return;
-    }
-
-    if (onContinueWithVillain) {
-      onContinueWithVillain(selectedCharacters, surpriseCharacters);
-      return;
-    }
-
-    onComplete(selectedCharacters, surpriseCharacters);
-  };
-
   const isSelected = (type: CharacterType | FamilyMember) => {
     return selectedCharacters.some((c) => c.type === type);
   };
@@ -351,28 +335,6 @@ const CharacterSelectionScreen = ({
     bs: "Ko će biti glavni lik? 🌟",
     uk: "Хто буде головним героєм? 🌟",
     ru: "Кто будет главным героем? 🌟",
-  };
-
-  const villainButtonLabels: Record<string, string> = {
-    de: "Mit Bösewicht",
-    fr: "Avec un méchant",
-    en: "With a villain",
-    es: "Con un villano",
-    nl: "Met een schurk",
-    it: "Con un cattivo",
-    bs: "Sa zlikovcem",
-    tr: "Kötüyle",
-    bg: "Със злодей",
-    ro: "Cu un răufăcător",
-    pl: "Ze złoczyńcą",
-    lt: "Su piktadariu",
-    hu: "Gonosszal",
-    ca: "Amb un malvat",
-    sl: "Z zlikovcem",
-    pt: "Com vilão",
-    sk: "So zloduchom",
-    uk: "З лиходієм",
-    ru: "Со злодеем",
   };
 
   // Modal title based on category
@@ -466,9 +428,6 @@ const CharacterSelectionScreen = ({
         characters={selectedCharacters}
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
-        onContinueWithVillain={onContinueWithVillain ? handleContinueVillain : undefined}
-        continueWithVillainLabel={`😈 ${villainButtonLabels[kidAppLanguage] || villainButtonLabels.de}`}
-        alwaysVisible={Boolean(onContinueWithVillain)}
         translations={translations}
       />
 

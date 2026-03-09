@@ -138,7 +138,6 @@ const CreateStoryPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [selectedVillain, setSelectedVillain] = useState<VillainData | null>(null);
-  const [characterWantsVillain, setCharacterWantsVillain] = useState(false);
 
   // AbortController for story generation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -557,16 +556,6 @@ const CreateStoryPage = () => {
   const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
     setSelectedCharacters(characters);
     setSurpriseCharactersFlag(surpriseChars || false);
-    setCharacterWantsVillain(false);
-    setSelectedVillain(null);
-    setCurrentScreen("effects");
-  };
-
-  const handleCharactersCompleteWithVillain = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
-    setSelectedCharacters(characters);
-    setSurpriseCharactersFlag(surpriseChars || false);
-    setCharacterWantsVillain(true);
-    setSelectedVillain(null);
     setCurrentScreen("effects");
   };
   
@@ -597,12 +586,8 @@ const CreateStoryPage = () => {
       });
     }
     
-    // Stash effects data and route based on the character-step villain choice
+    // Stash effects data and navigate to image style picker
     setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
-    if (characterWantsVillain) {
-      setCurrentScreen("villain");
-      return;
-    }
     setCurrentScreen("image-style");
   };
 
@@ -614,7 +599,6 @@ const CreateStoryPage = () => {
   ) => {
     setSelectedAttributes(attributes);
     setAdditionalDescription(description);
-    setCharacterWantsVillain(false);
     
     if (settingsFromEffects) {
       setStorySettings({
@@ -1039,8 +1023,6 @@ const CreateStoryPage = () => {
   // Handle entry screen path selection
   const handlePathSelect = (path: WizardPath) => {
     setWizardPath(path);
-    setCharacterWantsVillain(false);
-    setSelectedVillain(null);
     if (path === "free") {
       // Weg A: Skip to effects screen directly
       setCurrentScreen("effects");
@@ -1183,7 +1165,6 @@ const CreateStoryPage = () => {
           kidName={selectedProfile?.name}
           kidAge={selectedProfile?.age}
           onComplete={handleCharactersComplete}
-          onContinueWithVillain={handleCharactersCompleteWithVillain}
           onBack={handleBack}
         />
       )}
@@ -1191,7 +1172,7 @@ const CreateStoryPage = () => {
       {currentScreen === "effects" && (
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
-          onContinueWithVillain={wizardPath === "free" ? handleEffectsWithVillain : undefined}
+          onContinueWithVillain={handleEffectsWithVillain}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
           isAdmin={isSeriesEnabled(user?.role)}
