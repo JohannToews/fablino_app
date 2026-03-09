@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
