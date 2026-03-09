@@ -992,7 +992,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               🌍 {sectionLanguage === 'de' ? 'Sprachen & Niveaus' : sectionLanguage === 'en' ? 'Languages & Levels' : sectionLanguage === 'es' ? 'Idiomas & Niveles' : 'Langues & Niveaux'}
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={sectionLanguage} />
+              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={language} />
             </AccordionContent>
           </AccordionItem>
         )}
