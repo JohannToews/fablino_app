@@ -222,7 +222,7 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language }: Props) =>
                   </Select>
                 </div>
 
-                <div className="w-[140px] shrink-0">
+                <div className="flex-1 min-w-0">
                   <label className="text-[10px] text-[#2D1810]/50 mb-0.5 block">{l.type}</label>
                   <Select
                     value={String(row.language_class ?? 2)}
