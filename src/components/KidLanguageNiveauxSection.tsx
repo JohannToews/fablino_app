@@ -22,6 +22,7 @@ interface LangRow {
 interface Props {
   kidProfileId: string;
   kidAge?: number;
+  schoolClass?: string;
   language: Language;
   onSchoolLanguageChange?: (langCode: string) => void;
 }
@@ -29,13 +30,12 @@ interface Props {
 // Supported languages for the dropdown
 const ALL_LANGS = STORY_LANGUAGES.filter(l => l.storySupported).map(l => l.code);
 
-const AGE_DEFAULTS: Record<number, number> = { 6: 1, 7: 2, 8: 3, 9: 4, 10: 5 };
-
-const getAgeStandard = (age?: number): number => {
-  if (!age) return 1;
-  if (age < 6) return 1;
-  if (age > 10) return 5;
-  return AGE_DEFAULTS[age] ?? 1;
+/** Extract grade number from school_class string and clamp to 1-5 */
+export const extractGradeLevel = (schoolClass?: string): number => {
+  if (!schoolClass) return 1;
+  const match = schoolClass.match(/(\d+)/);
+  const grade = match ? parseInt(match[1], 10) : 1;
+  return Math.min(5, Math.max(1, grade));
 };
 
 // Map language codes to school system keys
