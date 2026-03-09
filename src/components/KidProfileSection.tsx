@@ -1046,8 +1046,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   <Label className="text-xs text-[#2D1810]/60">{t.schoolClass}</Label>
                   <Select
                     value={currentProfile.school_class}
-                    onValueChange={(value) => handleSchoolClassChange(value)}
-                    <SelectTrigger className="border-orange-200">
+                    onValueChange={(value) => handleSchoolClassChange(value)}                <SelectTrigger className="border-orange-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1069,7 +1068,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               🌍 {language === 'de' ? 'Sprachen & Niveaus' : language === 'en' ? 'Languages & Levels' : language === 'es' ? 'Idiomas & Niveles' : language === 'nl' ? 'Talen & Niveaus' : language === 'it' ? 'Lingue & Livelli' : language === 'tr' ? 'Diller & Seviyeler' : language === 'pt' ? 'Línguas & Níveis' : language === 'ru' ? 'Языки и уровни' : language === 'uk' ? 'Мови та рівні' : 'Langues & Niveaux'}
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={languschoolClass={currentProfile.school_class} age} onSchoolLanguageChange={handleSchoolLanguageChange} />
+              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} languschoolClass={currentProfile.school_class} language={languonSchoolLanguageChange={handleSchoolLanguageChange} />
             </AccordionContent>
           </AccordionItem>
         )}
