@@ -1191,7 +1191,7 @@ const CreateStoryPage = () => {
       {currentScreen === "effects" && (
         <SpecialEffectsScreen
           onComplete={handleEffectsComplete}
-          onContinueWithVillain={handleEffectsWithVillain}
+          onContinueWithVillain={wizardPath === "free" ? handleEffectsWithVillain : undefined}
           onBack={handleBack}
           showSettings={wizardPath === "free"}
           isAdmin={isSeriesEnabled(user?.role)}

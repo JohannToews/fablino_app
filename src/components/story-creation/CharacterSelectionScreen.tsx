@@ -466,6 +466,9 @@ const CharacterSelectionScreen = ({
         characters={selectedCharacters}
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
+        onContinueWithVillain={onContinueWithVillain ? handleContinueVillain : undefined}
+        continueWithVillainLabel={`😈 ${villainButtonLabels[kidAppLanguage] || villainButtonLabels.de}`}
+        alwaysVisible={Boolean(onContinueWithVillain)}
         translations={translations}
       />
 
