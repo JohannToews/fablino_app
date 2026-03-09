@@ -170,27 +170,27 @@ async function callLLM(
             continue;
           }
 
+          // Read body exactly once
+          const rawBody = await response.text();
+          console.log('[FSE2-LLM] Sonnet HTTP status:', response.status);
+
           if (response.status === 401 || response.status === 403) {
-            console.log('[FSE2-LLM] Sonnet HTTP status:', response.status);
-            const errorBody = await response.text();
-            console.log('[FSE2-LLM] Sonnet error body:', errorBody.substring(0, 800));
+            console.log('[FSE2-LLM] Sonnet error body:', rawBody.substring(0, 500));
             cachedAccessToken = null;
             lastError = new Error(`Vertex auth error: ${response.status}`);
             continue;
           }
 
           if (!response.ok) {
-            console.log('[FSE2-LLM] Sonnet HTTP status:', response.status);
-            const errorBody = await response.text();
-            console.log('[FSE2-LLM] Sonnet error body:', errorBody.substring(0, 800));
+            console.log('[FSE2-LLM] Sonnet error body:', rawBody.substring(0, 500));
             throw new Error(`Vertex Claude error: ${response.status}`);
           }
 
-          const data = await response.json();
+          const data = JSON.parse(rawBody);
           const content = data.content?.[0]?.text;
 
           if (!content) {
-            console.log('[FSE2-LLM] Sonnet response structure:', JSON.stringify(data).substring(0, 500));
+            console.log('[FSE2-LLM] Sonnet response structure:', rawBody.substring(0, 500));
             lastError = new Error('No content in Sonnet response');
             await sleep(2000);
             continue;
@@ -605,6 +605,14 @@ export async function runPipelineFSE2(
     }));
 
     const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, enrichedRequest, plannerPrompt, selectedSubtype, heroesVillains);
+    console.log('[FSE2-LLM] call params:', {
+      caller: 'planner',
+      systemPromptLength: planPrompt.systemPrompt.length,
+      userMessageLength: planPrompt.userMessage.length,
+      temperature: 0.8,
+      maxTokens: 8192,
+      model: 'claude-sonnet-4-6',
+    });
     console.log('[FSE2-PLANNER] Calling LLM...');
     const storyPlan = await callLLM(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
@@ -659,6 +667,14 @@ export async function runPipelineFSE2(
     const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, enrichedRequest, writerPrompt);
     console.log('[FSE2-WRITER-INPUT] systemPrompt length:', storyPrompt.systemPrompt.length);
     console.log('[FSE2-WRITER-INPUT] userMessage preview:', storyPrompt.userMessage.substring(0, 500));
+    console.log('[FSE2-LLM] call params:', {
+      caller: 'writer',
+      systemPromptLength: storyPrompt.systemPrompt.length,
+      userMessageLength: storyPrompt.userMessage.length,
+      temperature: 0.8,
+      maxTokens: 8192,
+      model: 'claude-sonnet-4-6',
+    });
     console.log('[FSE2-WRITER] Calling LLM...');
     const writerRaw = await callLLM(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
     console.log(`[FSE2-WRITER] Done (${writerRaw.length} chars)`);
