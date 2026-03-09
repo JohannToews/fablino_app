@@ -579,7 +579,6 @@ const CreateStoryPage = () => {
   ) => {
     setSelectedAttributes(attributes);
     setAdditionalDescription(description);
-    setSelectedVillain(null);
     
     if (settingsFromEffects) {
       setStorySettings({
@@ -1160,6 +1159,7 @@ const CreateStoryPage = () => {
           isAdmin={isSeriesEnabled(user?.role)}
           availableLanguages={availableLanguages}
           defaultLanguage={kidReadingLanguage}
+          hasVillain={!!selectedVillain}
         />
       )}
 

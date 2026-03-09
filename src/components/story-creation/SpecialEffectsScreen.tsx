@@ -364,6 +364,7 @@ interface AttributeOption {
 const attributeOptions: AttributeOption[] = [
   { id: "superpowers", emoji: "🦸", labelKey: "superpowers" },
   { id: "magic", emoji: "✨", labelKey: "magic" },
+  { id: "heroes_villains", emoji: "🦹", labelKey: "heroesVillains" },
   { id: "transformations", emoji: "🔮", labelKey: "transformations" },
   { id: "talents", emoji: "🎯", labelKey: "talents" },
   { id: "normal", emoji: "❌", labelKey: "normal" },
@@ -405,6 +406,7 @@ interface SpecialEffectsScreenProps {
   availableLanguages?: string[];
   defaultLanguage?: string;
   fablinoMessage?: string;
+  hasVillain?: boolean;
 }
 
 const LENGTH_EMOJIS: Record<string, string> = {
@@ -422,15 +424,16 @@ const SpecialEffectsScreen = ({
   availableLanguages = [],
   defaultLanguage = 'fr',
   fablinoMessage,
+  hasVillain = false,
 }: SpecialEffectsScreenProps) => {
   const { kidAppLanguage, kidReadingLanguage, selectedProfile } = useKidProfile();
   const [storyLanguage, setStoryLanguage] = useState<string>(defaultLanguage);
 
   const { options: lengthOptions, defaultLength, loading: lengthLoading } = useStoryLengthOptions(selectedProfile?.age);
 
-  const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>(hasVillain ? ["heroes_villains"] : []);
   const [additionalDescription, setAdditionalDescription] = useState("");
-  const [effectsExpanded, setEffectsExpanded] = useState(false);
+  const [effectsExpanded, setEffectsExpanded] = useState(hasVillain);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
 
   const [storyLength, setStoryLength] = useState<StoryLength>("medium");
@@ -539,6 +542,9 @@ const SpecialEffectsScreen = ({
   const incompatiblePrefix = incompatiblePrefixes[uiLang] || incompatiblePrefixes.de;
 
   const toggleAttribute = (attr: SpecialAttribute) => {
+    // Prevent deselecting locked villain effect
+    if (attr === "heroes_villains" && hasVillain) return;
+
     // Allow deselection always
     if (selectedAttributes.includes(attr)) {
       setSelectedAttributes((prev) => prev.filter((a) => a !== attr));
@@ -549,6 +555,8 @@ const SpecialEffectsScreen = ({
     if (getIncompatibleReason(attr) !== null) return;
 
     if (attr === "normal") {
+      // "normal" clears everything except locked villain
+      if (hasVillain) return; // can't select "normal" when villain is locked
       setSelectedAttributes(["normal"]);
     } else {
       setSelectedAttributes((prev) => {
@@ -812,7 +820,8 @@ const SpecialEffectsScreen = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 animate-fade-in">
               {attributeOptions.map((option) => {
                 const isSelected = selectedAttributes.includes(option.id);
-                const incompatibleReason = getIncompatibleReason(option.id);
+                const isLocked = option.id === "heroes_villains" && hasVillain;
+                const incompatibleReason = isLocked ? null : getIncompatibleReason(option.id);
                 const isDisabled = incompatibleReason !== null;
                 return (
                   <button
@@ -822,18 +831,23 @@ const SpecialEffectsScreen = ({
                     className={cn(
                       "flex flex-col items-center justify-center gap-1 w-full min-h-[56px] py-3 rounded-xl",
                       "transition-all duration-150",
-                      isDisabled
-                        ? "opacity-40 cursor-not-allowed border border-gray-200 bg-white"
-                        : "cursor-pointer active:scale-95",
-                      isSelected
+                      isLocked
+                        ? "border-2 border-red-400 bg-red-50 cursor-default opacity-90"
+                        : isDisabled
+                          ? "opacity-40 cursor-not-allowed border border-gray-200 bg-white"
+                          : "cursor-pointer active:scale-95",
+                      !isLocked && isSelected
                         ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
-                        : !isDisabled && "border border-gray-200 bg-white hover:border-gray-300"
+                        : !isDisabled && !isLocked && "border border-gray-200 bg-white hover:border-gray-300"
                     )}
                   >
                     <span className="text-xl leading-none">{option.emoji}</span>
                     <span className="text-sm font-medium text-center leading-tight text-[#2D1810]">
                       {t[option.labelKey]}
                     </span>
+                    {isLocked && (
+                      <span className="text-[10px] text-red-500/70 font-medium">🔒</span>
+                    )}
                   </button>
                 );
               })}
