@@ -553,10 +553,15 @@ const CreateStoryPage = () => {
   const [surpriseCharactersFlag, setSurpriseCharactersFlag] = useState(false);
 
   // Handle character selection complete
-  const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
+  const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean, withVillain?: boolean) => {
     setSelectedCharacters(characters);
     setSurpriseCharactersFlag(surpriseChars || false);
-    setCurrentScreen("effects");
+    if (withVillain) {
+      setCurrentScreen("villain");
+    } else {
+      setSelectedVillain(null);
+      setCurrentScreen("effects");
+    }
   };
   
   // Stashed effects data — used after image style selection to trigger generation
