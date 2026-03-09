@@ -2008,21 +2008,30 @@ export type Database = {
           language: string
           level: number
           max_sentence_length: number | null
+          paragraph_count: number | null
+          paragraph_length: string | null
           sentence_structures: string | null
+          word_approx: number | null
         }
         Insert: {
           allowed_tenses?: string[] | null
           language: string
           level: number
           max_sentence_length?: number | null
+          paragraph_count?: number | null
+          paragraph_length?: string | null
           sentence_structures?: string | null
+          word_approx?: number | null
         }
         Update: {
           allowed_tenses?: string[] | null
           language?: string
           level?: number
           max_sentence_length?: number | null
+          paragraph_count?: number | null
+          paragraph_length?: string | null
           sentence_structures?: string | null
+          word_approx?: number | null
         }
         Relationships: []
       }
