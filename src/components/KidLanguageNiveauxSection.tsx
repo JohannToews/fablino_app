@@ -22,6 +22,7 @@ interface LangRow {
 interface Props {
   kidProfileId: string;
   kidAge?: number;
+  schoolClass?: string;
   language: Language;
   onSchoolLanguageChange?: (langCode: string) => void;
 }
@@ -29,13 +30,12 @@ interface Props {
 // Supported languages for the dropdown
 const ALL_LANGS = STORY_LANGUAGES.filter(l => l.storySupported).map(l => l.code);
 
-const AGE_DEFAULTS: Record<number, number> = { 6: 1, 7: 2, 8: 3, 9: 4, 10: 5 };
-
-const getAgeStandard = (age?: number): number => {
-  if (!age) return 1;
-  if (age < 6) return 1;
-  if (age > 10) return 5;
-  return AGE_DEFAULTS[age] ?? 1;
+/** Extract grade number from school_class string and clamp to 1-5 */
+export const extractGradeLevel = (schoolClass?: string): number => {
+  if (!schoolClass) return 1;
+  const match = schoolClass.match(/(\d+)/);
+  const grade = match ? parseInt(match[1], 10) : 1;
+  return Math.min(5, Math.max(1, grade));
 };
 
 // Map language codes to school system keys
@@ -88,11 +88,11 @@ const LABELS: Record<string, { title: string; langue: string; type: string; nive
 
 const getL = (lang: string) => LABELS[lang] || LABELS.fr;
 
-const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language, onSchoolLanguageChange }: Props) => {
+const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language, onSchoolLanguageChange }: Props) => {
   const [rows, setRows] = useState<LangRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const l = getL(language);
-  const ageStd = getAgeStandard(kidAge);
+  const gradeStd = extractGradeLevel(schoolClass);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -138,12 +138,13 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language, onSchoolLan
       .eq("language", oldLang);
 
     const oldRow = rows.find(r => r.language === oldLang);
+    const isSchool = (oldRow?.language_class ?? 2) === 1;
     const newRow: LangRow = {
       kid_profile_id: kidProfileId,
       language: newLang,
       language_class: oldRow?.language_class ?? 2,
-      language_level: oldRow?.language_level ?? Math.max(1, ageStd - 1),
-      content_level: oldRow?.content_level ?? ageStd,
+      language_level: oldRow?.language_level ?? (isSchool ? gradeStd : Math.max(1, gradeStd - 1)),
+      content_level: oldRow?.content_level ?? gradeStd,
       length_level: oldRow?.length_level ?? 1,
     };
 
@@ -157,8 +158,8 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language, onSchoolLan
   };
 
   const handleClassChange = (lang: string, newClass: number) => {
-    const newLevel = newClass === 1 ? ageStd : Math.max(1, ageStd - 1);
-    updateRow(lang, { language_class: newClass, language_level: newLevel });
+    const newLevel = newClass === 1 ? gradeStd : Math.max(1, gradeStd - 1);
+    updateRow(lang, { language_class: newClass, language_level: newLevel, content_level: gradeStd });
     // If setting as school language, notify parent to update app language
     if (newClass === 1 && onSchoolLanguageChange) {
       onSchoolLanguageChange(lang);
@@ -174,8 +175,8 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language, onSchoolLan
       kid_profile_id: kidProfileId,
       language: available,
       language_class: 2,
-      language_level: Math.max(1, ageStd - 1),
-      content_level: ageStd,
+      language_level: Math.max(1, gradeStd - 1),
+      content_level: gradeStd,
       length_level: 1,
     };
     await upsertRow(newRow);

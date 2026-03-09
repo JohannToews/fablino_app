@@ -735,29 +735,22 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
   };
 
   const handleAgeChange = async (newAge: number | undefined) => {
-    const oldAge = currentProfile.age;
     updateCurrentProfile({ age: newAge });
+    // Age no longer drives language_level defaults — school_class does.
+    // Nothing else to do here.
+  };
 
-    // Only update language settings if profile exists in DB and age actually changed
-    if (!currentProfile.id || !newAge || newAge === oldAge) return;
+  /** Recalculate language_level & content_level when school_class changes (grade-based). */
+  const handleSchoolClassChange = async (newClass: string) => {
+    const oldClass = currentProfile.school_class;
+    updateCurrentProfile({ school_class: newClass });
+
+    if (!currentProfile.id || newClass === oldClass) return;
 
     try {
-      // Fetch old and new age_standard from age_level_defaults
-      const ages = [newAge];
-      if (oldAge) ages.push(oldAge);
-
-      const { data: defaults } = await supabase
-        .from('age_level_defaults')
-        .select('age, default_level')
-        .in('age', ages);
-
-      const defaultMap: Record<number, number> = {};
-      for (const d of defaults || []) {
-        if (d.default_level != null) defaultMap[d.age] = d.default_level;
-      }
-
-      const newStd = defaultMap[newAge] ?? 1;
-      const oldStd = oldAge ? (defaultMap[oldAge] ?? 1) : null;
+      const { extractGradeLevel } = await import("@/components/KidLanguageNiveauxSection");
+      const newGrade = extractGradeLevel(newClass);
+      const oldGrade = extractGradeLevel(oldClass);
 
       // Fetch current language settings for this kid
       const { data: langRows } = await supabase
@@ -770,15 +763,15 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       for (const row of langRows) {
         const updates: Record<string, number> = {};
         const isSchool = row.language_class === 1;
-        const expectedOldLevel = isSchool ? oldStd : (oldStd != null ? Math.max(1, oldStd - 1) : null);
-        const expectedOldContent = oldStd;
+        const expectedOldLevel = isSchool ? oldGrade : Math.max(1, oldGrade - 1);
+        const expectedOldContent = oldGrade;
 
         // Only reset if current value matches previous default (not manually customized)
-        if (expectedOldLevel == null || row.language_level === expectedOldLevel) {
-          updates.language_level = isSchool ? newStd : Math.max(1, newStd - 1);
+        if (row.language_level === expectedOldLevel) {
+          updates.language_level = isSchool ? newGrade : Math.max(1, newGrade - 1);
         }
-        if (expectedOldContent == null || row.content_level === expectedOldContent) {
-          updates.content_level = newStd;
+        if (row.content_level === expectedOldContent) {
+          updates.content_level = newGrade;
         }
 
         if (Object.keys(updates).length > 0) {
@@ -790,7 +783,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         }
       }
     } catch (err) {
-      console.error('[handleAgeChange] Failed to update language settings:', err);
+      console.error('[handleSchoolClassChange] Failed to update language settings:', err);
     }
   };
 
@@ -1053,7 +1046,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   <Label className="text-xs text-[#2D1810]/60">{t.schoolClass}</Label>
                   <Select
                     value={currentProfile.school_class}
-                    onValueChange={(value) => updateCurrentProfile({ school_class: value })}
+                    onValueChange={(value) => handleSchoolClassChange(value)}
                   >
                     <SelectTrigger className="border-orange-200">
                       <SelectValue />
@@ -1077,7 +1070,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
               🌍 {language === 'de' ? 'Sprachen & Niveaus' : language === 'en' ? 'Languages & Levels' : language === 'es' ? 'Idiomas & Niveles' : language === 'nl' ? 'Talen & Niveaus' : language === 'it' ? 'Lingue & Livelli' : language === 'tr' ? 'Diller & Seviyeler' : language === 'pt' ? 'Línguas & Níveis' : language === 'ru' ? 'Языки и уровни' : language === 'uk' ? 'Мови та рівні' : 'Langues & Niveaux'}
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={language} onSchoolLanguageChange={handleSchoolLanguageChange} />
+              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} schoolClass={currentProfile.school_class} language={language} onSchoolLanguageChange={handleSchoolLanguageChange} />
             </AccordionContent>
           </AccordionItem>
         )}
