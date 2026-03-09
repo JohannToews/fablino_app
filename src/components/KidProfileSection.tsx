@@ -234,6 +234,30 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     });
   };
 
+  // Called by KidLanguageNiveauxSection when the school language (language_class=1) changes
+  const handleSchoolLanguageChange = async (langCode: string) => {
+    const classes = schoolSystems[langCode]?.classes || [];
+    updateCurrentProfile({
+      school_system: langCode,
+      school_class: classes[0] || currentProfile.school_class,
+      ui_language: langCode,
+      reading_language: langCode,
+    });
+    // Persist immediately to DB if profile exists
+    if (currentProfile.id) {
+      await supabase
+        .from('kid_profiles')
+        .update({
+          school_system: langCode,
+          school_class: classes[0] || currentProfile.school_class,
+          ui_language: langCode,
+          reading_language: langCode,
+        } as any)
+        .eq('id', currentProfile.id);
+      await refreshGlobalProfiles();
+    }
+  };
+
   const addNewProfile = () => {
     const newProfile: KidProfile = {
       name: '',
