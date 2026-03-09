@@ -111,9 +111,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     age: undefined,
   };
 
-  // Use kid's school/app language for labels when valid, so e.g. Russian profile shows "Основы", "Имя" etc.
+  // Admin-facing labels always use the parent's language setting
+  const t = useTranslations(language);
+  // Kid-facing labels (e.g. school class names) use the kid's school system language
   const sectionLanguage: Language = (currentProfile?.school_system && PROFILE_LANGUAGES.includes(currentProfile.school_system as Language)) ? currentProfile.school_system as Language : language;
-  const t = useTranslations(sectionLanguage);
 
   const loadCharacters = useCallback(async (profileId?: string) => {
     const id = profileId || currentProfile?.id;
