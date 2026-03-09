@@ -542,6 +542,9 @@ const SpecialEffectsScreen = ({
   const incompatiblePrefix = incompatiblePrefixes[uiLang] || incompatiblePrefixes.de;
 
   const toggleAttribute = (attr: SpecialAttribute) => {
+    // Prevent deselecting locked villain effect
+    if (attr === "heroes_villains" && hasVillain) return;
+
     // Allow deselection always
     if (selectedAttributes.includes(attr)) {
       setSelectedAttributes((prev) => prev.filter((a) => a !== attr));
@@ -552,6 +555,8 @@ const SpecialEffectsScreen = ({
     if (getIncompatibleReason(attr) !== null) return;
 
     if (attr === "normal") {
+      // "normal" clears everything except locked villain
+      if (hasVillain) return; // can't select "normal" when villain is locked
       setSelectedAttributes(["normal"]);
     } else {
       setSelectedAttributes((prev) => {
