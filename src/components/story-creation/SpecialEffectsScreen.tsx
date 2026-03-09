@@ -433,7 +433,7 @@ const SpecialEffectsScreen = ({
 
   const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>(hasVillain ? ["heroes_villains"] : []);
   const [additionalDescription, setAdditionalDescription] = useState("");
-  const [effectsExpanded, setEffectsExpanded] = useState(false);
+  const [effectsExpanded, setEffectsExpanded] = useState(hasVillain);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
 
   const [storyLength, setStoryLength] = useState<StoryLength>("medium");
