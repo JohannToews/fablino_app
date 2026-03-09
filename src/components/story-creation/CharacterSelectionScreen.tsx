@@ -312,7 +312,11 @@ const CharacterSelectionScreen = ({
       setViewState("main");
       return;
     }
-    onComplete(selectedCharacters, surpriseCharacters);
+    onComplete(selectedCharacters, surpriseCharacters, false);
+  };
+
+  const handleContinueWithVillain = () => {
+    onComplete(selectedCharacters, surpriseCharacters, true);
   };
 
   const isSelected = (type: CharacterType | FamilyMember) => {
