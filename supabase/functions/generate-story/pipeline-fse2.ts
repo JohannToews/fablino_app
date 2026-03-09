@@ -126,7 +126,9 @@ async function callLLM(
     try {
       const sa = JSON.parse(serviceAccountJson);
       const projectId = sa.project_id || 'fablino-prod';
-      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/claude-sonnet-4-6:rawPredict`;
+      const modelName = 'claude-sonnet-4-6';
+      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/${modelName}:rawPredict`;
+      console.log('[FSE2-LLM] Sonnet model string:', modelName);
 
       let lastError: Error | null = null;
 
@@ -169,16 +171,18 @@ async function callLLM(
           }
 
           if (response.status === 401 || response.status === 403) {
+            console.log('[FSE2-LLM] Sonnet HTTP status:', response.status);
             const errorBody = await response.text();
-            console.log('[FSE2-LLM] Sonnet error status:', response.status, 'body:', errorBody);
+            console.log('[FSE2-LLM] Sonnet error body:', errorBody.substring(0, 800));
             cachedAccessToken = null;
             lastError = new Error(`Vertex auth error: ${response.status}`);
             continue;
           }
 
           if (!response.ok) {
+            console.log('[FSE2-LLM] Sonnet HTTP status:', response.status);
             const errorBody = await response.text();
-            console.log('[FSE2-LLM] Sonnet error status:', response.status, 'body:', errorBody);
+            console.log('[FSE2-LLM] Sonnet error body:', errorBody.substring(0, 800));
             throw new Error(`Vertex Claude error: ${response.status}`);
           }
 
