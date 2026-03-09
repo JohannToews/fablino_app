@@ -121,8 +121,9 @@ async function callLLM(
 ): Promise<string> {
   const serviceAccountJson = Deno.env.get('VERTEX_SERVICE_ACCOUNT_JSON');
 
-  // ── Primary: Claude Sonnet 4.6 via Vertex AI ──
-  if (serviceAccountJson) {
+  // ── TEMPORARY: Skip Sonnet, use Gemini directly (rate-limit issues) ──
+  // To revert: change `if (false &&` back to `if (`
+  if (false && serviceAccountJson) {
     try {
       const sa = JSON.parse(serviceAccountJson);
       const projectId = sa.project_id || 'fablino-prod';
