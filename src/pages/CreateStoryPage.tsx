@@ -596,30 +596,8 @@ const CreateStoryPage = () => {
     setCurrentScreen("image-style");
   };
 
-  // Handle effects complete WITH villain — go to villain screen first
-  const handleEffectsWithVillain = (
-    attributes: SpecialAttribute[],
-    description: string,
-    settingsFromEffects?: StorySettingsFromEffects
-  ) => {
-    setSelectedAttributes(attributes);
-    setAdditionalDescription(description);
-    
-    if (settingsFromEffects) {
-      setStorySettings({
-        length: settingsFromEffects.length,
-        difficulty: settingsFromEffects.difficulty,
-        isSeries: settingsFromEffects.isSeries,
-        seriesMode: settingsFromEffects.seriesMode,
-        storyLanguage: settingsFromEffects.storyLanguage,
-      });
-    }
-    
-    setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
-    setCurrentScreen("villain");
-  };
-
   // Handle villain selection complete — go to effects
+
   const handleVillainComplete = (villain: VillainData) => {
     setSelectedVillain(villain);
     setCurrentScreen("effects");
