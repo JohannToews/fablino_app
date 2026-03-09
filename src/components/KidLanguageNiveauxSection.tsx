@@ -203,7 +203,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
       .delete()
       .eq("kid_profile_id", kidProfileId)
       .eq("language", lang);
-    setRows(prev => prev.filter(r => r.language !== lang));
+    const updatedRows = rows.filter(r => r.language !== lang);
+    setRows(updatedRows);
+    await syncStoryLanguages(updatedRows);
   };
 
   const usedLangs = new Set(rows.map(r => r.language));
