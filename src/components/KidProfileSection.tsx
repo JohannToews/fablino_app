@@ -947,7 +947,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-[#2D1810]/60">{t.age}</Label>
                   <Select
@@ -960,19 +960,6 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                     <SelectContent>
                       {[4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map((a) => (
                         <SelectItem key={a} value={a.toString()}>{a}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-[#2D1810]/60">{t.schoolSystem}</Label>
-                  <Select value={currentProfile.school_system} onValueChange={handleSchoolSystemChange}>
-                    <SelectTrigger className="border-orange-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {visibleSchoolSystems.map(([key, system]) => (
-                        <SelectItem key={key} value={key}>{system.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
