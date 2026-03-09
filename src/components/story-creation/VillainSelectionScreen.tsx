@@ -150,6 +150,17 @@ const VillainSelectionScreen = ({ selectedCharacters, onComplete, onBack }: Vill
 
         {/* Tab Toggle */}
         <div className="flex gap-1 bg-orange-100/60 rounded-2xl p-1">
+          <button
+            onClick={() => handleTabSwitch("new")}
+            className={cn(
+              "flex-1 min-h-[48px] py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-200",
+              activeTab === "new"
+                ? "bg-white text-[#2D1810] shadow-sm"
+                : "text-[#92400E]/60 hover:text-[#92400E]"
+            )}
+          >
+            👹 {t.tabNew}
+          </button>
           {hasCharacters && (
             <button
               onClick={() => handleTabSwitch("character")}
@@ -163,17 +174,6 @@ const VillainSelectionScreen = ({ selectedCharacters, onComplete, onBack }: Vill
               🦸 {t.tabCharacter}
             </button>
           )}
-          <button
-            onClick={() => handleTabSwitch("new")}
-            className={cn(
-              "flex-1 min-h-[48px] py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-200",
-              activeTab === "new"
-                ? "bg-white text-[#2D1810] shadow-sm"
-                : "text-[#92400E]/60 hover:text-[#92400E]"
-            )}
-          >
-            👹 {t.tabNew}
-          </button>
         </div>
 
         {/* Tab Content: Pick from characters */}
