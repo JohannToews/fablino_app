@@ -339,6 +339,28 @@ const CharacterSelectionScreen = ({
     ru: "Кто будет главным героем? 🌟",
   };
 
+  const villainButtonLabels: Record<string, string> = {
+    de: "Mit Bösewicht",
+    fr: "Avec un méchant",
+    en: "With a villain",
+    es: "Con un villano",
+    nl: "Met een schurk",
+    it: "Con un cattivo",
+    bs: "Sa zlikovcem",
+    tr: "Kötüyle",
+    bg: "Със злодей",
+    ro: "Cu un răufăcător",
+    pl: "Ze złoczyńcą",
+    lt: "Su piktadariu",
+    hu: "Gonosszal",
+    ca: "Amb un malvat",
+    sl: "Z zlikovcem",
+    pt: "Com vilão",
+    sk: "So zloduchom",
+    uk: "З лиходієм",
+    ru: "Со злодеем",
+  };
+
   // Modal title based on category
   const getModalTitle = (category: "family" | "friends") => {
     // Use a generic "Who comes along?" phrasing
