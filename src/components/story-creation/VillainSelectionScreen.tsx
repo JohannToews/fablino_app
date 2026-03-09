@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
