@@ -263,6 +263,7 @@ const CreateStoryPage = () => {
           storyType: "educational",
           kidName: selectedProfile?.name,
           kidHobbies: selectedProfile?.hobbies,
+          characters: [{ name: selectedProfile?.name || '', type: 'me', age: selectedProfile?.age ?? undefined }],
           storyLanguage: effectiveLanguage,
           kidProfileId: selectedProfile?.id,
           kidAge: selectedProfile?.age,
