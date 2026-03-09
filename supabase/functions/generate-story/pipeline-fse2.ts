@@ -142,20 +142,26 @@ async function callLLM(
           console.log('[FSE2-LLM] Sonnet request url:', vertexUrl);
           console.log('[FSE2-LLM] Sonnet auth token length:', accessToken?.length);
 
-          const response = await fetch(vertexUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              anthropic_version: 'vertex-2023-10-16',
-              max_tokens: 8192,
-              temperature,
-              system: systemPrompt,
-              messages: [{ role: 'user', content: userPrompt }],
-            }),
-          });
+          let response: Response;
+          try {
+            response = await fetch(vertexUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                anthropic_version: 'vertex-2023-10-16',
+                max_tokens: 8192,
+                temperature,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: userPrompt }],
+              }),
+            });
+          } catch (err: any) {
+            console.log('[FSE2-LLM] Sonnet fetch exception:', err.message, err.stack?.substring(0, 300));
+            throw err;
+          }
 
           if (response.status === 429) {
             lastError = new Error('Rate limited');
@@ -189,6 +195,8 @@ async function callLLM(
           console.log('[FSE2-LLM] using model: sonnet');
           return content;
         } catch (error) {
+          console.log('[FSE2-LLM] Sonnet raw error:', error instanceof Error ? error.message : String(error));
+          console.log('[FSE2-LLM] Sonnet response status if available:', (error as any)?.status);
           if (error instanceof Error && (error.message === 'Rate limited' || error.message.startsWith('Vertex auth error'))) {
             lastError = error;
             continue;
@@ -204,13 +212,13 @@ async function callLLM(
     }
   }
 
-  // ── Fallback: Gemini 3.1 Flash Lite ──
+  // ── Fallback: Gemini 2.5 Flash ──
   console.log('[FSE2-LLM] using model: gemini-fallback');
 
   const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
   if (!geminiApiKey) throw new Error('GEMINI_API_KEY not configured');
 
-  const model = 'gemini-3.1-flash-lite-preview';
+  const model = 'gemini-2.5-flash-preview-05-20';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
 
   let lastError: Error | null = null;
