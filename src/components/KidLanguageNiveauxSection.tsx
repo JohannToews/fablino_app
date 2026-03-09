@@ -23,6 +23,7 @@ interface Props {
   kidProfileId: string;
   kidAge?: number;
   language: Language;
+  onSchoolLanguageChange?: (langCode: string) => void;
 }
 
 // Supported languages for the dropdown
