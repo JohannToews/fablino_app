@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Save, Loader2, FileText, RefreshCw, BookOpen, HelpCircle, ChevronDown, ChevronRight, CheckCircle, Wand2, ClipboardList } from "lucide-react";
+import { Save, Loader2, FileText, RefreshCw, BookOpen, HelpCircle, ChevronDown, ChevronRight, CheckCircle, ClipboardList, Rocket } from "lucide-react";
 import { useTranslations, Language } from "@/lib/translations";
 
 interface SystemPromptSectionProps {
@@ -43,32 +43,30 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const t = useTranslations(language);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [writerCoreV2Prompt, setWriterCoreV2Prompt] = useState("");
+  const [writerCoreV3Prompt, setWriterCoreV3Prompt] = useState("");
   const [continuationPrompt, setContinuationPrompt] = useState("");
   const [wordExplanationPrompt, setWordExplanationPrompt] = useState("");
   const [consistencyCheckPrompt, setConsistencyCheckPrompt] = useState("");
   const [consistencyCheckPromptV2, setConsistencyCheckPromptV2] = useState("");
   const [consistencyCheckSeriesAddon, setConsistencyCheckSeriesAddon] = useState("");
-  const [elternModulPrompt, setElternModulPrompt] = useState("");
-  const [kinderModulPrompt, setKinderModulPrompt] = useState("");
   const [plannerPrompt, setPlannerPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingWriterCoreV2, setIsSavingWriterCoreV2] = useState(false);
+  const [isSavingWriterCoreV3, setIsSavingWriterCoreV3] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
   const [isSavingWordExplanation, setIsSavingWordExplanation] = useState(false);
   const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
   const [isSavingConsistencyCheckV2, setIsSavingConsistencyCheckV2] = useState(false);
-  const [isSavingElternModul, setIsSavingElternModul] = useState(false);
-  const [isSavingKinderModul, setIsSavingKinderModul] = useState(false);
   const [isSavingPlanner, setIsSavingPlanner] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    writerCoreV3: false,
+    writerCoreV2: false,
     system: false,
     continuation: false,
     wordExplanation: false,
     consistencyCheck: false,
     consistencyCheckV2: false,
-    elternModul: false,
-    kinderModul: false,
     planner: false,
   });
 
@@ -82,27 +80,22 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const continuationKey = `system_prompt_continuation_${language}`;
     const wordExplanationKey = `system_prompt_word_explanation_${language}`;
     const consistencyCheckKey = `system_prompt_consistency_check_${language}`;
-    const elternModulKey = `system_prompt_story_creation_${language}`;
-    const kinderModulKey = `system_prompt_kid_creation_${language}`;
     
-    // Load all prompts in parallel (including v2 consistency check prompts + planner + writer core v2)
-    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, elternModulResult, kinderModulResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result] = await Promise.all([
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result, writerCoreV3Result] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", consistencyCheckKey).maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", elternModulKey).maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", kinderModulKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "consistency_check_prompt_v2").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "consistency_check_series_addon_v2").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "system_prompt_planner").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v2").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v3").maybeSingle(),
     ]);
 
     if (promptResult.data && !promptResult.error) {
       setSystemPrompt(promptResult.data.value);
     } else {
-      // Fallback to German if no prompt found
       const { data: fallbackData } = await supabase
         .from("app_settings")
         .select("value")
@@ -121,7 +114,6 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     if (wordExplanationResult.data && !wordExplanationResult.error) {
       setWordExplanationPrompt(wordExplanationResult.data.value);
     } else {
-      // Use default prompt if none saved
       setWordExplanationPrompt(DEFAULT_WORD_EXPLANATION_PROMPT);
     }
 
@@ -129,20 +121,11 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       setConsistencyCheckPrompt(consistencyCheckResult.data.value);
     }
 
-    // Load v2 consistency check prompts (language-independent)
     if (consistencyV2Result.data && !consistencyV2Result.error) {
       setConsistencyCheckPromptV2(consistencyV2Result.data.value);
     }
     if (seriesAddonResult.data && !seriesAddonResult.error) {
       setConsistencyCheckSeriesAddon(seriesAddonResult.data.value);
-    }
-
-    if (elternModulResult.data && !elternModulResult.error) {
-      setElternModulPrompt(elternModulResult.data.value);
-    }
-
-    if (kinderModulResult.data && !kinderModulResult.error) {
-      setKinderModulPrompt(kinderModulResult.data.value);
     }
 
     if (plannerResult.data && !plannerResult.error) {
@@ -151,6 +134,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
     if (writerCoreV2Result.data && !writerCoreV2Result.error) {
       setWriterCoreV2Prompt(writerCoreV2Result.data.value);
+    }
+
+    if (writerCoreV3Result.data && !writerCoreV3Result.error) {
+      setWriterCoreV3Prompt(writerCoreV3Result.data.value);
     }
     
     setIsLoading(false);
@@ -168,20 +155,13 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       });
 
       if (error) {
-        console.error("Error saving system prompt:", error);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
+        toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
       } else {
-        toast.success(language === 'de' ? "System-Prompt gespeichert" : 
-                      language === 'fr' ? "Prompt système sauvegardé" :
-                      "System prompt saved");
+        toast.success(language === 'de' ? "System-Prompt gespeichert" : "System prompt saved");
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
+      toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
     } finally {
       setIsSaving(false);
     }
@@ -199,20 +179,13 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       });
 
       if (error) {
-        console.error("Error saving continuation prompt:", error);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
+        toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
       } else {
-        toast.success(language === 'de' ? "Fortsetzungs-Prompt gespeichert" : 
-                      language === 'fr' ? "Prompt de continuation sauvegardé" :
-                      "Continuation prompt saved");
+        toast.success(language === 'de' ? "Fortsetzungs-Prompt gespeichert" : "Continuation prompt saved");
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
+      toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
     } finally {
       setIsSavingContinuation(false);
     }
@@ -230,20 +203,13 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       });
 
       if (error) {
-        console.error("Error saving word explanation prompt:", error);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
+        toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
       } else {
-        toast.success(language === 'de' ? "Wort-Erklärungs-Prompt gespeichert" : 
-                      language === 'fr' ? "Prompt d'explication sauvegardé" :
-                      "Word explanation prompt saved");
+        toast.success(language === 'de' ? "Wort-Erklärungs-Prompt gespeichert" : "Word explanation prompt saved");
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
+      toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
     } finally {
       setIsSavingWordExplanation(false);
     }
@@ -261,20 +227,13 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       });
 
       if (error) {
-        console.error("Error saving consistency check prompt:", error);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
+        toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
       } else {
-        toast.success(language === 'de' ? "Consistency-Check Prompt gespeichert" : 
-                      language === 'fr' ? "Prompt de vérification sauvegardé" :
-                      "Consistency check prompt saved");
+        toast.success(language === 'de' ? "Consistency-Check Prompt gespeichert" : "Consistency check prompt saved");
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
+      toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
     } finally {
       setIsSavingConsistencyCheck(false);
     }
@@ -284,7 +243,6 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     setIsSavingConsistencyCheckV2(true);
     
     try {
-      // Save both v2 prompts
       const { error: error1 } = await invokeEdgeFunction("manage-users", {
         action: "updateSystemPrompt",
         promptKey: "consistency_check_prompt_v2",
@@ -298,84 +256,15 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       });
 
       if (error1 || error2) {
-        console.error("Error saving v2 consistency check prompts:", error1, error2);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
+        toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
       } else {
-        toast.success(language === 'de' ? "Consistency-Check V2 Prompts gespeichert" : 
-                      language === 'fr' ? "Prompts de vérification V2 sauvegardés" :
-                      "Consistency check V2 prompts saved");
+        toast.success(language === 'de' ? "Consistency-Check V2 Prompts gespeichert" : "Consistency check V2 prompts saved");
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
+      toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
     } finally {
       setIsSavingConsistencyCheckV2(false);
-    }
-  };
-
-  const saveElternModulPrompt = async () => {
-    setIsSavingElternModul(true);
-    const promptKey = `system_prompt_story_creation_${language}`;
-    
-    try {
-      const { error } = await invokeEdgeFunction("manage-users", {
-        action: "updateSystemPrompt",
-        promptKey,
-        promptValue: elternModulPrompt,
-      });
-
-      if (error) {
-        console.error("Error saving Eltern-Modul prompt:", error);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
-      } else {
-        toast.success(language === 'de' ? "ELTERN-MODUL Prompt gespeichert" : 
-                      language === 'fr' ? "Prompt MODUL PARENTS sauvegardé" :
-                      "PARENT MODULE prompt saved");
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
-    } finally {
-      setIsSavingElternModul(false);
-    }
-  };
-
-  const saveKinderModulPrompt = async () => {
-    setIsSavingKinderModul(true);
-    const promptKey = `system_prompt_kid_creation_${language}`;
-    
-    try {
-      const { error } = await invokeEdgeFunction("manage-users", {
-        action: "updateSystemPrompt",
-        promptKey,
-        promptValue: kinderModulPrompt,
-      });
-
-      if (error) {
-        console.error("Error saving Kinder-Modul prompt:", error);
-        toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                    language === 'fr' ? "Erreur lors de la sauvegarde" :
-                    "Error saving");
-      } else {
-        toast.success(language === 'de' ? "KINDER-MODUL Prompt gespeichert" : 
-                      language === 'fr' ? "Prompt MODUL ENFANTS sauvegardé" :
-                      "CHILD MODULE prompt saved");
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      toast.error(language === 'de' ? "Fehler beim Speichern" : 
-                  language === 'fr' ? "Erreur lors de la sauvegarde" :
-                  "Error saving");
-    } finally {
-      setIsSavingKinderModul(false);
     }
   };
 
@@ -398,6 +287,109 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
   return (
     <div className="space-y-4">
+      {/* ══════════ 0. FSE2 Writer Prompt — system_prompt_core_v3 ══════════ */}
+      <Collapsible open={openSections.writerCoreV3} onOpenChange={() => toggleSection('writerCoreV3')}>
+        <Card className="border-2 border-cyan-500/50 bg-cyan-50/30 dark:bg-cyan-950/20">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.writerCoreV3 ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <Rocket className="h-5 w-5 text-cyan-500" />
+                  FSE2 Writer Prompt (v3)
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-cyan-500 text-white rounded-full">
+                    🚀 FSE2
+                  </span>
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({language === 'de' ? 'Alle Sprachen' : language === 'fr' ? 'Toutes langues' : 'All Languages'})
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="p-3 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-md border border-cyan-300/50">
+                <p className="text-sm text-cyan-800 dark:text-cyan-200">
+                  🚀 FSE2 Writer — verwendet von der FSE2-Pipeline (Story Engine v2) für die Story-Generierung
+                </p>
+                <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-1 font-mono">
+                  DB Key: system_prompt_core_v3
+                </p>
+                <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-1">
+                  {language === 'de' 
+                    ? '⚡ Wird nur bei aktivem FSE2-Flag verwendet. Leer = Fallback auf Writer v2.'
+                    : '⚡ Only used when FSE2 flag is active. Empty = falls back to Writer v2.'}
+                </p>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={writerCoreV3Prompt}
+                    onChange={(e) => setWriterCoreV3Prompt(e.target.value)}
+                    className="min-h-[350px] text-sm font-mono leading-relaxed"
+                    placeholder="FSE2 Writer system prompt (system_prompt_core_v3)..."
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={async () => {
+                        setIsSavingWriterCoreV3(true);
+                        try {
+                          const { error } = await invokeEdgeFunction("manage-users", {
+                            action: "updateSystemPrompt",
+                            promptKey: "system_prompt_core_v3",
+                            promptValue: writerCoreV3Prompt,
+                          });
+                          if (error) {
+                            toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                          } else {
+                            toast.success(language === 'de' ? "FSE2 Writer Prompt gespeichert" : "FSE2 Writer prompt saved");
+                          }
+                        } catch (err) {
+                          console.error("Error:", err);
+                          toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                        } finally {
+                          setIsSavingWriterCoreV3(false);
+                        }
+                      }}
+                      disabled={isSavingWriterCoreV3}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingWriterCoreV3 ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 'Save'}
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={loadPrompts} disabled={isLoading}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {language === 'de' ? 'Neu laden' : 'Reload'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    {language === 'de' 
+                      ? '💡 Leer lassen = Writer v2 Prompt wird als Fallback verwendet.'
+                      : '💡 Leave empty = Writer v2 prompt is used as fallback.'}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
       {/* ══════════ 1. Writer Prompt (Active) — system_prompt_core_v2 ══════════ */}
       <Collapsible open={openSections.writerCoreV2} onOpenChange={() => toggleSection('writerCoreV2')}>
         <Card className="border-2 border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20">
@@ -422,7 +414,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
             <CardContent className="space-y-4 pt-0">
               <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-md border border-emerald-300/50">
                 <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                  ✅ Active — used for all story generation
+                  ✅ Active — used for all story generation (default writer)
                 </p>
                 <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-mono">
                   DB Key: system_prompt_core_v2
@@ -688,8 +680,6 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
               <p className="text-sm text-muted-foreground">
                 {language === 'de' 
                   ? 'Dieser Prompt wird verwendet, wenn eine Fortsetzung zu einer bestehenden Serie generiert wird. Die vorherige Episode wird automatisch beigefügt.'
-                  : language === 'fr'
-                  ? 'Ce prompt est utilisé lors de la génération d\'une suite à une série existante. L\'épisode précédent sera automatiquement inclus.'
                   : 'This prompt is used when generating a continuation to an existing series. The previous episode will be automatically included.'}
               </p>
 
@@ -705,12 +695,9 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                     onChange={(e) => setContinuationPrompt(e.target.value)}
                     className="min-h-[200px] text-sm font-mono leading-relaxed"
                     placeholder={language === 'de' 
-                      ? "Fortsetzungs-Prompt hier eingeben... z.B. 'Schreibe eine Fortsetzung zur folgenden Geschichte. Behalte den Stil bei und führe die Handlung weiter.'" 
-                      : language === 'fr' 
-                      ? "Entrez le prompt de continuation ici... par ex. 'Écrivez une suite à l'histoire suivante. Gardez le même style et continuez l'intrigue.'"
-                      : "Enter continuation prompt here... e.g. 'Write a continuation to the following story. Keep the same style and continue the plot.'"}
+                      ? "Fortsetzungs-Prompt hier eingeben..." 
+                      : "Enter continuation prompt here..."}
                   />
-
                   <div className="flex items-center gap-3">
                     <Button
                       onClick={saveContinuationPrompt}
@@ -720,28 +707,16 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       {isSavingContinuation ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
                         </>
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
+                          {language === 'de' ? 'Speichern' : 'Save'}
                         </>
                       )}
                     </Button>
                   </div>
-
-                  <p className="text-xs text-muted-foreground italic">
-                    {language === 'de' 
-                      ? 'Tipp: Der Fortsetzungs-Prompt erhält automatisch die vorherige Episode. Definiere hier nur die Anweisungen für die Fortsetzung.'
-                      : language === 'fr'
-                      ? 'Astuce: Le prompt de continuation reçoit automatiquement l\'épisode précédent. Définissez ici uniquement les instructions pour la suite.'
-                      : 'Tip: The continuation prompt automatically receives the previous episode. Only define the continuation instructions here.'}
-                  </p>
                 </>
               )}
             </CardContent>
@@ -758,9 +733,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                 <div className="flex items-center gap-2 text-lg">
                   {openSections.wordExplanation ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                   <HelpCircle className="h-5 w-5 text-orange-500" />
-                  {language === 'de' ? 'Wort-Erklärungen' : 
-                   language === 'fr' ? 'Explications de Mots' : 
-                   'Word Explanations'}
+                  {language === 'de' ? 'Wort-Erklärungen' : 'Word Explanations'}
                 </div>
                 <span className="text-sm font-normal text-muted-foreground">
                   ({getLanguageLabel()})
@@ -773,8 +746,6 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
               <p className="text-sm text-muted-foreground">
                 {language === 'de' 
                   ? 'Dieser Prompt wird verwendet, wenn ein Kind beim Lesen auf ein unbekanntes Wort tippt. Nutze {word} als Platzhalter für das Wort und {context} für den optionalen Satzkontext.'
-                  : language === 'fr'
-                  ? 'Ce prompt est utilisé lorsqu\'un enfant clique sur un mot inconnu pendant la lecture. Utilisez {word} comme placeholder pour le mot et {context} pour le contexte optionnel.'
                   : 'This prompt is used when a child taps on an unknown word while reading. Use {word} as placeholder for the word and {context} for the optional sentence context.'}
               </p>
 
@@ -791,11 +762,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                     className="min-h-[350px] text-sm font-mono leading-relaxed"
                     placeholder={language === 'de' 
                       ? "Wort-Erklärungs-Prompt hier eingeben..." 
-                      : language === 'fr' 
-                      ? "Entrez le prompt d'explication de mots ici..."
                       : "Enter word explanation prompt here..."}
                   />
-
                   <div className="flex items-center gap-3">
                     <Button
                       onClick={saveWordExplanationPrompt}
@@ -805,26 +773,19 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       {isSavingWordExplanation ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
                         </>
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
+                          {language === 'de' ? 'Speichern' : 'Save'}
                         </>
                       )}
                     </Button>
                   </div>
-
                   <p className="text-xs text-muted-foreground italic">
                     {language === 'de' 
                       ? 'Hinweis: Die Antwort muss als JSON mit "correctedWord" und "explanation" zurückgegeben werden.'
-                      : language === 'fr'
-                      ? 'Note: La réponse doit être retournée en JSON avec "correctedWord" et "explanation".'
                       : 'Note: The response must be returned as JSON with "correctedWord" and "explanation".'}
                   </p>
                 </>
@@ -834,7 +795,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
         </Card>
       </Collapsible>
 
-      {/* Consistency Check V2 - AKTIV (Language-independent with placeholders) */}
+      {/* Consistency Check V2 - AKTIV */}
       <Collapsible open={openSections.consistencyCheckV2} onOpenChange={() => toggleSection('consistencyCheckV2')}>
         <Card className="border-2 border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20">
           <CollapsibleTrigger asChild>
@@ -843,17 +804,13 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                 <div className="flex items-center gap-2 text-lg">
                   {openSections.consistencyCheckV2 ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                   <CheckCircle className="h-5 w-5 text-emerald-500" />
-                  {language === 'de' ? 'Consistency-Check V2' : 
-                   language === 'fr' ? 'Vérification V2' : 
-                   'Consistency Check V2'}
+                  {language === 'de' ? 'Consistency-Check V2' : 'Consistency Check V2'}
                   <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-emerald-500 text-white rounded-full">
                     AKTIV
                   </span>
                 </div>
                 <span className="text-sm font-normal text-muted-foreground">
-                  {language === 'de' ? '(Alle Sprachen)' : 
-                   language === 'fr' ? '(Toutes langues)' : 
-                   '(All Languages)'}
+                  {language === 'de' ? '(Alle Sprachen)' : '(All Languages)'}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -864,8 +821,6 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                 <p className="text-sm text-emerald-800 dark:text-emerald-200">
                   {language === 'de' 
                     ? '✨ AKTIVER PROMPT: Dieser Template-basierte Prompt wird für ALLE Story-Sprachen verwendet. Platzhalter: {story_language}, {age_min}, {age_max}, {episode_number}, {series_context}'
-                    : language === 'fr'
-                    ? '✨ PROMPT ACTIF: Ce prompt basé sur template est utilisé pour TOUTES les langues. Placeholders: {story_language}, {age_min}, {age_max}, {episode_number}, {series_context}'
                     : '✨ ACTIVE PROMPT: This template-based prompt is used for ALL story languages. Placeholders: {story_language}, {age_min}, {age_max}, {episode_number}, {series_context}'}
                 </p>
               </div>
@@ -879,9 +834,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
-                      {language === 'de' ? 'Haupt-Prompt (consistency_check_prompt_v2)' : 
-                       language === 'fr' ? 'Prompt Principal (consistency_check_prompt_v2)' : 
-                       'Main Prompt (consistency_check_prompt_v2)'}
+                      {language === 'de' ? 'Haupt-Prompt (consistency_check_prompt_v2)' : 'Main Prompt (consistency_check_prompt_v2)'}
                     </label>
                     <Textarea
                       value={consistencyCheckPromptV2}
@@ -893,9 +846,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
-                      {language === 'de' ? 'Serien-Addon (consistency_check_series_addon_v2)' : 
-                       language === 'fr' ? 'Addon Séries (consistency_check_series_addon_v2)' : 
-                       'Series Addon (consistency_check_series_addon_v2)'}
+                      {language === 'de' ? 'Serien-Addon (consistency_check_series_addon_v2)' : 'Series Addon (consistency_check_series_addon_v2)'}
                     </label>
                     <Textarea
                       value={consistencyCheckSeriesAddon}
@@ -914,16 +865,12 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       {isSavingConsistencyCheckV2 ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
                         </>
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'V2 Prompts speichern' : 
-                           language === 'fr' ? 'Sauvegarder V2' : 
-                           'Save V2 Prompts'}
+                          {language === 'de' ? 'V2 Prompts speichern' : 'Save V2 Prompts'}
                         </>
                       )}
                     </Button>
@@ -935,7 +882,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
         </Card>
       </Collapsible>
 
-      {/* Consistency Check Prompt - FALLBACK (Language-specific, old format) */}
+      {/* Consistency Check Prompt - FALLBACK */}
       <Collapsible open={openSections.consistencyCheck} onOpenChange={() => toggleSection('consistencyCheck')}>
         <Card className="border-2 border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/10">
           <CollapsibleTrigger asChild>
@@ -944,9 +891,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                 <div className="flex items-center gap-2 text-lg">
                   {openSections.consistencyCheck ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                   <CheckCircle className="h-5 w-5 text-amber-500" />
-                  {language === 'de' ? 'Consistency-Check (Alt)' : 
-                   language === 'fr' ? 'Vérification (Ancien)' : 
-                   'Consistency Check (Old)'}
+                  {language === 'de' ? 'Consistency-Check (Alt)' : 'Consistency Check (Old)'}
                   <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-amber-500 text-white rounded-full">
                     FALLBACK
                   </span>
@@ -962,10 +907,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
               <div className="p-3 bg-amber-100/50 dark:bg-amber-900/30 rounded-md border border-amber-300/50">
                 <p className="text-sm text-amber-800 dark:text-amber-200">
                   {language === 'de' 
-                    ? '⚠️ FALLBACK: Dieser sprachspezifische Prompt wird nur verwendet, wenn V2 nicht existiert. Der V2-Prompt oben ist jetzt aktiv für alle Sprachen.'
-                    : language === 'fr'
-                    ? '⚠️ FALLBACK: Ce prompt spécifique à la langue n\'est utilisé que si V2 n\'existe pas. Le prompt V2 ci-dessus est maintenant actif pour toutes les langues.'
-                    : '⚠️ FALLBACK: This language-specific prompt is only used if V2 doesn\'t exist. The V2 prompt above is now active for all languages.'}
+                    ? '⚠️ FALLBACK: Dieser sprachspezifische Prompt wird nur verwendet, wenn V2 nicht existiert.'
+                    : '⚠️ FALLBACK: This language-specific prompt is only used if V2 doesn\'t exist.'}
                 </p>
               </div>
 
@@ -982,11 +925,8 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                     className="min-h-[250px] text-sm font-mono leading-relaxed"
                     placeholder={language === 'de' 
                       ? "Consistency-Check Prompt hier eingeben..." 
-                      : language === 'fr' 
-                      ? "Entrez le prompt de vérification ici..."
                       : "Enter consistency check prompt here..."}
                   />
-
                   <div className="flex items-center gap-3">
                     <Button
                       onClick={saveConsistencyCheckPrompt}
@@ -996,190 +936,16 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
                       {isSavingConsistencyCheck ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
                         </>
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
+                          {language === 'de' ? 'Speichern' : 'Save'}
                         </>
                       )}
                     </Button>
                   </div>
-                </>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
-      {/* ELTERN-MODUL (Admin/Lehrer Story-Erstellung) */}
-      <Collapsible open={openSections.elternModul} onOpenChange={() => toggleSection('elternModul')}>
-        <Card className="border-2 border-primary/30">
-          <CollapsibleTrigger asChild>
-            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-lg">
-                  {openSections.elternModul ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  <Wand2 className="h-5 w-5 text-primary" />
-                  {language === 'de' ? 'ELTERN-MODUL (Admin/Lehrer)' : 
-                   language === 'fr' ? 'MODULE PARENTS (Admin/Enseignant)' : 
-                   'PARENT MODULE (Admin/Teacher)'}
-                </div>
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({getLanguageLabel()})
-                </span>
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4 pt-0">
-              <p className="text-sm text-muted-foreground">
-                {language === 'de' 
-                  ? 'Dieser Prompt wird verwendet, wenn Eltern/Lehrer im Admin-Bereich eine Geschichte mit einer kurzen Beschreibung erstellen. Fokus auf Leseverständnis und Inferenz-Fragen.'
-                  : language === 'fr'
-                  ? 'Ce prompt est utilisé quand les parents/enseignants créent une histoire avec une courte description dans l\'espace admin. Focus sur la compréhension et les questions d\'inférence.'
-                  : 'This prompt is used when parents/teachers create a story with a short description in the admin area. Focus on reading comprehension and inference questions.'}
-              </p>
-
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>{t.loading}</span>
-                </div>
-              ) : (
-                <>
-                  <Textarea
-                    value={elternModulPrompt}
-                    onChange={(e) => setElternModulPrompt(e.target.value)}
-                    className="min-h-[350px] text-sm font-mono leading-relaxed"
-                    placeholder={language === 'de' 
-                      ? "ELTERN-MODUL Prompt hier eingeben...\n\nDieser Prompt wird mit dem CORE Prompt kombiniert." 
-                      : language === 'fr' 
-                      ? "Entrez le prompt MODULE PARENTS ici...\n\nCe prompt sera combiné avec le prompt CORE."
-                      : "Enter PARENT MODULE prompt here...\n\nThis prompt will be combined with the CORE prompt."}
-                  />
-
-                  <div className="flex items-center gap-3">
-                    <Button
-                      onClick={saveElternModulPrompt}
-                      disabled={isSavingElternModul}
-                      className="btn-primary-kid"
-                    >
-                      {isSavingElternModul ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground italic">
-                    {language === 'de' 
-                      ? '💡 Verwendung: CORE + ELTERN-MODUL (+ optional SERIEN-MODUL)'
-                      : language === 'fr'
-                      ? '💡 Utilisation: CORE + MODULE PARENTS (+ optionnel MODULE SÉRIES)'
-                      : '💡 Usage: CORE + PARENT MODULE (+ optional SERIES MODULE)'}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
-      {/* KINDER-MODUL (Kind erstellt eigene Geschichte) */}
-      <Collapsible open={openSections.kinderModul} onOpenChange={() => toggleSection('kinderModul')}>
-        <Card className="border-2 border-accent/30">
-          <CollapsibleTrigger asChild>
-            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-lg">
-                  {openSections.kinderModul ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  <Wand2 className="h-5 w-5 text-accent" />
-                  {language === 'de' ? 'KINDER-MODUL (Kind-Wizard)' : 
-                   language === 'fr' ? 'MODULE ENFANTS (Assistant Enfant)' : 
-                   'CHILD MODULE (Kid Wizard)'}
-                </div>
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({getLanguageLabel()})
-                </span>
-              </CardTitle>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4 pt-0">
-              <p className="text-sm text-muted-foreground">
-                {language === 'de' 
-                  ? 'Dieser Prompt wird verwendet, wenn ein Kind über den Wizard eine eigene Geschichte erstellt. Platzhalter für Charaktere, Orte und Zeitepochen werden automatisch ersetzt.'
-                  : language === 'fr'
-                  ? 'Ce prompt est utilisé quand un enfant crée sa propre histoire via l\'assistant. Les placeholders pour personnages, lieux et époques seront automatiquement remplacés.'
-                  : 'This prompt is used when a child creates their own story via the wizard. Placeholders for characters, locations and time periods will be automatically replaced.'}
-              </p>
-
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>{t.loading}</span>
-                </div>
-              ) : (
-                <>
-                  <Textarea
-                    value={kinderModulPrompt}
-                    onChange={(e) => setKinderModulPrompt(e.target.value)}
-                    className="min-h-[350px] text-sm font-mono leading-relaxed"
-                    placeholder={language === 'de' 
-                      ? "KINDER-MODUL Prompt hier eingeben...\n\nVerfügbare Platzhalter:\n- {storyType} = Abenteuer/Detektiv/etc.\n- {characters} = Liste der gewählten Charaktere\n- {locations} = Gewählte Orte\n- {timePeriod} = Zeitepoche\n- {kidName} = Name des Kindes\n- {kidHobbies} = Hobbies des Kindes" 
-                      : language === 'fr' 
-                      ? "Entrez le prompt MODULE ENFANTS ici...\n\nPlaceholders disponibles:\n- {storyType} = Aventure/Détective/etc.\n- {characters} = Liste des personnages choisis\n- {locations} = Lieux choisis\n- {timePeriod} = Époque\n- {kidName} = Nom de l'enfant\n- {kidHobbies} = Loisirs de l'enfant"
-                      : "Enter CHILD MODULE prompt here...\n\nAvailable placeholders:\n- {storyType} = Adventure/Detective/etc.\n- {characters} = List of chosen characters\n- {locations} = Chosen locations\n- {timePeriod} = Time period\n- {kidName} = Child's name\n- {kidHobbies} = Child's hobbies"}
-                  />
-
-                  <div className="flex items-center gap-3">
-                    <Button
-                      onClick={saveKinderModulPrompt}
-                      disabled={isSavingKinderModul}
-                      className="btn-primary-kid"
-                    >
-                      {isSavingKinderModul ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {language === 'de' ? 'Speichern...' : 
-                           language === 'fr' ? 'Sauvegarde...' : 
-                           'Saving...'}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          {language === 'de' ? 'Speichern' : 
-                           language === 'fr' ? 'Sauvegarder' : 
-                           'Save'}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground italic">
-                    {language === 'de' 
-                      ? '💡 Verwendung: CORE + KINDER-MODUL (+ optional SERIEN-MODUL)'
-                      : language === 'fr'
-                      ? '💡 Utilisation: CORE + MODULE ENFANTS (+ optionnel MODULE SÉRIES)'
-                      : '💡 Usage: CORE + CHILD MODULE (+ optional SERIES MODULE)'}
-                  </p>
                 </>
               )}
             </CardContent>
