@@ -263,6 +263,7 @@ const CreateStoryPage = () => {
           storyType: "educational",
           kidName: selectedProfile?.name,
           kidHobbies: selectedProfile?.hobbies,
+          characters: [{ name: selectedProfile?.name || '', type: 'me', age: selectedProfile?.age ?? undefined }],
           storyLanguage: effectiveLanguage,
           kidProfileId: selectedProfile?.id,
           kidAge: selectedProfile?.age,
@@ -740,16 +741,22 @@ const CreateStoryPage = () => {
               userId: user.id,
               source: 'kid',
               isSeries,
-              storyType: selectedStoryType,
-              characters: selectedCharacters.map(c => ({
-                name: c.name,
-                type: c.type,
-                age: c.age,
-                gender: c.gender,
-                role: c.role,
-                relation: c.relation,
-                description: c.description,
-              })),
+              storyType: selectedStoryType || "unknown",
+              characters: [
+                // Always include kid profile as first character
+                { name: selectedProfile?.name || '', type: 'me', age: selectedProfile?.age ?? undefined },
+                ...selectedCharacters
+                  .filter(c => c.type !== 'me') // avoid duplicate if already selected
+                  .map(c => ({
+                    name: c.name,
+                    type: c.type,
+                    age: c.age,
+                    gender: c.gender,
+                    role: c.role,
+                    relation: c.relation,
+                    description: c.description,
+                  })),
+              ],
               specialAttributes: allAttributes,
               subElements: selectedSubElements,
               humorLevel,
