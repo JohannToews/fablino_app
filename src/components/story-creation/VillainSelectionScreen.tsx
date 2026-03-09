@@ -54,7 +54,7 @@ const VillainSelectionScreen = ({ selectedCharacters, onComplete, onBack }: Vill
   const t = villainTranslations[kidAppLanguage] || villainTranslations.de;
 
   const hasCharacters = selectedCharacters.length > 0;
-  const [activeTab, setActiveTab] = useState<VillainTab>(hasCharacters ? "character" : "new");
+  const [activeTab, setActiveTab] = useState<VillainTab>("new");
   const [selectedCharacterVillain, setSelectedCharacterVillain] = useState<string | null>(null);
   const [newVillainText, setNewVillainText] = useState("");
   const [savedVillains, setSavedVillains] = useState<Array<{ id: string; name: string; description?: string }>>([]);
