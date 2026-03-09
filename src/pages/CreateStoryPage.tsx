@@ -1039,6 +1039,8 @@ const CreateStoryPage = () => {
   // Handle entry screen path selection
   const handlePathSelect = (path: WizardPath) => {
     setWizardPath(path);
+    setCharacterWantsVillain(false);
+    setSelectedVillain(null);
     if (path === "free") {
       // Weg A: Skip to effects screen directly
       setCurrentScreen("effects");
