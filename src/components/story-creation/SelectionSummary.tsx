@@ -44,7 +44,7 @@ const SelectionSummary = ({
 }: SelectionSummaryProps) => {
   const { kidAppLanguage } = useKidProfile();
 
-  if (characters.length === 0) return null;
+  const hasCharacters = characters.length > 0;
 
   return (
     <div
