@@ -20,6 +20,7 @@ const villainTranslations: Record<string, {
   orSaved: string;
   continue: string;
   back: string;
+  yourVillain: string;
 }> = {
   de: { header: "Wer ist der Bösewicht? 😈", tabCharacter: "Einer deiner Helden", tabNew: "Neuer Bösewicht", pickCharacter: "Wähle einen aus:", markAsVillain: "😈 Bösewicht!", describePlaceholder: "Name und Beschreibung (z.B. Steinmonster mit Feuerkraft)", addButton: "Hinzufügen", savedVillains: "Oder ein früherer", orSaved: "Oder wähle einen früheren:", continue: "Weiter", back: "Zurück" },
   fr: { header: "Qui est le méchant ? 😈", tabCharacter: "Un de tes héros", tabNew: "Nouveau méchant", pickCharacter: "Choisis-en un :", markAsVillain: "😈 Méchant !", describePlaceholder: "Nom et description (ex. monstre de pierre avec pouvoir de feu)", addButton: "Ajouter", savedVillains: "Ou un précédent", orSaved: "Ou choisis un précédent :", continue: "Continuer", back: "Retour" },
