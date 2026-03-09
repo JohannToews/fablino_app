@@ -597,8 +597,12 @@ const CreateStoryPage = () => {
       });
     }
     
-    // Stash effects data and navigate to image style picker
+    // Stash effects data and route based on the character-step villain choice
     setPendingEffects({ attributes, description, settingsOverride: settingsFromEffects });
+    if (characterWantsVillain) {
+      setCurrentScreen("villain");
+      return;
+    }
     setCurrentScreen("image-style");
   };
 
