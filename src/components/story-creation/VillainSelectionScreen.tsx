@@ -96,17 +96,18 @@ const VillainSelectionScreen = ({ selectedCharacters, onComplete, onBack }: Vill
   const handleAddNewVillain = async () => {
     const trimmed = newVillainText.trim();
     if (!trimmed || !selectedProfile?.id) return;
-    const parts = trimmed.split(/\s+/);
-    const name = parts[0];
-    const description = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
 
+    // Use the full text as villain name/description
+    const name = trimmed;
+
+    // Try to save to DB, but proceed regardless
     const { data, error } = await supabase
       .from("kid_characters")
       .insert({
         kid_profile_id: selectedProfile.id,
         name,
         role: "villain",
-        description: description || null,
+        description: null,
         is_active: true,
       })
       .select("id, name, description")
@@ -114,9 +115,10 @@ const VillainSelectionScreen = ({ selectedCharacters, onComplete, onBack }: Vill
 
     if (!error && data) {
       setSavedVillains(prev => [data, ...prev]);
-      setSelectedSavedVillain(data.id);
-      setNewVillainText("");
     }
+
+    // Immediately proceed with this villain
+    onComplete({ name, role: "villain", description: undefined, type: "special" });
   };
 
   const handleContinue = () => {
