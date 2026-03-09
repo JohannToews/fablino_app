@@ -641,7 +641,8 @@ export async function runPipelineFSE2(
     // -----------------------------------------------------------------------
     if (storyId) {
       try {
-        const planJson = JSON.parse(storyPlan);
+        const cleanPlan = storyPlan.replace(/```json|```/g, '').trim();
+        const planJson = JSON.parse(cleanPlan);
         const villainChar = planJson?.characters?.find((c: any) => c.role === 'antagonist');
         const villainName = villainChar?.name ?? null;
         const extracted = planJson?.extracted ?? null;

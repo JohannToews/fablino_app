@@ -242,6 +242,8 @@ export function buildStoryPromptV2(
   writerPrompt: string,
 ): { systemPrompt: string; userMessage: string } {
   const gradeRules = buildGradeRulesBlock(writerLevel, lengthLevel);
+  console.log('[FSE2-PROMPT] language param:', request.language);
+  console.log('[FSE2-PROMPT] grade_rules injected:', gradeRules?.substring(0, 300));
 
   const systemPrompt = `${writerPrompt}
 
