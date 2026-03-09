@@ -19,18 +19,192 @@ import { buildAppearanceAnchor, buildAnchorFromSlots } from '../_shared/appearan
 import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearanceSlots.ts';
 
 // ---------------------------------------------------------------------------
-// LLM call — reuses the same Gemini global-API pattern from index.ts
-// We duplicate a slim version here to avoid modifying index.ts.
+// LLM call — Vertex AI Claude Sonnet 4.6 (primary) with Gemini fallback
 // ---------------------------------------------------------------------------
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function callGemini(
+// --- Vertex AI auth helpers (same as index.ts) ---
+
+function base64urlEncode(data: Uint8Array): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  for (let i = 0; i < data.length; i += 3) {
+    const a = data[i], b = data[i + 1] ?? 0, c = data[i + 2] ?? 0;
+    result += chars[a >> 2] + chars[((a & 3) << 4) | (b >> 4)] +
+      (i + 1 < data.length ? chars[((b & 15) << 2) | (c >> 6)] : '=') +
+      (i + 2 < data.length ? chars[c & 63] : '=');
+  }
+  return result.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64urlEncodeString(str: string): string {
+  return base64urlEncode(new TextEncoder().encode(str));
+}
+
+async function importPrivateKey(pem: string): Promise<CryptoKey> {
+  const pemBody = pem
+    .replace(/-----BEGIN (RSA )?PRIVATE KEY-----/g, '')
+    .replace(/-----END (RSA )?PRIVATE KEY-----/g, '')
+    .replace(/\s/g, '');
+  const binaryString = atob(pemBody);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return crypto.subtle.importKey(
+    'pkcs8',
+    bytes.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+}
+
+let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+
+async function getVertexAccessToken(serviceAccountJson: string): Promise<string> {
+  if (cachedAccessToken && Date.now() < cachedAccessToken.expiresAt - 60000) {
+    return cachedAccessToken.token;
+  }
+
+  const sa = JSON.parse(serviceAccountJson);
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + 3600;
+
+  const header = base64urlEncodeString(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload = base64urlEncodeString(JSON.stringify({
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/cloud-platform',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp,
+  }));
+
+  const signingInput = `${header}.${payload}`;
+  const key = await importPrivateKey(sa.private_key);
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(signingInput)
+  );
+  const sig = base64urlEncode(new Uint8Array(signature));
+  const jwt = `${signingInput}.${sig}`;
+
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+
+  if (!tokenResponse.ok) {
+    const err = await tokenResponse.text();
+    console.error('[FSE2-AUTH] Token exchange failed:', err);
+    throw new Error(`Vertex OAuth2 token exchange failed: ${tokenResponse.status}`);
+  }
+
+  const tokenData = await tokenResponse.json();
+  cachedAccessToken = {
+    token: tokenData.access_token,
+    expiresAt: Date.now() + (tokenData.expires_in || 3600) * 1000,
+  };
+  return cachedAccessToken.token;
+}
+
+// --- callLLM: Sonnet primary, Gemini fallback ---
+
+async function callLLM(
   systemPrompt: string,
   userPrompt: string,
   temperature = 0.8,
   maxRetries = 3,
 ): Promise<string> {
+  const serviceAccountJson = Deno.env.get('VERTEX_SERVICE_ACCOUNT_JSON');
+
+  // ── Primary: Claude Sonnet 4.6 via Vertex AI ──
+  if (serviceAccountJson) {
+    try {
+      const sa = JSON.parse(serviceAccountJson);
+      const projectId = sa.project_id || 'fablino-prod';
+      const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/claude-sonnet-4-6:rawPredict`;
+
+      let lastError: Error | null = null;
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        if (attempt > 0) {
+          const waitTime = Math.pow(2, attempt) * 1000;
+          console.log(`[FSE2-LLM] Sonnet retry, waiting ${waitTime}ms (${attempt + 1}/${maxRetries})...`);
+          await sleep(waitTime);
+        }
+
+        try {
+          const accessToken = await getVertexAccessToken(serviceAccountJson);
+
+          const response = await fetch(vertexUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              anthropic_version: 'vertex-2023-10-16',
+              max_tokens: 8192,
+              temperature,
+              system: systemPrompt,
+              messages: [{ role: 'user', content: userPrompt }],
+            }),
+          });
+
+          if (response.status === 429) {
+            lastError = new Error('Rate limited');
+            continue;
+          }
+
+          if (response.status === 401 || response.status === 403) {
+            const errorText = await response.text();
+            console.error(`[FSE2-LLM] Sonnet auth error (${response.status}):`, errorText);
+            cachedAccessToken = null;
+            lastError = new Error(`Vertex auth error: ${response.status}`);
+            continue;
+          }
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[FSE2-LLM] Sonnet API error ${response.status}:`, errorText.substring(0, 300));
+            throw new Error(`Vertex Claude error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const content = data.content?.[0]?.text;
+
+          if (!content) {
+            console.error('[FSE2-LLM] Sonnet no content:', JSON.stringify(data).substring(0, 300));
+            lastError = new Error('No content in Sonnet response');
+            await sleep(2000);
+            continue;
+          }
+
+          console.log('[FSE2-LLM] using model: sonnet');
+          return content;
+        } catch (error) {
+          if (error instanceof Error && (error.message === 'Rate limited' || error.message.startsWith('Vertex auth error'))) {
+            lastError = error;
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      // All Sonnet retries exhausted — fall through to Gemini
+      console.warn('[FSE2-LLM] Sonnet failed after retries, falling back to Gemini:', lastError?.message);
+    } catch (sonnetError) {
+      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetError instanceof Error ? sonnetError.message : sonnetError);
+    }
+  }
+
+  // ── Fallback: Gemini 3.1 Flash Lite ──
+  console.log('[FSE2-LLM] using model: gemini-fallback');
+
   const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
   if (!geminiApiKey) throw new Error('GEMINI_API_KEY not configured');
 
@@ -42,7 +216,7 @@ async function callGemini(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (attempt > 0) {
       const waitTime = Math.pow(2, attempt) * 1000;
-      console.log(`[FSE2-LLM] Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+      console.log(`[FSE2-LLM] Gemini retry, waiting ${waitTime}ms (${attempt + 1}/${maxRetries})...`);
       await sleep(waitTime);
     }
 
@@ -64,7 +238,7 @@ async function callGemini(
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`[FSE2-LLM] API error ${response.status}:`, errorText.substring(0, 300));
+        console.error(`[FSE2-LLM] Gemini API error ${response.status}:`, errorText.substring(0, 300));
         throw new Error(`Gemini API error: ${response.status}`);
       }
 
@@ -72,8 +246,8 @@ async function callGemini(
       const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!content) {
-        console.error('[FSE2-LLM] No content in response:', JSON.stringify(data).substring(0, 300));
-        lastError = new Error('No content in response');
+        console.error('[FSE2-LLM] Gemini no content:', JSON.stringify(data).substring(0, 300));
+        lastError = new Error('No content in Gemini response');
         await sleep(2000);
         continue;
       }
@@ -404,7 +578,7 @@ export async function runPipelineFSE2(
 
     const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, enrichedRequest, plannerPrompt, selectedSubtype, heroesVillains);
     console.log('[FSE2-PLANNER] Calling LLM...');
-    const storyPlan = await callGemini(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
+    const storyPlan = await callLLM(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
 
     // -----------------------------------------------------------------------
@@ -455,8 +629,10 @@ export async function runPipelineFSE2(
     // 8. Writer call
     // -----------------------------------------------------------------------
     const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, enrichedRequest, writerPrompt);
+    console.log('[FSE2-WRITER-INPUT] systemPrompt length:', storyPrompt.systemPrompt.length);
+    console.log('[FSE2-WRITER-INPUT] userMessage preview:', storyPrompt.userMessage.substring(0, 500));
     console.log('[FSE2-WRITER] Calling LLM...');
-    const writerRaw = await callGemini(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
+    const writerRaw = await callLLM(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
     console.log(`[FSE2-WRITER] Done (${writerRaw.length} chars)`);
 
     let writerJson: any = {};
