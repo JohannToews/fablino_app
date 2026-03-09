@@ -138,12 +138,13 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
       .eq("language", oldLang);
 
     const oldRow = rows.find(r => r.language === oldLang);
+    const isSchool = (oldRow?.language_class ?? 2) === 1;
     const newRow: LangRow = {
       kid_profile_id: kidProfileId,
       language: newLang,
       language_class: oldRow?.language_class ?? 2,
-      language_level: oldRow?.language_level ?? Math.max(1, ageStd - 1),
-      content_level: oldRow?.content_level ?? ageStd,
+      language_level: oldRow?.language_level ?? (isSchool ? gradeStd : Math.max(1, gradeStd - 1)),
+      content_level: oldRow?.content_level ?? gradeStd,
       length_level: oldRow?.length_level ?? 1,
     };
 
