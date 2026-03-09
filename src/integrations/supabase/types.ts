@@ -2002,6 +2002,30 @@ export type Database = {
         }
         Relationships: []
       }
+      story_level_language: {
+        Row: {
+          allowed_tenses: string[] | null
+          language: string
+          level: number
+          max_sentence_length: number | null
+          sentence_structures: string | null
+        }
+        Insert: {
+          allowed_tenses?: string[] | null
+          language: string
+          level: number
+          max_sentence_length?: number | null
+          sentence_structures?: string | null
+        }
+        Update: {
+          allowed_tenses?: string[] | null
+          language?: string
+          level?: number
+          max_sentence_length?: number | null
+          sentence_structures?: string | null
+        }
+        Relationships: []
+      }
       story_levels: {
         Row: {
           allow_foreign_words: string | null
