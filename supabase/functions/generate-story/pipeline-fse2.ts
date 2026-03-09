@@ -295,6 +295,240 @@ async function callLLM(
 }
 
 // ---------------------------------------------------------------------------
+// Consistency Checker — types, helpers, and functions (adapted from index.ts)
+// ---------------------------------------------------------------------------
+
+interface ConsistencyCheckResult {
+  hasIssues: boolean;
+  issues: string[];
+  suggestedFixes: string;
+  structuredErrors?: SeriesConsistencyError[];
+}
+
+type CheckerSubcategory =
+  | 'RESOLUTION' | 'MAGIC_RULES' | 'KNOWLEDGE' | 'CAUSE_EFFECT'
+  | 'CHARACTER_EXIT' | 'OBJECT_TRACKING' | 'SETUP_PAYOFF' | 'OTHER';
+type FlaggedSegment = 'beginning' | 'middle' | 'ending' | 'unspecified';
+
+interface SeriesConsistencyError {
+  category: 'LOGIC' | 'GRAMMAR' | 'LANGUAGE' | 'CHARACTER' | 'CONTINUITY' | 'EPISODE_FUNCTION' | 'SIGNATURE';
+  subcategory: CheckerSubcategory;
+  severity: 'CRITICAL' | 'MEDIUM' | 'LOW';
+  flagged_segment: FlaggedSegment;
+  path_violation: boolean;
+  original: string;
+  problem: string;
+  fix: string;
+}
+
+function getDefaultSeverity(category: string): 'CRITICAL' | 'MEDIUM' | 'LOW' {
+  const cat = category.toUpperCase();
+  if (cat === 'CONTINUITY' || cat === 'EPISODE_FUNCTION') return 'CRITICAL';
+  if (cat === 'LOGIC' || cat === 'CHARACTER') return 'MEDIUM';
+  if (cat === 'GRAMMAR' || cat === 'LANGUAGE' || cat === 'SIGNATURE') return 'LOW';
+  return 'MEDIUM';
+}
+
+function parseCategoryString(raw: string): { category: string; subcategory: string | null } {
+  const upper = (raw || 'LOGIC').toUpperCase().trim();
+
+  if (upper.includes(':')) {
+    const [cat, sub] = upper.split(':');
+    return { category: cat, subcategory: sub || null };
+  }
+
+  const knownCategories = ['LOGIC', 'GRAMMAR', 'LANGUAGE', 'CHARACTER', 'CONTINUITY', 'EPISODE_FUNCTION', 'SIGNATURE'];
+  for (const cat of knownCategories) {
+    if (upper.startsWith(cat + '_')) {
+      const sub = upper.slice(cat.length + 1);
+      return { category: cat, subcategory: sub || null };
+    }
+  }
+
+  return { category: upper, subcategory: null };
+}
+
+function extractSegment(content: string, segment: FlaggedSegment): string {
+  const lines = content.split('\n');
+  const total = lines.length;
+  if (total === 0) return content;
+  const third = Math.ceil(total / 3);
+
+  switch (segment) {
+    case 'beginning': return lines.slice(0, third).join('\n');
+    case 'middle':    return lines.slice(third, third * 2).join('\n');
+    case 'ending':    return lines.slice(third * 2).join('\n');
+    default:          return content;
+  }
+}
+
+async function performConsistencyCheck(
+  story: { title: string; content: string },
+  checkPrompt: string,
+): Promise<ConsistencyCheckResult> {
+  const userPrompt = `Check this story exactly against the rules in the system prompt.
+Return ONLY the JSON format specified by the system prompt.
+
+STORY TITLE:
+${story.title}
+
+STORY CONTENT:
+${story.content}`;
+
+  try {
+    const response = await callLLM(checkPrompt, userPrompt, 0.3);
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.log('[FSE2-CC] Could not parse check response, assuming no issues');
+      return { hasIssues: false, issues: [], suggestedFixes: '' };
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    const rawIssues = result.issues || result.errors || result.fehler || [];
+
+    const issues = Array.isArray(rawIssues)
+      ? rawIssues.map((f: any) => {
+          if (typeof f === 'string') return f;
+          const rawCat = f.category || f.kategorie || 'LOGIC';
+          const parsed = parseCategoryString(rawCat);
+          const category = parsed.category;
+          const subcategory = parsed.subcategory || f.subcategory || f.unterkategorie || 'OTHER';
+          const rawSeverity = f.severity || f.schweregrad;
+          const severity = rawSeverity ? rawSeverity.toUpperCase() : getDefaultSeverity(category);
+          const segment = f.flagged_segment || f.segment || 'middle';
+          return `[${category}:${subcategory}/${severity}@${segment}] ${f.problem || ''}: "${f.originaltext || f.original || ''}" → ${f.korrektur || f.fix || ''}`;
+        })
+      : [];
+
+    const structuredErrors: SeriesConsistencyError[] = Array.isArray(rawIssues)
+      ? rawIssues
+          .filter((f: any) => typeof f === 'object' && f !== null)
+          .map((f: any) => {
+            const rawCat = f.category || f.kategorie || 'LOGIC';
+            const parsed = parseCategoryString(rawCat);
+            const category = parsed.category;
+            const subcategory = parsed.subcategory || f.subcategory || f.unterkategorie || 'OTHER';
+            const rawSeverity = f.severity || f.schweregrad;
+            const severity = rawSeverity ? rawSeverity.toUpperCase() : getDefaultSeverity(category);
+            return {
+              category: category as SeriesConsistencyError['category'],
+              subcategory: subcategory.toUpperCase() as SeriesConsistencyError['subcategory'],
+              severity: severity as SeriesConsistencyError['severity'],
+              flagged_segment: (f.flagged_segment || f.segment || 'middle') as SeriesConsistencyError['flagged_segment'],
+              path_violation: f.path_violation || false,
+              original: f.original || f.originaltext || '',
+              problem: f.problem || '',
+              fix: f.fix || f.korrektur || '',
+            };
+          })
+      : [];
+
+    const stats = result.stats || result.statistik || {};
+    const statsCount = Number(stats.critical || stats.kritisch || 0) + Number(stats.medium || stats.mittel || 0) + Number(stats.low || stats.gering || 0);
+    const hasIssues =
+      result.hasIssues === true ||
+      result.fehler_gefunden === true ||
+      result.errors_found === true ||
+      issues.length > 0 ||
+      statsCount > 0;
+
+    const suggestedFixes = result.suggestedFixes || result.zusammenfassung || result.summary || '';
+    console.log(`[FSE2-CC] Parsed: hasIssues=${hasIssues}, issues=${issues.length}, structuredErrors=${structuredErrors.length}`);
+    return { hasIssues, issues, suggestedFixes, structuredErrors };
+  } catch (error) {
+    console.error('[FSE2-CC] Error in consistency check:', error);
+    return { hasIssues: false, issues: [], suggestedFixes: '' };
+  }
+}
+
+async function correctStory(
+  story: { title: string; content: string; questions: any[]; vocabulary: any[] },
+  issues: string[],
+  suggestedFixes: string,
+  targetLanguage: string,
+): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
+  const correctionPrompt = `Du bist ein Texteditor. Korrigiere den folgenden Text basierend auf den gefundenen Problemen.
+
+WICHTIG:
+- Behalte die Sprache (${targetLanguage}) bei
+- Behalte den Stil und die Struktur bei
+- Korrigiere NUR die genannten Probleme
+- Der Text muss weiterhin kindgerecht sein`;
+
+  const userPrompt = `Korrigiere diese Geschichte:
+
+TITEL: ${story.title}
+
+INHALT:
+${story.content}
+
+GEFUNDENE PROBLEME:
+${issues.map((issue, i) => `${i + 1}. ${issue}`).join('\n')}
+
+KORREKTURANWEISUNGEN:
+${suggestedFixes}
+
+Antworte NUR mit einem JSON-Objekt:
+{
+  "title": "Korrigierter Titel (oder original wenn kein Problem)",
+  "content": "Der vollständig korrigierte Text"
+}`;
+
+  try {
+    const response = await callLLM(correctionPrompt, userPrompt, 0.5);
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('[FSE2-CC] Could not parse correction response');
+      return story;
+    }
+
+    const corrected = JSON.parse(jsonMatch[0]);
+    const normalizedContent = (corrected.content || story.content).replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
+    return {
+      title: corrected.title || story.title,
+      content: normalizedContent,
+      questions: story.questions,
+      vocabulary: story.vocabulary,
+    };
+  } catch (error) {
+    console.error('[FSE2-CC] Error correcting story:', error);
+    return story;
+  }
+}
+
+async function targetedReCheck(
+  storyContent: string,
+  error: SeriesConsistencyError,
+): Promise<boolean> {
+  const segment = extractSegment(storyContent, error.flagged_segment);
+
+  const systemPrompt = `You are a children's story editor verifying whether a specific error has been fixed.
+You will receive a text segment and the original error. Determine if the error is still present.
+Respond ONLY with JSON: {"fixed": true} or {"fixed": false}`;
+
+  const userPrompt = `ORIGINAL ERROR:
+[${error.category}:${error.subcategory}/${error.severity}] "${error.original}"
+Problem: ${error.problem}
+
+TEXT SEGMENT (${error.flagged_segment}):
+${segment}
+
+Is this specific error fixed in the text above?`;
+
+  try {
+    const response = await callLLM(systemPrompt, userPrompt, 0.1);
+    const jsonMatch = response.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) return false;
+    const result = JSON.parse(jsonMatch[0]);
+    return result.fixed === true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // CORS headers (same as index.ts)
 // ---------------------------------------------------------------------------
 
@@ -690,7 +924,105 @@ export async function runPipelineFSE2(
       throw new Error('Writer output could not be parsed as JSON');
     }
 
-    const content = writerJson.content ?? writerRaw;
+    let content = writerJson.content ?? writerRaw;
+
+    // -----------------------------------------------------------------------
+    // 8b. Consistency Check (standard path, no series logic)
+    // -----------------------------------------------------------------------
+    let ccMs = 0;
+    const ccStart = Date.now();
+
+    const { data: ccPromptRow } = await supabase
+      .from('app_settings').select('value')
+      .eq('key', 'consistency_check_prompt_v2').maybeSingle();
+    const ccPrompt = ccPromptRow?.value;
+
+    if (!ccPrompt) {
+      console.log('[FSE2-CC] no prompt found, skipping');
+    } else {
+      const story = { title: writerJson.title ?? '', content: writerJson.content ?? '' };
+
+      // Initial check
+      const initialResult = await performConsistencyCheck(story, ccPrompt);
+      const criticalCount = initialResult.structuredErrors?.filter(e => e.severity === 'CRITICAL').length ?? 0;
+      const mediumCount = initialResult.structuredErrors?.filter(e => e.severity === 'MEDIUM').length ?? 0;
+      const lowCount = initialResult.structuredErrors?.filter(e => e.severity === 'LOW').length ?? 0;
+      console.log('[FSE2-CC] initial check:', {
+        hasIssues: initialResult.hasIssues,
+        criticalCount,
+        mediumCount,
+        lowCount,
+      });
+
+      let fixedCount = 0;
+
+      if (initialResult.hasIssues) {
+        // Patch
+        const targetLanguage = requestBody.language || 'DE';
+        const corrected = await correctStory(
+          { ...story, questions: writerJson.questions ?? [], vocabulary: writerJson.vocabulary ?? [] },
+          initialResult.issues,
+          initialResult.suggestedFixes,
+          targetLanguage,
+        );
+        writerJson.title = corrected.title;
+        writerJson.content = corrected.content;
+        content = corrected.content;
+        console.log('[FSE2-CC] story patched');
+
+        // Targeted recheck on each structured error
+        const recheckResults: Array<{ fixed: boolean }> = [];
+        for (const err of initialResult.structuredErrors ?? []) {
+          const fixed = await targetedReCheck(writerJson.content, err);
+          recheckResults.push({ fixed });
+        }
+        fixedCount = recheckResults.filter(r => r.fixed).length;
+        const unfixedCount = recheckResults.length - fixedCount;
+        console.log('[FSE2-CC] recheck:', {
+          total: recheckResults.length,
+          fixed: fixedCount,
+          unfixed: unfixedCount,
+        });
+      }
+
+      ccMs = Date.now() - ccStart;
+      console.log(`[FSE2-CC] completed in ${ccMs}ms`);
+
+      // Save to consistency_check_results
+      try {
+        await supabase.from('consistency_check_results').insert({
+          story_id: storyId || null,
+          story_title: writerJson.title ?? '',
+          issues_found: initialResult.hasIssues ? (initialResult.structuredErrors?.length ?? 0) : 0,
+          issues_corrected: fixedCount,
+          issue_details: initialResult.issues,
+          user_id: requestBody.user_id || null,
+        });
+        console.log('[FSE2-CC] results saved to consistency_check_results');
+      } catch (dbErr) {
+        console.warn('[FSE2-CC] Error saving CC results:', dbErr);
+      }
+
+      // Write metrics to stories table
+      if (storyId) {
+        try {
+          await supabase.from('stories').update({
+            consistency_check_ms: ccMs,
+            checker_critical: criticalCount,
+            checker_medium: mediumCount,
+            checker_low: lowCount,
+          }).eq('id', storyId);
+          console.log('[FSE2-CC] metrics written to stories table');
+        } catch (dbErr) {
+          console.warn('[FSE2-CC] Error writing metrics:', dbErr);
+        }
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 8c. Image generation (skipped — CC testing mode)
+    // -----------------------------------------------------------------------
+    console.log('[FSE2-CC] image generation skipped (CC testing mode)');
 
     // -----------------------------------------------------------------------
     // 9. Return response (matches FSE1 shape for frontend compatibility)
@@ -706,9 +1038,9 @@ export async function runPipelineFSE2(
       story_plan: storyPlan,
       generationTimeMs: totalTime,
       performance: {
-        story_generation_ms: totalTime,
+        story_generation_ms: totalTime - ccMs,
         image_generation_ms: 0,
-        consistency_check_ms: 0,
+        consistency_check_ms: ccMs,
         total_ms: totalTime,
       },
       used_fse2: true,

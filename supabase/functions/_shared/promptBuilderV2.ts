@@ -176,9 +176,10 @@ Write the entire story in this language.
 - Repetition strategy: ${writerLevel.repetition_strategy}
 - Narrative perspective: ${writerLevel.narrative_perspective}
 
-## LENGTH
-- Paragraphs: ${lengthLevel.paragraph_count} — write exactly this many paragraphs.
-- Target word count: ~${lengthLevel.word_approx} words.`;
+## LENGTH — CRITICAL
+Paragraphs: ${lengthLevel.paragraph_count} — write EXACTLY this many paragraphs, no more, no less.
+Target word count: ${lengthLevel.word_approx} words — stay within ±15% of this target.
+CRITICAL: Do NOT write fewer than ${Math.round(lengthLevel.word_approx * 0.85)} words.`;
 }
 
 export function buildPlanPromptV2(
