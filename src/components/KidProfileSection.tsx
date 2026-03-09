@@ -1046,7 +1046,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   <Label className="text-xs text-[#2D1810]/60">{t.schoolClass}</Label>
                   <Select
                     value={currentProfile.school_class}
-                    onValueChange={(value) => updateCurrentProfile({ school_class: value })}
+                    onValueChange={(value) => handleSchoolClassChange(value)}
                   >
                     <SelectTrigger className="border-orange-200">
                       <SelectValue />
