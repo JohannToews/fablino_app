@@ -192,7 +192,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
       length_level: 1,
     };
     await upsertRow(newRow);
-    setRows(prev => [...prev, newRow]);
+    const updatedRows = [...rows, newRow];
+    setRows(updatedRows);
+    await syncStoryLanguages(updatedRows);
   };
 
   const deleteRow = async (lang: string) => {
