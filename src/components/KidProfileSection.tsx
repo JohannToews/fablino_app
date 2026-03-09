@@ -111,9 +111,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     age: undefined,
   };
 
-  // Use kid's school/app language for labels when valid, so e.g. Russian profile shows "Основы", "Имя" etc.
+  // Admin-facing labels always use the parent's language setting
+  const t = useTranslations(language);
+  // Kid-facing labels (e.g. school class names) use the kid's school system language
   const sectionLanguage: Language = (currentProfile?.school_system && PROFILE_LANGUAGES.includes(currentProfile.school_system as Language)) ? currentProfile.school_system as Language : language;
-  const t = useTranslations(sectionLanguage);
 
   const loadCharacters = useCallback(async (profileId?: string) => {
     const id = profileId || currentProfile?.id;
@@ -231,6 +232,30 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       ui_language: value,
       reading_language: value,
     });
+  };
+
+  // Called by KidLanguageNiveauxSection when the school language (language_class=1) changes
+  const handleSchoolLanguageChange = async (langCode: string) => {
+    const classes = schoolSystems[langCode]?.classes || [];
+    updateCurrentProfile({
+      school_system: langCode,
+      school_class: classes[0] || currentProfile.school_class,
+      ui_language: langCode,
+      reading_language: langCode,
+    });
+    // Persist immediately to DB if profile exists
+    if (currentProfile.id) {
+      await supabase
+        .from('kid_profiles')
+        .update({
+          school_system: langCode,
+          school_class: classes[0] || currentProfile.school_class,
+          ui_language: langCode,
+          reading_language: langCode,
+        } as any)
+        .eq('id', currentProfile.id);
+      await refreshGlobalProfiles();
+    }
   };
 
   const addNewProfile = () => {
@@ -1049,10 +1074,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         {currentProfile?.id && (
           <AccordionItem value="languages" className="border border-orange-100 rounded-xl bg-white overflow-hidden">
             <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-[#2D1810] hover:no-underline hover:bg-orange-50/50">
-              🌍 {sectionLanguage === 'de' ? 'Sprachen & Niveaus' : sectionLanguage === 'en' ? 'Languages & Levels' : sectionLanguage === 'es' ? 'Idiomas & Niveles' : 'Langues & Niveaux'}
+              🌍 {language === 'de' ? 'Sprachen & Niveaus' : language === 'en' ? 'Languages & Levels' : language === 'es' ? 'Idiomas & Niveles' : language === 'nl' ? 'Talen & Niveaus' : language === 'it' ? 'Lingue & Livelli' : language === 'tr' ? 'Diller & Seviyeler' : language === 'pt' ? 'Línguas & Níveis' : language === 'ru' ? 'Языки и уровни' : language === 'uk' ? 'Мови та рівні' : 'Langues & Niveaux'}
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={language} />
+              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={language} onSchoolLanguageChange={handleSchoolLanguageChange} />
             </AccordionContent>
           </AccordionItem>
         )}

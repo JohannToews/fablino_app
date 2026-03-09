@@ -23,6 +23,7 @@ interface Props {
   kidProfileId: string;
   kidAge?: number;
   language: Language;
+  onSchoolLanguageChange?: (langCode: string) => void;
 }
 
 // Supported languages for the dropdown
@@ -87,7 +88,7 @@ const LABELS: Record<string, { title: string; langue: string; type: string; nive
 
 const getL = (lang: string) => LABELS[lang] || LABELS.fr;
 
-const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language }: Props) => {
+const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language, onSchoolLanguageChange }: Props) => {
   const [rows, setRows] = useState<LangRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const l = getL(language);
@@ -148,11 +149,20 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language }: Props) =>
 
     await upsertRow(newRow);
     setRows(prev => prev.map(r => r.language === oldLang ? newRow : r));
+
+    // If this was the school language, update app language to the new language
+    if (newRow.language_class === 1 && onSchoolLanguageChange) {
+      onSchoolLanguageChange(newLang);
+    }
   };
 
   const handleClassChange = (lang: string, newClass: number) => {
     const newLevel = newClass === 1 ? ageStd : Math.max(1, ageStd - 1);
     updateRow(lang, { language_class: newClass, language_level: newLevel });
+    // If setting as school language, notify parent to update app language
+    if (newClass === 1 && onSchoolLanguageChange) {
+      onSchoolLanguageChange(lang);
+    }
   };
 
   const addLanguage = async () => {
