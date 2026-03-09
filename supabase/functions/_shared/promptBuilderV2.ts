@@ -156,8 +156,13 @@ VILLAIN REQUIRED: true
 export function buildGradeRulesBlock(
   writerLevel: StoryLevel,
   lengthLevel: StoryLengthLevel,
+  language: string,
 ): string {
-  return `## LANGUAGE & STYLE RULES
+  return `## LANGUAGE
+Language: ${language}
+Write the entire story in this language.
+
+## LANGUAGE & STYLE RULES
 - Max sentence length: ${writerLevel.max_sentence_length} words
 - Sentence structures: ${writerLevel.sentence_structures}
 - Allowed tenses: ${writerLevel.allowed_tenses.join(', ')}
@@ -172,8 +177,8 @@ export function buildGradeRulesBlock(
 - Narrative perspective: ${writerLevel.narrative_perspective}
 
 ## LENGTH
-- Paragraphs: ${lengthLevel.paragraph_count}
-- Approx. words: ~${lengthLevel.word_approx}`;
+- Paragraphs: ${lengthLevel.paragraph_count} — write exactly this many paragraphs.
+- Target word count: ~${lengthLevel.word_approx} words.`;
 }
 
 export function buildPlanPromptV2(
@@ -241,7 +246,7 @@ export function buildStoryPromptV2(
   request: any,
   writerPrompt: string,
 ): { systemPrompt: string; userMessage: string } {
-  const gradeRules = buildGradeRulesBlock(writerLevel, lengthLevel);
+  const gradeRules = buildGradeRulesBlock(writerLevel, lengthLevel, request.language || 'DE');
   console.log('[FSE2-PROMPT] language param:', request.language);
   console.log('[FSE2-PROMPT] grade_rules injected:', gradeRules?.substring(0, 300));
 
