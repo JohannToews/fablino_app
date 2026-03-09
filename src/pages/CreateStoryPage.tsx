@@ -138,6 +138,7 @@ const CreateStoryPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [selectedVillain, setSelectedVillain] = useState<VillainData | null>(null);
+  const [characterWantsVillain, setCharacterWantsVillain] = useState(false);
 
   // AbortController for story generation
   const abortControllerRef = useRef<AbortController | null>(null);

@@ -49,6 +49,7 @@ interface CharacterSelectionScreenProps {
   kidName?: string;
   kidAge?: number | null;
   onComplete: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
+  onContinueWithVillain?: (characters: SelectedCharacter[], surpriseCharacters?: boolean) => void;
   onBack: () => void;
   fablinoMessage?: string;
 }
