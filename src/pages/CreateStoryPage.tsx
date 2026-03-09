@@ -579,7 +579,6 @@ const CreateStoryPage = () => {
   ) => {
     setSelectedAttributes(attributes);
     setAdditionalDescription(description);
-    setSelectedVillain(null);
     
     if (settingsFromEffects) {
       setStorySettings({
