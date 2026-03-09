@@ -360,9 +360,9 @@ export async function runPipelineFSE2(
     }
     console.log(`[FSE2] Planner prompt loaded from DB (${plannerPrompt.length} chars)`);
 
-    const writerPrompt = await loadPrompt('system_prompt_writer_fse2');
+    const writerPrompt = await loadPrompt('story_writer_prompt_version');
     if (!writerPrompt) {
-      throw new Error('system_prompt_writer_fse2 not found in app_settings');
+      throw new Error('story_writer_prompt_version not found in app_settings');
     }
     console.log(`[FSE2] Writer prompt loaded (${writerPrompt.length} chars)`);
 
