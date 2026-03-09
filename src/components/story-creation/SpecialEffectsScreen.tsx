@@ -568,16 +568,8 @@ const SpecialEffectsScreen = ({
     });
   };
 
-  const handleContinueVillain = () => {
-    if (!onContinueWithVillain) return;
-    onContinueWithVillain(selectedAttributes, additionalDescription.trim(), {
-      length: storyLength,
-      difficulty: storyDifficulty,
-      isSeries,
-      seriesMode: isSeries ? seriesMode : undefined,
-      storyLanguage,
-    });
-  };
+
+
 
   const selectedEffectLabels = selectedAttributes
     .filter(a => a !== "normal")
