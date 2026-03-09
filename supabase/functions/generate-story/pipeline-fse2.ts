@@ -277,22 +277,28 @@ export async function runPipelineFSE2(
     }
 
     // -----------------------------------------------------------------------
-    // 7c. Extract villain name from storyPlan and persist
+    // 7c. Extract fields from storyPlan and persist
     // -----------------------------------------------------------------------
     if (storyId) {
       try {
         const planJson = JSON.parse(storyPlan);
         const villainChar = planJson?.characters?.find((c: any) => c.role === 'antagonist');
         const villainName = villainChar?.name ?? null;
-        if (villainName) {
+        const extracted = planJson?.extracted ?? null;
+
+        const plannerUpdate: Record<string, any> = {};
+        if (villainName) plannerUpdate.villain_name = villainName;
+        if (extracted?.storyType) plannerUpdate.story_type = extracted.storyType;
+
+        if (Object.keys(plannerUpdate).length > 0) {
           await supabase
             .from('stories')
-            .update({ villain_name: villainName })
+            .update(plannerUpdate)
             .eq('id', storyId);
-          console.log(`[FSE2] villain_name written to DB: ${villainName}`);
+          console.log('[FSE2] planner update written to DB:', plannerUpdate);
         }
       } catch (parseErr) {
-        console.warn('[FSE2] Could not parse storyPlan for villain extraction:', parseErr);
+        console.warn('[FSE2] Could not parse storyPlan for field extraction:', parseErr);
       }
     }
 
