@@ -1183,6 +1183,7 @@ const CreateStoryPage = () => {
           kidName={selectedProfile?.name}
           kidAge={selectedProfile?.age}
           onComplete={handleCharactersComplete}
+          onContinueWithVillain={handleCharactersCompleteWithVillain}
           onBack={handleBack}
         />
       )}
