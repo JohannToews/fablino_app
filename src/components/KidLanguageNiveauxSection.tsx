@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Info } from "lucide-react";
 import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
 import { STORY_LANGUAGES } from "@/lib/languages";
+import { DEFAULT_SCHOOL_SYSTEMS } from "@/lib/schoolSystems";
 import type { Language } from "@/lib/translations";
 
 interface LangRow {
@@ -36,14 +37,27 @@ const getAgeStandard = (age?: number): number => {
   return AGE_DEFAULTS[age] ?? 1;
 };
 
-const NIVEAU_OPTIONS = [
-  { value: 1, label: "Classe 1" },
-  { value: 2, label: "Classe 2" },
-  { value: 3, label: "Classe 3" },
-  { value: 4, label: "Classe 4" },
-  { value: 5, label: "Classe 5" },
-  { value: 6, label: "Classe 6" },
+// Map language codes to school system keys
+const LANG_TO_SCHOOL: Record<string, string> = {
+  fr: "fr", de: "de", es: "es", nl: "nl", en: "en", it: "it",
+  pt: "pt", tr: "tr", pl: "pl", bs: "bs", uk: "uk", ru: "ru",
+};
+
+const FALLBACK_NIVEAU = [
+  { value: 1, label: "Level 1" },
+  { value: 2, label: "Level 2" },
+  { value: 3, label: "Level 3" },
+  { value: 4, label: "Level 4" },
+  { value: 5, label: "Level 5" },
+  { value: 6, label: "Level 6" },
 ];
+
+function getNiveauOptions(lang: string) {
+  const schoolKey = LANG_TO_SCHOOL[lang];
+  const system = schoolKey ? DEFAULT_SCHOOL_SYSTEMS[schoolKey] : null;
+  if (!system) return FALLBACK_NIVEAU;
+  return system.classes.slice(0, 6).map((label, i) => ({ value: i + 1, label }));
+}
 
 const LENGTH_OPTIONS = [
   { value: 1, label: "Standard" },
