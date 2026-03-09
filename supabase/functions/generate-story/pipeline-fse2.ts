@@ -227,34 +227,67 @@ export async function runPipelineFSE2(
           .maybeSingle();
 
         console.log('[FSE2-ANCHOR-DEBUG] kid_appearance raw result:', JSON.stringify(kidApp));
+        console.log('[FSE2-ANCHOR-DEBUG] kidProfileName:', kidProfileName, 'kidGender:', kidGender, 'age:', age);
 
         if (kidApp) {
+          let kidAnchor: string | null = null;
+
           // Try Avatar V2 (appearance_data JSONB) first
-          if (kidApp.appearance_data && typeof kidApp.appearance_data === 'object' && Object.keys(kidApp.appearance_data).length > 0) {
-            anchorMap.set(kidProfileName, buildAnchorFromSlots(
-              kidProfileName,
-              age || 8,
-              kidGender,
-              'child',
-              kidApp.appearance_data,
-            ));
-            console.log(`[FSE2-ANCHOR-DEBUG] kid anchor from appearance_data (V2) for "${kidProfileName}"`);
-          } else if (kidApp.skin_tone || kidApp.hair_color) {
-            // Fall back to legacy columns
-            anchorMap.set(kidProfileName, buildAppearanceAnchor(
-              kidProfileName,
-              age || 8,
-              kidGender || '',
-              {
-                skin_tone: kidApp.skin_tone || '',
-                hair_length: kidApp.hair_length || '',
-                hair_type: kidApp.hair_type || '',
-                hair_style: kidApp.hair_style || '',
-                hair_color: kidApp.hair_color || '',
-                glasses: kidApp.glasses || false,
-              },
-            ));
-            console.log(`[FSE2-ANCHOR-DEBUG] kid anchor from legacy columns for "${kidProfileName}"`);
+          const hasV2 = kidApp.appearance_data && typeof kidApp.appearance_data === 'object' && Object.keys(kidApp.appearance_data).length > 0;
+          console.log('[FSE2-ANCHOR-DEBUG] hasV2:', hasV2, 'appearance_data keys:', kidApp.appearance_data ? Object.keys(kidApp.appearance_data) : 'null');
+
+          if (hasV2) {
+            try {
+              kidAnchor = buildAnchorFromSlots(
+                kidProfileName,
+                age || 8,
+                kidGender,
+                'child',
+                kidApp.appearance_data,
+              );
+              console.log(`[FSE2-ANCHOR-DEBUG] V2 anchor built: "${kidAnchor}"`);
+            } catch (v2Err: any) {
+              console.warn('[FSE2-ANCHOR-DEBUG] buildAnchorFromSlots failed:', v2Err?.message);
+            }
+          }
+
+          // Fall back to legacy columns → build simple string directly
+          if (!kidAnchor && (kidApp.skin_tone || kidApp.hair_color)) {
+            try {
+              kidAnchor = buildAppearanceAnchor(
+                kidProfileName,
+                age || 8,
+                kidGender || '',
+                {
+                  skin_tone: kidApp.skin_tone || '',
+                  hair_length: kidApp.hair_length || '',
+                  hair_type: kidApp.hair_type || '',
+                  hair_style: kidApp.hair_style || '',
+                  hair_color: kidApp.hair_color || '',
+                  glasses: kidApp.glasses || false,
+                },
+              );
+              console.log(`[FSE2-ANCHOR-DEBUG] legacy anchor built: "${kidAnchor}"`);
+            } catch (legacyErr: any) {
+              console.warn('[FSE2-ANCHOR-DEBUG] buildAppearanceAnchor failed:', legacyErr?.message);
+              // Ultimate fallback: simple string from raw fields
+              const parts: string[] = [];
+              if (kidApp.hair_length && kidApp.hair_length !== 'medium') parts.push(kidApp.hair_length);
+              if (kidApp.hair_type && kidApp.hair_type !== 'straight') parts.push(kidApp.hair_type);
+              if (kidApp.hair_color) parts.push(kidApp.hair_color + ' hair');
+              if (kidApp.glasses) parts.push('glasses');
+              if (parts.length > 0) {
+                kidAnchor = parts.join(', ');
+                console.log(`[FSE2-ANCHOR-DEBUG] fallback anchor built: "${kidAnchor}"`);
+              }
+            }
+          }
+
+          if (kidAnchor) {
+            anchorMap.set(kidProfileName, kidAnchor);
+            console.log(`[FSE2-ANCHOR-DEBUG] anchorMap.set("${kidProfileName}", "${kidAnchor}")`);
+          } else {
+            console.warn('[FSE2-ANCHOR-DEBUG] No anchor could be built for kid protagonist');
           }
         }
       } catch (err: any) {
