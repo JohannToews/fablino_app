@@ -690,7 +690,7 @@ export async function runPipelineFSE2(
       throw new Error('Writer output could not be parsed as JSON');
     }
 
-    const content = writerRaw;
+    const content = writerJson.content ?? writerRaw;
 
     // -----------------------------------------------------------------------
     // 9. Return response (matches FSE1 shape for frontend compatibility)
