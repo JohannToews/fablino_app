@@ -107,6 +107,16 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
 
   useEffect(() => { load(); }, [load]);
 
+  /** Sync kid_profiles.story_languages with the current language rows */
+  const syncStoryLanguages = useCallback(async (currentRows: LangRow[]) => {
+    const langs = currentRows.map(r => r.language);
+    if (langs.length === 0) return;
+    await supabase
+      .from("kid_profiles")
+      .update({ story_languages: langs } as any)
+      .eq("id", kidProfileId);
+  }, [kidProfileId]);
+
   const upsertRow = async (row: LangRow) => {
     await supabase
       .from("kid_language_settings")
