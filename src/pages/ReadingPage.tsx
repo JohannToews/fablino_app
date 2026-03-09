@@ -2132,7 +2132,25 @@ const ReadingPage = () => {
     );
   }
 
-  const storyContent = story.content ?? '';
+  const storyContent = (() => {
+    const raw = story.content ?? '';
+    const trimmed = raw.trimStart();
+    if (trimmed.startsWith('```json') || trimmed.startsWith('{"')) {
+      try {
+        const cleaned = trimmed.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        const jsonStart = cleaned.indexOf('{');
+        const jsonEnd = cleaned.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+          const parsed = JSON.parse(cleaned.substring(jsonStart, jsonEnd + 1));
+          if (parsed?.content && typeof parsed.content === 'string') {
+            console.log('[ReadingPage] Extracted content from JSON wrapper');
+            return parsed.content;
+          }
+        }
+      } catch { /* not JSON, use raw */ }
+    }
+    return raw;
+  })();
 
   // ── Immersive Reader Mode ─────────────────────────────────
   if (viewMode === 'immersive') {
