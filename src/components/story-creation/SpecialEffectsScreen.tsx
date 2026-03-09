@@ -364,6 +364,7 @@ interface AttributeOption {
 const attributeOptions: AttributeOption[] = [
   { id: "superpowers", emoji: "🦸", labelKey: "superpowers" },
   { id: "magic", emoji: "✨", labelKey: "magic" },
+  { id: "heroes_villains", emoji: "🦹", labelKey: "heroesVillains" },
   { id: "transformations", emoji: "🔮", labelKey: "transformations" },
   { id: "talents", emoji: "🎯", labelKey: "talents" },
   { id: "normal", emoji: "❌", labelKey: "normal" },
