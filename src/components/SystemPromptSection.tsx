@@ -60,8 +60,10 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
   const [isSavingConsistencyCheckV2, setIsSavingConsistencyCheckV2] = useState(false);
   const [isSavingPlanner, setIsSavingPlanner] = useState(false);
+  const [isSavingWriterPromptVersion, setIsSavingWriterPromptVersion] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     writerCoreV3: false,
+    writerPromptVersion: false,
     writerCoreV2: false,
     system: false,
     continuation: false,
