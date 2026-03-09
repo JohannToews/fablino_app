@@ -139,6 +139,8 @@ async function callLLM(
 
         try {
           const accessToken = await getVertexAccessToken(serviceAccountJson);
+          console.log('[FSE2-LLM] Sonnet request url:', vertexUrl);
+          console.log('[FSE2-LLM] Sonnet auth token length:', accessToken?.length);
 
           const response = await fetch(vertexUrl, {
             method: 'POST',
@@ -161,16 +163,16 @@ async function callLLM(
           }
 
           if (response.status === 401 || response.status === 403) {
-            const errorText = await response.text();
-            console.error(`[FSE2-LLM] Sonnet auth error (${response.status}):`, errorText);
+            const errorBody = await response.text();
+            console.log('[FSE2-LLM] Sonnet error status:', response.status, 'body:', errorBody);
             cachedAccessToken = null;
             lastError = new Error(`Vertex auth error: ${response.status}`);
             continue;
           }
 
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[FSE2-LLM] Sonnet API error ${response.status}:`, errorText.substring(0, 300));
+            const errorBody = await response.text();
+            console.log('[FSE2-LLM] Sonnet error status:', response.status, 'body:', errorBody);
             throw new Error(`Vertex Claude error: ${response.status}`);
           }
 
@@ -178,7 +180,7 @@ async function callLLM(
           const content = data.content?.[0]?.text;
 
           if (!content) {
-            console.error('[FSE2-LLM] Sonnet no content:', JSON.stringify(data).substring(0, 300));
+            console.log('[FSE2-LLM] Sonnet response structure:', JSON.stringify(data).substring(0, 500));
             lastError = new Error('No content in Sonnet response');
             await sleep(2000);
             continue;
