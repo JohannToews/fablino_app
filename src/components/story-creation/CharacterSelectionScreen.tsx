@@ -432,6 +432,7 @@ const CharacterSelectionScreen = ({
         characters={selectedCharacters}
         onRemove={handleRemoveCharacter}
         onContinue={handleContinue}
+        onContinueWithVillain={handleContinueWithVillain}
         translations={translations}
       />
 
