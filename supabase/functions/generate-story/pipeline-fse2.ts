@@ -15,7 +15,7 @@ import {
   type KidLanguageSettings,
 } from '../_shared/promptBuilderV2.ts';
 import { selectStorySubtype, type SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
-import { buildAnchorFromSlots } from '../_shared/appearanceAnchor.ts';
+import { buildAppearanceAnchor, buildAnchorFromSlots } from '../_shared/appearanceAnchor.ts';
 import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearanceSlots.ts';
 
 // ---------------------------------------------------------------------------
@@ -219,21 +219,43 @@ export async function runPipelineFSE2(
             ? 'female'
             : null;
 
+        // Load full row: legacy columns + appearance_data (Avatar V2)
         const { data: kidApp } = await supabase
           .from('kid_appearance')
-          .select('appearance_data')
+          .select('skin_tone, hair_length, hair_type, hair_style, hair_color, glasses, appearance_data')
           .eq('kid_profile_id', kidProfileId)
           .maybeSingle();
 
-        if (kidApp?.appearance_data && Object.keys(kidApp.appearance_data).length > 0) {
-          anchorMap.set(kidProfileName, buildAnchorFromSlots(
-            kidProfileName,
-            age || 8,
-            kidGender,
-            'child',
-            kidApp.appearance_data,
-          ));
-          console.log(`[FSE2-ANCHOR-DEBUG] kid protagonist anchor set for "${kidProfileName}"`);
+        console.log('[FSE2-ANCHOR-DEBUG] kid_appearance raw result:', JSON.stringify(kidApp));
+
+        if (kidApp) {
+          // Try Avatar V2 (appearance_data JSONB) first
+          if (kidApp.appearance_data && typeof kidApp.appearance_data === 'object' && Object.keys(kidApp.appearance_data).length > 0) {
+            anchorMap.set(kidProfileName, buildAnchorFromSlots(
+              kidProfileName,
+              age || 8,
+              kidGender,
+              'child',
+              kidApp.appearance_data,
+            ));
+            console.log(`[FSE2-ANCHOR-DEBUG] kid anchor from appearance_data (V2) for "${kidProfileName}"`);
+          } else if (kidApp.skin_tone || kidApp.hair_color) {
+            // Fall back to legacy columns
+            anchorMap.set(kidProfileName, buildAppearanceAnchor(
+              kidProfileName,
+              age || 8,
+              kidGender || '',
+              {
+                skin_tone: kidApp.skin_tone || '',
+                hair_length: kidApp.hair_length || '',
+                hair_type: kidApp.hair_type || '',
+                hair_style: kidApp.hair_style || '',
+                hair_color: kidApp.hair_color || '',
+                glasses: kidApp.glasses || false,
+              },
+            ));
+            console.log(`[FSE2-ANCHOR-DEBUG] kid anchor from legacy columns for "${kidProfileName}"`);
+          }
         }
       } catch (err: any) {
         console.warn('[FSE2] kid_appearance load failed:', err?.message);
