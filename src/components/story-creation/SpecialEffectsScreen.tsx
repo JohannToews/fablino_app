@@ -823,32 +823,29 @@ const SpecialEffectsScreen = ({
                 const isLocked = option.id === "heroes_villains" && hasVillain;
                 const incompatibleReason = isLocked ? null : getIncompatibleReason(option.id);
                 const isDisabled = incompatibleReason !== null;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => toggleAttribute(option.id)}
-                    title={isDisabled ? incompatibleReason! : undefined}
-                    className={cn(
-                      "flex flex-col items-center justify-center gap-1 w-full min-h-[56px] py-3 rounded-xl",
-                      "transition-all duration-150",
-                      isLocked
-                        ? "border-2 border-red-400 bg-red-50 cursor-default opacity-90"
-                        : isDisabled
-                          ? "opacity-40 cursor-not-allowed border border-gray-200 bg-white"
-                          : "cursor-pointer active:scale-95",
-                      !isLocked && isSelected
-                        ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
-                        : !isDisabled && !isLocked && "border border-gray-200 bg-white hover:border-gray-300"
-                    )}
-                  >
-                    <span className="text-xl leading-none">{option.emoji}</span>
-                    <span className="text-sm font-medium text-center leading-tight text-[#2D1810]">
-                      {t[option.labelKey]}
-                    </span>
-                    {isLocked && (
-                      <span className="text-[10px] text-red-500/70 font-medium">🔒</span>
-                    )}
-                  </button>
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => !isLocked && toggleAttribute(option.id)}
+                      title={isDisabled ? incompatibleReason! : undefined}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1 w-full min-h-[56px] py-3 rounded-xl",
+                        "transition-all duration-150",
+                        isLocked
+                          ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm cursor-default"
+                          : isDisabled
+                            ? "opacity-40 cursor-not-allowed border border-gray-200 bg-white"
+                            : "cursor-pointer active:scale-95",
+                        !isLocked && isSelected
+                          ? "border-2 border-[#E8863A] bg-[#FFF8F0] shadow-sm"
+                          : !isDisabled && !isLocked && "border border-gray-200 bg-white hover:border-gray-300"
+                      )}
+                    >
+                      <span className="text-xl leading-none">{option.emoji}</span>
+                      <span className="text-sm font-medium text-center leading-tight text-[#2D1810]">
+                        {t[option.labelKey]}
+                      </span>
+                    </button>
                 );
               })}
             </div>
