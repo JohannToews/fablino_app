@@ -1026,6 +1026,8 @@ const CreateStoryPage = () => {
     } else if (currentScreen === "effects") {
       if (wizardPath === "free") {
         setCurrentScreen("entry");
+      } else if (selectedVillain) {
+        setCurrentScreen("villain");
       } else {
         setCurrentScreen("characters");
       }
