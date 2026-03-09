@@ -159,7 +159,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
     };
 
     await upsertRow(newRow);
-    setRows(prev => prev.map(r => r.language === oldLang ? newRow : r));
+    const updatedRows = rows.map(r => r.language === oldLang ? newRow : r);
+    setRows(updatedRows);
+    await syncStoryLanguages(updatedRows);
 
     // If this was the school language, update app language to the new language
     if (newRow.language_class === 1 && onSchoolLanguageChange) {
