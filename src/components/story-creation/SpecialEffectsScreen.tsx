@@ -406,6 +406,7 @@ interface SpecialEffectsScreenProps {
   availableLanguages?: string[];
   defaultLanguage?: string;
   fablinoMessage?: string;
+  hasVillain?: boolean;
 }
 
 const LENGTH_EMOJIS: Record<string, string> = {
