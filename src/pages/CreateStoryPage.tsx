@@ -557,6 +557,16 @@ const CreateStoryPage = () => {
   const handleCharactersComplete = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
     setSelectedCharacters(characters);
     setSurpriseCharactersFlag(surpriseChars || false);
+    setCharacterWantsVillain(false);
+    setSelectedVillain(null);
+    setCurrentScreen("effects");
+  };
+
+  const handleCharactersCompleteWithVillain = (characters: SelectedCharacter[], surpriseChars?: boolean) => {
+    setSelectedCharacters(characters);
+    setSurpriseCharactersFlag(surpriseChars || false);
+    setCharacterWantsVillain(true);
+    setSelectedVillain(null);
     setCurrentScreen("effects");
   };
   
