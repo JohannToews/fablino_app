@@ -952,7 +952,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   <Label className="text-xs text-[#2D1810]/60">{t.age}</Label>
                   <Select
                     value={currentProfile.age?.toString() || ''}
-                    onValueChange={(value) => updateCurrentProfile({ age: parseInt(value) || undefined })}
+                    onValueChange={(value) => handleAgeChange(parseInt(value) || undefined)}
                   >
                     <SelectTrigger className="border-orange-200">
                       <SelectValue placeholder="—" />
