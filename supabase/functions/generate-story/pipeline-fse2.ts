@@ -15,6 +15,8 @@ import {
   type KidLanguageSettings,
 } from '../_shared/promptBuilderV2.ts';
 import { selectStorySubtype, type SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
+import { buildAnchorFromSlots } from '../_shared/appearanceAnchor.ts';
+import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearanceSlots.ts';
 
 // ---------------------------------------------------------------------------
 // LLM call — reuses the same Gemini global-API pattern from index.ts
@@ -193,6 +195,57 @@ export async function runPipelineFSE2(
     console.log('[FSE2-LEVELS]', JSON.stringify({ storyLevel, lengthLevel, writerLevel }));
 
     // -----------------------------------------------------------------------
+    // 5b. Enrich characters with appearance_anchor (Avatar V2)
+    // -----------------------------------------------------------------------
+    const rawChars: any[] = Array.isArray(requestBody.characters) ? requestBody.characters : [];
+    let enrichedCharacters = rawChars;
+
+    if (kidProfileId && rawChars.length > 0) {
+      try {
+        const { data: charsWithAppearance } = await supabase
+          .from('kid_characters')
+          .select(`
+            name, role, relation,
+            character_appearances!character_appearance_id (
+              appearance_data, age_category, gender
+            )
+          `)
+          .eq('kid_profile_id', kidProfileId)
+          .eq('is_active', true)
+          .not('character_appearance_id', 'is', null);
+
+        if (charsWithAppearance) {
+          const anchorMap = new Map<string, string>();
+          for (const char of charsWithAppearance as any[]) {
+            const ca = char.character_appearances;
+            if (ca?.appearance_data && Object.keys(ca.appearance_data).length > 0) {
+              anchorMap.set(char.name, buildAnchorFromSlots(
+                char.name,
+                'adult',
+                ca.gender || inferGenderFromRelation(char.relation),
+                ca.age_category || inferAgeCategory(char.role, char.relation),
+                ca.appearance_data,
+              ));
+            }
+          }
+
+          enrichedCharacters = rawChars.map((c: any) => {
+            const anchor = anchorMap.get(c.name);
+            return anchor ? { ...c, appearance_anchor: anchor } : c;
+          });
+        }
+      } catch (err: any) {
+        console.warn('[FSE2] Avatar V2 appearance load failed, continuing without:', err?.message);
+      }
+    }
+
+    console.log('[FSE2] characters enriched with appearance_anchor:',
+      enrichedCharacters.map((c: any) => ({ name: c.name, hasAnchor: !!c.appearance_anchor })));
+
+    // Build enriched request for prompt builders
+    const enrichedRequest = { ...requestBody, characters: enrichedCharacters };
+
+    // -----------------------------------------------------------------------
     // 6. Load prompts from app_settings
     // -----------------------------------------------------------------------
     async function loadPrompt(key: string): Promise<string | null> {
@@ -248,12 +301,12 @@ export async function runPipelineFSE2(
     console.log('[FSE2-PLANNER-INPUT]', JSON.stringify({
       storyType: requestBody.storyType,
       subtype: selectedSubtype?.subtypeKey ?? null,
-      characters: requestBody.characters,
+      characters: enrichedCharacters,
       description: requestBody.description,
       heroesVillains,
     }));
 
-    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, requestBody, plannerPrompt, selectedSubtype, heroesVillains);
+    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, enrichedRequest, plannerPrompt, selectedSubtype, heroesVillains);
     console.log('[FSE2-PLANNER] Calling LLM...');
     const storyPlan = await callGemini(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));

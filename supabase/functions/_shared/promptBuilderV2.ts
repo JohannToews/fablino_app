@@ -198,13 +198,14 @@ ${constraints}
 If special_abilities or user wishes are provided, they MUST appear in magic_rules and/or character traits. Do NOT add forbidden_in_writer rules that contradict them.
 If a character has role VILLAIN, they MUST appear as antagonist in characters[] with exits_at defined. Their description MUST be reflected in the conflict.`;
 
-  // Format characters with role and description
+  // Format characters with role, description, and appearance
   const charactersBlock = chars.length > 0
     ? chars.map((c: any) => {
         const base = `${c.name} (age ${c.age ?? '?'})`;
         const role = c.role === 'villain' ? ' — VILLAIN' : '';
         const desc = c.description ? `: ${c.description}` : '';
-        return base + role + desc;
+        const appearance = c.appearance_anchor ? ` [appearance: ${c.appearance_anchor}]` : '';
+        return base + role + desc + appearance;
       }).join(', ')
     : 'none';
 
