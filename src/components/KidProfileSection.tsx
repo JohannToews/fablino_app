@@ -16,7 +16,7 @@ import { useKidProfile } from "@/hooks/useKidProfile";
 import { useFarsiEnabled } from "@/hooks/useFarsiEnabled";
 import { LANGUAGE_FLAGS, LANGUAGE_LABELS } from "@/components/story-creation/types";
 import { STORY_LANGUAGES } from "@/lib/languages";
-import KidLanguageSettingsSection from "@/components/KidLanguageSettingsSection";
+import KidLanguageNiveauxSection from "@/components/KidLanguageNiveauxSection";
 
 interface KidCharacterDB {
   id: string;
@@ -947,7 +947,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-[#2D1810]/60">{t.age}</Label>
                   <Select
@@ -960,19 +960,6 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                     <SelectContent>
                       {[4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map((a) => (
                         <SelectItem key={a} value={a.toString()}>{a}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-[#2D1810]/60">{t.schoolSystem}</Label>
-                  <Select value={currentProfile.school_system} onValueChange={handleSchoolSystemChange}>
-                    <SelectTrigger className="border-orange-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {visibleSchoolSystems.map(([key, system]) => (
-                        <SelectItem key={key} value={key}>{system.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -998,85 +985,14 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
           </AccordionContent>
         </AccordionItem>
 
-        {/* ── Accordion 2: Sprachen ── */}
-        <AccordionItem value="languages" className="border border-orange-100 rounded-xl bg-white overflow-hidden">
-          <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-[#2D1810] hover:no-underline hover:bg-orange-50/50">
-            {t.accordionLanguages}
-          </AccordionTrigger>
-          <AccordionContent className="px-4">
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs text-[#2D1810]/60">{t.storyLanguagesLabel}</Label>
-                <p className="text-[11px] text-[#2D1810]/40 mb-2">{t.storyLanguagesHint}</p>
-                <div className="flex flex-wrap gap-2">
-                  {visibleStoryLanguagesCore.map((sl) => {
-                    const isSelected = (currentProfile.story_languages || []).includes(sl.code);
-                    return (
-                      <button
-                        key={sl.code}
-                        onClick={() => {
-                          const current = currentProfile.story_languages || [];
-                          if (isSelected) {
-                            if (current.length <= 1) return;
-                            updateCurrentProfile({ story_languages: current.filter(l => l !== sl.code) });
-                          } else {
-                            updateCurrentProfile({ story_languages: [...current, sl.code] });
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded-lg border-2 transition-all text-sm font-medium ${
-                          isSelected
-                            ? 'border-orange-400 bg-orange-50 text-orange-700 ring-1 ring-orange-200'
-                            : 'border-gray-200 bg-white text-[#2D1810]/50 hover:border-orange-200'
-                        }`}
-                      >
-                        {LANGUAGE_FLAGS[sl.code] || ''} {LANGUAGE_LABELS[sl.code]?.[language] || sl.nameNative}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] text-[#2D1810]/40 mb-1.5">Beta</p>
-                <div className="flex flex-wrap gap-2">
-                  {visibleStoryLanguagesBeta.map((sl) => {
-                    const isSelected = (currentProfile.story_languages || []).includes(sl.code);
-                    return (
-                      <button
-                        key={sl.code}
-                        onClick={() => {
-                          const current = currentProfile.story_languages || [];
-                          if (isSelected) {
-                            if (current.length <= 1) return;
-                            updateCurrentProfile({ story_languages: current.filter(l => l !== sl.code) });
-                          } else {
-                            updateCurrentProfile({ story_languages: [...current, sl.code] });
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded-lg border-2 transition-all text-sm font-medium ${
-                          isSelected
-                            ? 'border-orange-400 bg-orange-50 text-orange-700 ring-1 ring-orange-200'
-                            : 'border-gray-200 bg-white text-[#2D1810]/50 hover:border-orange-200'
-                        }`}
-                      >
-                        {LANGUAGE_FLAGS[sl.code] || ''} {LANGUAGE_LABELS[sl.code]?.[language] || sl.nameNative}
-                        <span className="ml-1 text-[10px] opacity-60">Beta</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* ── Accordion 2b: Spracheinstellungen (per language) ── */}
+        {/* ── Accordion 2: Langues & Niveaux ── */}
         {currentProfile?.id && (
-          <AccordionItem value="language-settings" className="border border-orange-100 rounded-xl bg-white overflow-hidden">
+          <AccordionItem value="languages" className="border border-orange-100 rounded-xl bg-white overflow-hidden">
             <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-[#2D1810] hover:no-underline hover:bg-orange-50/50">
-              📊 {sectionLanguage === 'de' ? 'Sprachniveau & Textlänge' : sectionLanguage === 'fr' ? 'Niveau & longueur' : 'Language Level & Length'}
+              🌍 {sectionLanguage === 'de' ? 'Sprachen & Niveaus' : sectionLanguage === 'en' ? 'Languages & Levels' : sectionLanguage === 'es' ? 'Idiomas & Niveles' : 'Langues & Niveaux'}
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <KidLanguageSettingsSection kidProfileId={currentProfile.id} language={sectionLanguage} />
+              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={sectionLanguage} />
             </AccordionContent>
           </AccordionItem>
         )}
