@@ -266,7 +266,7 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, language }: Props) =>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {NIVEAU_OPTIONS.map(opt => (
+                      {getNiveauOptions(row.language).map(opt => (
                         <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
                       ))}
                     </SelectContent>
