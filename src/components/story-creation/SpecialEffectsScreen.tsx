@@ -431,7 +431,7 @@ const SpecialEffectsScreen = ({
 
   const { options: lengthOptions, defaultLength, loading: lengthLoading } = useStoryLengthOptions(selectedProfile?.age);
 
-  const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<SpecialAttribute[]>(hasVillain ? ["heroes_villains"] : []);
   const [additionalDescription, setAdditionalDescription] = useState("");
   const [effectsExpanded, setEffectsExpanded] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
