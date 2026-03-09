@@ -360,12 +360,11 @@ export async function runPipelineFSE2(
     }
     console.log(`[FSE2] Planner prompt loaded from DB (${plannerPrompt.length} chars)`);
 
-    // TEMPORARILY SKIPPED: Writer prompt not needed while Writer call is disabled
-    // const writerPrompt = await loadPrompt('system_prompt_core_v3');
-    // if (!writerPrompt) {
-    //   throw new Error('system_prompt_core_v3 not found in app_settings');
-    // }
-    // console.log(`[FSE2] Writer prompt loaded from DB (${writerPrompt.length} chars)`);
+    const writerPrompt = await loadPrompt('system_prompt_writer_fse2');
+    if (!writerPrompt) {
+      throw new Error('system_prompt_writer_fse2 not found in app_settings');
+    }
+    console.log(`[FSE2] Writer prompt loaded (${writerPrompt.length} chars)`);
 
     // -----------------------------------------------------------------------
     // 6b. Select story subtype
@@ -453,24 +452,35 @@ export async function runPipelineFSE2(
     }
 
     // -----------------------------------------------------------------------
-    // 8. Writer call — TEMPORARILY SKIPPED: return storyPlan directly
+    // 8. Writer call
     // -----------------------------------------------------------------------
-    // const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, requestBody, writerPrompt);
-    // console.log('[FSE2-WRITER] Calling LLM...');
-    // const content = await callGemini(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
-    // console.log(`[FSE2-WRITER] Done (${content.length} chars). Preview: ${content.substring(0, 200)}`);
+    const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, enrichedRequest, writerPrompt);
+    console.log('[FSE2-WRITER] Calling LLM...');
+    const writerRaw = await callGemini(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
+    console.log(`[FSE2-WRITER] Done (${writerRaw.length} chars)`);
 
-    const content = storyPlan;
+    let writerJson: any = {};
+    try {
+      const cleaned = writerRaw.replace(/```json|```/g, '').trim();
+      writerJson = JSON.parse(cleaned);
+    } catch (e) {
+      console.error('[FSE2-WRITER] JSON parse failed:', e);
+      throw new Error('Writer output could not be parsed as JSON');
+    }
+
+    const content = writerRaw;
 
     // -----------------------------------------------------------------------
     // 9. Return response (matches FSE1 shape for frontend compatibility)
     // -----------------------------------------------------------------------
     const totalTime = Date.now() - startTime;
-    console.log(`[FSE2] Pipeline complete in ${totalTime}ms (Writer skipped)`);
+    console.log(`[FSE2] Pipeline complete in ${totalTime}ms`);
 
     return new Response(JSON.stringify({
       content,
-      title: '',
+      title: writerJson.title ?? '',
+      image_plan: writerJson.image_plan ?? null,
+      questions: writerJson.questions ?? [],
       story_plan: storyPlan,
       generationTimeMs: totalTime,
       performance: {
