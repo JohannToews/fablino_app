@@ -709,6 +709,66 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
     }
   };
 
+  const handleAgeChange = async (newAge: number | undefined) => {
+    const oldAge = currentProfile.age;
+    updateCurrentProfile({ age: newAge });
+
+    // Only update language settings if profile exists in DB and age actually changed
+    if (!currentProfile.id || !newAge || newAge === oldAge) return;
+
+    try {
+      // Fetch old and new age_standard from age_level_defaults
+      const ages = [newAge];
+      if (oldAge) ages.push(oldAge);
+
+      const { data: defaults } = await supabase
+        .from('age_level_defaults')
+        .select('age, default_level')
+        .in('age', ages);
+
+      const defaultMap: Record<number, number> = {};
+      for (const d of defaults || []) {
+        if (d.default_level != null) defaultMap[d.age] = d.default_level;
+      }
+
+      const newStd = defaultMap[newAge] ?? 1;
+      const oldStd = oldAge ? (defaultMap[oldAge] ?? 1) : null;
+
+      // Fetch current language settings for this kid
+      const { data: langRows } = await supabase
+        .from('kid_language_settings')
+        .select('*')
+        .eq('kid_profile_id', currentProfile.id);
+
+      if (!langRows || langRows.length === 0) return;
+
+      for (const row of langRows) {
+        const updates: Record<string, number> = {};
+        const isSchool = row.language_class === 1;
+        const expectedOldLevel = isSchool ? oldStd : (oldStd != null ? Math.max(1, oldStd - 1) : null);
+        const expectedOldContent = oldStd;
+
+        // Only reset if current value matches previous default (not manually customized)
+        if (expectedOldLevel == null || row.language_level === expectedOldLevel) {
+          updates.language_level = isSchool ? newStd : Math.max(1, newStd - 1);
+        }
+        if (expectedOldContent == null || row.content_level === expectedOldContent) {
+          updates.content_level = newStd;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await supabase
+            .from('kid_language_settings')
+            .update(updates as any)
+            .eq('kid_profile_id', currentProfile.id)
+            .eq('language', row.language);
+        }
+      }
+    } catch (err) {
+      console.error('[handleAgeChange] Failed to update language settings:', err);
+    }
+  };
+
   const saveProfile = async () => {
     const trimmedName = currentProfile.name.trim();
     if (!trimmedName) {
@@ -952,7 +1012,7 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
                   <Label className="text-xs text-[#2D1810]/60">{t.age}</Label>
                   <Select
                     value={currentProfile.age?.toString() || ''}
-                    onValueChange={(value) => updateCurrentProfile({ age: parseInt(value) || undefined })}
+                    onValueChange={(value) => handleAgeChange(parseInt(value) || undefined)}
                   >
                     <SelectTrigger className="border-orange-200">
                       <SelectValue placeholder="—" />
