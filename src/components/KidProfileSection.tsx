@@ -1050,10 +1050,10 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
         {currentProfile?.id && (
           <AccordionItem value="languages" className="border border-orange-100 rounded-xl bg-white overflow-hidden">
             <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-[#2D1810] hover:no-underline hover:bg-orange-50/50">
-              🌍 {sectionLanguage === 'de' ? 'Sprachen & Niveaus' : sectionLanguage === 'en' ? 'Languages & Levels' : sectionLanguage === 'es' ? 'Idiomas & Niveles' : 'Langues & Niveaux'}
+              🌍 {language === 'de' ? 'Sprachen & Niveaus' : language === 'en' ? 'Languages & Levels' : language === 'es' ? 'Idiomas & Niveles' : language === 'nl' ? 'Talen & Niveaus' : language === 'it' ? 'Lingue & Livelli' : language === 'tr' ? 'Diller & Seviyeler' : language === 'pt' ? 'Línguas & Níveis' : language === 'ru' ? 'Языки и уровни' : language === 'uk' ? 'Мови та рівні' : 'Langues & Niveaux'}
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={language} />
+              <KidLanguageNiveauxSection kidProfileId={currentProfile.id} kidAge={currentProfile.age} language={language} onSchoolLanguageChange={handleSchoolLanguageChange} />
             </AccordionContent>
           </AccordionItem>
         )}
