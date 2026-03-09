@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useKidProfile } from "@/hooks/useKidProfile";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -89,6 +90,7 @@ const LABELS: Record<string, { title: string; langue: string; type: string; nive
 const getL = (lang: string) => LABELS[lang] || LABELS.fr;
 
 const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language, onSchoolLanguageChange }: Props) => {
+  const { refreshProfiles } = useKidProfile();
   const [rows, setRows] = useState<LangRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const l = getL(language);
@@ -106,6 +108,18 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
   }, [kidProfileId]);
 
   useEffect(() => { load(); }, [load]);
+
+  /** Sync kid_profiles.story_languages with the current language rows */
+  const syncStoryLanguages = useCallback(async (currentRows: LangRow[]) => {
+    const langs = currentRows.map(r => r.language);
+    if (langs.length === 0) return;
+    await supabase
+      .from("kid_profiles")
+      .update({ story_languages: langs } as any)
+      .eq("id", kidProfileId);
+    // Refresh global profile cache so CreateStoryPage sees updated languages
+    await refreshProfiles();
+  }, [kidProfileId, refreshProfiles]);
 
   const upsertRow = async (row: LangRow) => {
     await supabase
@@ -149,7 +163,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
     };
 
     await upsertRow(newRow);
-    setRows(prev => prev.map(r => r.language === oldLang ? newRow : r));
+    const updatedRows = rows.map(r => r.language === oldLang ? newRow : r);
+    setRows(updatedRows);
+    await syncStoryLanguages(updatedRows);
 
     // If this was the school language, update app language to the new language
     if (newRow.language_class === 1 && onSchoolLanguageChange) {
@@ -180,7 +196,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
       length_level: 1,
     };
     await upsertRow(newRow);
-    setRows(prev => [...prev, newRow]);
+    const updatedRows = [...rows, newRow];
+    setRows(updatedRows);
+    await syncStoryLanguages(updatedRows);
   };
 
   const deleteRow = async (lang: string) => {
@@ -189,7 +207,9 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
       .delete()
       .eq("kid_profile_id", kidProfileId)
       .eq("language", lang);
-    setRows(prev => prev.filter(r => r.language !== lang));
+    const updatedRows = rows.filter(r => r.language !== lang);
+    setRows(updatedRows);
+    await syncStoryLanguages(updatedRows);
   };
 
   const usedLangs = new Set(rows.map(r => r.language));
