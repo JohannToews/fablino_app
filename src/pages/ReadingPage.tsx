@@ -2135,6 +2135,7 @@ const ReadingPage = () => {
   const storyContent = (() => {
     const raw = story.content ?? '';
     const trimmed = raw.trimStart();
+    let text = raw;
     if (trimmed.startsWith('```json') || trimmed.startsWith('{"')) {
       try {
         const cleaned = trimmed.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
@@ -2144,12 +2145,15 @@ const ReadingPage = () => {
           const parsed = JSON.parse(cleaned.substring(jsonStart, jsonEnd + 1));
           if (parsed?.content && typeof parsed.content === 'string') {
             console.log('[ReadingPage] Extracted content from JSON wrapper');
-            return parsed.content;
+            text = parsed.content;
           }
         }
       } catch { /* not JSON, use raw */ }
     }
-    return raw;
+    // Normalize escaped newlines so paragraph splitting works everywhere
+    return text
+      .replace(/\\n\\n/g, '\n\n')
+      .replace(/\\n/g, '\n');
   })();
 
   // ── Immersive Reader Mode ─────────────────────────────────
