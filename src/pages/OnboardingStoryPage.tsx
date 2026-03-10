@@ -254,6 +254,21 @@ const OnboardingStoryPage = () => {
         },
       });
 
+      // Handle fire-and-forget 202 response (FSE2 pipeline)
+      if (data?.status === 'generating' && (data?.storyId || placeholderStoryIdOnboarding)) {
+        const realtimeStoryId = data.storyId || placeholderStoryIdOnboarding;
+        console.log('[Onboarding] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          // Story is ready, navigate to reading page
+          navigate(`/read/${realtimeStoryId}`, { replace: true });
+        } catch (realtimeErr) {
+          console.error('[Onboarding] Realtime wait failed:', realtimeErr);
+          setStatus("error");
+        }
+        return;
+      }
+
       if (error || data?.error) {
         console.error("Generation error:", error || data?.error);
         setStatus("error");
