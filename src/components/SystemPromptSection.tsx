@@ -50,7 +50,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [consistencyCheckPromptV2, setConsistencyCheckPromptV2] = useState("");
   const [consistencyCheckSeriesAddon, setConsistencyCheckSeriesAddon] = useState("");
   const [plannerPrompt, setPlannerPrompt] = useState("");
-  const [writerPromptVersion, setWriterPromptVersion] = useState("");
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingWriterCoreV2, setIsSavingWriterCoreV2] = useState(false);
