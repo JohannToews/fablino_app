@@ -301,9 +301,9 @@ const CreateStoryPage = () => {
           navigate(`/read/${realtimeStoryId}`);
         } catch (realtimeErr) {
           console.error('[CreateStory] Realtime wait failed:', realtimeErr);
-          toast.error(t.toastGenerationError);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
           stopGenerating();
-          setCurrentScreen("entry");
+          navigate(`/read/${realtimeStoryId}`);
         }
         return;
       }
