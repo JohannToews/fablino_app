@@ -203,8 +203,8 @@ async function callLLM(
 
           console.log('[FSE2-LLM] using model: sonnet');
           return content;
-        } catch (error: unknown) {
-          const err: Error = error instanceof Error ? error : new Error(String(error));
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
           console.log('[FSE2-LLM] Sonnet raw error:', err.message);
           console.log('[FSE2-LLM] Sonnet response status if available:', (error as any)?.status);
           if (err.message === 'Rate limited' || err.message.startsWith('Vertex auth error')) {
