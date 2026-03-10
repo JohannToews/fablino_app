@@ -997,6 +997,10 @@ export async function runPipelineFSE2(
 
     let content = writerJson.content ?? writerRaw;
 
+    // Normalize missing spaces after sentence-ending punctuation
+    content = content.replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
+    if (writerJson.content) writerJson.content = content;
+
     // -----------------------------------------------------------------------
     // 8b. Consistency Check (standard path, no series logic)
     // -----------------------------------------------------------------------
