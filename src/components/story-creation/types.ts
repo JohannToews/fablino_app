@@ -1738,6 +1738,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normaliai juokinga",
     humorMid: "Labai juokinga",
     humorHigh: "Visiškai pakvaišusi",
+    fablinoDecides: "Fablino sprendžia",
     continue: "Tęsti",
     back: "Atgal",
     educationalTopicHeader: "Ko nori išmokti?",
