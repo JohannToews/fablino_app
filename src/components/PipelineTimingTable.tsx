@@ -69,6 +69,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
               <TableHead className="whitespace-nowrap">Story</TableHead>
               <TableHead className="whitespace-nowrap">Length</TableHead>
               <TableHead className="whitespace-nowrap text-right">Story Gen</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Planner</TableHead>
               <TableHead className="whitespace-nowrap text-right">Check</TableHead>
               <TableHead className="whitespace-nowrap text-center">Fehler</TableHead>
               <TableHead className="whitespace-nowrap text-center">nach Patch</TableHead>
