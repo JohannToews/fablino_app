@@ -125,7 +125,7 @@ async function callLLM(
   // To revert: change `if (false &&` back to `if (`
   if (false && serviceAccountJson) {
     try {
-      const sa = JSON.parse(serviceAccountJson);
+      const sa = JSON.parse(serviceAccountJson!);
       const projectId = sa.project_id || 'fablino-prod';
       const modelName = 'claude-sonnet-4-6';
       const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/${modelName}:rawPredict`;
