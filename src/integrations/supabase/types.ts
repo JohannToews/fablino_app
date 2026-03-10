@@ -1693,6 +1693,7 @@ export type Database = {
           patch_fix_rate: number | null
           patch_ms: number | null
           plan_generation_ms: number | null
+          planner_ms: number | null
           prompt: string | null
           recheck_ms: number | null
           regenerate_count: number | null
@@ -1767,6 +1768,7 @@ export type Database = {
           patch_fix_rate?: number | null
           patch_ms?: number | null
           plan_generation_ms?: number | null
+          planner_ms?: number | null
           prompt?: string | null
           recheck_ms?: number | null
           regenerate_count?: number | null
@@ -1841,6 +1843,7 @@ export type Database = {
           patch_fix_rate?: number | null
           patch_ms?: number | null
           plan_generation_ms?: number | null
+          planner_ms?: number | null
           prompt?: string | null
           recheck_ms?: number | null
           regenerate_count?: number | null
@@ -2871,6 +2874,7 @@ export type Database = {
           patch_fix_rate: number | null
           patch_ms: number | null
           plan_generation_ms: number | null
+          planner_ms: number | null
           prompt: string | null
           recheck_ms: number | null
           regenerate_count: number | null
