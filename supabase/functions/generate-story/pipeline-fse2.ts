@@ -200,11 +200,12 @@ async function callLLM(
 
           console.log('[FSE2-LLM] using model: sonnet');
           return content;
-        } catch (error) {
-          console.log('[FSE2-LLM] Sonnet raw error:', error instanceof Error ? error.message : String(error));
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.log('[FSE2-LLM] Sonnet raw error:', err.message);
           console.log('[FSE2-LLM] Sonnet response status if available:', (error as any)?.status);
-          if (error instanceof Error && (error.message === 'Rate limited' || error.message.startsWith('Vertex auth error'))) {
-            lastError = error;
+          if (err.message === 'Rate limited' || err.message.startsWith('Vertex auth error')) {
+            lastError = err;
             continue;
           }
           throw error;
