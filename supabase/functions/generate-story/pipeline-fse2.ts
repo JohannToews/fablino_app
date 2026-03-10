@@ -141,7 +141,7 @@ async function callLLM(
         }
 
         try {
-          const accessToken = await getVertexAccessToken(serviceAccountJson);
+          const accessToken = await getVertexAccessToken(serviceAccountJson!);
           console.log('[FSE2-LLM] Sonnet request url:', vertexUrl);
           console.log('[FSE2-LLM] Sonnet auth token length:', accessToken?.length);
 
