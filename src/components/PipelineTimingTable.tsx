@@ -32,7 +32,7 @@ const fmtSec = (ms: number | null): string => {
 };
 
 const totalMs = (r: TimingRow): number | null => {
-  const vals = [r.story_generation_ms, r.consistency_check_only_ms, r.patch_ms, r.recheck_ms, r.image_generation_ms];
+  const vals = [r.story_generation_ms, r.planner_ms, r.consistency_check_only_ms, r.patch_ms, r.recheck_ms, r.image_generation_ms];
   const valid = vals.filter((v) => v != null) as number[];
   return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) : null;
 };
