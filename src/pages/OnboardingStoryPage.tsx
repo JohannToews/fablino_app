@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { waitForStoryCompletion } from "@/lib/storyGenerationHelper";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
