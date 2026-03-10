@@ -153,10 +153,36 @@ const CreateStoryPage = () => {
     };
   }, []);
 
+  // Recover generating state from sessionStorage on mount (survives remounts/auth refreshes)
+  useEffect(() => {
+    const pendingStoryId = sessionStorage.getItem('generating_story_id');
+    if (pendingStoryId && !isGeneratingRef.current) {
+      console.log('[CreateStory] Recovering generating state for', pendingStoryId);
+      setIsGenerating(true);
+      isGeneratingRef.current = true;
+      setCurrentScreen("generating");
+      // Re-subscribe to Realtime for completion
+      waitForStoryCompletion(pendingStoryId)
+        .then(() => {
+          toast.success(t.toastStoryCreated);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          stopGenerating();
+          navigate(`/read/${pendingStoryId}`);
+        })
+        .catch(() => {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          stopGenerating();
+          navigate(`/read/${pendingStoryId}`);
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Helper to stop generating state consistently
   const stopGenerating = () => {
     setIsGenerating(false);
     isGeneratingRef.current = false;
+    sessionStorage.removeItem('generating_story_id');
   };
 
   // Translations
@@ -243,7 +269,10 @@ const CreateStoryPage = () => {
         })
         .select("id")
         .single();
-      if (!placeholderErr && placeholderRow?.id) placeholderStoryId = placeholderRow.id;
+      if (!placeholderErr && placeholderRow?.id) {
+        placeholderStoryId = placeholderRow.id;
+        sessionStorage.setItem('generating_story_id', placeholderStoryId);
+      }
 
       // Abort any previous request + set 150s timeout
       abortControllerRef.current?.abort();
@@ -292,7 +321,7 @@ const CreateStoryPage = () => {
       // Handle fire-and-forget 202 response (FSE2 pipeline)
       if (data?.status === 'generating' && (data?.storyId || placeholderStoryId)) {
         const realtimeStoryId = data.storyId || placeholderStoryId;
-        console.log('[CreateStory] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        sessionStorage.setItem('generating_story_id', realtimeStoryId!);
         try {
           await waitForStoryCompletion(realtimeStoryId);
           toast.success(t.toastStoryCreated);
@@ -738,7 +767,10 @@ const CreateStoryPage = () => {
         })
         .select("id")
         .single();
-      if (!placeholderErrFiction && placeholderRowFiction?.id) placeholderStoryIdFiction = placeholderRowFiction.id;
+      if (!placeholderErrFiction && placeholderRowFiction?.id) {
+        placeholderStoryIdFiction = placeholderRowFiction.id;
+        sessionStorage.setItem('generating_story_id', placeholderStoryIdFiction);
+      }
 
       // Abort any previous request
       abortControllerRef.current?.abort();
@@ -841,7 +873,7 @@ const CreateStoryPage = () => {
       // Handle fire-and-forget 202 response (FSE2 pipeline) — fiction path
       if (data?.status === 'generating' && (data?.storyId || placeholderStoryIdFiction)) {
         const realtimeStoryId = data.storyId || placeholderStoryIdFiction;
-        console.log('[CreateStory-Fiction] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        sessionStorage.setItem('generating_story_id', realtimeStoryId!);
         try {
           await waitForStoryCompletion(realtimeStoryId);
           toast.success(t.toastStoryCreated);
