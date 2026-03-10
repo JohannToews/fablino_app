@@ -318,7 +318,7 @@ const CreateStoryPage = () => {
       // Handle fire-and-forget 202 response (FSE2 pipeline)
       if (data?.status === 'generating' && (data?.storyId || placeholderStoryId)) {
         const realtimeStoryId = data.storyId || placeholderStoryId;
-        console.log('[CreateStory] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        sessionStorage.setItem('generating_story_id', realtimeStoryId!);
         try {
           await waitForStoryCompletion(realtimeStoryId);
           toast.success(t.toastStoryCreated);
