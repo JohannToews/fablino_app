@@ -94,7 +94,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       supabase.from("app_settings").select("value").eq("key", "system_prompt_planner").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v2").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v3").maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", "story_writer_prompt_version").maybeSingle(),
+      
     ]);
 
     if (promptResult.data && !promptResult.error) {
