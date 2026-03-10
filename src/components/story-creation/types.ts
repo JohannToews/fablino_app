@@ -1058,6 +1058,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normalmente gracioso",
     humorMid: "Muy gracioso",
     humorHigh: "Totalmente loco",
+    fablinoDecides: "Fablino decide",
     continue: "Continuar",
     back: "Volver",
     educationalTopicHeader: "¿Qué quieres aprender?",
