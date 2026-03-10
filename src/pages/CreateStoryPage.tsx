@@ -767,7 +767,10 @@ const CreateStoryPage = () => {
         })
         .select("id")
         .single();
-      if (!placeholderErrFiction && placeholderRowFiction?.id) placeholderStoryIdFiction = placeholderRowFiction.id;
+      if (!placeholderErrFiction && placeholderRowFiction?.id) {
+        placeholderStoryIdFiction = placeholderRowFiction.id;
+        sessionStorage.setItem('generating_story_id', placeholderStoryIdFiction);
+      }
 
       // Abort any previous request
       abortControllerRef.current?.abort();
