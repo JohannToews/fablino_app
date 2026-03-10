@@ -50,6 +50,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
     return rows.filter(
       (r) =>
         r.story_generation_ms != null ||
+        r.planner_ms != null ||
         r.consistency_check_only_ms != null ||
         r.patch_ms != null ||
         r.recheck_ms != null ||
