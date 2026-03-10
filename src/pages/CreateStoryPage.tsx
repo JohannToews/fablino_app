@@ -832,6 +832,25 @@ const CreateStoryPage = () => {
         return;
       }
 
+      // Handle fire-and-forget 202 response (FSE2 pipeline) — fiction path
+      if (data?.status === 'generating' && (data?.storyId || placeholderStoryIdFiction)) {
+        const realtimeStoryId = data.storyId || placeholderStoryIdFiction;
+        console.log('[CreateStory-Fiction] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          toast.success(t.toastStoryCreated);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          stopGenerating();
+          navigate(`/read/${realtimeStoryId}`);
+        } catch (realtimeErr) {
+          console.error('[CreateStory-Fiction] Realtime wait failed:', realtimeErr);
+          toast.error(t.toastGenerationError);
+          stopGenerating();
+          setCurrentScreen("entry");
+        }
+        return;
+      }
+
       if (data?.title && data?.content) {
         // Capture performance data for admin display
         if (data.performance) setPerformanceData(data.performance);
