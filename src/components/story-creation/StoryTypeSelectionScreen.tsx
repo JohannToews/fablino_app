@@ -89,13 +89,8 @@ const StoryTypeSelectionScreen = ({
   const mainCategoryTiles = [
     { type: "fantasy" as StoryType, image: fantasyImg, label: translations.fantasy },
     { type: "action" as StoryType, image: actionImg, label: translations.action },
-    { type: "animals" as StoryType, image: animalsImg, label: translations.animals },
     { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday },
     { type: "humor" as StoryType, image: humorImg, label: translations.humor },
-    // Educational temporarily disabled - will be re-enabled later
-    // { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
-    // Surprise Me as 6th tile in the grid
-    { type: "surprise" as StoryType, image: surpriseBoxImg, label: translations.surprise, isSurprise: true },
   ];
 
   const educationalTopicTiles = [
@@ -236,7 +231,7 @@ tr: "Seni hangi macera bekliyor? 🏰",
 
         {/* Main Category Grid – 2 cols mobile, 3 cols tablet */}
         {viewState === "main" && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full pb-24">
             {mainCategoryTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
@@ -248,6 +243,20 @@ tr: "Seni hangi macera bekliyor? 🏰",
                 overlayClass={colors.overlay}
               />
             ))}
+          </div>
+        )}
+
+        {/* Fixed bottom "Fablino entscheidet" button */}
+        {viewState === "main" && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t-2 border-border p-4 pb-safe">
+            <div className="max-w-[480px] mx-auto">
+              <button
+                onClick={handleSurpriseClick}
+                className="w-full min-h-[52px] rounded-2xl text-base font-semibold bg-[#E8863A] hover:bg-[#D4752E] text-white transition-colors shadow-lg active:scale-[0.98]"
+              >
+                ✨ {translations.fablinoDecides}
+              </button>
+            </div>
           </div>
         )}
 
