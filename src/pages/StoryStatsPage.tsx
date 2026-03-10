@@ -58,6 +58,7 @@ interface StoryStatRow {
   consistency_check_only_ms: number | null;
   patch_ms: number | null;
   recheck_ms: number | null;
+  planner_ms: number | null;
   story_created_at: string;
 }
 

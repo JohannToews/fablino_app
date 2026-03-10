@@ -8,6 +8,7 @@ interface TimingRow {
   story_id: string;
   story_title: string;
   story_length: string | null;
+  planner_ms: number | null;
   story_generation_ms: number | null;
   consistency_check_only_ms: number | null;
   patch_ms: number | null;
@@ -31,7 +32,7 @@ const fmtSec = (ms: number | null): string => {
 };
 
 const totalMs = (r: TimingRow): number | null => {
-  const vals = [r.story_generation_ms, r.consistency_check_only_ms, r.patch_ms, r.recheck_ms, r.image_generation_ms];
+  const vals = [r.story_generation_ms, r.planner_ms, r.consistency_check_only_ms, r.patch_ms, r.recheck_ms, r.image_generation_ms];
   const valid = vals.filter((v) => v != null) as number[];
   return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) : null;
 };
@@ -49,6 +50,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
     return rows.filter(
       (r) =>
         r.story_generation_ms != null ||
+        r.planner_ms != null ||
         r.consistency_check_only_ms != null ||
         r.patch_ms != null ||
         r.recheck_ms != null ||
@@ -67,6 +69,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
               <TableHead className="whitespace-nowrap">Story</TableHead>
               <TableHead className="whitespace-nowrap">Length</TableHead>
               <TableHead className="whitespace-nowrap text-right">Story Gen</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Planner</TableHead>
               <TableHead className="whitespace-nowrap text-right">Check</TableHead>
               <TableHead className="whitespace-nowrap text-center">Fehler</TableHead>
               <TableHead className="whitespace-nowrap text-center">nach Patch</TableHead>
@@ -95,6 +98,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
                   </TableCell>
                   <TableCell className="text-xs">{r.story_length || "–"}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.story_generation_ms)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{fmtSec(r.planner_ms)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.consistency_check_only_ms)}</TableCell>
                   <TableCell className="text-xs text-center font-mono">
                     {r.issues_found != null && r.issues_found > 0 ? (
