@@ -153,10 +153,36 @@ const CreateStoryPage = () => {
     };
   }, []);
 
+  // Recover generating state from sessionStorage on mount (survives remounts/auth refreshes)
+  useEffect(() => {
+    const pendingStoryId = sessionStorage.getItem('generating_story_id');
+    if (pendingStoryId && !isGeneratingRef.current) {
+      console.log('[CreateStory] Recovering generating state for', pendingStoryId);
+      setIsGenerating(true);
+      isGeneratingRef.current = true;
+      setCurrentScreen("generating");
+      // Re-subscribe to Realtime for completion
+      waitForStoryCompletion(pendingStoryId)
+        .then(() => {
+          toast.success(t.toastStoryCreated);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          stopGenerating();
+          navigate(`/read/${pendingStoryId}`);
+        })
+        .catch(() => {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          stopGenerating();
+          navigate(`/read/${pendingStoryId}`);
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Helper to stop generating state consistently
   const stopGenerating = () => {
     setIsGenerating(false);
     isGeneratingRef.current = false;
+    sessionStorage.removeItem('generating_story_id');
   };
 
   // Translations
