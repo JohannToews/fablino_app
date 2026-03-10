@@ -12,7 +12,10 @@ import {
   loadAgeLevelDefault,
   buildPlanPromptV2,
   buildStoryPromptV2,
+  selectNextPathV2,
+  ageToAgeGroupV2,
   type KidLanguageSettings,
+  type StoryPathV2,
 } from '../_shared/promptBuilderV2.ts';
 import { selectStorySubtype, type SelectedSubtype } from '../_shared/storySubtypeSelector.ts';
 import { buildAppearanceAnchor, buildAnchorFromSlots } from '../_shared/appearanceAnchor.ts';
@@ -832,6 +835,35 @@ export async function runPipelineFSE2(
     console.log('[FSE2] heroesVillains=' + heroesVillains + ' specialAbilities=' + JSON.stringify(specialAbilities));
 
     // -----------------------------------------------------------------------
+    // 6d. Select story path
+    // -----------------------------------------------------------------------
+    let selectedPath: StoryPathV2 | null = null;
+    try {
+      const ageGroup = ageToAgeGroupV2(age || 8);
+
+      // Get recent story_path_codes to avoid repetition
+      const { data: recentStories } = await supabase
+        .from('stories')
+        .select('story_path_code')
+        .eq('kid_profile_id', kidProfileId)
+        .not('story_path_code', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      const recentCodes = (recentStories || []).map((s: any) => s.story_path_code).filter(Boolean);
+
+      // Get total story count for onboarding phase detection
+      const { count: storyCount } = await supabase
+        .from('stories')
+        .select('id', { count: 'exact', head: true })
+        .eq('kid_profile_id', kidProfileId);
+
+      selectedPath = await selectNextPathV2(supabase, ageGroup, storyCount ?? 0, recentCodes);
+      console.log('[FSE2-PATH] Selected:', JSON.stringify({ code: selectedPath.code, label: selectedPath.label }));
+    } catch (pathErr) {
+      console.warn('[FSE2-PATH] Path selection failed, continuing without path:', pathErr);
+    }
+
+    // -----------------------------------------------------------------------
     // 7. Planner call
     // -----------------------------------------------------------------------
     console.log('[FSE2-PLANNER-INPUT]', JSON.stringify({
@@ -842,7 +874,7 @@ export async function runPipelineFSE2(
       heroesVillains,
     }));
 
-    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, enrichedRequest, plannerPrompt, selectedSubtype, heroesVillains);
+    const planPrompt = buildPlanPromptV2(storyLevel, lengthLevel, enrichedRequest, plannerPrompt, selectedSubtype, heroesVillains, selectedPath);
     console.log('[FSE2-LLM] call params:', {
       caller: 'planner',
       systemPromptLength: planPrompt.systemPrompt.length,
@@ -890,6 +922,7 @@ export async function runPipelineFSE2(
         const plannerUpdate: Record<string, any> = {};
         if (villainName) plannerUpdate.villain_name = villainName;
         if (extracted?.storyType) plannerUpdate.story_type = extracted.storyType;
+        if (selectedPath) plannerUpdate.story_path_code = selectedPath.code;
 
         if (Object.keys(plannerUpdate).length > 0) {
           await supabase

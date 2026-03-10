@@ -123,6 +123,118 @@ export async function loadAgeLevelDefault(
 }
 
 // ---------------------------------------------------------------------------
+// Story Path Selection (mirrored from FSE1 promptBuilder.ts)
+// ---------------------------------------------------------------------------
+
+export interface StoryPathV2 {
+  id: string;
+  code: string;
+  label: string;
+  min_age_group: string;
+  hook_score: number | null;
+  is_onboarding: boolean;
+  humor_range_min: number;
+  humor_range_max: number;
+  writing_instructions: string;
+}
+
+const AGE_GROUP_ORDER_V2 = ['CE1', 'CE2', 'CM1', 'CM2'] as const;
+type AgeGroupV2 = typeof AGE_GROUP_ORDER_V2[number];
+
+export function ageToAgeGroupV2(age: number): AgeGroupV2 {
+  if (age <= 6) return 'CE1';
+  if (age <= 8) return 'CE2';
+  if (age <= 10) return 'CM1';
+  return 'CM2';
+}
+
+const SAFETY_PATH_CODE_V2 = 'A3->M1->E1';
+
+export async function selectNextPathV2(
+  supabaseClient: any,
+  ageGroup: AgeGroupV2,
+  storyCount: number,
+  recentCodes: string[],
+  humorLevel?: number,
+): Promise<StoryPathV2> {
+  const ageIdx = AGE_GROUP_ORDER_V2.indexOf(ageGroup);
+  const eligibleAgeGroups = AGE_GROUP_ORDER_V2.slice(0, ageIdx + 1);
+
+  let query = supabaseClient
+    .from('story_paths')
+    .select('id, code, label, min_age_group, hook_score, is_onboarding, humor_range_min, humor_range_max, writing_instructions')
+    .eq('is_active', true)
+    .in('min_age_group', eligibleAgeGroups)
+    .order('hook_score', { ascending: false, nullsFirst: false });
+
+  if (storyCount <= 5) {
+    query = query.eq('is_onboarding', true);
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data || data.length === 0) {
+    console.warn('[selectNextPathV2] Query failed or empty, using safety path:', error?.message);
+    return safetyPathV2(supabaseClient);
+  }
+
+  let candidates: StoryPathV2[] = data;
+
+  if (storyCount <= 5) {
+    return candidates[0];
+  }
+
+  if (recentCodes.length > 0) {
+    const recentSet = new Set(recentCodes);
+    const filtered = candidates.filter(p => !recentSet.has(p.code));
+    if (filtered.length > 0) candidates = filtered;
+  }
+
+  if (humorLevel != null) {
+    const humorFiltered = candidates.filter(
+      p => p.humor_range_min <= humorLevel && humorLevel <= p.humor_range_max
+    );
+    if (humorFiltered.length > 0) candidates = humorFiltered;
+  }
+
+  if (storyCount >= 6 && storyCount <= 10) {
+    candidates.sort((a, b) => {
+      if (a.is_onboarding !== b.is_onboarding) return a.is_onboarding ? -1 : 1;
+      return (b.hook_score ?? 0) - (a.hook_score ?? 0);
+    });
+  }
+
+  if (candidates.length === 0) {
+    console.warn('[selectNextPathV2] All candidates filtered out, using safety path');
+    return safetyPathV2(supabaseClient);
+  }
+
+  return candidates[0];
+}
+
+async function safetyPathV2(supabaseClient: any): Promise<StoryPathV2> {
+  const { data } = await supabaseClient
+    .from('story_paths')
+    .select('id, code, label, min_age_group, hook_score, is_onboarding, humor_range_min, humor_range_max, writing_instructions')
+    .eq('code', SAFETY_PATH_CODE_V2)
+    .maybeSingle();
+
+  if (data) return data;
+
+  return {
+    id: '00000000-0000-0000-0000-000000000000',
+    code: SAFETY_PATH_CODE_V2,
+    label: 'Charakter-Eskalation',
+    min_age_group: 'CE1',
+    hook_score: 4.00,
+    is_onboarding: true,
+    humor_range_min: 1,
+    humor_range_max: 3,
+    writing_instructions: 'A: Charaktermoment – zeige die Hauptfigur in einer vertrauten Situation. | M: Eskalation – das Problem wird Schritt für Schritt größer. | E: Klassisch – befriedigende Auflösung.',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Prompt Builder Functions
 // ---------------------------------------------------------------------------
 
@@ -130,6 +242,7 @@ export function buildPlanConstraints(
   storyLevel: StoryLevel,
   lengthLevel: StoryLengthLevel,
   heroesVillains = false,
+  selectedPath?: StoryPathV2 | null,
 ): string {
   let block = `STRUCTURE CONSTRAINTS — MANDATORY:
 - Paragraphs: ${lengthLevel.paragraph_count}
@@ -139,6 +252,16 @@ export function buildPlanConstraints(
 - Subplot allowed: ${storyLevel.allow_subplot}
 - Cliffhanger allowed: ${storyLevel.cliffhanger_allowed}
 - Plot complexity: ${storyLevel.plot_complexity}`;
+
+  if (selectedPath) {
+    block += `
+
+NARRATIVE ARC (MANDATORY — do NOT deviate):
+- Story path: ${selectedPath.code}
+- Writing instructions: ${selectedPath.writing_instructions}
+- central_conflict MUST fit the M (middle) section of writing_instructions
+- resolution MUST fit the E (ending) section of writing_instructions`;
+  }
 
   if (heroesVillains) {
     block += `
@@ -189,13 +312,14 @@ export function buildPlanPromptV2(
   plannerPrompt: string,
   selectedSubtype?: { subtypeKey: string; promptHint: string; titleSeed: string; settingIdea: string } | null,
   heroesVillains = false,
+  selectedPath?: StoryPathV2 | null,
 ): { systemPrompt: string; userMessage: string } {
   // Check if characters[] contains an explicit villain — if so, that takes priority over heroesVillains flag
   const chars: any[] = Array.isArray(request.characters) ? request.characters : [];
   const hasExplicitVillain = chars.some((c: any) => c.role === 'villain');
   const effectiveHeroesVillains = hasExplicitVillain ? true : heroesVillains;
 
-  const constraints = buildPlanConstraints(storyLevel, lengthLevel, effectiveHeroesVillains);
+  const constraints = buildPlanConstraints(storyLevel, lengthLevel, effectiveHeroesVillains, selectedPath);
 
   const systemPrompt = `${plannerPrompt}
 
@@ -229,6 +353,12 @@ If a character has role VILLAIN, they MUST appear as antagonist in characters[] 
     specialAbilities: specialAbilitiesBlock,
     userWishes: request.description ?? 'none',
   };
+
+  if (selectedPath) {
+    userMessageObj.story_path = selectedPath.code;
+    userMessageObj.story_path_instructions = selectedPath.writing_instructions;
+    userMessageObj.story_path_echo_rule = 'echo back the mandatory path in story_path field';
+  }
 
   if (selectedSubtype) {
     userMessageObj.subtype = selectedSubtype.subtypeKey;
