@@ -278,10 +278,33 @@ const CreateStoryPage = () => {
       console.log('[DEBUG] image_plan:', data?.image_plan);
 
       if (error) {
-        console.error("Generation error:", error);
-        toast.error(t.toastGenerationError);
-        stopGenerating();
-        setCurrentScreen("entry");
+        // Ignore abort errors for fire-and-forget (timeout is OK if we use Realtime)
+        const isAbort = error?.message?.includes('AbortError') || error?.message?.includes('aborted');
+        if (!isAbort) {
+          console.error("Generation error:", error);
+          toast.error(t.toastGenerationError);
+          stopGenerating();
+          setCurrentScreen("entry");
+          return;
+        }
+      }
+
+      // Handle fire-and-forget 202 response (FSE2 pipeline)
+      if (data?.status === 'generating' && (data?.storyId || placeholderStoryId)) {
+        const realtimeStoryId = data.storyId || placeholderStoryId;
+        console.log('[CreateStory] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          toast.success(t.toastStoryCreated);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          stopGenerating();
+          navigate(`/read/${realtimeStoryId}`);
+        } catch (realtimeErr) {
+          console.error('[CreateStory] Realtime wait failed:', realtimeErr);
+          toast.error(t.toastGenerationError);
+          stopGenerating();
+          setCurrentScreen("entry");
+        }
         return;
       }
 
