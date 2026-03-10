@@ -2065,6 +2065,7 @@ Deno.serve(async (req) => {
               title: pipelineData.title,
               content: pipelineData.content,
               generation_status: 'verified',
+              story_path_code: pipelineData.story_path_code ?? null,
               generation_time_ms: pipelineData.performance?.total_ms ?? null,
               story_generation_ms: pipelineData.performance?.story_generation_ms ?? null,
               consistency_check_ms: pipelineData.performance?.consistency_check_ms ?? null,

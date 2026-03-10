@@ -496,10 +496,9 @@ Antworte NUR mit einem JSON-Objekt:
     }
 
     const corrected = JSON.parse(jsonMatch[0]);
-    const normalizedContent = (corrected.content || story.content).replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
     return {
       title: corrected.title || story.title,
-      content: normalizedContent,
+      content: corrected.content || story.content,
       questions: story.questions,
       vocabulary: story.vocabulary,
     };
@@ -891,10 +890,14 @@ export async function runPipelineFSE2(
     });
     console.log('[FSE2-PLANNER] Calling LLM...');
     const plannerStart = Date.now();
-    const storyPlan = await callLLM(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
+    const plannerRaw = await callLLM(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
     const plannerMs = Date.now() - plannerStart;
     console.log(`[FSE2-PLANNER] Done in ${plannerMs}ms`);
-    console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
+    console.log('[FSE2-PLANNER]', JSON.stringify(plannerRaw));
+
+    const jsonMatch = plannerRaw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('[FSE2] Planner returned no valid JSON');
+    const storyPlan = JSON.parse(jsonMatch[0]);
 
     // -----------------------------------------------------------------------
     // 7b. Persist story_plan to DB (before Writer, so plan survives Writer errors)
@@ -903,7 +906,7 @@ export async function runPipelineFSE2(
     if (storyId) {
       const { error: planUpdateErr } = await supabase
         .from('stories')
-        .update({ story_plan: storyPlan ?? null })
+        .update({ story_plan: plannerRaw ?? null })
         .eq('id', storyId);
       if (planUpdateErr) {
         console.warn('[FSE2] story_plan DB write failed:', planUpdateErr.message);
@@ -919,12 +922,10 @@ export async function runPipelineFSE2(
     // -----------------------------------------------------------------------
     if (storyId) {
       try {
-        const cleanPlan = storyPlan.replace(/```json|```/g, '').trim();
-        const planJson = JSON.parse(cleanPlan);
-        const villainChar = planJson?.characters?.find((c: any) => c.role === 'antagonist');
+        const villainChar = storyPlan?.characters?.find((c: any) => c.role === 'antagonist');
         const villainName = villainChar?.name ?? null;
-        const extracted = planJson?.extracted ?? null;
-        const storyPath = planJson?.story_path ?? null;
+        const extracted = storyPlan?.extracted ?? null;
+        const storyPath = storyPlan?.story_path ?? null;
 
         const plannerUpdate: Record<string, any> = {};
         if (villainName) plannerUpdate.villain_name = villainName;
@@ -946,7 +947,7 @@ export async function runPipelineFSE2(
     // -----------------------------------------------------------------------
     // 8. Writer call
     // -----------------------------------------------------------------------
-    const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, storyPlan, enrichedRequest, writerPrompt);
+    const storyPrompt = buildStoryPromptV2(writerLevel, lengthLevel, plannerRaw, enrichedRequest, writerPrompt);
     console.log('[FSE2-WRITER-INPUT] systemPrompt length:', storyPrompt.systemPrompt.length);
     console.log('[FSE2-WRITER-INPUT] userMessage preview:', storyPrompt.userMessage.substring(0, 500));
     console.log('[FSE2-LLM] call params:', {
@@ -1154,7 +1155,7 @@ export async function runPipelineFSE2(
       title: writerJson.title ?? '',
       image_plan: writerJson.image_plan ?? null,
       questions: writerJson.questions ?? [],
-      story_plan: storyPlan,
+      story_plan: plannerRaw,
       generationTimeMs: totalTime,
       performance: {
         story_generation_ms: totalTime - ccMs,
@@ -1163,6 +1164,7 @@ export async function runPipelineFSE2(
         total_ms: totalTime,
       },
       used_fse2: true,
+      story_path_code: selectedPath?.code ?? null,
       fse2_meta: {
         content_level: langSettings.content_level,
         language_level: langSettings.language_level,
