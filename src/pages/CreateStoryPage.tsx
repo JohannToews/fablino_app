@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { waitForStoryCompletion } from "@/lib/storyGenerationHelper";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useKidProfile } from "@/hooks/useKidProfile";
