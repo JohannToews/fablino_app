@@ -2111,6 +2111,7 @@ export type Database = {
         Row: {
           code: string
           created_at: string | null
+          em_driver: string | null
           hook_score: number | null
           humor_range_max: number | null
           humor_range_min: number | null
@@ -2124,6 +2125,7 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string | null
+          em_driver?: string | null
           hook_score?: number | null
           humor_range_max?: number | null
           humor_range_min?: number | null
@@ -2137,6 +2139,7 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string | null
+          em_driver?: string | null
           hook_score?: number | null
           humor_range_max?: number | null
           humor_range_min?: number | null
@@ -2266,6 +2269,7 @@ export type Database = {
           age_groups: string[]
           created_at: string | null
           descriptions: Json
+          em_driver: string | null
           id: string
           is_active: boolean | null
           labels: Json
@@ -2281,6 +2285,7 @@ export type Database = {
           age_groups: string[]
           created_at?: string | null
           descriptions: Json
+          em_driver?: string | null
           id?: string
           is_active?: boolean | null
           labels: Json
@@ -2296,6 +2301,7 @@ export type Database = {
           age_groups?: string[]
           created_at?: string | null
           descriptions?: Json
+          em_driver?: string | null
           id?: string
           is_active?: boolean | null
           labels?: Json
