@@ -1908,6 +1908,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normalment divertit",
     humorMid: "Molt divertit",
     humorHigh: "Totalment boig",
+    fablinoDecides: "Fablino decideix",
     continue: "Continua",
     back: "Enrere",
     educationalTopicHeader: "Què vols aprendre?",
