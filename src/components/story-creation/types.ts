@@ -1398,6 +1398,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normal komik",
     humorMid: "Çok komik",
     humorHigh: "Tamamen çılgın",
+    fablinoDecides: "Fablino karar verir",
     continue: "Devam",
     back: "Geri",
     educationalTopicHeader: "Ne öğrenmek istiyorsun?",
