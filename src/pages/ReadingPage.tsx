@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react"; // rebuild trigger
+import { waitForStoryCompletion } from "@/lib/storyGenerationHelper";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams, Navigate } from "react-router-dom";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
@@ -970,6 +971,21 @@ const ReadingPage = () => {
         usedNewPromptPath: data?.usedNewPromptPath,
       });
 
+      // Handle fire-and-forget 202 response (FSE2 pipeline)
+      if (data?.status === 'generating' && (data?.storyId || placeholderStoryIdReading)) {
+        const realtimeStoryId = data.storyId || placeholderStoryIdReading;
+        console.log('[ReadingPage] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${realtimeStoryId}`);
+        } catch (realtimeErr) {
+          console.error('[ReadingPage] Realtime wait failed:', realtimeErr);
+          toast.error(t.readingContinuationError);
+        }
+        return;
+      }
+
       if (error) {
         console.error("Generation error:", error);
         toast.error(t.readingContinuationError + ": " + (error.message || JSON.stringify(error)));
@@ -1321,6 +1337,21 @@ const ReadingPage = () => {
       });
 
       clearTimeout(timeoutIdInteractive);
+
+      // Handle fire-and-forget 202 response (FSE2 pipeline)
+      if (genData?.status === 'generating' && (genData?.storyId || placeholderStoryIdInteractive)) {
+        const realtimeStoryId = genData.storyId || placeholderStoryIdInteractive;
+        console.log('[ReadingPage-Interactive] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${realtimeStoryId}`);
+        } catch (realtimeErr) {
+          console.error('[ReadingPage-Interactive] Realtime wait failed:', realtimeErr);
+          toast.error(t.readingContinuationError);
+        }
+        return;
+      }
 
       if (error || genData?.error) {
         console.error("Generation error:", error || genData?.error);

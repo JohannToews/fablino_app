@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { waitForStoryCompletion } from "@/lib/storyGenerationHelper";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -248,6 +249,21 @@ const StorySelectPage = () => {
         },
       });
       clearTimeout(timeoutId);
+      
+      // Handle fire-and-forget 202 response (FSE2 pipeline)
+      if (data?.status === 'generating' && (data?.storyId || placeholderStoryIdSelect)) {
+        const realtimeStoryId = data.storyId || placeholderStoryIdSelect;
+        console.log('[StorySelect] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${realtimeStoryId}`);
+        } catch (realtimeErr) {
+          console.error('[StorySelect] Realtime wait failed:', realtimeErr);
+          throw realtimeErr;
+        }
+        return;
+      }
       
       if (error) throw error;
       

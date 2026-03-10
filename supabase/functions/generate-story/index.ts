@@ -2047,7 +2047,71 @@ Deno.serve(async (req) => {
     const fse2Enabled = fse2Raw ?? false;
     console.log('[FSE2-DEBUG] fse2Enabled=', fse2Enabled, 'userId=', userId);
     if (fse2Enabled) {
-      return await runPipelineFSE2(req, supabase, body);
+      const fse2StoryId = body.story_id as string | undefined;
+
+      // Fire-and-forget: run pipeline in background, return 202 immediately
+      // The Deno isolate stays alive after the Response is sent, so the async
+      // work below will complete (up to the wall-clock limit).
+      const _bgPipeline = (async () => {
+        try {
+          const pipelineResponse = await runPipelineFSE2(req, supabase, body);
+          const pipelineData = await pipelineResponse.json();
+
+          // Pipeline already writes metrics/classification to DB.
+          // Here we write the final content + title + status so the frontend
+          // (which listens via Realtime) can pick it up.
+          if (fse2StoryId && pipelineData.content && pipelineData.title && !pipelineData.fse2_error) {
+            await supabase.from('stories').update({
+              title: pipelineData.title,
+              content: pipelineData.content,
+              generation_status: 'verified',
+              generation_time_ms: pipelineData.performance?.total_ms ?? null,
+              story_generation_ms: pipelineData.performance?.story_generation_ms ?? null,
+              consistency_check_ms: pipelineData.performance?.consistency_check_ms ?? null,
+            }).eq('id', fse2StoryId);
+            console.log('[FSE2-BG] Final story data written to DB, status=verified');
+
+            // Insert comprehension questions if the pipeline returned any
+            if (Array.isArray(pipelineData.questions) && pipelineData.questions.length > 0) {
+              const qLang = body.storyLanguage || body.language || 'de';
+              const qRows = pipelineData.questions.map((q: any, i: number) => ({
+                story_id: fse2StoryId,
+                question: q.question,
+                expected_answer: q.correctAnswer || q.expectedAnswer || '',
+                options: q.options || [],
+                order_index: i,
+                question_language: qLang,
+              }));
+              const { error: qErr } = await supabase.from('comprehension_questions').insert(qRows);
+              if (qErr) console.warn('[FSE2-BG] Questions insert error:', qErr.message);
+            }
+          } else if (fse2StoryId) {
+            // Pipeline returned an error or empty content
+            await supabase.from('stories').update({
+              generation_status: 'text_failed',
+            }).eq('id', fse2StoryId);
+            console.warn('[FSE2-BG] Pipeline returned error or no content, status=text_failed');
+          }
+        } catch (bgErr: unknown) {
+          const bgMsg = bgErr instanceof Error ? bgErr.message : String(bgErr);
+          console.error('[FSE2-BG] Background pipeline error:', bgMsg);
+          if (fse2StoryId) {
+            try {
+              await supabase.from('stories').update({ generation_status: 'text_failed' }).eq('id', fse2StoryId);
+            } catch { /* swallow */ }
+          }
+        }
+      })();
+
+      // Return 202 immediately — client uses Realtime to watch for completion
+      return new Response(JSON.stringify({
+        storyId: fse2StoryId ?? null,
+        status: 'generating',
+        used_fse2: true,
+      }), {
+        status: 202,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     // FSE1 continues below unchanged
 

@@ -201,7 +201,7 @@ async function callLLM(
           console.log('[FSE2-LLM] using model: sonnet');
           return content;
         } catch (error: unknown) {
-          const err = error instanceof Error ? error : new Error(String(error));
+          const err: Error = error instanceof Error ? error : new Error(String(error));
           console.log('[FSE2-LLM] Sonnet raw error:', err.message);
           console.log('[FSE2-LLM] Sonnet response status if available:', (error as any)?.status);
           if (err.message === 'Rate limited' || err.message.startsWith('Vertex auth error')) {
@@ -215,7 +215,8 @@ async function callLLM(
       // All Sonnet retries exhausted — fall through to Gemini
       console.warn('[FSE2-LLM] Sonnet failed after retries, falling back to Gemini:', lastError?.message);
     } catch (sonnetError: unknown) {
-      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetError instanceof Error ? sonnetError.message : String(sonnetError));
+      const sonnetMsg = sonnetError instanceof Error ? (sonnetError as Error).message : String(sonnetError);
+      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetMsg);
     }
   }
 
