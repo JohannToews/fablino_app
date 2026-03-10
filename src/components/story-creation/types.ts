@@ -1823,6 +1823,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normálisan vicces",
     humorMid: "Nagyon vicces",
     humorHigh: "Teljesen őrült",
+    fablinoDecides: "Fablino dönt",
     continue: "Tovább",
     back: "Vissza",
     educationalTopicHeader: "Mit szeretnél tanulni?",
