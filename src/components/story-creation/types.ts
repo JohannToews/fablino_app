@@ -2248,6 +2248,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Помірно смішно",
     humorMid: "Дуже смішно",
     humorHigh: "Цілком божевільно",
+    fablinoDecides: "Fablino вирішує",
     continue: "Далі",
     back: "Назад",
     educationalTopicHeader: "Чому ти хочеш навчитися?",
