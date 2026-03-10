@@ -84,7 +84,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const wordExplanationKey = `system_prompt_word_explanation_${language}`;
     const consistencyCheckKey = `system_prompt_consistency_check_${language}`;
     
-    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result, writerCoreV3Result, writerPromptVersionResult] = await Promise.all([
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result, writerCoreV3Result] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
