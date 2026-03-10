@@ -8,6 +8,7 @@ interface TimingRow {
   story_id: string;
   story_title: string;
   story_length: string | null;
+  planner_ms: number | null;
   story_generation_ms: number | null;
   consistency_check_only_ms: number | null;
   patch_ms: number | null;
