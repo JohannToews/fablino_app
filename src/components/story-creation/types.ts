@@ -1143,6 +1143,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normaal grappig",
     humorMid: "Echt grappig",
     humorHigh: "Totaal gek",
+    fablinoDecides: "Fablino beslist",
     continue: "Verder",
     back: "Terug",
     educationalTopicHeader: "Wat wil je leren?",
