@@ -859,6 +859,7 @@ export async function runPipelineFSE2(
 
       selectedPath = await selectNextPathV2(supabase, ageGroup, storyCount ?? 0, recentCodes);
       console.log('[FSE2-PATH] Selected:', JSON.stringify({ code: selectedPath.code, label: selectedPath.label }));
+      console.log('[FSE2-PLANNER-INPUT] writing_instructions:', selectedPath?.writing_instructions);
     } catch (pathErr) {
       console.warn('[FSE2-PATH] Path selection failed, continuing without path:', pathErr);
     }
