@@ -453,6 +453,8 @@ async function correctStory(
   issues: string[],
   suggestedFixes: string,
   targetLanguage: string,
+  wordCount: number,
+  maxWordCount: number,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   const correctionPrompt = `Du bist ein Texteditor. Korrigiere den folgenden Text basierend auf den gefundenen Problemen.
 
@@ -460,7 +462,10 @@ WICHTIG:
 - Behalte die Sprache (${targetLanguage}) bei
 - Behalte den Stil und die Struktur bei
 - Korrigiere NUR die genannten Probleme
-- Der Text muss weiterhin kindgerecht sein`;
+- Der Text muss weiterhin kindgerecht sein
+- Fix issues by REPLACING existing sentences, not by inserting new ones.
+- Word count must not increase by more than 5%.
+- Current word count: ${wordCount}. Max after patch: ${maxWordCount}.`;
 
   const userPrompt = `Korrigiere diese Geschichte:
 
@@ -919,11 +924,12 @@ export async function runPipelineFSE2(
         const villainChar = planJson?.characters?.find((c: any) => c.role === 'antagonist');
         const villainName = villainChar?.name ?? null;
         const extracted = planJson?.extracted ?? null;
+        const storyPath = planJson?.story_path ?? null;
 
         const plannerUpdate: Record<string, any> = {};
         if (villainName) plannerUpdate.villain_name = villainName;
         if (extracted?.storyType) plannerUpdate.story_type = extracted.storyType;
-        if (selectedPath) plannerUpdate.story_path_code = selectedPath.code;
+        plannerUpdate.story_path_code = selectedPath?.code ?? storyPath ?? null;
 
         if (Object.keys(plannerUpdate).length > 0) {
           await supabase
@@ -1037,11 +1043,15 @@ export async function runPipelineFSE2(
         // Patch
         const patchStart = Date.now();
         const targetLanguage = requestBody.language || 'DE';
+        const wordCount = (story.content || '').split(/\s+/).filter(Boolean).length;
+        const maxWordCount = Math.ceil(wordCount * 1.05);
         const corrected = await correctStory(
           { ...story, questions: writerJson.questions ?? [], vocabulary: writerJson.vocabulary ?? [] },
           initialResult.issues,
           initialResult.suggestedFixes,
           targetLanguage,
+          wordCount,
+          maxWordCount,
         );
         patchMs = Date.now() - patchStart;
         writerJson.title = corrected.title;
