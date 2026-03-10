@@ -2768,6 +2768,7 @@ export type Database = {
           language: string
           patch_fix_rate: number
           patch_ms: number
+          planner_ms: number
           quality_rating: number
           recheck_ms: number
           story_created_at: string
