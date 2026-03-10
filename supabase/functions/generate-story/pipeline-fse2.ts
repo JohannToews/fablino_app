@@ -944,6 +944,16 @@ export async function runPipelineFSE2(
       }
     }
 
+    console.log('[FSE2-WRITER-JSON] classification fields:', JSON.stringify({
+      emotional_coloring: writerJson.emotional_coloring,
+      emotional_secondary: writerJson.emotional_secondary,
+      humor_level: writerJson.humor_level,
+      emotional_depth: writerJson.emotional_depth,
+      structure_beginning: writerJson.structure_beginning,
+      structure_middle: writerJson.structure_middle,
+      structure_ending: writerJson.structure_ending,
+    }));
+
     let content = writerJson.content ?? writerRaw;
 
     // -----------------------------------------------------------------------
