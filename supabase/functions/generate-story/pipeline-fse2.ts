@@ -850,7 +850,10 @@ export async function runPipelineFSE2(
       model: 'claude-sonnet-4-6',
     });
     console.log('[FSE2-PLANNER] Calling LLM...');
+    const plannerStart = Date.now();
     const storyPlan = await callLLM(planPrompt.systemPrompt, planPrompt.userMessage, 0.8);
+    const plannerMs = Date.now() - plannerStart;
+    console.log(`[FSE2-PLANNER] Done in ${plannerMs}ms`);
     console.log('[FSE2-PLANNER]', JSON.stringify(storyPlan));
 
     // -----------------------------------------------------------------------
@@ -913,16 +916,31 @@ export async function runPipelineFSE2(
       model: 'claude-sonnet-4-6',
     });
     console.log('[FSE2-WRITER] Calling LLM...');
-    const writerRaw = await callLLM(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
+    let writerRaw = await callLLM(storyPrompt.systemPrompt, storyPrompt.userMessage, 0.8);
     console.log(`[FSE2-WRITER] Done (${writerRaw.length} chars)`);
+
+    // Strip markdown code fences if present
+    writerRaw = writerRaw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
 
     let writerJson: any = {};
     try {
-      const cleaned = writerRaw.replace(/```json|```/g, '').trim();
-      writerJson = JSON.parse(cleaned);
+      writerJson = JSON.parse(writerRaw);
     } catch (e) {
-      console.error('[FSE2-WRITER] JSON parse failed:', e);
-      throw new Error('Writer output could not be parsed as JSON');
+      // Try to repair by escaping unescaped double quotes inside string values
+      try {
+        const repaired = writerRaw.replace(
+          /:\s*"((?:[^"\\]|\\.)*)"/g,
+          (_match: string, inner: string) => {
+            const fixed = inner.replace(/(?<!\\)"/g, '\\"');
+            return `: "${fixed}"`;
+          }
+        );
+        writerJson = JSON.parse(repaired);
+        console.log('[FSE2-WRITER] JSON repaired, proceeding');
+      } catch (_e2) {
+        console.error('[FSE2-WRITER] JSON parse failed, raw start:', writerRaw.substring(0, 500));
+        throw new Error('Writer output could not be parsed as JSON');
+      }
     }
 
     let content = writerJson.content ?? writerRaw;
@@ -1037,6 +1055,7 @@ export async function runPipelineFSE2(
       if (storyId) {
         try {
           await supabase.from('stories').update({
+            planner_ms: plannerMs,
             consistency_check_ms: ccMs,
             checker_critical: recheckCritical,
             checker_medium: recheckMedium,
