@@ -269,7 +269,10 @@ const CreateStoryPage = () => {
         })
         .select("id")
         .single();
-      if (!placeholderErr && placeholderRow?.id) placeholderStoryId = placeholderRow.id;
+      if (!placeholderErr && placeholderRow?.id) {
+        placeholderStoryId = placeholderRow.id;
+        sessionStorage.setItem('generating_story_id', placeholderStoryId);
+      }
 
       // Abort any previous request + set 150s timeout
       abortControllerRef.current?.abort();
