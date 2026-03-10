@@ -214,8 +214,8 @@ async function callLLM(
 
       // All Sonnet retries exhausted — fall through to Gemini
       console.warn('[FSE2-LLM] Sonnet failed after retries, falling back to Gemini:', lastError?.message);
-    } catch (sonnetError) {
-      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetError instanceof Error ? sonnetError.message : sonnetError);
+    } catch (sonnetError: unknown) {
+      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetError instanceof Error ? sonnetError.message : String(sonnetError));
     }
   }
 
