@@ -301,9 +301,9 @@ const CreateStoryPage = () => {
           navigate(`/read/${realtimeStoryId}`);
         } catch (realtimeErr) {
           console.error('[CreateStory] Realtime wait failed:', realtimeErr);
-          toast.error(t.toastGenerationError);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
           stopGenerating();
-          setCurrentScreen("entry");
+          navigate(`/read/${realtimeStoryId}`);
         }
         return;
       }
@@ -809,6 +809,12 @@ const CreateStoryPage = () => {
       } catch (timeoutErr: any) {
         if (timeoutErr?.message === 'TIMEOUT') {
           console.error('[CreateStory] Generation timed out after', GENERATION_TIMEOUT_MS / 1000, 's');
+          if (placeholderStoryIdFiction) {
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+            stopGenerating();
+            navigate(`/read/${placeholderStoryIdFiction}`);
+            return;
+          }
           toast.error(t.createTimeoutError);
           stopGenerating();
           setCurrentScreen("entry");
@@ -844,9 +850,9 @@ const CreateStoryPage = () => {
           navigate(`/read/${realtimeStoryId}`);
         } catch (realtimeErr) {
           console.error('[CreateStory-Fiction] Realtime wait failed:', realtimeErr);
-          toast.error(t.toastGenerationError);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
           stopGenerating();
-          setCurrentScreen("entry");
+          navigate(`/read/${realtimeStoryId}`);
         }
         return;
       }
