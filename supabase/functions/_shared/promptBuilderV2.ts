@@ -156,13 +156,14 @@ export async function selectNextPathV2(
   storyCount: number,
   recentCodes: string[],
   humorLevel?: number,
+  emDriver?: string,
 ): Promise<StoryPathV2> {
   const ageIdx = AGE_GROUP_ORDER_V2.indexOf(ageGroup);
   const eligibleAgeGroups = AGE_GROUP_ORDER_V2.slice(0, ageIdx + 1);
 
   let query = supabaseClient
     .from('story_paths')
-    .select('id, code, label, min_age_group, hook_score, is_onboarding, humor_range_min, humor_range_max, writing_instructions')
+    .select('id, code, label, min_age_group, hook_score, is_onboarding, humor_range_min, humor_range_max, writing_instructions, em_driver')
     .eq('is_active', true)
     .in('min_age_group', eligibleAgeGroups)
     .order('hook_score', { ascending: false, nullsFirst: false });
@@ -195,6 +196,15 @@ export async function selectNextPathV2(
       p => p.humor_range_min <= humorLevel && humorLevel <= p.humor_range_max
     );
     if (humorFiltered.length > 0) candidates = humorFiltered;
+  }
+
+  if (emDriver != null) {
+    const driverFiltered = candidates.filter(p => p.em_driver === emDriver);
+    if (driverFiltered.length > 0) {
+      candidates = driverFiltered;
+    } else {
+      console.warn(`[selectNextPathV2] No paths for em_driver=${emDriver}, ignoring filter`);
+    }
   }
 
   if (storyCount >= 6 && storyCount <= 10) {

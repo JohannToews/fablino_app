@@ -31,6 +31,7 @@ export interface SelectedSubtype {
   settingIdea: string;
   category: string;
   label: string; // localized label
+  emDriver: string;
 }
 
 // DB row shape from story_subtypes table
@@ -179,6 +180,7 @@ export async function selectStorySubtype(
     settingIdea,
     category: effectiveCategory,
     label,
+    emDriver: (selected as any).em_driver ?? 'gefühl',
   };
 
   console.log(`[SubtypeSelector] Selected: ${result.subtypeKey} (${result.label}) for ${effectiveCategory}/${ageGroup}`);

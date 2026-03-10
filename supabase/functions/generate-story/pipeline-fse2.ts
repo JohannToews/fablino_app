@@ -862,7 +862,7 @@ export async function runPipelineFSE2(
         .select('id', { count: 'exact', head: true })
         .eq('kid_profile_id', kidProfileId);
 
-      selectedPath = await selectNextPathV2(supabase, ageGroup, storyCount ?? 0, recentCodes);
+      selectedPath = await selectNextPathV2(supabase, ageGroup, storyCount ?? 0, recentCodes, undefined, selectedSubtype?.emDriver ?? undefined);
       console.log('[FSE2-PATH] Selected:', JSON.stringify({ code: selectedPath.code, label: selectedPath.label }));
       console.log('[FSE2-PLANNER-INPUT] writing_instructions:', selectedPath?.writing_instructions);
     } catch (pathErr) {
