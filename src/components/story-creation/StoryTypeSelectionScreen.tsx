@@ -231,7 +231,7 @@ tr: "Seni hangi macera bekliyor? 🏰",
 
         {/* Main Category Grid – 2 cols mobile, 3 cols tablet */}
         {viewState === "main" && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full pb-24">
+          <div className="grid grid-cols-2 gap-2 w-full pb-24">
             {mainCategoryTiles.map((tile) => (
               <CharacterTile
                 key={tile.type}
