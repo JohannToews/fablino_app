@@ -125,7 +125,7 @@ async function callLLM(
   // To revert: change `if (false &&` back to `if (`
   if (false && serviceAccountJson) {
     try {
-      const sa = JSON.parse(serviceAccountJson);
+      const sa = JSON.parse(serviceAccountJson!);
       const projectId = sa.project_id || 'fablino-prod';
       const modelName = 'claude-sonnet-4-6';
       const vertexUrl = `https://europe-west1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/europe-west1/publishers/anthropic/models/${modelName}:rawPredict`;
@@ -141,7 +141,7 @@ async function callLLM(
         }
 
         try {
-          const accessToken = await getVertexAccessToken(serviceAccountJson);
+          const accessToken = await getVertexAccessToken(serviceAccountJson!);
           console.log('[FSE2-LLM] Sonnet request url:', vertexUrl);
           console.log('[FSE2-LLM] Sonnet auth token length:', accessToken?.length);
 
@@ -200,11 +200,12 @@ async function callLLM(
 
           console.log('[FSE2-LLM] using model: sonnet');
           return content;
-        } catch (error) {
-          console.log('[FSE2-LLM] Sonnet raw error:', error instanceof Error ? error.message : String(error));
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.log('[FSE2-LLM] Sonnet raw error:', err.message);
           console.log('[FSE2-LLM] Sonnet response status if available:', (error as any)?.status);
-          if (error instanceof Error && (error.message === 'Rate limited' || error.message.startsWith('Vertex auth error'))) {
-            lastError = error;
+          if (err.message === 'Rate limited' || err.message.startsWith('Vertex auth error')) {
+            lastError = err;
             continue;
           }
           throw error;
@@ -213,8 +214,8 @@ async function callLLM(
 
       // All Sonnet retries exhausted — fall through to Gemini
       console.warn('[FSE2-LLM] Sonnet failed after retries, falling back to Gemini:', lastError?.message);
-    } catch (sonnetError) {
-      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetError instanceof Error ? sonnetError.message : sonnetError);
+    } catch (sonnetError: unknown) {
+      console.warn('[FSE2-LLM] Sonnet unavailable, falling back to Gemini:', sonnetError instanceof Error ? sonnetError.message : String(sonnetError));
     }
   }
 
