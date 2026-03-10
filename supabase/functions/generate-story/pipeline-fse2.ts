@@ -1116,6 +1116,7 @@ export async function runPipelineFSE2(
         try {
           await supabase.from('stories').update({
             planner_ms: plannerMs,
+            story_path_code: selectedPath?.code ?? null,
             consistency_check_ms: ccMs,
             checker_critical: recheckCritical,
             checker_medium: recheckMedium,
