@@ -136,6 +136,7 @@ export interface StoryPathV2 {
   humor_range_min: number;
   humor_range_max: number;
   writing_instructions: string;
+  em_driver?: string;
 }
 
 const AGE_GROUP_ORDER_V2 = ['CE1', 'CE2', 'CM1', 'CM2'] as const;
@@ -316,6 +317,19 @@ Target word count: ${lengthLevel.word_approx} words — stay within ±15% of thi
 CRITICAL: Do NOT write fewer than ${Math.round(lengthLevel.word_approx * 0.85)} words.`;
 }
 
+const EM_DRIVER_EN: Record<string, string> = {
+  spannung: 'suspense',
+  staunen: 'adventure',
+  gefühl: 'empathy',
+  humor: 'humor',
+};
+
+function toEnglishDriver(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  const lower = raw.toLowerCase();
+  return EM_DRIVER_EN[lower] ?? raw;
+}
+
 export function buildPlanPromptV2(
   storyLevel: StoryLevel,
   lengthLevel: StoryLengthLevel,
@@ -369,6 +383,8 @@ If a character has role VILLAIN, they MUST appear as antagonist in characters[] 
     userMessageObj.story_path = selectedPath.code;
     userMessageObj.story_path_instructions = selectedPath.writing_instructions;
     userMessageObj.story_path_echo_rule = 'echo back the mandatory path in story_path field';
+    const driver = toEnglishDriver(selectedPath.em_driver);
+    if (driver) userMessageObj.primary_driver = driver;
   }
 
   if (selectedSubtype) {
