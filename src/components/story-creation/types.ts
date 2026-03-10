@@ -1313,6 +1313,7 @@ export const storyTypeSelectionTranslations: Record<Language, StoryTypeSelection
     humorLow: "Normalno smiješno",
     humorMid: "Jako smiješno",
     humorHigh: "Totalno ludo",
+    fablinoDecides: "Fablino odlučuje",
     continue: "Nastavi",
     back: "Nazad",
     educationalTopicHeader: "Šta želiš naučiti?",
