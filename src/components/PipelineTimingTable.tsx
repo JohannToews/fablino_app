@@ -98,6 +98,7 @@ const PipelineTimingTable = ({ rows }: PipelineTimingTableProps) => {
                   </TableCell>
                   <TableCell className="text-xs">{r.story_length || "–"}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.story_generation_ms)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{fmtSec(r.planner_ms)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{fmtSec(r.consistency_check_only_ms)}</TableCell>
                   <TableCell className="text-xs text-center font-mono">
                     {r.issues_found != null && r.issues_found > 0 ? (
