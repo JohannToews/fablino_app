@@ -287,6 +287,7 @@ Write the entire story in this language.
 
 ## LANGUAGE & STYLE RULES
 - Max sentence length: ${writerLevel.max_sentence_length} words
+- Sentence rhythm: Vary sentence length between 6 and ${writerLevel.max_sentence_length} words. Mix short sentences (6–8 words) with longer ones (10–${writerLevel.max_sentence_length} words). Never write more than 2 consecutive short sentences.
 - Sentence structures: ${writerLevel.sentence_structures}
 - Allowed tenses: ${writerLevel.allowed_tenses.join(', ')}
 - Tense switch allowed: ${writerLevel.tense_switch_allowed}
