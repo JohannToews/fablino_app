@@ -706,6 +706,7 @@ export interface StoryTypeSelectionTranslations {
   humorLow: string;
   humorMid: string;
   humorHigh: string;
+  fablinoDecides: string;
   continue: string;
   back: string;
   // Educational topics
