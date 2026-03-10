@@ -1338,6 +1338,21 @@ const ReadingPage = () => {
 
       clearTimeout(timeoutIdInteractive);
 
+      // Handle fire-and-forget 202 response (FSE2 pipeline)
+      if (genData?.status === 'generating' && (genData?.storyId || placeholderStoryIdInteractive)) {
+        const realtimeStoryId = genData.storyId || placeholderStoryIdInteractive;
+        console.log('[ReadingPage-Interactive] FSE2 fire-and-forget: waiting for Realtime on', realtimeStoryId);
+        try {
+          await waitForStoryCompletion(realtimeStoryId);
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${realtimeStoryId}`);
+        } catch (realtimeErr) {
+          console.error('[ReadingPage-Interactive] Realtime wait failed:', realtimeErr);
+          toast.error(t.readingContinuationError);
+        }
+        return;
+      }
+
       if (error || genData?.error) {
         console.error("Generation error:", error || genData?.error);
         toast.error(t.readingContinuationError);
