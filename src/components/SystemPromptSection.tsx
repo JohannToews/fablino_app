@@ -63,7 +63,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     writerCoreV3: false,
-    writerPromptVersion: false,
+    
     writerCoreV2: false,
     system: false,
     continuation: false,
