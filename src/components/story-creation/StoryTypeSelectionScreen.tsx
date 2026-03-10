@@ -89,13 +89,8 @@ const StoryTypeSelectionScreen = ({
   const mainCategoryTiles = [
     { type: "fantasy" as StoryType, image: fantasyImg, label: translations.fantasy },
     { type: "action" as StoryType, image: actionImg, label: translations.action },
-    { type: "animals" as StoryType, image: animalsImg, label: translations.animals },
     { type: "everyday" as StoryType, image: everydayImg, label: translations.everyday },
     { type: "humor" as StoryType, image: humorImg, label: translations.humor },
-    // Educational temporarily disabled - will be re-enabled later
-    // { type: "educational" as StoryType, image: educationalImg, label: translations.educational },
-    // Surprise Me as 6th tile in the grid
-    { type: "surprise" as StoryType, image: surpriseBoxImg, label: translations.surprise, isSurprise: true },
   ];
 
   const educationalTopicTiles = [
