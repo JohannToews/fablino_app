@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react"; // rebuild trigger
+import { waitForStoryCompletion } from "@/lib/storyGenerationHelper";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams, Navigate } from "react-router-dom";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
