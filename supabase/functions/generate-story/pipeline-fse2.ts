@@ -1066,6 +1066,10 @@ export async function runPipelineFSE2(
             recheck_ms: recheckMs,
             patch_fix_rate: patchFixRate,
             critical_patch_failed: recheckCritical > 0,
+            emotional_coloring: writerJson.emotional_coloring ?? null,
+            emotional_secondary: writerJson.emotional_secondary ?? null,
+            humor_level: writerJson.humor_level ?? null,
+            emotional_depth: writerJson.emotional_depth ?? null,
           }).eq('id', storyId);
           console.log('[FSE2-CC] metrics written to stories table');
         } catch (dbErr) {
