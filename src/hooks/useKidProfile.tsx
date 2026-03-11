@@ -60,6 +60,8 @@ interface KidProfileContextType {
   setSelectedProfileId: (id: string | null) => void;
   hasMultipleProfiles: boolean;
   isLoading: boolean;
+  /** True once the initial profile load has completed (success or failure) */
+  hasLoaded: boolean;
   refreshProfiles: () => Promise<void>;
   kidAppLanguage: Language;
   /** The language stories should be generated/read in */
@@ -83,6 +85,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
     return sessionStorage.getItem('selected_kid_profile_id');
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   // Track whether we've done the initial load to avoid re-showing loading spinner
   const hasLoadedOnce = useRef(false);
 
@@ -165,11 +168,16 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('[useKidProfile] loadKidProfiles crashed:', error);
-      setKidProfiles([]);
-      setSelectedProfileId(null);
-      sessionStorage.removeItem('selected_kid_profile_id');
+      // On error, only clear profiles if we never loaded successfully before.
+      // This prevents a transient DB timeout from wiping valid cached profiles.
+      if (!hasLoadedOnce.current) {
+        setKidProfiles([]);
+        setSelectedProfileId(null);
+        sessionStorage.removeItem('selected_kid_profile_id');
+      }
     } finally {
       hasLoadedOnce.current = true;
+      setHasLoaded(true);
       setIsLoading(false);
     }
   }, [user]);
@@ -232,6 +240,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       setSelectedProfileId: handleSetSelectedProfileId,
       hasMultipleProfiles,
       isLoading,
+      hasLoaded,
       refreshProfiles: loadKidProfiles,
       kidAppLanguage,
       kidReadingLanguage,
