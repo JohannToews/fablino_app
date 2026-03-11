@@ -85,6 +85,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
     return sessionStorage.getItem('selected_kid_profile_id');
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   // Track whether we've done the initial load to avoid re-showing loading spinner
   const hasLoadedOnce = useRef(false);
 
