@@ -248,7 +248,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
+    let profileLoadInFlight = false;
+
     const loadSupabaseProfile = (authUser: User) => {
+      // Prevent overlapping profile loads
+      if (profileLoadInFlight) return;
+      profileLoadInFlight = true;
       if (isMounted) setIsLoading(true);
 
       void (async () => {
@@ -269,10 +274,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (!isMounted) return;
           setUser((prev) => prev ?? null);
         } finally {
+          profileLoadInFlight = false;
           if (isMounted) setIsLoading(false);
         }
       })();
     };
+
+    // Track the last loaded auth user id to avoid redundant profile fetches
+    let lastLoadedAuthUserId: string | null = null;
 
     // Set up auth state listener FIRST
     // IMPORTANT: callback must stay synchronous (no async/await + no Supabase calls directly here)
@@ -283,11 +292,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newSession?.user) {
         setSession(newSession);
         setAuthMode('supabase');
-        loadSupabaseProfile(newSession.user);
+        // Only reload profile on actual sign-in or if user changed
+        // TOKEN_REFRESHED with same user doesn't need a profile refetch
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || newSession.user.id !== lastLoadedAuthUserId) {
+          lastLoadedAuthUserId = newSession.user.id;
+          loadSupabaseProfile(newSession.user);
+        }
         return;
       }
 
       if (event === 'SIGNED_OUT' || !newSession) {
+        lastLoadedAuthUserId = null;
         applyLegacyFallback();
       }
     });
