@@ -248,7 +248,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
+    let profileLoadInFlight = false;
+
     const loadSupabaseProfile = (authUser: User) => {
+      // Prevent overlapping profile loads
+      if (profileLoadInFlight) return;
+      profileLoadInFlight = true;
       if (isMounted) setIsLoading(true);
 
       void (async () => {
@@ -269,6 +274,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (!isMounted) return;
           setUser((prev) => prev ?? null);
         } finally {
+          profileLoadInFlight = false;
           if (isMounted) setIsLoading(false);
         }
       })();
