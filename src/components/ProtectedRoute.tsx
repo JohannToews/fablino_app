@@ -11,10 +11,10 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, skipKidCheck = false }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
-  const { kidProfiles, isLoading: profilesLoading } = useKidProfile();
+  const { kidProfiles, isLoading: profilesLoading, hasLoaded: profilesHasLoaded } = useKidProfile();
 
-  // Show loading state while checking auth
-  if (isLoading || (!skipKidCheck && profilesLoading)) {
+  // Show loading state while checking auth or waiting for initial profile load
+  if (isLoading || (!skipKidCheck && (profilesLoading || !profilesHasLoaded))) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -27,7 +27,8 @@ const ProtectedRoute = ({ children, skipKidCheck = false }: ProtectedRouteProps)
   }
 
   // If user has no kid profiles, send them to onboarding
-  if (!skipKidCheck && kidProfiles && kidProfiles.length === 0) {
+  // Only redirect when profiles have been successfully loaded at least once
+  if (!skipKidCheck && profilesHasLoaded && kidProfiles && kidProfiles.length === 0) {
     return <Navigate to="/onboarding/child" replace />;
   }
 
