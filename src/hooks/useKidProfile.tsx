@@ -167,9 +167,13 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('[useKidProfile] loadKidProfiles crashed:', error);
-      setKidProfiles([]);
-      setSelectedProfileId(null);
-      sessionStorage.removeItem('selected_kid_profile_id');
+      // On error, only clear profiles if we never loaded successfully before.
+      // This prevents a transient DB timeout from wiping valid cached profiles.
+      if (!hasLoadedOnce.current) {
+        setKidProfiles([]);
+        setSelectedProfileId(null);
+        sessionStorage.removeItem('selected_kid_profile_id');
+      }
     } finally {
       hasLoadedOnce.current = true;
       setIsLoading(false);
