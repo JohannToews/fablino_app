@@ -177,6 +177,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       }
     } finally {
       hasLoadedOnce.current = true;
+      setHasLoaded(true);
       setIsLoading(false);
     }
   }, [user]);
