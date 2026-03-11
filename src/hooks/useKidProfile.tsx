@@ -238,6 +238,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
       setSelectedProfileId: handleSetSelectedProfileId,
       hasMultipleProfiles,
       isLoading,
+      hasLoaded: hasLoadedOnce.current,
       refreshProfiles: loadKidProfiles,
       kidAppLanguage,
       kidReadingLanguage,
