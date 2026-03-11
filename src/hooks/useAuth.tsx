@@ -274,6 +274,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })();
     };
 
+    // Track the last loaded auth user id to avoid redundant profile fetches
+    let lastLoadedAuthUserId: string | null = null;
+
     // Set up auth state listener FIRST
     // IMPORTANT: callback must stay synchronous (no async/await + no Supabase calls directly here)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
@@ -283,11 +286,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newSession?.user) {
         setSession(newSession);
         setAuthMode('supabase');
-        loadSupabaseProfile(newSession.user);
+        // Only reload profile on actual sign-in or if user changed
+        // TOKEN_REFRESHED with same user doesn't need a profile refetch
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || newSession.user.id !== lastLoadedAuthUserId) {
+          lastLoadedAuthUserId = newSession.user.id;
+          loadSupabaseProfile(newSession.user);
+        }
         return;
       }
 
       if (event === 'SIGNED_OUT' || !newSession) {
+        lastLoadedAuthUserId = null;
         applyLegacyFallback();
       }
     });
