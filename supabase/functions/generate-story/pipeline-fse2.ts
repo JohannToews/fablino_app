@@ -158,7 +158,7 @@ async function callLLM(
               },
               body: JSON.stringify({
                 anthropic_version: 'vertex-2023-10-16',
-                max_tokens: 8192,
+                max_tokens: 12000,
                 temperature,
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userPrompt }],
@@ -254,7 +254,7 @@ async function callLLM(
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature },
+          generationConfig: { temperature, maxOutputTokens: 12000 },
         }),
       });
 
@@ -1060,8 +1060,8 @@ export async function runPipelineFSE2(
         );
         patchMs = Date.now() - patchStart;
         writerJson.title = corrected.title;
-        writerJson.content = corrected.content;
-        content = corrected.content;
+        writerJson.content = corrected.content.replace(/([.!?])([A-ZÄÖÜ„])/g, '$1 $2');
+        content = writerJson.content;
         console.log(`[FSE2-CC] story patched in ${patchMs}ms`);
 
         // Targeted recheck on each structured error
