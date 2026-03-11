@@ -60,6 +60,8 @@ interface KidProfileContextType {
   setSelectedProfileId: (id: string | null) => void;
   hasMultipleProfiles: boolean;
   isLoading: boolean;
+  /** True once the initial profile load has completed (success or failure) */
+  hasLoaded: boolean;
   refreshProfiles: () => Promise<void>;
   kidAppLanguage: Language;
   /** The language stories should be generated/read in */
