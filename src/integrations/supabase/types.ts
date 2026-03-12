@@ -2380,6 +2380,89 @@ export type Database = {
         }
         Relationships: []
       }
+      text_level_tenses: {
+        Row: {
+          created_at: string | null
+          id: number
+          language_code: string
+          level: number
+          tenses: string
+          tenses_description: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          language_code: string
+          level: number
+          tenses: string
+          tenses_description: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          language_code?: string
+          level?: number
+          tenses?: string
+          tenses_description?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "text_level_tenses_level_fkey"
+            columns: ["level"]
+            isOneToOne: false
+            referencedRelation: "text_levels"
+            referencedColumns: ["level"]
+          },
+        ]
+      }
+      text_levels: {
+        Row: {
+          base_paragraphs: number
+          created_at: string | null
+          example_hint: string | null
+          id: number
+          label_de: string
+          label_en: string
+          level: number
+          max_sentence_length: number
+          structures: string
+          structures_description: string
+          tenses_generic: string
+          vocabulary_scope: string
+          words_per_paragraph: number
+        }
+        Insert: {
+          base_paragraphs: number
+          created_at?: string | null
+          example_hint?: string | null
+          id?: number
+          label_de: string
+          label_en: string
+          level: number
+          max_sentence_length: number
+          structures: string
+          structures_description: string
+          tenses_generic: string
+          vocabulary_scope: string
+          words_per_paragraph: number
+        }
+        Update: {
+          base_paragraphs?: number
+          created_at?: string | null
+          example_hint?: string | null
+          id?: number
+          label_de?: string
+          label_en?: string
+          level?: number
+          max_sentence_length?: number
+          structures?: string
+          structures_description?: string
+          tenses_generic?: string
+          vocabulary_scope?: string
+          words_per_paragraph?: number
+        }
+        Relationships: []
+      }
       theme_rules: {
         Row: {
           character_archetypes: string[] | null

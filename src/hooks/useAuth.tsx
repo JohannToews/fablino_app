@@ -249,12 +249,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     let profileLoadInFlight = false;
+    let profileLoadedOnce = false;
 
-    const loadSupabaseProfile = (authUser: User) => {
+    const loadSupabaseProfile = (authUser: User, isRefresh = false) => {
       // Prevent overlapping profile loads
       if (profileLoadInFlight) return;
       profileLoadInFlight = true;
-      if (isMounted) setIsLoading(true);
+      // Only show loading spinner on the FIRST profile load.
+      // Subsequent loads (token refresh, cross-tab sync) must NOT set isLoading=true
+      // because ProtectedRoute would unmount children (losing page state).
+      if (isMounted && !profileLoadedOnce) setIsLoading(true);
 
       void (async () => {
         try {
@@ -269,13 +273,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           if (!isMounted) return;
           setUser((prev) => profile ?? prev ?? null);
+          profileLoadedOnce = true;
         } catch (error) {
           console.error('Error loading Supabase profile:', error);
           if (!isMounted) return;
           setUser((prev) => prev ?? null);
         } finally {
           profileLoadInFlight = false;
-          if (isMounted) setIsLoading(false);
+          if (isMounted && !profileLoadedOnce) setIsLoading(false);
+          // After first successful load, always clear loading
+          if (isMounted && profileLoadedOnce) setIsLoading(false);
         }
       })();
     };
@@ -292,11 +299,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newSession?.user) {
         setSession(newSession);
         setAuthMode('supabase');
-        // Only reload profile on actual sign-in or if user changed
-        // TOKEN_REFRESHED with same user doesn't need a profile refetch
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || newSession.user.id !== lastLoadedAuthUserId) {
+        // Only reload profile on first load or if the user actually changed.
+        // TOKEN_REFRESHED / cross-tab SIGNED_IN with the same user must NOT
+        // trigger a reload — it sets isLoading=true which unmounts pages.
+        if (newSession.user.id !== lastLoadedAuthUserId) {
           lastLoadedAuthUserId = newSession.user.id;
-          loadSupabaseProfile(newSession.user);
+          loadSupabaseProfile(newSession.user, event === 'TOKEN_REFRESHED');
         }
         return;
       }
