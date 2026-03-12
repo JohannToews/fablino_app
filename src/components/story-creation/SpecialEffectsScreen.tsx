@@ -442,6 +442,9 @@ const SpecialEffectsScreen = ({
   const [storyLength, setStoryLength] = useState<StoryLength>("medium");
   const [storyDifficulty, setStoryDifficulty] = useState<StoryDifficulty>("medium");
 
+  // New length bonus system: 0 = Standard (profile default), +1/+2/+3 = extra paragraphs
+  const [lengthBonus, setLengthBonus] = useState<number>(0);
+
   const [defaultApplied, setDefaultApplied] = useState(false);
   if (!defaultApplied && !lengthLoading && defaultLength) {
     setStoryLength(defaultLength as StoryLength);
