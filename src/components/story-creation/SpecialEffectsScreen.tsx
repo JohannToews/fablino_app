@@ -619,17 +619,24 @@ const SpecialEffectsScreen = ({
       ? selectedEffectLabels.join(", ")
       : t.noEffects;
 
-  const lengthItems = lengthOptions.length > 0
-    ? lengthOptions.map((opt) => ({
-        key: opt.story_length as StoryLength,
-        label: (opt.length_labels as Record<string, string>)?.[uiLang]
-          || (opt.length_labels as Record<string, string>)?.de
-          || opt.story_length,
-      }))
-    : (["short", "medium", "long", "extra_long"] as StoryLength[]).map((len) => ({
-        key: len,
-        label: len === "short" ? st.short : len === "medium" ? st.medium : len === "long" ? st.long : st.extra_long,
-      }));
+  // Length bonus options: Standard (0), +1, +2, +3
+  const lengthBonusItems = [
+    { value: 0, label: 'Standard' },
+    { value: 1, label: '+1' },
+    { value: 2, label: '+2' },
+    { value: 3, label: '+3' },
+  ];
+
+  const lengthTooltipTranslations: Record<string, string> = {
+    de: 'Absatz extra', fr: 'paragraphe en plus', en: 'extra paragraph',
+    es: 'párrafo extra', nl: 'extra alinea', it: 'paragrafo in più',
+    bs: 'dodatni paragraf', tr: 'ekstra paragraf', bg: 'допълнителен параграф',
+    ro: 'paragraf suplimentar', pl: 'dodatkowy akapit', lt: 'papildoma pastraipa',
+    hu: 'extra bekezdés', ca: 'paràgraf extra', sl: 'dodaten odstavek',
+    uk: 'додатковий абзац', ru: 'дополнительный абзац', pt: 'parágrafo extra',
+    sk: 'extra odsek',
+  };
+  const tooltipUnit = lengthTooltipTranslations[uiLang] || lengthTooltipTranslations.en;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#FFF8F0]">
