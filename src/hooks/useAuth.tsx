@@ -299,11 +299,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newSession?.user) {
         setSession(newSession);
         setAuthMode('supabase');
-        // Only reload profile on actual sign-in or if user changed
-        // TOKEN_REFRESHED with same user doesn't need a profile refetch
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || newSession.user.id !== lastLoadedAuthUserId) {
+        // Only reload profile on first load or if the user actually changed.
+        // TOKEN_REFRESHED / cross-tab SIGNED_IN with the same user must NOT
+        // trigger a reload — it sets isLoading=true which unmounts pages.
+        if (newSession.user.id !== lastLoadedAuthUserId) {
           lastLoadedAuthUserId = newSession.user.id;
-          loadSupabaseProfile(newSession.user);
+          loadSupabaseProfile(newSession.user, event === 'TOKEN_REFRESHED');
         }
         return;
       }
