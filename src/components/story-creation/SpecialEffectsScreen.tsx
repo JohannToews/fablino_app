@@ -679,22 +679,29 @@ const SpecialEffectsScreen = ({
 
         {/* Settings panel — larger touch targets, tighter vertical spacing */}
         <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2.5 space-y-2 relative z-10">
-          {/* Length — chips with min 44px height */}
+          {/* Length — Standard / +1 / +2 / +3 buttons */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[#92400E] w-18 sm:w-20 shrink-0">{st.lengthLabel}</span>
-            <div className="flex-1 grid grid-cols-2 sm:flex sm:flex-wrap gap-1 bg-orange-50/60 rounded-xl p-1">
-              {lengthItems.map((item) => (
+            <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-xl p-1">
+              {lengthBonusItems.map((item) => (
                 <button
-                  key={item.key}
-                  onClick={() => setStoryLength(item.key)}
+                  key={item.value}
+                  onClick={() => setLengthBonus(item.value)}
+                  title={item.value === 0 ? 'Standard' : `${item.value} ${tooltipUnit}`}
                   className={cn(
-                    "min-h-[44px] sm:flex-1 sm:min-w-[60px] px-2 py-2 text-[15px] sm:text-sm rounded-lg transition-all duration-150 font-medium text-center whitespace-nowrap",
-                    storyLength === item.key
+                    "flex-1 min-h-[44px] py-2 text-[15px] sm:text-sm rounded-lg transition-all duration-150 font-semibold text-center relative group",
+                    lengthBonus === item.value
                       ? "bg-[#E8863A] text-white shadow-sm"
                       : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
                   )}
                 >
-                  {LENGTH_EMOJIS[item.key] ? `${LENGTH_EMOJIS[item.key]} ` : ''}{item.label}
+                  {item.label}
+                  {/* Tooltip */}
+                  {item.value > 0 && (
+                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#2D1810] text-white text-[11px] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                      {item.value} {tooltipUnit}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
