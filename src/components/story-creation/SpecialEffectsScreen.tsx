@@ -442,6 +442,9 @@ const SpecialEffectsScreen = ({
   const [storyLength, setStoryLength] = useState<StoryLength>("medium");
   const [storyDifficulty, setStoryDifficulty] = useState<StoryDifficulty>("medium");
 
+  // New length bonus system: 0 = Standard (profile default), +1/+2/+3 = extra paragraphs
+  const [lengthBonus, setLengthBonus] = useState<number>(0);
+
   const [defaultApplied, setDefaultApplied] = useState(false);
   if (!defaultApplied && !lengthLoading && defaultLength) {
     setStoryLength(defaultLength as StoryLength);
@@ -585,13 +588,18 @@ const SpecialEffectsScreen = ({
   };
 
   const handleContinue = () => {
+    // Map length bonus to old StoryLength for backward compat
+    const bonusToLength: Record<number, StoryLength> = { 0: 'medium', 1: 'long', 2: 'extra_long', 3: 'extra_long' };
+    const effectiveLength = bonusToLength[lengthBonus] || 'medium';
+    const effectiveLengthLevel = (profileLengthLevel ?? 1) + lengthBonus;
+
     onComplete(selectedAttributes, additionalDescription.trim(), {
-      length: storyLength,
+      length: effectiveLength,
       difficulty: storyDifficulty,
       isSeries,
       seriesMode: isSeries ? seriesMode : undefined,
       storyLanguage,
-      length_level: profileLengthLevel,
+      length_level: effectiveLengthLevel,
     });
   };
 
@@ -611,17 +619,24 @@ const SpecialEffectsScreen = ({
       ? selectedEffectLabels.join(", ")
       : t.noEffects;
 
-  const lengthItems = lengthOptions.length > 0
-    ? lengthOptions.map((opt) => ({
-        key: opt.story_length as StoryLength,
-        label: (opt.length_labels as Record<string, string>)?.[uiLang]
-          || (opt.length_labels as Record<string, string>)?.de
-          || opt.story_length,
-      }))
-    : (["short", "medium", "long", "extra_long"] as StoryLength[]).map((len) => ({
-        key: len,
-        label: len === "short" ? st.short : len === "medium" ? st.medium : len === "long" ? st.long : st.extra_long,
-      }));
+  // Length bonus options: Standard (0), +1, +2, +3
+  const lengthBonusItems = [
+    { value: 0, label: 'Standard' },
+    { value: 1, label: '+1' },
+    { value: 2, label: '+2' },
+    { value: 3, label: '+3' },
+  ];
+
+  const lengthTooltipTranslations: Record<string, string> = {
+    de: 'Absatz extra', fr: 'paragraphe en plus', en: 'extra paragraph',
+    es: 'párrafo extra', nl: 'extra alinea', it: 'paragrafo in più',
+    bs: 'dodatni paragraf', tr: 'ekstra paragraf', bg: 'допълнителен параграф',
+    ro: 'paragraf suplimentar', pl: 'dodatkowy akapit', lt: 'papildoma pastraipa',
+    hu: 'extra bekezdés', ca: 'paràgraf extra', sl: 'dodaten odstavek',
+    uk: 'додатковий абзац', ru: 'дополнительный абзац', pt: 'parágrafo extra',
+    sk: 'extra odsek',
+  };
+  const tooltipUnit = lengthTooltipTranslations[uiLang] || lengthTooltipTranslations.en;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[#FFF8F0]">
@@ -664,22 +679,29 @@ const SpecialEffectsScreen = ({
 
         {/* Settings panel — larger touch targets, tighter vertical spacing */}
         <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl border border-orange-100 shadow-sm px-3 py-2.5 space-y-2 relative z-10">
-          {/* Length — chips with min 44px height */}
+          {/* Length — Standard / +1 / +2 / +3 buttons */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[#92400E] w-18 sm:w-20 shrink-0">{st.lengthLabel}</span>
-            <div className="flex-1 grid grid-cols-2 sm:flex sm:flex-wrap gap-1 bg-orange-50/60 rounded-xl p-1">
-              {lengthItems.map((item) => (
+            <div className="flex-1 flex gap-1 bg-orange-50/60 rounded-xl p-1">
+              {lengthBonusItems.map((item) => (
                 <button
-                  key={item.key}
-                  onClick={() => setStoryLength(item.key)}
+                  key={item.value}
+                  onClick={() => setLengthBonus(item.value)}
+                  title={item.value === 0 ? 'Standard' : `${item.value} ${tooltipUnit}`}
                   className={cn(
-                    "min-h-[44px] sm:flex-1 sm:min-w-[60px] px-2 py-2 text-[15px] sm:text-sm rounded-lg transition-all duration-150 font-medium text-center whitespace-nowrap",
-                    storyLength === item.key
+                    "flex-1 min-h-[44px] py-2 text-[15px] sm:text-sm rounded-lg transition-all duration-150 font-semibold text-center relative group",
+                    lengthBonus === item.value
                       ? "bg-[#E8863A] text-white shadow-sm"
                       : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
                   )}
                 >
-                  {LENGTH_EMOJIS[item.key] ? `${LENGTH_EMOJIS[item.key]} ` : ''}{item.label}
+                  {item.label}
+                  {/* Tooltip */}
+                  {item.value > 0 && (
+                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#2D1810] text-white text-[11px] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                      {item.value} {tooltipUnit}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
