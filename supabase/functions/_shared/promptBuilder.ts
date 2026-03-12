@@ -2594,7 +2594,16 @@ You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must pro
     sections.push(`CRITICAL CONSTRAINT: The story MUST contain between ${minWords} and ${maxWords} words. This is a hard limit. Count your words carefully. A story that exceeds ${maxWords} words is a failure and will be rejected.`);
   }
 
-  return { prompt: sections.join('\n\n'), warnings, selectedPath, userInputLevel };
+  const finalPrompt = sections.join('\n\n');
+
+  // === DEBUG: Full user message logging (TEMPORARY — remove after debugging) ===
+  console.log('=== FULL USER MESSAGE START ===');
+  console.log(finalPrompt);
+  console.log('=== FULL USER MESSAGE END ===');
+  console.log('User message length:', finalPrompt.length, 'chars');
+  // === END DEBUG ===
+
+  return { prompt: finalPrompt, warnings, selectedPath, userInputLevel };
 }
 
 /**

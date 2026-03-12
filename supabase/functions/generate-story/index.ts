@@ -2768,8 +2768,14 @@ Deno.serve(async (req) => {
         hasPrimaryDirective,
         primaryDirectiveExcerpt,
         promptLength: userMessageFinal.length,
+        systemPromptLength: fullSystemPromptFinal.length,
+        totalPromptLength: fullSystemPromptFinal.length + userMessageFinal.length,
         promptWarnings: promptWarnings.length > 0 ? promptWarnings : undefined,
         timestamp: new Date().toISOString(),
+        // === DEBUG: Full prompts (TEMPORARY — remove after debugging) ===
+        fullSystemPrompt: fullSystemPromptFinal,
+        fullUserMessage: userMessageFinal,
+        // === END DEBUG ===
       };
 
       if (promptWarnings.length > 0) {
@@ -3107,6 +3113,13 @@ Deno.serve(async (req) => {
       // NEW path: system = CORE Slim, user = dynamic context from promptBuilder
       fullSystemPrompt = fullSystemPromptFinal;
       userPrompt = userMessageFinal;
+
+      // === DEBUG: System prompt logging (TEMPORARY — remove after debugging) ===
+      console.log('=== SYSTEM PROMPT START ===');
+      console.log(fullSystemPrompt);
+      console.log('=== SYSTEM PROMPT END ===');
+      console.log('System prompt length:', fullSystemPrompt.length, 'chars');
+      // === END DEBUG ===
     } else {
       // OLD FALLBACK path: build dynamic context + user prompt inline
       const textTypeLabels: Record<string, string> = {
@@ -3419,6 +3432,9 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       // Per-user model selection: "sonnet" → Claude Sonnet 4.6, default → Gemini 2.5 Flash
       const storyModel = userId ? await getStoryGeneratorModel(userId, supabase) : 'gemini';
       console.log(`[GENERATE] model=${storyModel}, user=${userId}`);
+      // === DEBUG: Add model to debug_log (TEMPORARY — remove after debugging) ===
+      if (debugLog) { (debugLog as any).model = storyModel; }
+      // === END DEBUG ===
 
       let content: string;
       if (storyModel === 'sonnet' && VERTEX_API_KEY) {
