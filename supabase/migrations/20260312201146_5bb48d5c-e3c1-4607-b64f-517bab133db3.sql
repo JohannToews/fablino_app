@@ -1,0 +1,1 @@
+UPDATE kid_profiles SET story_languages = ARRAY['de','es','lt'] WHERE id = '03b81f4b-4bb8-423f-a798-03823d57edba';
