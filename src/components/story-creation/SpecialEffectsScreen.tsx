@@ -724,7 +724,7 @@ const SpecialEffectsScreen = ({
                       : "text-[#2D1810]/60 hover:text-[#2D1810] hover:bg-white/60"
                   )}
                 >
-                  {diff === "easy" ? st.easy : diff === "medium" ? st.medium : st.hard}
+                  {diff === "easy" ? st.diffEasy : diff === "medium" ? st.diffMedium : st.diffHard}
                 </button>
               ))}
             </div>
