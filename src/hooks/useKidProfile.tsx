@@ -93,6 +93,7 @@ export const KidProfileProvider = ({ children }: { children: ReactNode }) => {
     if (!user) {
       setKidProfiles([]);
       setSelectedProfileId(null);
+      setHasLoaded(true);
       setIsLoading(false);
       return;
     }
