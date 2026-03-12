@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { SpecialAttribute, StoryLength, StoryDifficulty, LANGUAGE_FLAGS, LANGUAGE_LABELS } from "./types";
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useKidProfile } from "@/hooks/useKidProfile";
 import { FEATURES } from "@/config/features";
 import { useStoryLengthOptions } from "@/hooks/useStoryLengthOptions";
+import { supabase } from "@/integrations/supabase/client";
 import FablinoPageHeader from "@/components/FablinoPageHeader";
 import VoiceRecordButton from "./VoiceRecordButton";
 
@@ -396,6 +397,8 @@ export interface StorySettingsFromEffects {
   isSeries: boolean;
   seriesMode?: 'normal' | 'interactive';
   storyLanguage: string;
+  /** FSE1 text level system: length_level from kid_language_settings (1-5) */
+  length_level?: number;
 }
 
 interface SpecialEffectsScreenProps {
@@ -446,6 +449,21 @@ const SpecialEffectsScreen = ({
   }
   const [isSeries, setIsSeries] = useState(false);
   const [seriesMode, setSeriesMode] = useState<'normal' | 'interactive'>('normal');
+
+  // FSE1: Load length_level from kid_language_settings for the selected story language
+  const [profileLengthLevel, setProfileLengthLevel] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    if (!selectedProfile?.id || !storyLanguage) return;
+    (supabase as any)
+      .from('kid_language_settings')
+      .select('length_level')
+      .eq('kid_profile_id', selectedProfile.id)
+      .eq('language', storyLanguage)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        setProfileLengthLevel(data?.length_level ?? undefined);
+      });
+  }, [selectedProfile?.id, storyLanguage]);
 
   // Prefer kid's profile language (uk/ru) so we never show German when school language is Russian/Ukrainian; else use story dropdown language
   const uiLang =
@@ -573,6 +591,7 @@ const SpecialEffectsScreen = ({
       isSeries,
       seriesMode: isSeries ? seriesMode : undefined,
       storyLanguage,
+      length_level: profileLengthLevel,
     });
   };
 

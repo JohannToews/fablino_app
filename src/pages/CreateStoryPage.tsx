@@ -300,6 +300,7 @@ const CreateStoryPage = () => {
           difficultyLevel: selectedProfile?.difficulty_level,
           contentSafetyLevel: selectedProfile?.content_safety_level,
           image_style_key: imageStyleKey || undefined,
+          length_level: storySettings?.length_level,
           ...(placeholderStoryId ? { story_id: placeholderStoryId } : {}),
         },
       });
@@ -641,6 +642,7 @@ const CreateStoryPage = () => {
         isSeries: settingsFromEffects.isSeries,
         seriesMode: settingsFromEffects.seriesMode,
         storyLanguage: settingsFromEffects.storyLanguage,
+        length_level: settingsFromEffects.length_level,
       });
     }
     
@@ -829,6 +831,7 @@ const CreateStoryPage = () => {
               difficultyLevel: selectedProfile?.difficulty_level,
               contentSafetyLevel: selectedProfile?.content_safety_level,
               image_style_key: imageStyleKey || undefined,
+              length_level: settingsOverride?.length_level || storySettings?.length_level,
               ...(selectedVillain ? { villain: selectedVillain } : {}),
               ...(placeholderStoryIdFiction ? { story_id: placeholderStoryIdFiction } : {}),
             },

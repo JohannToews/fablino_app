@@ -93,6 +93,8 @@ export interface StoryRequest {
   } | null;
   // ── Visual Director: when true, Call 1 does not generate image_plan (Call 2 handles it) ──
   useVisualDirector?: boolean;
+  // ── FSE1 Language Settings: length_level override from wizard (1-5) ──
+  length_level?: number;
 }
 
 // ─── Section Headers (translated) ───────────────────────────────
@@ -1329,6 +1331,104 @@ function buildPromptAppearanceDesc(
   return `- ${label}: ${parts.join(', ')}`;
 }
 
+// ─── FSE1 Text Level System ─────────────────────────────────────
+// Maps kid_language_settings.language_level (1-6 integer, index in school class list)
+// to text_level (1-3) for sprachliche Komplexität.
+
+interface TextLevelData {
+  level: number;
+  max_sentence_length: number;
+  structures_description: string;
+  vocabulary_scope: string;
+  tenses: string;
+  tenses_description: string;
+  example_hint: string | null;
+  total_paragraphs: number;
+  min_words: number;
+  max_words: number;
+}
+
+/** Szenario A: language_level is integer 1-6 from UI dropdown */
+function mapToTextLevel(languageLevel: number): number {
+  if (languageLevel <= 2) return 1;  // 1.+2. Klasse → Ende Klasse 2 (Erstleser)
+  if (languageLevel <= 3) return 2;  // 3. Klasse → Ende Klasse 3 (Flüssig)
+  return 3;                           // 4.+ Klasse → Ende Klasse 4+ (Sicher)
+}
+
+/**
+ * Load text level data from text_levels + text_level_tenses.
+ * Returns null if tables are empty or not found → caller falls back to old system.
+ */
+async function loadTextLevel(
+  supabaseClient: any,
+  kidProfileId: string,
+  storyLanguage: string,
+  kidAge: number,
+  lengthLevelOverride?: number
+): Promise<TextLevelData | null> {
+  // 1. kid_language_settings for this language
+  const { data: langSetting } = await supabaseClient
+    .from('kid_language_settings')
+    .select('language_level, length_level')
+    .eq('kid_profile_id', kidProfileId)
+    .eq('language', storyLanguage)
+    .maybeSingle();
+
+  // 2. Determine text_level (mapping or age-based fallback)
+  let textLevel: number;
+  if (langSetting?.language_level) {
+    textLevel = mapToTextLevel(langSetting.language_level);
+  } else {
+    textLevel = kidAge <= 6 ? 1 : kidAge <= 8 ? 2 : 3;
+    console.warn(`[promptBuilder] No kid_language_settings for kid ${kidProfileId}, lang ${storyLanguage} — age-based default text_level ${textLevel}`);
+  }
+
+  // 3. length_level: wizard override > profile default > 1
+  const lengthLevel = lengthLevelOverride ?? langSetting?.length_level ?? 1;
+
+  // 4. Load text_levels
+  const { data: levelData } = await supabaseClient
+    .from('text_levels')
+    .select('*')
+    .eq('level', textLevel)
+    .maybeSingle();
+
+  if (!levelData) {
+    console.error(`[promptBuilder] text_levels not found for level ${textLevel} — falling back to age_rules`);
+    return null;
+  }
+
+  // 5. Language-specific tenses (fallback: generic from text_levels)
+  const { data: tensesData } = await supabaseClient
+    .from('text_level_tenses')
+    .select('tenses, tenses_description')
+    .eq('level', textLevel)
+    .eq('language_code', storyLanguage)
+    .maybeSingle();
+
+  // 6. Word count from text_level + length_level
+  const totalParagraphs = levelData.base_paragraphs + (lengthLevel - 1);
+  const wordsPerParagraph = levelData.words_per_paragraph;
+  const baseWords = totalParagraphs * wordsPerParagraph;
+  const minWords = Math.round(baseWords * 0.85);
+  const maxWords = Math.round(baseWords * 1.15);
+
+  console.log(`[promptBuilder] textLevel=${textLevel}, lengthLevel=${lengthLevel}, paragraphs=${totalParagraphs}, words=${minWords}-${maxWords}, tenses=${tensesData ? 'language-specific' : 'generic'}`);
+
+  return {
+    level: textLevel,
+    max_sentence_length: levelData.max_sentence_length,
+    structures_description: levelData.structures_description,
+    vocabulary_scope: levelData.vocabulary_scope,
+    tenses: tensesData?.tenses ?? levelData.tenses_generic,
+    tenses_description: tensesData?.tenses_description ?? `Use only: ${levelData.tenses_generic}`,
+    example_hint: levelData.example_hint,
+    total_paragraphs: totalParagraphs,
+    min_words: minWords,
+    max_words: maxWords,
+  };
+}
+
 export async function buildStoryPrompt(
   request: StoryRequest,
   supabaseClient: any
@@ -1343,12 +1443,27 @@ export async function buildStoryPrompt(
   const userInputLevel = classifyUserInput(request.user_prompt);
   console.log(`[promptBuilder] classifyUserInput() → "${userInputLevel}" | user_prompt: "${(request.user_prompt || '').substring(0, 200)}" (${request.user_prompt?.trim().split(/\s+/).length ?? 0} words)`);
 
+  // ── 0. Load text level data (FSE1 new path) ──
+  // Returns null if text_levels table is empty → falls back to old system below
+  const rawAge = request.kid_profile?.age;
+  const ageNum = typeof rawAge === 'number' && !Number.isNaN(rawAge) ? rawAge : 6;
+  let textLevelData: TextLevelData | null = null;
+  try {
+    textLevelData = await loadTextLevel(
+      supabaseClient,
+      request.kid_profile.id,
+      request.story_language,
+      ageNum,
+      request.length_level
+    );
+  } catch (tlErr: any) {
+    console.warn(`[promptBuilder] loadTextLevel failed, falling back to age_rules: ${tlErr.message}`);
+  }
+
   // ── 1. Load age_rules (with fallback to 'de') ──
   // Clamp to min 6 for DB lookup — age_rules starts at min_age=6.
   // The real age (e.g. 5) is still used in the prompt text itself.
-  // Guard against null/undefined/NaN to avoid broken DB query.
-  const rawAge = request.kid_profile?.age;
-  const ageNum = typeof rawAge === 'number' && !Number.isNaN(rawAge) ? rawAge : 6;
+  // rawAge/ageNum already declared above (for loadTextLevel)
   const ageForRules = Math.max(ageNum, 6);
 
   let ageRules: any = null;
@@ -1543,11 +1658,14 @@ export async function buildStoryPrompt(
     .limit(10);
 
   // ── Compute word counts ──
-  // If generation_config override is provided (from DB), use it directly.
-  // Otherwise fall back to the age_rules × factor calculation.
+  // NEW PATH: text_level + length_level → word count
+  // FALLBACK: generation_config override or age_rules × factor
   let minWords: number;
   let maxWords: number;
-  if (request.word_count_override) {
+  if (textLevelData) {
+    minWords = textLevelData.min_words;
+    maxWords = textLevelData.max_words;
+  } else if (request.word_count_override) {
     minWords = request.word_count_override.min_words;
     maxWords = request.word_count_override.max_words;
   } else {
@@ -1710,40 +1828,83 @@ export async function buildStoryPrompt(
   }
 
   // LANGUAGE & LEVEL
-  const diffLabel = label(diffRules.label, lang);
-  const diffDesc = label(diffRules.description, lang);
-  const langSection = [
-    `## ${headers.language}`,
-    `Language: ${langName}`,
-    `Level: ${diffLabel} — ${diffDesc}`,
-    `Max sentence length: ${ageRules.max_sentence_length} words`,
-    `Tenses: ${arrJoin(ageRules.allowed_tenses)}`,
-    `Sentence structures: ${ageRules.sentence_structures}`,
-    ageRules.narrative_perspective ? `Perspective: ${ageRules.narrative_perspective}` : null,
-    `Style: ${ageRules.narrative_guidelines}`,
-  ].filter(Boolean).join('\n');
-  sections.push(langSection);
+  if (textLevelData) {
+    // NEW PATH: text_levels + text_level_tenses
+    const langSection = [
+      `## ${headers.language}`,
+      `Language: ${langName}`,
+      `Text Level: ${textLevelData.level}/3`,
+      `Max sentence length: ${textLevelData.max_sentence_length} words`,
+      `Allowed tenses: ${textLevelData.tenses}`,
+      `IMPORTANT — Tense rules: ${textLevelData.tenses_description}`,
+      `Sentence structures: ${textLevelData.structures_description}`,
+      ageRules.narrative_perspective ? `Perspective: ${ageRules.narrative_perspective}` : null,
+      `Style: ${ageRules.narrative_guidelines}`,
+      textLevelData.example_hint ? `Style hint: ${textLevelData.example_hint}` : null,
+    ].filter(Boolean).join('\n');
+    sections.push(langSection);
+  } else {
+    // FALLBACK: age_rules + difficulty_rules (old system)
+    const diffLabel = label(diffRules.label, lang);
+    const diffDesc = label(diffRules.description, lang);
+    const langSection = [
+      `## ${headers.language}`,
+      `Language: ${langName}`,
+      `Level: ${diffLabel} — ${diffDesc}`,
+      `Max sentence length: ${ageRules.max_sentence_length} words`,
+      `Tenses: ${arrJoin(ageRules.allowed_tenses)}`,
+      `Sentence structures: ${ageRules.sentence_structures}`,
+      ageRules.narrative_perspective ? `Perspective: ${ageRules.narrative_perspective}` : null,
+      `Style: ${ageRules.narrative_guidelines}`,
+    ].filter(Boolean).join('\n');
+    sections.push(langSection);
+  }
 
   // VOCABULARY
-  const vocabSection = [
-    `## ${headers.vocabulary}`,
-    diffRules.vocabulary_scope,
-    `New words: max. ${diffRules.new_words_per_story}`,
-    `Figurative language: ${diffRules.figurative_language}`,
-    `Idioms: ${diffRules.idiom_usage}`,
-    `Repetition: ${diffRules.repetition_strategy}`,
-  ].join('\n');
-  sections.push(vocabSection);
+  if (textLevelData) {
+    // NEW PATH: vocabulary from text_levels
+    const vocabSection = [
+      `## ${headers.vocabulary}`,
+      textLevelData.vocabulary_scope,
+      `IMPORTANT: Do NOT use words or expressions beyond this vocabulary scope.`,
+    ].join('\n');
+    sections.push(vocabSection);
+  } else {
+    // FALLBACK: difficulty_rules (old system)
+    const vocabSection = [
+      `## ${headers.vocabulary}`,
+      diffRules.vocabulary_scope,
+      `New words: max. ${diffRules.new_words_per_story}`,
+      `Figurative language: ${diffRules.figurative_language}`,
+      `Idioms: ${diffRules.idiom_usage}`,
+      `Repetition: ${diffRules.repetition_strategy}`,
+    ].join('\n');
+    sections.push(vocabSection);
+  }
 
   // LENGTH
-  const lengthSection = [
-    `## ${headers.length}`,
-    `${minWords}–${maxWords} words`,
-    ageRules.paragraph_length ? `Paragraphs: ${ageRules.paragraph_length}` : null,
-    ageRules.dialogue_ratio ? `Dialogue: ${ageRules.dialogue_ratio}` : null,
-    `Questions: ${questionCount}`,
-  ].filter(Boolean).join('\n');
-  sections.push(lengthSection);
+  if (textLevelData) {
+    // NEW PATH: paragraph count + word count from text_level + length_level
+    const lengthSection = [
+      `## ${headers.length}`,
+      `Write exactly ${textLevelData.total_paragraphs} paragraphs.`,
+      `Target word count: ${minWords}–${maxWords} words.`,
+      `CRITICAL: Stay within this word count range.`,
+      ageRules.dialogue_ratio ? `Dialogue: ${ageRules.dialogue_ratio}` : null,
+      `Questions: ${questionCount}`,
+    ].filter(Boolean).join('\n');
+    sections.push(lengthSection);
+  } else {
+    // FALLBACK: generation_config word count (old system)
+    const lengthSection = [
+      `## ${headers.length}`,
+      `${minWords}–${maxWords} words`,
+      ageRules.paragraph_length ? `Paragraphs: ${ageRules.paragraph_length}` : null,
+      ageRules.dialogue_ratio ? `Dialogue: ${ageRules.dialogue_ratio}` : null,
+      `Questions: ${questionCount}`,
+    ].filter(Boolean).join('\n');
+    sections.push(lengthSection);
+  }
 
   // STORY SUBTYPE (Themenvariation — inserted before CATEGORY)
   if (request.story_subtype) {
@@ -1926,11 +2087,13 @@ export async function buildStoryPrompt(
   }
 
   // STORYTELLING RULES (age-dependent complexity constraints)
+  // narrative fields (max_characters, max_plot_twists, plot_complexity) still from age_rules
+  // max_sentence_length: from textLevelData if available, else age_rules
   const age = request.kid_profile.age;
   const maxChars = ageRules.max_characters || 2;
   const maxTwists = ageRules.max_plot_twists ?? 1;
   const plotComplexity = ageRules.plot_complexity || 'simple';
-  const maxSentLen = ageRules.max_sentence_length;
+  const maxSentLen = textLevelData?.max_sentence_length ?? ageRules.max_sentence_length;
 
   const storytellingRulesBlock: Record<string, string> = {
     de: [
@@ -2425,7 +2588,11 @@ You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must pro
   sections.push(headers.respondJson);
 
   // Hard word-count constraint (last thing the model reads)
-  sections.push(`CRITICAL CONSTRAINT: The story MUST contain between ${minWords} and ${maxWords} words. This is a hard limit. Count your words carefully. A story that exceeds ${maxWords} words is a failure and will be rejected.`);
+  if (textLevelData) {
+    sections.push(`CRITICAL WORD COUNT: Between ${minWords} and ${maxWords} words. ${textLevelData.total_paragraphs} paragraphs.`);
+  } else {
+    sections.push(`CRITICAL CONSTRAINT: The story MUST contain between ${minWords} and ${maxWords} words. This is a hard limit. Count your words carefully. A story that exceeds ${maxWords} words is a failure and will be rejected.`);
+  }
 
   return { prompt: sections.join('\n\n'), warnings, selectedPath, userInputLevel };
 }

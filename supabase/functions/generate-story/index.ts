@@ -2020,6 +2020,7 @@ Deno.serve(async (req) => {
       image_style_key: imageStyleKeyParam,
       series_episode_count: seriesEpisodeCountParam,
       story_id: storyIdParam,
+      length_level: lengthLevelParam,
     } = body;
 
     storyId = storyIdParam ?? null;
@@ -2693,6 +2694,8 @@ Deno.serve(async (req) => {
         } : undefined,
         appearance: kidAppearance ?? undefined,
         useVisualDirector: useVisualDirector,
+        // ── FSE1 Language Settings: length_level override from wizard ──
+        length_level: typeof lengthLevelParam === 'number' ? lengthLevelParam : undefined,
         // ── Granular generation config (from generation_config table) ──
         // Comic 8-panel (2×(2x2)) uses 7 scenes + cover
         word_count_override: {

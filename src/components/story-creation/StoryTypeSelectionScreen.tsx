@@ -40,6 +40,7 @@ export interface StorySettings {
   isSeries: boolean;
   seriesMode?: 'normal' | 'interactive';
   storyLanguage: string;
+  length_level?: number;
 }
 
 interface StoryTypeSelectionScreenProps {
