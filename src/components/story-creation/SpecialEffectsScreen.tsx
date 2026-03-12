@@ -588,13 +588,18 @@ const SpecialEffectsScreen = ({
   };
 
   const handleContinue = () => {
+    // Map length bonus to old StoryLength for backward compat
+    const bonusToLength: Record<number, StoryLength> = { 0: 'medium', 1: 'long', 2: 'extra_long', 3: 'extra_long' };
+    const effectiveLength = bonusToLength[lengthBonus] || 'medium';
+    const effectiveLengthLevel = (profileLengthLevel ?? 1) + lengthBonus;
+
     onComplete(selectedAttributes, additionalDescription.trim(), {
-      length: storyLength,
+      length: effectiveLength,
       difficulty: storyDifficulty,
       isSeries,
       seriesMode: isSeries ? seriesMode : undefined,
       storyLanguage,
-      length_level: profileLengthLevel,
+      length_level: effectiveLengthLevel,
     });
   };
 
