@@ -835,12 +835,24 @@ const KidProfileSection = ({ language, userId, onProfileUpdate }: KidProfileSect
       };
 
       // Multilingual fields (added by migration 20260206150000)
+      // Read story_languages from kid_language_settings (source of truth) to avoid
+      // the local state overwriting languages added via the Niveaux section.
+      let freshStoryLanguages = currentProfile.story_languages || [currentProfile.reading_language || currentProfile.school_system];
+      if (currentProfile.id) {
+        const { data: langRows } = await supabase
+          .from("kid_language_settings")
+          .select("language")
+          .eq("kid_profile_id", currentProfile.id);
+        if (langRows && langRows.length > 0) {
+          freshStoryLanguages = langRows.map((r: any) => r.language);
+        }
+      }
       const langFields = {
         ui_language: currentProfile.ui_language || currentProfile.school_system,
         reading_language: currentProfile.reading_language || currentProfile.school_system,
         explanation_language: currentProfile.explanation_language || 'de',
         home_languages: currentProfile.home_languages || ['de'],
-        story_languages: currentProfile.story_languages || [currentProfile.reading_language || currentProfile.school_system],
+        story_languages: freshStoryLanguages,
       };
 
       let savedData;
