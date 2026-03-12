@@ -2021,6 +2021,7 @@ Deno.serve(async (req) => {
       series_episode_count: seriesEpisodeCountParam,
       story_id: storyIdParam,
       length_level: lengthLevelParam,
+      villain: villainParam,
     } = body;
 
     storyId = storyIdParam ?? null;
@@ -2033,6 +2034,7 @@ Deno.serve(async (req) => {
     console.log('[generate-story] Request body selectedCharacters:', JSON.stringify(selectedCharacters, null, 2));
     console.log('[generate-story] include_self:', includeSelf, 'kidProfileId:', kidProfileId ?? '(missing)');
     console.log('[generate-story] surprise_characters:', surpriseCharactersParam);
+    console.log('[generate-story] villain:', villainParam ? JSON.stringify(villainParam) : '(none)');
     console.log('[generate-story] storyType:', storyType);
     console.log('[generate-story] userPromptParam:', userPromptParam ?? '(undefined)');
     console.log('[generate-story] description:', description ?? '(undefined)');
@@ -2649,20 +2651,55 @@ Deno.serve(async (req) => {
         series_context: seriesContext || (episodeNumber && episodeNumber > 1 ? description : undefined),
         protagonists: {
           include_self: includeSelf || false,
-          characters: (characters || selectedCharacters || []).map((c: any) => {
-            const mapped: any = {
-              name: c.name,
-              age: c.age || undefined,
-              relation: c.relation || undefined,
-              description: c.description || undefined,
-              role: c.role || undefined,
-            };
-            const matchingAnchor = characterAnchors.find(ca => ca.name === c.name);
-            if (matchingAnchor) {
-              mapped.appearance_anchor = matchingAnchor.anchor;
+          characters: (() => {
+            const rawChars = [...(characters || selectedCharacters || [])];
+            // Inject villain from wizard into characters array
+            if (villainParam && villainParam.type === 'special' && villainParam.name) {
+              rawChars.push({
+                name: villainParam.name,
+                description: villainParam.description || undefined,
+                role: 'villain',
+              });
+              console.log('[generate-story] Injected villain into characters:', villainParam.name);
             }
-            return mapped;
-          }),
+            // type="family" — promote existing character to villain
+            if (villainParam && villainParam.type === 'family' && villainParam.name) {
+              const matchIndex = rawChars.findIndex(
+                (c: any) => c.name?.toLowerCase() === villainParam.name?.toLowerCase()
+              );
+              if (matchIndex >= 0) {
+                rawChars[matchIndex].role = 'villain';
+                if (villainParam.description) {
+                  rawChars[matchIndex].description = rawChars[matchIndex].description
+                    ? `${rawChars[matchIndex].description}; ${villainParam.description}`
+                    : villainParam.description;
+                }
+                console.log('[generate-story] Promoted family character to villain:', villainParam.name);
+              } else {
+                // Fallback: name match failed — insert as new villain to avoid data loss
+                console.warn(`[generate-story] Villain type=family but no character match for "${villainParam.name}" — inserting as new villain`);
+                rawChars.push({
+                  name: villainParam.name,
+                  description: villainParam.description || undefined,
+                  role: 'villain',
+                });
+              }
+            }
+            return rawChars.map((c: any) => {
+              const mapped: any = {
+                name: c.name,
+                age: c.age || undefined,
+                relation: c.relation || undefined,
+                description: c.description || undefined,
+                role: c.role || undefined,
+              };
+              const matchingAnchor = characterAnchors.find(ca => ca.name === c.name);
+              if (matchingAnchor) {
+                mapped.appearance_anchor = matchingAnchor.anchor;
+              }
+              return mapped;
+            });
+          })(),
         },
         special_abilities: specialAbilities || [],
         sub_elements: subElements || [],
