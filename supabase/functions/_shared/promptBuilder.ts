@@ -1414,6 +1414,11 @@ async function loadTextLevel(
   const maxWords = Math.round(baseWords * 1.15);
 
   console.log(`[promptBuilder] textLevel=${textLevel}, lengthLevel=${lengthLevel}, paragraphs=${totalParagraphs}, words=${minWords}-${maxWords}, tenses=${tensesData ? 'language-specific' : 'generic'}`);
+  console.log(`[promptBuilder] tensesData fields: structures_description=${!!tensesData?.structures_description}, vocabulary_scope=${!!tensesData?.vocabulary_scope}, example_hint=${!!tensesData?.example_hint}`);
+  if (tensesData) {
+    console.log(`[promptBuilder] tensesData.structures_description (first 80): ${(tensesData.structures_description || '(null)').substring(0, 80)}`);
+    console.log(`[promptBuilder] tensesData.vocabulary_scope (first 80): ${(tensesData.vocabulary_scope || '(null)').substring(0, 80)}`);
+  }
 
   return {
     level: textLevel,
