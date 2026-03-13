@@ -3528,9 +3528,74 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
               recentTitles: ctx.recentTitles,
             };
 
-            promptToUse = getV3TestPrompt(v3Params);
+            // Check for custom V3 test prompt from DB
+            let customV3Template: string | null = null;
+            try {
+              const { data: v3TestData } = await supabase
+                .from('app_settings')
+                .select('value')
+                .eq('key', 'system_prompt_v3_test')
+                .maybeSingle();
+              if (v3TestData?.value && v3TestData.value.trim().length > 0) {
+                customV3Template = v3TestData.value;
+              }
+            } catch (e) {
+              console.warn('[V3-PROMPT] Failed to load custom template, using hardcoded:', e);
+            }
+
+            if (customV3Template) {
+              // Replace {{variable}} placeholders with actual values
+              const targetLanguage = ({ de: 'German', fr: 'French', en: 'English', es: 'Spanish', it: 'Italian', nl: 'Dutch', bs: 'Bosnian', fa: 'Farsi', uk: 'Ukrainian', ru: 'Russian', pt: 'Portuguese', pl: 'Polish', tr: 'Turkish', ro: 'Romanian', ca: 'Catalan', sl: 'Slovenian', lt: 'Lithuanian', hu: 'Hungarian', bg: 'Bulgarian', sk: 'Slovak' } as Record<string, string>)[v3Params.targetLanguageCode] || v3Params.targetLanguageCode;
+              const replacements: Record<string, string> = {
+                childName: v3Params.childName,
+                childAge: String(v3Params.childAge),
+                childAppearance: v3Params.childAppearance || '',
+                targetLanguage,
+                targetLanguageCode: v3Params.targetLanguageCode,
+                textLevel: String(v3Params.textLevel),
+                perspective: v3Params.perspective,
+                maxSentenceLength: String(v3Params.maxSentenceLength),
+                allowedTenses: v3Params.allowedTenses,
+                paragraphCount: String(v3Params.paragraphCount),
+                wordMin: String(v3Params.wordMin),
+                wordMax: String(v3Params.wordMax),
+                dialogueMin: String(v3Params.dialogueMin),
+                dialogueMax: String(v3Params.dialogueMax),
+                questionCount: String(v3Params.questionCount),
+                structureCode: v3Params.structureCode,
+                structureA: v3Params.structureA,
+                structureM: v3Params.structureM,
+                structureE: v3Params.structureE,
+                subtypeLabel: v3Params.subtypeLabel,
+                subtypePromptHint: v3Params.subtypePromptHint,
+                subtypeSettingIdea: v3Params.subtypeSettingIdea,
+                subtypeTitleSeed: v3Params.subtypeTitleSeed,
+                categoryName: v3Params.categoryName,
+                categoryPlots: v3Params.categoryPlots,
+                categoryConflicts: v3Params.categoryConflicts,
+                categoryArchetypes: v3Params.categoryArchetypes,
+                categorySensory: v3Params.categorySensory,
+                categorySettings: v3Params.categorySettings,
+                characters: v3Params.characters,
+                villainName: v3Params.villainName || '',
+                villainBlock: v3Params.villainName ? `\n## VILLAIN RULES\n\n${v3Params.villainName} MUST be a genuine obstacle: clear opposing goals, concrete actions against the protagonist, credible threat for at least the first two-thirds.` : '',
+                maxCharacters: String(v3Params.maxCharacters),
+                maxTwists: String(v3Params.maxTwists),
+                safetyLevel: String(v3Params.safetyLevel),
+                safetyAllowed: v3Params.safetyAllowed,
+                safetyForbidden: v3Params.safetyForbidden,
+                recentEmotion: v3Params.recentEmotion,
+                recentThemes: v3Params.recentThemes,
+                recentTitles: v3Params.recentTitles,
+                userStoryDescription: v3Params.userStoryDescription || '',
+              };
+              promptToUse = customV3Template.replace(/\{\{(\w+)\}\}/g, (_, key) => replacements[key] ?? `{{${key}}}`);
+              console.log(`[V3-PROMPT] ✅ Using CUSTOM DB template for user ${userId}. Length: ${promptToUse.length} chars`);
+            } else {
+              promptToUse = getV3TestPrompt(v3Params);
+              console.log(`[V3-PROMPT] ✅ Using hardcoded V3 prompt for user ${userId}. Length: ${promptToUse.length} chars`);
+            }
             promptVersion = 'v3';
-            console.log(`[V3-PROMPT] ✅ V3 prompt active for user ${userId}. Length: ${promptToUse.length} chars`);
           }
         } catch (err) {
           console.warn('[V3-PROMPT] Feature flag check failed, using V2:', err instanceof Error ? err.message : err);
