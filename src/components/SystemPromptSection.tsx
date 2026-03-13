@@ -409,7 +409,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-lg">
                   {openSections.v3Test ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  <Flag className="h-5 w-5 text-orange-500" />
+                  <FlaskConical className="h-5 w-5 text-orange-500" />
                   V3 Test Prompt
                   <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-orange-500 text-white rounded-full">
                     🧪 TEST
