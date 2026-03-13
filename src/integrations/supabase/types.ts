@@ -2383,27 +2383,36 @@ export type Database = {
       text_level_tenses: {
         Row: {
           created_at: string | null
+          example_hint: string | null
           id: number
           language_code: string
           level: number
+          structures_description: string | null
           tenses: string
           tenses_description: string
+          vocabulary_scope: string | null
         }
         Insert: {
           created_at?: string | null
+          example_hint?: string | null
           id?: number
           language_code: string
           level: number
+          structures_description?: string | null
           tenses: string
           tenses_description: string
+          vocabulary_scope?: string | null
         }
         Update: {
           created_at?: string | null
+          example_hint?: string | null
           id?: number
           language_code?: string
           level?: number
+          structures_description?: string | null
           tenses?: string
           tenses_description?: string
+          vocabulary_scope?: string | null
         }
         Relationships: [
           {
