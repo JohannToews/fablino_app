@@ -3474,12 +3474,12 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       // If user is in prompt_v3_test_users, replace the user prompt with V3 (English-only, example-driven).
       // System prompt (coreV2.1) stays unchanged. On error, silently fall back to V2.
       let promptVersion = 'v2';
-      if (userId && promptResult?.v3Context) {
+      if (userId && hoistedPromptResult?.v3Context) {
         try {
           const useV3 = await isV3PromptEnabled(userId, supabase);
           if (useV3) {
             // Parse dialogue ratio "25-40%" → dialogueMin=25, dialogueMax=40
-            const ctx = promptResult.v3Context;
+            const ctx = hoistedPromptResult.v3Context;
             let dialogueMin = 20, dialogueMax = 40;
             if (ctx.dialogueRatio) {
               const dMatch = ctx.dialogueRatio.match(/(\d+)\s*[-–]\s*(\d+)/);
@@ -3494,7 +3494,7 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
               childName: resolvedKidName || kidName || 'Child',
               childAge: resolvedKidAge || kidAge || 8,
               childAppearance: ctx.appearanceDesc,
-              userStoryDescription: storyRequest.user_prompt || '',
+              userStoryDescription: hoistedUserPrompt,
               targetLanguageCode: effectiveStoryLanguage,
               textLevel: ctx.textLevel,
               perspective: ctx.perspective || 'third person',
