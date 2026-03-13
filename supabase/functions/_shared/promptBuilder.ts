@@ -2087,10 +2087,16 @@ export async function buildStoryPrompt(
   }
 
   // STORYTELLING RULES (age-dependent complexity constraints)
-  // narrative fields (max_characters, max_plot_twists, plot_complexity) still from age_rules
+  // max_characters: from text_level (1→3, 2→4, 3→5), with safety net from actual character count
   // max_sentence_length: from textLevelData if available, else age_rules
   const age = request.kid_profile.age;
-  const maxChars = ageRules.max_characters || 2;
+  const MAX_CHARACTERS_BY_LEVEL: Record<number, number> = { 1: 3, 2: 4, 3: 5 };
+  const levelBasedMaxChars = textLevelData
+    ? (MAX_CHARACTERS_BY_LEVEL[textLevelData.level] ?? 4)
+    : (ageRules.max_characters || 2);  // fallback to old system
+  const actualCharacterCount = request.protagonists?.characters?.length ?? 1;
+  // Safety net: never set max below what the user actually selected
+  const maxChars = Math.max(levelBasedMaxChars, actualCharacterCount);
   const maxTwists = ageRules.max_plot_twists ?? 1;
   const plotComplexity = ageRules.plot_complexity || 'simple';
   const maxSentLen = textLevelData?.max_sentence_length ?? ageRules.max_sentence_length;

@@ -55,6 +55,28 @@ interface CharacterSelectionScreenProps {
 
 type ViewState = "main" | "family";
 
+// Max characters by text_level (derived from age when story language isn't known yet).
+// Reserves 1 slot for potential villain (selected on next screen).
+const MAX_CHARACTERS_BY_LEVEL: Record<number, number> = { 1: 3, 2: 4, 3: 5 };
+
+function getTextLevelFromAge(age: number | null | undefined): number {
+  if (!age || age <= 6) return 1;
+  if (age <= 8) return 2;
+  return 3;
+}
+
+const characterLimitLabels: Record<string, (n: number) => string> = {
+  de: (n) => `Maximal ${n} Figuren für diese Altersgruppe`,
+  fr: (n) => `Maximum ${n} personnages pour ce groupe d'âge`,
+  en: (n) => `Maximum ${n} characters for this age group`,
+  es: (n) => `Máximo ${n} personajes para este grupo de edad`,
+  nl: (n) => `Maximaal ${n} personages voor deze leeftijdsgroep`,
+  it: (n) => `Massimo ${n} personaggi per questo gruppo di età`,
+  bs: (n) => `Maksimalno ${n} likova za ovu starosnu grupu`,
+  uk: (n) => `Максимум ${n} персонажів для цієї вікової групи`,
+  ru: (n) => `Максимум ${n} персонажей для этой возрастной группы`,
+};
+
 const CharacterSelectionScreen = ({
   translations,
   kidProfileId,
@@ -66,6 +88,11 @@ const CharacterSelectionScreen = ({
 }: CharacterSelectionScreenProps) => {
   const { kidAppLanguage } = useKidProfile();
   const t = useTranslations(kidAppLanguage);
+
+  // Character limit: reserve 1 slot for potential villain (next screen)
+  const textLevel = getTextLevelFromAge(kidAge);
+  const maxCharacters = MAX_CHARACTERS_BY_LEVEL[textLevel] ?? 4;
+  const wizardLimit = maxCharacters - 1; // reserve for villain
   const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedCharacters, setSelectedCharacters] = useState<SelectedCharacter[]>([]);
   const [surpriseCharacters, setSurpriseCharacters] = useState(false);
@@ -199,23 +226,31 @@ const CharacterSelectionScreen = ({
       });
     }
 
+    // Enforce wizard limit: trim to available slots
+    if (updated.length > wizardLimit) {
+      updated = updated.slice(0, wizardLimit);
+    }
+
     setSelectedCharacters(updated);
     if (confirmedIds.length > 0) {
       toast.success(`✓ ${confirmedIds.length} ${translations.nameSaved}`);
     }
   };
 
+  const isAtLimit = selectedCharacters.length >= wizardLimit;
+
   const handleMainTileClick = (type: CharacterType) => {
     if (type !== "surprise" && surpriseCharacters) {
       setSurpriseCharacters(false);
     }
-    
+
     switch (type) {
       case "me": {
         const meExists = selectedCharacters.some(c => c.type === "me");
         if (meExists) {
           setSelectedCharacters(prev => prev.filter(c => c.type !== "me"));
         } else {
+          if (isAtLimit) return;
           const meName = kidName || translations.me;
           const meLabelText = kidAge ? `${meName} (${kidAge})` : meName;
           const meCharacter: SelectedCharacter = {
@@ -375,7 +410,9 @@ const CharacterSelectionScreen = ({
                 const isTileSelected = tile.type === "surprise"
                   ? surpriseCharacters
                   : (isSelected(tile.type) || hasSelections);
-                
+                // Disable adding if at limit (unless tile is already selected = toggle off, or surprise)
+                const isDisabledByLimit = isAtLimit && !isTileSelected && tile.type !== "surprise";
+
                 return (
                   <div key={tile.type} className="relative">
                     <CharacterTile
@@ -385,6 +422,7 @@ const CharacterSelectionScreen = ({
                       selected={isTileSelected}
                       badge={tile.badge}
                       size="small"
+                      disabled={isDisabledByLimit}
                     />
                     {/* Hint text for surprise tile */}
                     {tile.type === "surprise" && (
@@ -396,6 +434,12 @@ const CharacterSelectionScreen = ({
                 );
               })}
             </div>
+            {/* Character limit hint */}
+            {isAtLimit && (
+              <p className="text-xs text-amber-600 text-center">
+                {(characterLimitLabels[kidAppLanguage] || characterLimitLabels.en)(wizardLimit)}
+              </p>
+            )}
           </div>
         )}
 
