@@ -2782,7 +2782,7 @@ Deno.serve(async (req) => {
           requested_max_words: genConfig.max_words,
           requested_scene_image_count: genConfig.scene_image_count,
           text_level: storyRequest.length_level ?? null,
-          language: storyRequest.storyLanguage ?? textLanguage ?? null,
+          language: storyRequest.story_language ?? textLanguage ?? null,
           use_visual_director: useVisualDirector,
           use_comic_strip: useComicStrip,
           story_path_code: selectedPathCode ?? null,
