@@ -1233,11 +1233,40 @@ function buildSeriesContextBlock(request: StoryRequest): string {
 
 // ─── Main: buildStoryPrompt ─────────────────────────────────────
 
+/** Context data exposed for V3 prompt test (computed inside buildStoryPrompt). */
+export interface V3PromptContext {
+  textLevel: number;
+  perspective: string | null;
+  maxSentenceLength: number;
+  allowedTenses: string;
+  paragraphCount: number;
+  wordMin: number;
+  wordMax: number;
+  dialogueRatio: string | null;
+  maxCharacters: number;
+  maxTwists: number;
+  appearanceDesc: string;
+  formattedCharacters: string;
+  safetyLevel: number;
+  safetyAllowed: string;
+  safetyForbidden: string;
+  recentEmotion: string;
+  recentThemes: string;
+  recentTitles: string;
+  categoryName: string;
+  categoryPlots: string;
+  categoryConflicts: string;
+  categoryArchetypes: string;
+  categorySensory: string;
+  categorySettings: string;
+}
+
 export interface PromptBuildResult {
   prompt: string;
   warnings: string[];
   selectedPath: StoryPath | null;
   userInputLevel: string;
+  v3Context?: V3PromptContext;
 }
 
 /** Build appearance description in the story language for the CHILD section (text-image consistency). */
@@ -2614,7 +2643,50 @@ You must provide exactly ${sceneCount} scenes in image_plan.scenes. You must pro
   console.log('User message length:', finalPrompt.length, 'chars');
   // === END DEBUG ===
 
-  return { prompt: finalPrompt, warnings, selectedPath, userInputLevel };
+  // Build V3 prompt context for test prompt override
+  const recentEmotions2 = (recentStories || []).map((s: any) => s.emotional_coloring).filter(Boolean);
+  const emotionCounts2: Record<string, number> = {};
+  recentEmotions2.forEach((e: string) => { emotionCounts2[e] = (emotionCounts2[e] || 0) + 1; });
+  const dominant2 = Object.entries(emotionCounts2).sort((a, b) => b[1] - a[1])[0];
+  const recentThemes2 = (recentStories || []).map((s: any) => s.concrete_theme).filter(Boolean);
+  const recentTitles2 = (recentStories || []).map((s: any) => s.title).filter(Boolean).slice(0, 5);
+
+  const v3Context: V3PromptContext = {
+    textLevel: textLevelData?.level ?? (ageNum <= 6 ? 1 : ageNum <= 8 ? 2 : 3),
+    perspective: ageRules.narrative_perspective ?? null,
+    maxSentenceLength: textLevelData?.max_sentence_length ?? ageRules.max_sentence_length,
+    allowedTenses: textLevelData?.tenses ?? arrJoin(ageRules.allowed_tenses),
+    paragraphCount: textLevelData?.total_paragraphs ?? 7,
+    wordMin: minWords,
+    wordMax: maxWords,
+    dialogueRatio: ageRules.dialogue_ratio ?? null,
+    maxCharacters: maxChars,
+    maxTwists: ageRules.max_plot_twists ?? 1,
+    appearanceDesc: request.appearance && request.protagonists?.include_self
+      ? buildPromptAppearanceDesc(request.appearance, 'en')
+      : '',
+    formattedCharacters: request.protagonists?.characters
+      ?.map((c: any) => {
+        const parts = [c.name];
+        if (c.role) parts.push(`— ${c.role}`);
+        if (c.relation) parts.push(`(${c.relation})`);
+        return parts.join(' ');
+      }).join(', ') ?? '',
+    safetyLevel: request.kid_profile.content_safety_level,
+    safetyAllowed: allowedLabels.join(', '),
+    safetyForbidden: forbiddenLabels.join(', '),
+    recentEmotion: dominant2 ? `${dominant2[0]} (${dominant2[1]}x)` : 'none',
+    recentThemes: recentThemes2.length > 0 ? recentThemes2.join(', ') : 'none',
+    recentTitles: recentTitles2.length > 0 ? recentTitles2.join(', ') : 'none',
+    categoryName: themeRules ? (label(themeRules.labels, lang) || request.theme_key) : 'surprise',
+    categoryPlots: themeRules ? arrJoin(themeRules.plot_templates) : '',
+    categoryConflicts: themeRules ? arrJoin(themeRules.typical_conflicts) : '',
+    categoryArchetypes: themeRules ? arrJoin(themeRules.character_archetypes) : '',
+    categorySensory: themeRules?.sensory_details ?? '',
+    categorySettings: themeRules?.setting_descriptions ?? '',
+  };
+
+  return { prompt: finalPrompt, warnings, selectedPath, userInputLevel, v3Context };
 }
 
 /**

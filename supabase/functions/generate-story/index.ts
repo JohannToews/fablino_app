@@ -17,6 +17,7 @@ import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearance
 import { isAvatarV2Enabled } from '../_shared/featureFlags.ts';
 import { isFse2Enabled } from '../_shared/fse2FeatureFlag.ts';
 import { runPipelineFSE2 } from './pipeline-fse2.ts';
+import { getV3TestPrompt, type V3PromptParams } from '../_shared/v3TestPrompt.ts';
 
 interface CharacterSheetEntry {
   name: string;
@@ -486,6 +487,24 @@ export async function isVisualDirectorEnabled(userId: string, supabase: any): Pr
       .from('app_settings')
       .select('value')
       .eq('key', 'visual_director_enabled_users')
+      .maybeSingle();
+    if (!data?.value) return false;
+    const users = JSON.parse(data.value);
+    return Array.isArray(users) && (users.includes('*') || users.includes(userId));
+  } catch {
+    return false;
+  }
+}
+
+// V3 Prompt feature flag: checks if user is in prompt_v3_test_users list.
+// Value: JSON array of user IDs, ["*"] = all users.
+// On any error, returns false (safe fallback to V2 prompt).
+async function isV3PromptEnabled(userId: string, supabase: any): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'prompt_v3_test_users')
       .maybeSingle();
     if (!data?.value) return false;
     const users = JSON.parse(data.value);
@@ -3446,6 +3465,74 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
       // === DEBUG: Add model to debug_log (TEMPORARY — remove after debugging) ===
       if (debugLog) { (debugLog as any).model = storyModel; }
       // === END DEBUG ===
+
+      // ── V3 Prompt Feature Flag ──
+      // If user is in prompt_v3_test_users, replace the user prompt with V3 (English-only, example-driven).
+      // System prompt (coreV2.1) stays unchanged. On error, silently fall back to V2.
+      let promptVersion = 'v2';
+      if (userId && promptResult?.v3Context) {
+        try {
+          const useV3 = await isV3PromptEnabled(userId, supabase);
+          if (useV3) {
+            // Parse dialogue ratio "25-40%" → dialogueMin=25, dialogueMax=40
+            const ctx = promptResult.v3Context;
+            let dialogueMin = 20, dialogueMax = 40;
+            if (ctx.dialogueRatio) {
+              const dMatch = ctx.dialogueRatio.match(/(\d+)\s*[-–]\s*(\d+)/);
+              if (dMatch) { dialogueMin = parseInt(dMatch[1], 10); dialogueMax = parseInt(dMatch[2], 10); }
+            }
+
+            const v3Params: V3PromptParams = {
+              structureCode: selectedPathCode || 'A1-M1-E1',
+              structureA: selectedPathCode?.split('-')[0] || 'A1',
+              structureM: selectedPathCode?.split('-')[1] || 'M1',
+              structureE: selectedPathCode?.split('-')[2] || 'E1',
+              childName: resolvedKidName || kidName || 'Child',
+              childAge: resolvedKidAge || kidAge || 8,
+              childAppearance: ctx.appearanceDesc,
+              userStoryDescription: storyRequest.user_prompt || '',
+              targetLanguageCode: effectiveStoryLanguage,
+              textLevel: ctx.textLevel,
+              perspective: ctx.perspective || 'third person',
+              maxSentenceLength: ctx.maxSentenceLength,
+              allowedTenses: ctx.allowedTenses,
+              paragraphCount: ctx.paragraphCount,
+              wordMin: ctx.wordMin,
+              wordMax: ctx.wordMax,
+              dialogueMin,
+              dialogueMax,
+              questionCount: questionCount,
+              subtypeLabel: selectedSubtype?.label || 'adventure',
+              subtypePromptHint: selectedSubtype?.promptHint || '',
+              subtypeSettingIdea: selectedSubtype?.settingIdea || '',
+              subtypeTitleSeed: selectedSubtype?.titleSeed || '',
+              categoryName: ctx.categoryName,
+              categoryPlots: ctx.categoryPlots,
+              categoryConflicts: ctx.categoryConflicts,
+              categoryArchetypes: ctx.categoryArchetypes,
+              categorySensory: ctx.categorySensory,
+              categorySettings: ctx.categorySettings,
+              characters: ctx.formattedCharacters,
+              villainName: villainParam?.name || null,
+              maxCharacters: ctx.maxCharacters,
+              maxTwists: ctx.maxTwists,
+              safetyLevel: ctx.safetyLevel,
+              safetyAllowed: ctx.safetyAllowed,
+              safetyForbidden: ctx.safetyForbidden,
+              recentEmotion: ctx.recentEmotion,
+              recentThemes: ctx.recentThemes,
+              recentTitles: ctx.recentTitles,
+            };
+
+            promptToUse = getV3TestPrompt(v3Params);
+            promptVersion = 'v3';
+            console.log(`[V3-PROMPT] ✅ V3 prompt active for user ${userId}. Length: ${promptToUse.length} chars`);
+          }
+        } catch (err) {
+          console.warn('[V3-PROMPT] Feature flag check failed, using V2:', err instanceof Error ? err.message : err);
+        }
+      }
+      if (debugLog) { (debugLog as any).prompt_version = promptVersion; }
 
       let content: string;
       if (storyModel === 'sonnet' && VERTEX_API_KEY) {
