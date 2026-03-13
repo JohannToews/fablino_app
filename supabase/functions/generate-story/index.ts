@@ -2458,6 +2458,8 @@ Deno.serve(async (req) => {
     let resolvedContentSafetyLevel = contentSafetyLevel;
     let kidAppearance: { skin_tone: string; hair_length: string; hair_type: string; hair_style: string; hair_color: string; glasses: boolean } | null = null;
     let characterAnchors: Array<{name: string; role: string; anchor: string}> = [];
+    let hoistedPromptResult: any = null;
+    let hoistedUserPrompt: string = '';
 
     try {
       // 1. Load CORE Slim v2
