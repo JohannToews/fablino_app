@@ -489,7 +489,7 @@ export async function isVisualDirectorEnabled(userId: string, supabase: any): Pr
       .maybeSingle();
     if (!data?.value) return false;
     const users = JSON.parse(data.value);
-    return Array.isArray(users) && users.includes(userId);
+    return Array.isArray(users) && (users.includes('*') || users.includes(userId));
   } catch {
     return false;
   }
@@ -2776,6 +2776,17 @@ Deno.serve(async (req) => {
         fullSystemPrompt: fullSystemPromptFinal,
         fullUserMessage: userMessageFinal,
         // === END DEBUG ===
+        // Prompt constraints for prompt-vs-output comparison
+        promptConstraints: {
+          requested_min_words: genConfig.min_words,
+          requested_max_words: genConfig.max_words,
+          requested_scene_image_count: genConfig.scene_image_count,
+          text_level: storyRequest.length_level ?? null,
+          language: storyRequest.storyLanguage ?? textLanguage ?? null,
+          use_visual_director: useVisualDirector,
+          use_comic_strip: useComicStrip,
+          story_path_code: selectedPathCode ?? null,
+        },
       };
 
       if (promptWarnings.length > 0) {
@@ -3626,6 +3637,22 @@ Antworte NUR mit dem erweiterten Text (ohne Titel, ohne JSON-Format).`;
     const learningThemeResponse = story.learning_theme_response || null;
 
     console.log(`[generate-story] Classifications: structure=${structureBeginning}-${structureMiddle}-${structureEnding}, emotion=${emotionalColoring}/${emotionalSecondary}, humor=${humorLevel}, depth=${emotionalDepth}, theme=${concreteTheme}`);
+
+    // Add LLM output summary to debug_log
+    if (debugLog) {
+      (debugLog as any).llmOutput = {
+        actual_word_count: countWords(story.content || ''),
+        actual_paragraph_count: (story.content || '').split(/\n\n+/).filter((p: string) => p.trim()).length,
+        structure_beginning: structureBeginning,
+        structure_middle: structureMiddle,
+        structure_ending: structureEnding,
+        emotional_coloring: emotionalColoring,
+        humor_level: humorLevel,
+        has_image_plan: !!(story as any).image_plan,
+        question_count: story.questions?.length ?? 0,
+        vocabulary_count: story.vocabulary?.length ?? 0,
+      };
+    }
 
     // ── Ensure story_path_code is set: prefer selectedPathCode from buildStoryPrompt(), fallback to LLM structure fields or safety path ──
     if (!selectedPathCode) {
@@ -4565,6 +4592,40 @@ Respond with ONLY valid JSON, no markdown:
             .eq('id', storyId);
 
           console.log(`[generate-story] Stories checker metrics: found=${totalIssuesFound}, fixed=${totalIssuesCorrected}, remaining=${issuesRemaining} (${checkerCritical}C/${checkerMedium}M/${checkerLow}L), fix_rate=${patchFixRate}, critical_failed=${criticalPatchFailed}, timing: check=${checkOnlyMs}ms/patch=${patchMs}ms/recheck=${recheckMs}ms`);
+
+          // Add consistency check results to debug_log and persist
+          if (debugLog) {
+            (debugLog as any).consistencyCheck = {
+              passed: totalIssuesFound === 0,
+              issues_found: totalIssuesFound,
+              issues_corrected: totalIssuesCorrected,
+              issues_remaining: issuesRemaining,
+              severity: {
+                critical: checkerCritical,
+                medium: checkerMedium,
+                low: checkerLow,
+              },
+              subcategories: checkerSubcategories,
+              critical_patch_failed: criticalPatchFailed,
+              patch_fix_rate: patchFixRate,
+              issue_details: allIssueDetails,
+              timing: {
+                check_only_ms: checkOnlyMs,
+                patch_ms: patchMs,
+                recheck_ms: recheckMs,
+              },
+            };
+
+            // Update debug_log in DB (Phase 2 wrote it before the check ran)
+            try {
+              await supabase
+                .from('stories')
+                .update({ debug_log: debugLog })
+                .eq('id', storyId);
+            } catch (dlErr) {
+              console.warn('[generate-story] debug_log update with consistency results failed (non-fatal):', dlErr);
+            }
+          }
         } catch (metricsErr) {
           console.warn('[generate-story] Stories checker metrics write failed (non-fatal):', metricsErr);
         }
