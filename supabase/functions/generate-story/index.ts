@@ -2766,6 +2766,8 @@ Deno.serve(async (req) => {
       console.log('[generate-story] storyRequest.user_prompt resolved to:', (storyRequest.user_prompt || '(empty)').substring(0, 300));
       // 3. Build dynamic user message
       const promptResult = await buildStoryPrompt(storyRequest, supabase);
+      hoistedPromptResult = promptResult;
+      hoistedUserPrompt = storyRequest.user_prompt || '';
       userMessageFinal = promptResult.prompt;
       promptWarnings = promptResult.warnings;
       selectedPathCode = promptResult.selectedPath?.code || null;
