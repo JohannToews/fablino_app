@@ -44,6 +44,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [writerCoreV2Prompt, setWriterCoreV2Prompt] = useState("");
   const [writerCoreV3Prompt, setWriterCoreV3Prompt] = useState("");
+  const [v3TestPrompt, setV3TestPrompt] = useState("");
   const [continuationPrompt, setContinuationPrompt] = useState("");
   const [wordExplanationPrompt, setWordExplanationPrompt] = useState("");
   const [consistencyCheckPrompt, setConsistencyCheckPrompt] = useState("");
