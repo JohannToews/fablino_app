@@ -1401,7 +1401,7 @@ async function loadTextLevel(
   // 5. Language-specific tenses (fallback: generic from text_levels)
   const { data: tensesData } = await supabaseClient
     .from('text_level_tenses')
-    .select('tenses, tenses_description')
+    .select('tenses, tenses_description, structures_description, vocabulary_scope, example_hint')
     .eq('level', textLevel)
     .eq('language_code', storyLanguage)
     .maybeSingle();
@@ -1418,11 +1418,11 @@ async function loadTextLevel(
   return {
     level: textLevel,
     max_sentence_length: levelData.max_sentence_length,
-    structures_description: levelData.structures_description,
-    vocabulary_scope: levelData.vocabulary_scope,
+    structures_description: tensesData?.structures_description ?? levelData.structures_description,
+    vocabulary_scope: tensesData?.vocabulary_scope ?? levelData.vocabulary_scope,
     tenses: tensesData?.tenses ?? levelData.tenses_generic,
     tenses_description: tensesData?.tenses_description ?? `Use only: ${levelData.tenses_generic}`,
-    example_hint: levelData.example_hint,
+    example_hint: tensesData?.example_hint ?? levelData.example_hint,
     total_paragraphs: totalParagraphs,
     min_words: minWords,
     max_words: maxWords,
