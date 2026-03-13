@@ -401,6 +401,109 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
         </Card>
       </Collapsible>
 
+      {/* ══════════ 0b. V3 Test Prompt — system_prompt_v3_test ══════════ */}
+      <Collapsible open={openSections.v3Test} onOpenChange={() => toggleSection('v3Test')}>
+        <Card className="border-2 border-orange-500/50 bg-orange-50/30 dark:bg-orange-950/20">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg">
+                  {openSections.v3Test ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                  <Flag className="h-5 w-5 text-orange-500" />
+                  V3 Test Prompt
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-orange-500 text-white rounded-full">
+                    🧪 TEST
+                  </span>
+                </div>
+                <span className="text-sm font-normal text-muted-foreground">
+                  (prompt_v3_test_users)
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="p-3 bg-orange-100/50 dark:bg-orange-900/30 rounded-md border border-orange-300/50">
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  🧪 V3 Tester Prompt — wird für User mit dem Flag <code className="font-mono bg-orange-200/50 dark:bg-orange-800/50 px-1 rounded">prompt_v3_test_users</code> verwendet
+                </p>
+                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1 font-mono">
+                  DB Key: system_prompt_v3_test
+                </p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                  {language === 'de'
+                    ? '⚡ Leer = hardcoded V3-Template wird verwendet. Verfügbare Variablen: {{childName}}, {{childAge}}, {{childAppearance}}, {{targetLanguage}}, {{textLevel}}, {{perspective}}, {{maxSentenceLength}}, {{allowedTenses}}, {{paragraphCount}}, {{wordMin}}, {{wordMax}}, {{dialogueMin}}, {{dialogueMax}}, {{questionCount}}, {{structureCode}}, {{structureInstructions}}, {{exampleSentence}}, {{subtypeLabel}}, {{subtypePromptHint}}, {{subtypeSettingIdea}}, {{subtypeTitleSeed}}, {{categoryName}}, {{characters}}, {{villainBlock}}, {{maxCharacters}}, {{maxTwists}}, {{safetyLevel}}, {{safetyAllowed}}, {{safetyForbidden}}, {{recentEmotion}}, {{recentThemes}}, {{recentTitles}}, {{userStoryDescription}}'
+                    : '⚡ Empty = hardcoded V3 template is used. Template variables available.'}
+                </p>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{t.loading}</span>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={v3TestPrompt}
+                    onChange={(e) => setV3TestPrompt(e.target.value)}
+                    className="min-h-[350px] text-sm font-mono leading-relaxed"
+                    placeholder="V3 Test Prompt (system_prompt_v3_test)... Leer lassen = hardcoded Template"
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={async () => {
+                        setIsSavingV3Test(true);
+                        try {
+                          const { error } = await invokeEdgeFunction("manage-users", {
+                            action: "updateSystemPrompt",
+                            promptKey: "system_prompt_v3_test",
+                            promptValue: v3TestPrompt,
+                          });
+                          if (error) {
+                            toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                          } else {
+                            toast.success(language === 'de' ? "V3 Test Prompt gespeichert" : "V3 Test prompt saved");
+                          }
+                        } catch (err) {
+                          console.error("Error:", err);
+                          toast.error(language === 'de' ? "Fehler beim Speichern" : "Error saving");
+                        } finally {
+                          setIsSavingV3Test(false);
+                        }
+                      }}
+                      disabled={isSavingV3Test}
+                      className="btn-primary-kid"
+                    >
+                      {isSavingV3Test ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {language === 'de' ? 'Speichern...' : 'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          {language === 'de' ? 'Speichern' : 'Save'}
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={loadPrompts} disabled={isLoading}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {language === 'de' ? 'Neu laden' : 'Reload'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    {language === 'de'
+                      ? '💡 Leer lassen = hardcoded V3-Template aus v3TestPrompt.ts wird verwendet. Verwende {{variablenName}} für dynamische Werte.'
+                      : '💡 Leave empty = hardcoded V3 template from v3TestPrompt.ts is used. Use {{variableName}} for dynamic values.'}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
       {/* ══════════ 1. Writer Prompt (Active) — system_prompt_core_v2 ══════════ */}
       <Collapsible open={openSections.writerCoreV2} onOpenChange={() => toggleSection('writerCoreV2')}>
         <Card className="border-2 border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20">
