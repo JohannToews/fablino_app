@@ -86,7 +86,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
     const wordExplanationKey = `system_prompt_word_explanation_${language}`;
     const consistencyCheckKey = `system_prompt_consistency_check_${language}`;
     
-    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result, writerCoreV3Result] = await Promise.all([
+    const [promptResult, continuationResult, wordExplanationResult, consistencyCheckResult, consistencyV2Result, seriesAddonResult, plannerResult, writerCoreV2Result, writerCoreV3Result, v3TestResult] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", promptKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", continuationKey).maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", wordExplanationKey).maybeSingle(),
@@ -96,7 +96,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
       supabase.from("app_settings").select("value").eq("key", "system_prompt_planner").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v2").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "system_prompt_core_v3").maybeSingle(),
-      
+      supabase.from("app_settings").select("value").eq("key", "system_prompt_v3_test").maybeSingle(),
     ]);
 
     if (promptResult.data && !promptResult.error) {
