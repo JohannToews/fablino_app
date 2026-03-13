@@ -56,6 +56,7 @@ const SystemPromptSection = ({ language }: SystemPromptSectionProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingWriterCoreV2, setIsSavingWriterCoreV2] = useState(false);
   const [isSavingWriterCoreV3, setIsSavingWriterCoreV3] = useState(false);
+  const [isSavingV3Test, setIsSavingV3Test] = useState(false);
   const [isSavingContinuation, setIsSavingContinuation] = useState(false);
   const [isSavingWordExplanation, setIsSavingWordExplanation] = useState(false);
   const [isSavingConsistencyCheck, setIsSavingConsistencyCheck] = useState(false);
