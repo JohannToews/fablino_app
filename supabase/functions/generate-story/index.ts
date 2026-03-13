@@ -3536,7 +3536,14 @@ Fields episode_summary, continuity_state, visual_style_sheet, branch_options are
           console.warn('[V3-PROMPT] Feature flag check failed, using V2:', err instanceof Error ? err.message : err);
         }
       }
-      if (debugLog) { (debugLog as any).prompt_version = promptVersion; }
+      if (debugLog) {
+        (debugLog as any).prompt_version = promptVersion;
+        // When V3 is active, overwrite the fullUserMessage so the actual sent prompt is visible
+        if (promptVersion === 'v3') {
+          (debugLog as any).fullUserMessage = promptToUse;
+          (debugLog as any).totalPromptLength = fullSystemPrompt.length + promptToUse.length;
+        }
+      }
 
       let content: string;
       if (storyModel === 'sonnet' && VERTEX_API_KEY) {
