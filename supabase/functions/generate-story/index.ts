@@ -5323,6 +5323,17 @@ Respond with ONLY valid JSON, no markdown:
             label: p.label,
             prompt: p.prompt,
           }));
+
+          // Persist VD debug_log to DB immediately
+          try {
+            await supabase
+              .from('stories')
+              .update({ debug_log: debugLog })
+              .eq('id', storyId);
+            console.log('[VD-DEBUG] Persisted visual_director + image_prompts to debug_log');
+          } catch (vdLogErr) {
+            console.warn('[VD-DEBUG] debug_log persist failed (non-fatal):', vdLogErr);
+          }
         }
 
         if (imagePrompts.length > imageGenConfig.maxImagesPerStory) {
