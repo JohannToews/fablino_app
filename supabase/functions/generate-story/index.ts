@@ -5311,6 +5311,20 @@ Respond with ONLY valid JSON, no markdown:
           });
         }
 
+        // Persist VD output + full image prompts in debug_log
+        if (debugLog) {
+          (debugLog as any).visual_director = {
+            character_sheet: vdOutput.character_sheet,
+            world_anchor: vdOutput.world_anchor,
+            scenes: vdOutput.scenes,
+            cover: vdOutput.cover,
+          };
+          (debugLog as any).image_prompts = imagePrompts.map((p: any) => ({
+            label: p.label,
+            prompt: p.prompt,
+          }));
+        }
+
         if (imagePrompts.length > imageGenConfig.maxImagesPerStory) {
           console.log(`[VisualDirector] Limiting image prompts from ${imagePrompts.length} to ${imageGenConfig.maxImagesPerStory} (config limit)`);
           imagePrompts = imagePrompts.slice(0, imageGenConfig.maxImagesPerStory);
