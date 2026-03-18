@@ -354,7 +354,12 @@ const CreateStoryPage = () => {
       if (data?.error) {
         toast.error(data.error);
         stopGenerating();
-        setCurrentScreen("entry");
+        if (placeholderStoryId) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryId}`);
+        } else {
+          setCurrentScreen("entry");
+        }
         return;
       }
 
