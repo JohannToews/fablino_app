@@ -1105,21 +1105,20 @@ async function executePipeline(
     }
 
     // 8. DB Write — story data + images + timing
+    // NOTE: stories table does NOT have 'questions', 'vocabulary', 'emotional_secondary',
+    // or 'used_fse3' columns. Questions go into 'comprehension_questions' table (like FSE2).
+    // The column is 'story_images' (not 'story_image_urls').
     const updatePayload: Record<string, any> = {
       generation_status: finalStatus,
       title: storyTitle,
       content: storyContent,
-      questions: finalJSON.questions,
-      vocabulary: finalJSON.vocabulary,
       cover_image_url: imageResult.coverImageUrl,
-      story_image_urls: imageResult.storyImageUrls.length > 0
+      story_images: imageResult.storyImageUrls.length > 0
         ? imageResult.storyImageUrls
-        : null,
+        : [],
       fse3_pass_timing: timing,
       story_path_code: ctx.blueprint?.path_code || null,
       emotional_coloring: ctx.blueprint?.emotional_coloring || null,
-      emotional_secondary: ctx.blueprint?.emotional_secondary || null,
-      used_fse3: true,
     };
 
     const { error: updateErr } = await supabase
@@ -1131,6 +1130,25 @@ async function executePipeline(
       console.error('[FSE3] DB write failed:', updateErr.message);
     } else {
       console.log(`[FSE3] DB write success, status=${finalStatus}`);
+    }
+
+    // 8b. Insert comprehension questions into separate table (like FSE2)
+    if (Array.isArray(finalJSON.questions) && finalJSON.questions.length > 0) {
+      const qLang = ctx.storyLanguage || 'de';
+      const qRows = finalJSON.questions.map((q: any, i: number) => ({
+        story_id: storyId,
+        question: q.question,
+        expected_answer: q.correctAnswer || q.expectedAnswer || '',
+        options: q.options || [],
+        order_index: i,
+        question_language: qLang,
+      }));
+      const { error: qErr } = await supabase.from('comprehension_questions').insert(qRows);
+      if (qErr) {
+        console.warn('[FSE3] Questions insert error:', qErr.message);
+      } else {
+        console.log(`[FSE3] Inserted ${qRows.length} comprehension questions`);
+      }
     }
 
     // 9. Record subtype usage (round-robin)
