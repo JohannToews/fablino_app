@@ -602,9 +602,10 @@ const CreateStoryPage = () => {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
       stopGenerating();
-      if (placeholderStoryId) {
+      const fallbackId = sessionStorage.getItem('generating_story_id');
+      if (fallbackId) {
         queryClient.invalidateQueries({ queryKey: ['stories'] });
-        navigate(`/read/${placeholderStoryId}`);
+        navigate(`/read/${fallbackId}`);
       } else {
         setCurrentScreen("entry");
       }
