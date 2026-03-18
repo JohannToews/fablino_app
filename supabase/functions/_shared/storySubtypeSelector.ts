@@ -189,6 +189,53 @@ export async function selectStorySubtype(
 }
 
 /**
+ * List all available (active) subtypes for a given theme.
+ * Used by the FSE3 Interpreter to show the LLM which subtypes exist.
+ * Does NOT apply round-robin — returns ALL active subtypes.
+ *
+ * @param themeKey - The wizard theme key (e.g. 'fantasy', 'action', 'animals')
+ * @param supabase - Supabase client
+ * @returns Array of subtypes with key, label, description, and optional writing_instructions
+ */
+export async function listAvailableSubtypes(
+  themeKey: string,
+  supabase: any,
+): Promise<Array<{ key: string; label: string; description: string; writing_instructions?: string }>> {
+  // Map theme to category (same mapping as selectStorySubtype)
+  const category = THEME_TO_CATEGORY[themeKey] || THEME_TO_CATEGORY['surprise'] || 'surprise';
+
+  const { data: subtypes, error } = await supabase
+    .from('story_subtypes')
+    .select('*')
+    .eq('theme_key', category)
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('[SubtypeSelector] DB error loading subtypes for listing:', error.message);
+    return [];
+  }
+
+  if (!subtypes || subtypes.length === 0) {
+    console.warn(`[SubtypeSelector] No active subtypes for category=${category}`);
+    return [];
+  }
+
+  return (subtypes as StorySubtypeRow[]).map((s) => ({
+    key: s.subtype_key,
+    label: s.labels?.['en'] || s.labels?.['de'] || s.subtype_key,
+    description: s.prompt_hint_en || '',
+    writing_instructions: (s as any).writing_instructions || undefined,
+  }));
+}
+
+/**
+ * Expose theme-to-category mapping for external use (e.g. FSE3 pipeline).
+ */
+export function getThemeCategory(themeKey: string): string {
+  return THEME_TO_CATEGORY[themeKey] || THEME_TO_CATEGORY['surprise'] || 'surprise';
+}
+
+/**
  * Record a subtype usage in history (for round-robin).
  */
 export async function recordSubtypeUsage(
