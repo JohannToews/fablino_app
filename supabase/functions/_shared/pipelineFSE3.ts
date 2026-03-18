@@ -757,6 +757,18 @@ function parseBlueprint(raw: string): FSE3Blueprint {
   };
 }
 
+function repairJSON(raw: string): string {
+  let s = raw;
+  // Fix unquoted property names: { title: → { "title":
+  s = s.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+  // Fix single-quoted strings → double-quoted
+  // Only replace single quotes that are likely string delimiters (after : or in arrays)
+  s = s.replace(/:\s*'([^']*)'/g, ': "$1"');
+  // Fix trailing commas before } or ]
+  s = s.replace(/,\s*([}\]])/g, '$1');
+  return s;
+}
+
 function parseFinalJSON(raw: string): {
   title: string;
   content: string;
@@ -769,7 +781,22 @@ function parseFinalJSON(raw: string): {
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('[FSE3] Pass 4: no valid JSON found');
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (e1) {
+    // Attempt JSON repair (unquoted keys, single quotes, trailing commas)
+    console.warn(`[FSE3-P4] JSON.parse failed, attempting repair: ${(e1 as Error).message}`);
+    try {
+      const repaired = repairJSON(jsonMatch[0]);
+      parsed = JSON.parse(repaired);
+      console.log('[FSE3-P4] JSON repair succeeded');
+    } catch (e2) {
+      console.error(`[FSE3-P4] JSON repair also failed: ${(e2 as Error).message}`);
+      throw new Error(`[FSE3] Pass 4 JSON parse failed: ${(e1 as Error).message}`);
+    }
+  }
+
   return {
     title: parsed.title || '',
     content: parsed.content || '',
@@ -868,7 +895,22 @@ async function runTextBranch(
   timing.pass4_ms = Date.now() - t4;
   console.log(`[FSE3-P4] Done in ${timing.pass4_ms}ms`);
 
-  const finalJSON = parseFinalJSON(pass4Raw);
+  let finalJSON: { title: string; content: string; questions: any[]; vocabulary: any[] };
+  try {
+    finalJSON = parseFinalJSON(pass4Raw);
+  } catch (p4Err) {
+    // FALLBACK: If Pass 4 JSON parsing fails entirely, use Pass 3 output as content
+    console.error(`[FSE3-P4] Parse failed, using Pass 3 fallback: ${(p4Err as Error).message}`);
+    const fallbackTitle = ctx.storyTitle || 'Untitled Story';
+    // Pass 3 output is the polished story text — use it directly
+    const fallbackContent = (ctx.pass3Output || ctx.pass2Output || ctx.pass1Output || '').trim();
+    finalJSON = {
+      title: fallbackTitle,
+      content: fallbackContent,
+      questions: [],
+      vocabulary: [],
+    };
+  }
 
   // Normalize spacing (fix "berührte.Das" → "berührte. Das")
   finalJSON.content = normalizeSpacing(finalJSON.content);
