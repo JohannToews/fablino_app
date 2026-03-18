@@ -17,6 +17,8 @@ import { inferAgeCategory, inferGenderFromRelation } from '../_shared/appearance
 import { isAvatarV2Enabled } from '../_shared/featureFlags.ts';
 import { isFse2Enabled } from '../_shared/fse2FeatureFlag.ts';
 import { runPipelineFSE2 } from './pipeline-fse2.ts';
+import { isFse3Enabled } from '../_shared/fse3FeatureFlag.ts';
+import { runPipelineFSE3 } from '../_shared/pipelineFSE3.ts';
 import { getV3TestPrompt, type V3PromptParams } from '../_shared/v3TestPrompt.ts';
 
 interface CharacterSheetEntry {
@@ -2062,6 +2064,33 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ── FSE3 Feature Flag — routes to new multi-pass pipeline (checked BEFORE FSE2) ──
+    const fse3Enabled = await isFse3Enabled(userId, supabase);
+    console.log('[FSE3-ROUTE] fse3Enabled=', fse3Enabled, 'userId=', userId);
+    if (fse3Enabled) {
+      // Validate required FSE3 fields
+      if (!body.fse3_chosen_variant) {
+        return new Response(JSON.stringify({
+          error: 'FSE3 requires fse3_chosen_variant in request body',
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('[FSE3-ROUTE] Routing to FSE3 pipeline, story_id=', body.story_id);
+
+      // Fire-and-forget: run pipeline in background, return 202 immediately
+      const _bgFse3 = runPipelineFSE3(req, supabase, body).catch((err: any) => {
+        console.error('[FSE3-ROUTE] Background pipeline error:', err?.message ?? err);
+      });
+
+      return new Response(JSON.stringify({ story_id: body.story_id, pipeline: 'fse3' }), {
+        status: 202,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // ── FSE2 Feature Flag — routes to separate pipeline ──
     const fse2Raw = await isFse2Enabled(userId, supabase);
