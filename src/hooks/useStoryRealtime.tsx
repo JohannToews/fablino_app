@@ -44,7 +44,7 @@ export function useStoryRealtime(storyId: string | null): UseStoryRealtimeResult
   const [error, setError] = useState<string | null>(null);
 
   const isFullyLoaded = story 
-    ? ['verified', 'images_partial', 'images_failed', 'text_complete', 'images_complete'].includes(story.generation_status || '') &&
+    ? ['verified', 'complete', 'images_partial', 'images_failed', 'text_complete', 'images_complete'].includes(story.generation_status || '') &&
       story.cover_image_status === 'complete' &&
       story.story_images_status === 'complete'
     : false;
