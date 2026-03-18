@@ -844,7 +844,7 @@ function getThinkingBudget(passName: string): number {
     case 'pass_3':
       return 4096; // moderate reasoning
     case 'pass_4':
-      return 0; // no thinking (mechanical JSON wrapping)
+      return 1024; // minimal thinking for clean JSON
     default:
       return -1;
   }
