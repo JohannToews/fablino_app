@@ -31,6 +31,8 @@ import { toast } from "sonner";
 import { useTranslations } from "@/lib/translations";
 import StoryGenerationProgress, { PerformanceData } from "@/components/story-creation/StoryGenerationProgress";
 import { useDailyStoryLimit } from "@/hooks/useDailyStoryLimit";
+import { useStoryFse3Enabled } from "@/hooks/useStoryFse3Enabled";
+import StoryVariantSelectionScreen, { FSE3Variant } from "@/components/story-creation/StoryVariantSelectionScreen";
 
 // Daily limit labels per language
 const dailyLimitLabels: Record<string, { remaining: string; limitReached: string }> = {
@@ -56,7 +58,7 @@ const dailyLimitLabels: Record<string, { remaining: string; limitReached: string
 };
 
 // Screen states for the wizard
-type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "villain" | "image-style" | "generating";
+type WizardScreen = "entry" | "story-type" | "characters" | "effects" | "villain" | "image-style" | "variant-selection" | "generating";
 
 // Wizard path: free (Weg A) or guided (Weg B)
 type WizardPath = "free" | "guided" | null;
@@ -139,6 +141,12 @@ const CreateStoryPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [selectedVillain, setSelectedVillain] = useState<VillainData | null>(null);
+
+  // FSE3 state
+  const fse3Enabled = useStoryFse3Enabled();
+  const [interpreterResult, setInterpreterResult] = useState<{ variants: FSE3Variant[] } | null>(null);
+  const [interpreterLoading, setInterpreterLoading] = useState(false);
+  const [chosenVariant, setChosenVariant] = useState<FSE3Variant | null>(null);
 
   // AbortController for story generation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -658,18 +666,115 @@ const CreateStoryPage = () => {
     setCurrentScreen("effects");
   };
 
-  // Handle image style selection — triggers story generation
+  // Handle image style selection — triggers story generation (or FSE3 interpreter)
   const handleImageStyleSelect = async (styleKey: string) => {
     setSelectedImageStyleKey(styleKey);
+
+    // FSE3 path: go to variant selection, start interpreter call in background
+    if (fse3Enabled && selectedStoryType !== 'educational') {
+      setCurrentScreen("variant-selection");
+      callInterpreter(styleKey);
+      return;
+    }
+
     // Educational story path
     if (selectedStoryType === 'educational' && educationalTopic) {
       await generateEducationalStory(educationalTopic, customTopic, styleKey);
       return;
     }
-    // Fiction story path
+    // Fiction story path (FSE1/FSE2)
     if (pendingEffects) {
       await generateFictionStory(pendingEffects.attributes, pendingEffects.description, pendingEffects.settingsOverride, styleKey);
     }
+  };
+
+  // FSE3: Call the interpreter endpoint to get 3 story variants
+  const callInterpreter = async (styleKey: string) => {
+    if (!selectedProfile?.id || !user?.id) return;
+
+    setInterpreterLoading(true);
+    setInterpreterResult(null);
+
+    try {
+      // Determine variant C tone based on story count (even=empathy, odd=wonder)
+      const { count: storyCount } = await supabase
+        .from("stories")
+        .select("id", { count: "exact", head: true })
+        .eq("kid_profile_id", selectedProfile.id);
+
+      const variantCTone = ((storyCount ?? 0) % 2 === 0) ? "empathy" : "wonder";
+
+      // Build reading level from difficulty
+      const readingLevel = selectedProfile?.difficulty_level
+        ?? (selectedProfile?.school_class
+          ? (parseInt(selectedProfile.school_class, 10) <= 1 ? 1 : parseInt(selectedProfile.school_class, 10) <= 3 ? 2 : 3)
+          : 2);
+
+      const { data, error } = await supabase.functions.invoke("interpret-story-input", {
+        body: {
+          kidName: selectedProfile?.name || "",
+          kidAge: selectedProfile?.age ?? 7,
+          kidGender: selectedProfile?.gender || "neutral",
+          storyType: selectedStoryType || "surprise",
+          characters: selectedCharacters.map(c => ({
+            name: c.name,
+            type: c.type,
+            age: c.age,
+            gender: c.gender,
+            role: c.role,
+            relation: c.relation,
+            description: c.description,
+          })),
+          ...(selectedVillain ? { villain: { name: selectedVillain.name, description: selectedVillain.description, type: selectedVillain.type } } : {}),
+          additionalDescription: pendingEffects?.description || additionalDescription || "",
+          specialAttributes: selectedAttributes.concat(pendingEffects?.attributes || []).filter(a => a !== "normal"),
+          storyLanguage: storySettings?.storyLanguage || kidReadingLanguage,
+          readingLevel,
+          variantCTone,
+        },
+      });
+
+      if (error) {
+        console.error("[FSE3] Interpreter error:", error);
+        toast.error(t.toastGenerationError);
+        setCurrentScreen("image-style");
+        return;
+      }
+
+      if (data?.variants && Array.isArray(data.variants) && data.variants.length > 0) {
+        setInterpreterResult({ variants: data.variants });
+      } else {
+        console.error("[FSE3] Interpreter returned no variants:", data);
+        toast.error(t.toastGenerationError);
+        setCurrentScreen("image-style");
+      }
+    } catch (err) {
+      console.error("[FSE3] Interpreter call failed:", err);
+      toast.error(t.toastGenerationError);
+      setCurrentScreen("image-style");
+    } finally {
+      setInterpreterLoading(false);
+    }
+  };
+
+  // FSE3: Handle variant selection → start generation with chosen variant
+  const handleVariantSelected = async (variant: FSE3Variant) => {
+    setChosenVariant(variant);
+
+    if (!pendingEffects) {
+      console.error("[FSE3] No pendingEffects when variant selected");
+      return;
+    }
+
+    // Call generateFictionStory but pass FSE3 data via the body
+    await generateFictionStory(
+      pendingEffects.attributes,
+      pendingEffects.description,
+      pendingEffects.settingsOverride,
+      selectedImageStyleKey || undefined,
+      // FSE3 extra data
+      { chosenVariant: variant, interpreterResult: interpreterResult }
+    );
   };
 
   // Generate fiction story (adventure, detective, friendship, funny)
@@ -677,7 +782,8 @@ const CreateStoryPage = () => {
     effectAttributes: SpecialAttribute[],
     userDescription: string,
     settingsOverride?: StorySettingsFromEffects,
-    imageStyleKey?: string
+    imageStyleKey?: string,
+    fse3Data?: { chosenVariant: FSE3Variant; interpreterResult: { variants: FSE3Variant[] } | null }
   ) => {
     if (!user?.id) {
       toast.error(t.readingPleaseLogin);
@@ -834,6 +940,11 @@ const CreateStoryPage = () => {
               length_level: settingsOverride?.length_level || storySettings?.length_level,
               ...(selectedVillain ? { villain: selectedVillain } : {}),
               ...(placeholderStoryIdFiction ? { story_id: placeholderStoryIdFiction } : {}),
+              // FSE3: Include chosen variant + interpreter result for the multi-pass pipeline
+              ...(fse3Data ? {
+                fse3_chosen_variant: fse3Data.chosenVariant,
+                fse3_interpreter_result: fse3Data.interpreterResult,
+              } : {}),
             },
           }),
           timeoutPromise,
@@ -1129,6 +1240,12 @@ const CreateStoryPage = () => {
       } else {
         setCurrentScreen("effects");
       }
+    } else if (currentScreen === "variant-selection") {
+      // FSE3: back from variant selection → image style
+      setInterpreterResult(null);
+      setInterpreterLoading(false);
+      setChosenVariant(null);
+      setCurrentScreen("image-style");
     }
   };
 
@@ -1269,6 +1386,16 @@ const CreateStoryPage = () => {
           uiLanguage={kidAppLanguage}
           onSelect={handleImageStyleSelect}
           onBack={handleBack}
+        />
+      )}
+
+      {currentScreen === "variant-selection" && (
+        <StoryVariantSelectionScreen
+          variants={interpreterResult?.variants || []}
+          onVariantSelected={handleVariantSelected}
+          onBack={handleBack}
+          isLoading={interpreterLoading}
+          storyLanguage={storySettings?.storyLanguage || kidReadingLanguage}
         />
       )}
     </div>
