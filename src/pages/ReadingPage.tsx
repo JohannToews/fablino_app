@@ -2118,6 +2118,26 @@ const ReadingPage = () => {
     return elements;
   };
 
+  // ── Compute generating state before any early returns (hooks must be unconditional) ──
+  const isStillGenerating = story && (!story.generation_status || ['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(story.generation_status));
+
+  // Poll for story completion when still generating
+  useEffect(() => {
+    if (!isStillGenerating || !id) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("stories")
+        .select("generation_status")
+        .eq("id", id)
+        .single();
+      if (data && data.generation_status && !['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(data.generation_status)) {
+        clearInterval(interval);
+        loadStory();
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isStillGenerating, id]);
+
    if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -2132,27 +2152,6 @@ const ReadingPage = () => {
   if (!story) {
     return <Navigate to="/stories" replace />;
   }
-
-  // ── Guard: Story still generating → show fun-facts progress screen & poll for completion ──
-  const isStillGenerating = !story.generation_status || ['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(story.generation_status);
-  
-  // Poll for story completion when still generating
-  useEffect(() => {
-    if (!isStillGenerating || !id) return;
-    const interval = setInterval(async () => {
-      const { data } = await supabase
-        .from("stories")
-        .select("generation_status")
-        .eq("id", id)
-        .single();
-      if (data && data.generation_status && !['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(data.generation_status)) {
-        clearInterval(interval);
-        // Reload the full story
-        loadStory();
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [isStillGenerating, id]);
 
   if (isStillGenerating) {
     return (
