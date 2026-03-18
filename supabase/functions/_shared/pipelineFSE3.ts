@@ -867,18 +867,13 @@ async function runTextBranch(
   ctx: FSE3PipelineContext & Record<string, any>,
   supabase: any,
   timing: Partial<FSE3PassTiming>,
+  debugPrompts?: Record<string, { systemPrompt: string; userPrompt: string }>,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   // Pass 2 — Language Editor
   const t2 = Date.now();
   const model2 = await getModel('pass2', supabase);
-  console.log(`[FSE3-DEBUG] languageConfig:`, JSON.stringify(ctx.languageConfig));
-  console.log(`[FSE3-DEBUG] worldRule:`, ctx.worldRule);
-  console.log(`[FSE3-DEBUG] pass1Output preview:`, ctx.pass1Output?.substring(0, 200));
   const pass2Prompt = buildFSE3Prompt('pass_2', ctx);
-  console.log(`[FSE3-DEBUG] ===== pass_2 SYSTEM PROMPT (${pass2Prompt.systemPrompt.length} chars) =====`);
-  console.log(pass2Prompt.systemPrompt);
-  console.log(`[FSE3-DEBUG] ===== pass_2 USER PROMPT (${pass2Prompt.userPrompt.length} chars) =====`);
-  console.log(pass2Prompt.userPrompt);
+  if (debugPrompts) debugPrompts['pass_2'] = { systemPrompt: pass2Prompt.systemPrompt, userPrompt: pass2Prompt.userPrompt };
   console.log(`[FSE3-P2] Calling ${model2}...`);
   ctx.pass2Output = await callGeminiVertex(pass2Prompt.systemPrompt, pass2Prompt.userPrompt, model2, 0.5, 3, getThinkingBudget('pass_2'));
   timing.pass2_ms = Date.now() - t2;
@@ -887,12 +882,8 @@ async function runTextBranch(
   // Pass 3 — Style Editor
   const t3 = Date.now();
   const model3 = await getModel('pass3', supabase);
-  console.log(`[FSE3-DEBUG] pass2Output preview:`, ctx.pass2Output?.substring(0, 200));
   const pass3Prompt = buildFSE3Prompt('pass_3', ctx);
-  console.log(`[FSE3-DEBUG] ===== pass_3 SYSTEM PROMPT (${pass3Prompt.systemPrompt.length} chars) =====`);
-  console.log(pass3Prompt.systemPrompt);
-  console.log(`[FSE3-DEBUG] ===== pass_3 USER PROMPT (${pass3Prompt.userPrompt.length} chars) =====`);
-  console.log(pass3Prompt.userPrompt);
+  if (debugPrompts) debugPrompts['pass_3'] = { systemPrompt: pass3Prompt.systemPrompt, userPrompt: pass3Prompt.userPrompt };
   console.log(`[FSE3-P3] Calling ${model3}...`);
   ctx.pass3Output = await callGeminiVertex(pass3Prompt.systemPrompt, pass3Prompt.userPrompt, model3, 0.6, 3, getThinkingBudget('pass_3'));
   timing.pass3_ms = Date.now() - t3;
@@ -901,12 +892,8 @@ async function runTextBranch(
   // Pass 4 — JSON Wrapper
   const t4 = Date.now();
   const model4 = await getModel('pass4', supabase);
-  console.log(`[FSE3-DEBUG] pass3Output preview:`, ctx.pass3Output?.substring(0, 200));
   const pass4Prompt = buildFSE3Prompt('pass_4', ctx);
-  console.log(`[FSE3-DEBUG] ===== pass_4 SYSTEM PROMPT (${pass4Prompt.systemPrompt.length} chars) =====`);
-  console.log(pass4Prompt.systemPrompt);
-  console.log(`[FSE3-DEBUG] ===== pass_4 USER PROMPT (${pass4Prompt.userPrompt.length} chars) =====`);
-  console.log(pass4Prompt.userPrompt);
+  if (debugPrompts) debugPrompts['pass_4'] = { systemPrompt: pass4Prompt.systemPrompt, userPrompt: pass4Prompt.userPrompt };
   console.log(`[FSE3-P4] Calling ${model4}...`);
   const pass4Raw = await callGeminiVertex(pass4Prompt.systemPrompt, pass4Prompt.userPrompt, model4, 0.3, 3, getThinkingBudget('pass_4'));
   timing.pass4_ms = Date.now() - t4;
@@ -1102,14 +1089,14 @@ async function executePipeline(
     // 2. Update status → generating
     await supabase.from('stories').update({ generation_status: 'generating' }).eq('id', storyId);
 
+    // Collect prompts for debug_log
+    const debugPrompts: Record<string, { systemPrompt: string; userPrompt: string }> = {};
+
     // 3. Pass 0 — Blueprint
     const t0 = Date.now();
     const model0 = await getModel('pass0', supabase);
     const pass0Prompt = buildFSE3Prompt('pass_0', ctx);
-    console.log(`[FSE3-DEBUG] ===== pass_0 SYSTEM PROMPT (${pass0Prompt.systemPrompt.length} chars) =====`);
-    console.log(pass0Prompt.systemPrompt);
-    console.log(`[FSE3-DEBUG] ===== pass_0 USER PROMPT (${pass0Prompt.userPrompt.length} chars) =====`);
-    console.log(pass0Prompt.userPrompt);
+    debugPrompts['pass_0'] = { systemPrompt: pass0Prompt.systemPrompt, userPrompt: pass0Prompt.userPrompt };
     console.log(`[FSE3-P0] Calling ${model0}...`);
     const blueprintRaw = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 3, getThinkingBudget('pass_0'));
     timing.pass0_ms = Date.now() - t0;
@@ -1137,10 +1124,7 @@ async function executePipeline(
     const t1 = Date.now();
     const model1 = await getModel('pass1', supabase);
     const pass1Prompt = buildFSE3Prompt('pass_1', ctx);
-    console.log(`[FSE3-DEBUG] ===== pass_1 SYSTEM PROMPT (${pass1Prompt.systemPrompt.length} chars) =====`);
-    console.log(pass1Prompt.systemPrompt);
-    console.log(`[FSE3-DEBUG] ===== pass_1 USER PROMPT (${pass1Prompt.userPrompt.length} chars) =====`);
-    console.log(pass1Prompt.userPrompt);
+    debugPrompts['pass_1'] = { systemPrompt: pass1Prompt.systemPrompt, userPrompt: pass1Prompt.userPrompt };
     console.log(`[FSE3-P1] Calling ${model1}...`);
     ctx.pass1Output = await callGeminiVertex(pass1Prompt.systemPrompt, pass1Prompt.userPrompt, model1, 0.8, 3, getThinkingBudget('pass_1'));
     timing.pass1_ms = Date.now() - t1;
@@ -1152,7 +1136,7 @@ async function executePipeline(
     // 5. FORK — Text Branch + Image Branch in parallel
     console.log('[FSE3] Starting parallel branches (Text + Image)...');
     const [finalJSON, imageResult] = await Promise.all([
-      runTextBranch(ctx, supabase, timing),
+      runTextBranch(ctx, supabase, timing, debugPrompts),
       runImageBranch(ctx, supabase, timing),
     ]);
 
@@ -1192,6 +1176,7 @@ async function executePipeline(
       fse3_pass_timing: timing,
       story_path_code: ctx.blueprint?.path_code || null,
       emotional_coloring: ctx.blueprint?.emotional_coloring || null,
+      debug_log: { fse3_prompts: debugPrompts },
     };
 
     const { error: updateErr } = await supabase
