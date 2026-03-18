@@ -475,7 +475,7 @@ async function loadFSE3Context(
       .select('value')
       .eq('key', key)
       .maybeSingle();
-    if (spRow?.value) systemPrompts[key] = spRow.value;
+    if (spRow?.value) systemPrompts[key as string] = spRow.value;
   }
 
   // 6. EM-Code Mapping (from app_settings)
