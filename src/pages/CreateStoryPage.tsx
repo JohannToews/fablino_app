@@ -322,7 +322,12 @@ const CreateStoryPage = () => {
           console.error("Generation error:", error);
           toast.error(t.toastGenerationError);
           stopGenerating();
-          setCurrentScreen("entry");
+          if (placeholderStoryId) {
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+            navigate(`/read/${placeholderStoryId}`);
+          } else {
+            setCurrentScreen("entry");
+          }
           return;
         }
       }
