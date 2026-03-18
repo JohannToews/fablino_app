@@ -1159,7 +1159,12 @@ const CreateStoryPage = () => {
           console.error("Save error (final):", saveError.message, saveError.code, saveError.details, saveError.hint);
           toast.error(`${t.toastSaveError}: ${saveError.message}`);
           stopGenerating();
-          setCurrentScreen("entry");
+          if (placeholderStoryIdFiction) {
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+            navigate(`/read/${placeholderStoryIdFiction}`);
+          } else {
+            setCurrentScreen("entry");
+          }
           return;
         }
 
