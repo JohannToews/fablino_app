@@ -122,6 +122,7 @@ async function callGeminiVertex(
   model: string,
   temperature = 0.8,
   maxRetries = 3,
+  thinkingBudget?: number,
 ): Promise<string> {
   const serviceAccountJson = Deno.env.get('VERTEX_SERVICE_ACCOUNT_JSON');
   if (!serviceAccountJson) throw new Error('[FSE3-INTERP] VERTEX_SERVICE_ACCOUNT_JSON not configured');
@@ -151,7 +152,11 @@ async function callGeminiVertex(
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature, maxOutputTokens: 4000 },
+          generationConfig: {
+            temperature,
+            maxOutputTokens: 4000,
+            ...(thinkingBudget ? { thinkingConfig: { thinkingBudget } } : {}),
+          },
         }),
       });
 
@@ -175,7 +180,10 @@ async function callGeminiVertex(
       }
 
       const data = await response.json();
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      // With thinking enabled, Gemini returns thinking parts (thought:true) before the actual text.
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.filter((p: any) => !p.thought && p.text).pop();
+      const content = textPart?.text;
 
       if (!content) {
         console.error('[FSE3-INTERP] No content:', JSON.stringify(data).substring(0, 300));
@@ -425,7 +433,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[FSE3-INTERP] Using model: ${model}`);
 
     // 10. Call Gemini
-    const rawResponse = await callGeminiVertex(builtSystemPrompt, finalUserPrompt, model, 0.9);
+    const rawResponse = await callGeminiVertex(builtSystemPrompt, finalUserPrompt, model, 0.9, 3, 8192);
     const interpreterMs = Date.now() - startTime;
     console.log(`[FSE3-INTERP] Gemini response received in ${interpreterMs}ms, length=${rawResponse.length}`);
 

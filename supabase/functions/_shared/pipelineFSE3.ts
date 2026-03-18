@@ -142,6 +142,7 @@ async function callGeminiVertex(
   model: string,
   temperature = 0.8,
   maxRetries = 3,
+  thinkingBudget?: number,
 ): Promise<string> {
   const serviceAccountJson = Deno.env.get('VERTEX_SERVICE_ACCOUNT_JSON');
   if (!serviceAccountJson) throw new Error('[FSE3] VERTEX_SERVICE_ACCOUNT_JSON not configured');
@@ -171,7 +172,11 @@ async function callGeminiVertex(
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature, maxOutputTokens: 12000 },
+          generationConfig: {
+            temperature,
+            maxOutputTokens: 12000,
+            ...(thinkingBudget ? { thinkingConfig: { thinkingBudget } } : {}),
+          },
         }),
       });
 
@@ -195,7 +200,11 @@ async function callGeminiVertex(
       }
 
       const data = await response.json();
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      // With thinking enabled, Gemini returns thinking parts (thought:true) before the actual text.
+      // Extract the last non-thinking text part.
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.filter((p: any) => !p.thought && p.text).pop();
+      const content = textPart?.text;
 
       if (!content) {
         console.error('[FSE3-LLM] No content:', JSON.stringify(data).substring(0, 300));
@@ -817,7 +826,7 @@ async function runTextBranch(
   const model2 = await getModel('pass2', supabase);
   const pass2Prompt = buildFSE3Prompt('pass_2', ctx);
   console.log(`[FSE3-P2] Calling ${model2}...`);
-  ctx.pass2Output = await callGeminiVertex(pass2Prompt.systemPrompt, pass2Prompt.userPrompt, model2, 0.5);
+  ctx.pass2Output = await callGeminiVertex(pass2Prompt.systemPrompt, pass2Prompt.userPrompt, model2, 0.5, 3, 1024);
   timing.pass2_ms = Date.now() - t2;
   console.log(`[FSE3-P2] Done in ${timing.pass2_ms}ms (${ctx.pass2Output.length} chars)`);
 
@@ -826,7 +835,7 @@ async function runTextBranch(
   const model3 = await getModel('pass3', supabase);
   const pass3Prompt = buildFSE3Prompt('pass_3', ctx);
   console.log(`[FSE3-P3] Calling ${model3}...`);
-  ctx.pass3Output = await callGeminiVertex(pass3Prompt.systemPrompt, pass3Prompt.userPrompt, model3, 0.6);
+  ctx.pass3Output = await callGeminiVertex(pass3Prompt.systemPrompt, pass3Prompt.userPrompt, model3, 0.6, 3, 1024);
   timing.pass3_ms = Date.now() - t3;
   console.log(`[FSE3-P3] Done in ${timing.pass3_ms}ms (${ctx.pass3Output.length} chars)`);
 
@@ -835,7 +844,7 @@ async function runTextBranch(
   const model4 = await getModel('pass4', supabase);
   const pass4Prompt = buildFSE3Prompt('pass_4', ctx);
   console.log(`[FSE3-P4] Calling ${model4}...`);
-  const pass4Raw = await callGeminiVertex(pass4Prompt.systemPrompt, pass4Prompt.userPrompt, model4, 0.3);
+  const pass4Raw = await callGeminiVertex(pass4Prompt.systemPrompt, pass4Prompt.userPrompt, model4, 0.3, 3, 1024);
   timing.pass4_ms = Date.now() - t4;
   console.log(`[FSE3-P4] Done in ${timing.pass4_ms}ms`);
 
@@ -1033,7 +1042,7 @@ async function executePipeline(
     const model0 = await getModel('pass0', supabase);
     const pass0Prompt = buildFSE3Prompt('pass_0', ctx);
     console.log(`[FSE3-P0] Calling ${model0}...`);
-    const blueprintRaw = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7);
+    const blueprintRaw = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 3, 8192);
     timing.pass0_ms = Date.now() - t0;
     console.log(`[FSE3-P0] Done in ${timing.pass0_ms}ms`);
 
@@ -1060,7 +1069,7 @@ async function executePipeline(
     const model1 = await getModel('pass1', supabase);
     const pass1Prompt = buildFSE3Prompt('pass_1', ctx);
     console.log(`[FSE3-P1] Calling ${model1}...`);
-    ctx.pass1Output = await callGeminiVertex(pass1Prompt.systemPrompt, pass1Prompt.userPrompt, model1, 0.8);
+    ctx.pass1Output = await callGeminiVertex(pass1Prompt.systemPrompt, pass1Prompt.userPrompt, model1, 0.8, 3, 8192);
     timing.pass1_ms = Date.now() - t1;
     console.log(`[FSE3-P1] Done in ${timing.pass1_ms}ms (${ctx.pass1Output.length} chars)`);
 
