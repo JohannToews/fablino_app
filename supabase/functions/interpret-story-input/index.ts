@@ -433,7 +433,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[FSE3-INTERP] Using model: ${model}`);
 
     // 10. Call Gemini
-    const rawResponse = await callGeminiVertex(builtSystemPrompt, finalUserPrompt, model, 0.9, 3, 8192);
+    const rawResponse = await callGeminiVertex(builtSystemPrompt, finalUserPrompt, model, 0.9, 3, -1);
     const interpreterMs = Date.now() - startTime;
     console.log(`[FSE3-INTERP] Gemini response received in ${interpreterMs}ms, length=${rawResponse.length}`);
 
