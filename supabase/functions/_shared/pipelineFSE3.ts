@@ -620,7 +620,7 @@ async function enrichCharacters(
       if (hasV2) {
         try {
           kidAppearanceAnchor = buildAnchorFromSlots(
-            kidName, kidAge, kidGender, 'child', kidApp.appearance_data,
+            kidName, kidAge, kidGender as 'male' | 'female' | null, 'child', kidApp.appearance_data,
           );
         } catch (v2Err: any) {
           console.warn('[FSE3-ANCHOR] buildAnchorFromSlots failed:', v2Err?.message);
