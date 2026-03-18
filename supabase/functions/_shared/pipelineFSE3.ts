@@ -415,17 +415,25 @@ async function loadFSE3Context(
 
   console.log(`[FSE3-CTX] Kid: ${kidName}, age=${kidAge}, gender=${kidGender}`);
 
-  // 2. Kid language settings → reading level
+  // 2. Kid language settings → reading level, content level, length level
   let readingLevel = 2; // default fluent reader
+  let contentLevel = 4; // default complexity level for story_length_levels
+  let lengthLevel = 2;  // default medium
   if (kidProfileId) {
     const { data: langSettings } = await supabase
       .from('kid_language_settings')
-      .select('language_level')
+      .select('language_level, content_level, length_level')
       .eq('kid_profile_id', kidProfileId)
       .eq('language', language)
       .maybeSingle();
     if (langSettings?.language_level) {
       readingLevel = langSettings.language_level;
+    }
+    if (langSettings?.content_level) {
+      contentLevel = langSettings.content_level;
+    }
+    if (langSettings?.length_level) {
+      lengthLevel = langSettings.length_level;
     }
   }
 
@@ -516,16 +524,18 @@ async function loadFSE3Context(
   const availablePaths = pathRows || [];
 
   // 9. Story length → word count target, paragraph count, scene count
+  //    storyLength from wizard overrides length_level from kid_language_settings
+  const effectiveLengthLevel = storyLength === 'short' ? 1 : storyLength === 'long' ? 3 : lengthLevel;
   const { data: lengthConfig } = await supabase
     .from('story_length_levels')
-    .select('word_approx, paragraph_count, scene_count')
-    .eq('content_level', readingLevel)
-    .eq('length_level', storyLength === 'short' ? 1 : storyLength === 'long' ? 3 : 2)
+    .select('word_approx, paragraph_count')
+    .eq('complexity_level', contentLevel)
+    .eq('length_level', effectiveLengthLevel)
     .maybeSingle();
 
   const wordCountTarget = lengthConfig?.word_approx ?? 400;
-  const paragraphCount = lengthConfig?.paragraph_count ?? 6;
-  const sceneCount = lengthConfig?.scene_count ?? 3;
+  const paragraphCount = lengthConfig?.paragraph_count ?? 7;
+  const sceneCount = 3; // scene_count not stored in story_length_levels
 
   // 10. Generation config (optional)
   const { data: genConfig } = await supabase

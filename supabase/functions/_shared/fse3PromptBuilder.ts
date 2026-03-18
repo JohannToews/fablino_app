@@ -158,7 +158,9 @@ function buildReplacements(
     AGE_GROUP: inferAgeGroup(ctx.kidAge),
     CHARACTERS_SUMMARY: formatCharactersSummary(ctx),
     VILLAIN_DESCRIPTION: ctx.villain
-      ? `${ctx.villain.name}: ${ctx.villain.description}`
+      ? (ctx.villain.description
+          ? `${ctx.villain.name}: ${ctx.villain.description}`
+          : ctx.villain.name)
       : '',
     PROTAGONIST_NAME_LOWER: (ctx.kidName || '').toLowerCase(),
     SIDEKICK_NAME_LOWER: (getSidekickName(ctx) || '').toLowerCase(),
@@ -166,8 +168,8 @@ function buildReplacements(
     // --- Pass 1-specific (set by pipeline code via spread) ---
     STORY_ARC_PLAINTEXT: ctx.storyArcPlaintext || '',
     EMOTIONAL_TONE_PLAINTEXT: ctx.emotionalTonePlaintext || '',
-    EMOTIONAL_COLORING: bp?.emotional_coloring || '',
-    EMOTIONAL_SECONDARY: bp?.emotional_secondary || '',
+    EMOTIONAL_COLORING: resolveEmCode(bp?.emotional_coloring, ctx.emCodeMapping),
+    EMOTIONAL_SECONDARY: resolveEmCode(bp?.emotional_secondary, ctx.emCodeMapping),
     WORLD_RULE_TEXT: ctx.worldRule || '',
     BLUEPRINT_PLAINTEXT: ctx.blueprintPlaintext || '',
     SETUP_OBJECTS_LIST: ctx.setupObjectsList || '',
@@ -180,13 +182,13 @@ function buildReplacements(
     PREVIOUS_PASS_OUTPUT: previousPassOutput,
 
     // --- Pass 3-specific ---
-    DIALOGUE_EXAMPLE_SPOKEN: lc?.dialogue_example_spoken || '',
-    DIALOGUE_EXAMPLE_THOUGHT: lc?.dialogue_example_thought || '',
+    DIALOGUE_EXAMPLE_SPOKEN: unescapeQuotes(lc?.dialogue_example_spoken || ''),
+    DIALOGUE_EXAMPLE_THOUGHT: unescapeQuotes(lc?.dialogue_example_thought || ''),
     DIALOGUE_FORMAT: lc?.dialogue_format || '',
-    RHYTHM_EXAMPLE_RIGHT: lc?.rhythm_example_right || '',
-    RHYTHM_EXAMPLE_WRONG: lc?.rhythm_example_wrong || '',
-    SCENIC_EXAMPLE_RIGHT: lc?.scenic_example_right || '',
-    SCENIC_EXAMPLE_WRONG: lc?.scenic_example_wrong || '',
+    RHYTHM_EXAMPLE_RIGHT: unescapeQuotes(lc?.rhythm_example_right || ''),
+    RHYTHM_EXAMPLE_WRONG: unescapeQuotes(lc?.rhythm_example_wrong || ''),
+    SCENIC_EXAMPLE_RIGHT: unescapeQuotes(lc?.scenic_example_right || ''),
+    SCENIC_EXAMPLE_WRONG: unescapeQuotes(lc?.scenic_example_wrong || ''),
 
     // --- Pass 4-specific ---
     STORY_TITLE: ctx.storyTitle || '',
@@ -297,7 +299,7 @@ export function formatCharactersContext(
   // Other characters
   if (ctx.characters) {
     for (const c of ctx.characters) {
-      if (c.type === 'self') continue; // protagonist already listed
+      if (c.type === 'self' || c.type === 'me' || c.name === ctx.kidName) continue; // protagonist already listed
       const parts: string[] = [c.name];
       const details: string[] = [];
       if (c.role) details.push(c.role);
@@ -333,7 +335,7 @@ export function buildChildElementsSummary(
   // Characters (excluding self)
   if (ctx.characters) {
     for (const c of ctx.characters) {
-      if (c.type === 'self') continue;
+      if (c.type === 'self' || c.type === 'me') continue;
       let desc = c.name;
       if (c.description) desc += ` who ${c.description}`;
       else if (c.relation) desc += ` (${c.relation})`;
@@ -524,6 +526,27 @@ export function translateBlueprint(
 // =============================================================================
 // Internal Utilities
 // =============================================================================
+
+/**
+ * Resolve an EM-code (e.g. "EM-T") to its plaintext label + description.
+ * Falls back to raw code if mapping is missing.
+ */
+function resolveEmCode(
+  code: string | undefined,
+  mapping: Record<string, { label: string; description: string }> | undefined,
+): string {
+  if (!code) return '';
+  const entry = mapping?.[code];
+  return entry ? `${entry.label} — ${entry.description}` : code;
+}
+
+/**
+ * Strip double-escaped quotes from DB text values.
+ * Fixes: „Text!\"" → „Text!" (caused by JSON.stringify during DB seed).
+ */
+function unescapeQuotes(value: string): string {
+  return value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+}
 
 /**
  * Safe JSON.stringify that returns '' on null/undefined.
