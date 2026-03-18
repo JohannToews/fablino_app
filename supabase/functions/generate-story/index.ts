@@ -2069,27 +2069,21 @@ Deno.serve(async (req) => {
     const fse3Enabled = await isFse3Enabled(userId, supabase);
     console.log('[FSE3-ROUTE] fse3Enabled=', fse3Enabled, 'userId=', userId);
     if (fse3Enabled) {
-      // Validate required FSE3 fields
-      if (!body.fse3_chosen_variant) {
-        return new Response(JSON.stringify({
-          error: 'FSE3 requires fse3_chosen_variant in request body',
-        }), {
-          status: 400,
+      if (body.fse3_chosen_variant) {
+        console.log('[FSE3-ROUTE] Routing to FSE3 pipeline, story_id=', body.story_id);
+
+        // Fire-and-forget: run pipeline in background, return 202 immediately
+        const _bgFse3 = runPipelineFSE3(req, supabase, body).catch((err: any) => {
+          console.error('[FSE3-ROUTE] Background pipeline error:', err?.message ?? err);
+        });
+
+        return new Response(JSON.stringify({ story_id: body.story_id, pipeline: 'fse3' }), {
+          status: 202,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      console.log('[FSE3-ROUTE] Routing to FSE3 pipeline, story_id=', body.story_id);
-
-      // Fire-and-forget: run pipeline in background, return 202 immediately
-      const _bgFse3 = runPipelineFSE3(req, supabase, body).catch((err: any) => {
-        console.error('[FSE3-ROUTE] Background pipeline error:', err?.message ?? err);
-      });
-
-      return new Response(JSON.stringify({ story_id: body.story_id, pipeline: 'fse3' }), {
-        status: 202,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.warn('[FSE3-ROUTE] Missing fse3_chosen_variant, falling back to legacy pipeline');
     }
 
     // ── FSE2 Feature Flag — routes to separate pipeline ──
