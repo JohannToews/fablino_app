@@ -5,7 +5,7 @@ import { useTranslations, type Language } from "@/lib/translations";
 
 /** Check if a story is still being generated (not yet readable) */
 const isStoryGenerating = (status?: string | null): boolean =>
-  !status || ['generating', 'pending', 'checking'].includes(status);
+  !status || ['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(status);
 
 interface Story {
   id: string;

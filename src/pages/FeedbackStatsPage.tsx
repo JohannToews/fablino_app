@@ -2313,7 +2313,7 @@ const FeedbackStatsPage = () => {
                             <Badge variant="outline" className="text-xs">{getLengthCode(item.story_length)}</Badge>
                           </TableCell>
                           <TableCell className="text-xs text-center">
-                            {item.generation_status === 'verified' ? '✅' : item.generation_status === 'images_partial' ? '⚠️' : item.generation_status === 'images_failed' ? '🖼️❌' : item.generation_status === 'generating' ? '⏳' : '❌'}
+                            {item.generation_status === 'verified' ? '✅' : item.generation_status === 'images_partial' ? '⚠️' : item.generation_status === 'images_failed' ? '🖼️❌' : item.generation_status === 'text_complete' ? '📝✅' : item.generation_status === 'images_complete' ? '🖼️✅' : ['generating', 'interpreter_pending', 'interpreter_done', 'variant_chosen', 'checking'].includes(item.generation_status || '') ? '⏳' : '❌'}
                           </TableCell>
                           <TableCell className="text-xs text-center">
                             {item.cover_image_status === 'complete' && item.story_images_status === 'complete' ? '✅' : 

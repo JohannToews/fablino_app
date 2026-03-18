@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type TerminalStatus = 'verified' | 'images_partial' | 'images_failed';
-const TERMINAL_SUCCESS: string[] = ['verified', 'images_partial', 'images_failed'];
-const TERMINAL_FAIL: string[] = ['text_failed', 'failed'];
+type TerminalStatus = 'verified' | 'images_partial' | 'images_failed' | 'text_complete' | 'images_complete';
+const TERMINAL_SUCCESS: string[] = ['verified', 'images_partial', 'images_failed', 'text_complete', 'images_complete'];
+const TERMINAL_FAIL: string[] = ['text_failed', 'failed', 'error'];
 const POLL_INTERVAL_MS = 5_000; // poll every 5 seconds as fallback
 
 /**

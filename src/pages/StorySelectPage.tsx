@@ -530,7 +530,7 @@ const StorySelectPage = () => {
 
 /** Check if a story is still being generated */
 const isStoryGenerating = (status?: string | null): boolean =>
-  !status || ['generating', 'pending', 'checking'].includes(status);
+  !status || ['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(status);
 
 // Single story card component
 const StoryCard = ({ 

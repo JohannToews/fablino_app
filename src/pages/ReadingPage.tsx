@@ -2133,7 +2133,7 @@ const ReadingPage = () => {
   }
 
   // ── Guard: Story still generating → show "being written" screen ──
-  const isStillGenerating = !story.generation_status || ['generating', 'pending', 'checking'].includes(story.generation_status);
+  const isStillGenerating = !story.generation_status || ['generating', 'pending', 'checking', 'interpreter_pending', 'interpreter_done', 'variant_chosen'].includes(story.generation_status);
   if (isStillGenerating) {
     const lang = kidAppLanguage || 'de';
     const generatingLabels: Record<string, { title: string; message: string; toLibrary: string }> = {
