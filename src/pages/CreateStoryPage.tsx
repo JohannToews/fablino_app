@@ -591,13 +591,23 @@ const CreateStoryPage = () => {
       } else {
         toast.error(t.toastGenerationError);
         stopGenerating();
-        setCurrentScreen("entry");
+        if (placeholderStoryId) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryId}`);
+        } else {
+          setCurrentScreen("entry");
+        }
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
       stopGenerating();
-      setCurrentScreen("entry");
+      if (placeholderStoryId) {
+        queryClient.invalidateQueries({ queryKey: ['stories'] });
+        navigate(`/read/${placeholderStoryId}`);
+      } else {
+        setCurrentScreen("entry");
+      }
     }
   };
 
