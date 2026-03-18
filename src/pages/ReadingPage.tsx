@@ -28,6 +28,7 @@ import BranchDecisionScreen from "@/components/story-creation/BranchDecisionScre
 import type { BranchOption as BranchOptionType } from "@/components/story-creation/BranchDecisionScreen";
 import ImmersiveReader from "@/components/immersive-reader/ImmersiveReader";
 import WordListPanel from "@/components/WordListPanel";
+import StoryGenerationProgress from "@/components/story-creation/StoryGenerationProgress";
 import { cropComicGrids, cropComicPanels, type CroppedPanel } from "@/utils/cropComicPanels";
 import { isRTL, rtlProps, rtlClasses } from "@/lib/rtlUtils";
 
