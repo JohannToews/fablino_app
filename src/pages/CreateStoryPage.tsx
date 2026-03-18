@@ -322,7 +322,12 @@ const CreateStoryPage = () => {
           console.error("Generation error:", error);
           toast.error(t.toastGenerationError);
           stopGenerating();
-          setCurrentScreen("entry");
+          if (placeholderStoryId) {
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+            navigate(`/read/${placeholderStoryId}`);
+          } else {
+            setCurrentScreen("entry");
+          }
           return;
         }
       }
@@ -349,7 +354,12 @@ const CreateStoryPage = () => {
       if (data?.error) {
         toast.error(data.error);
         stopGenerating();
-        setCurrentScreen("entry");
+        if (placeholderStoryId) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryId}`);
+        } else {
+          setCurrentScreen("entry");
+        }
         return;
       }
 
@@ -502,7 +512,12 @@ const CreateStoryPage = () => {
           console.error("Save error (final):", saveError.message, saveError.code, saveError.details, saveError.hint);
           toast.error(`${t.toastSaveError}: ${saveError.message}`);
           stopGenerating();
-          setCurrentScreen("entry");
+          if (placeholderStoryId) {
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+            navigate(`/read/${placeholderStoryId}`);
+          } else {
+            setCurrentScreen("entry");
+          }
           return;
         }
 
@@ -576,13 +591,24 @@ const CreateStoryPage = () => {
       } else {
         toast.error(t.toastGenerationError);
         stopGenerating();
-        setCurrentScreen("entry");
+        if (placeholderStoryId) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryId}`);
+        } else {
+          setCurrentScreen("entry");
+        }
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
       stopGenerating();
-      setCurrentScreen("entry");
+      const fallbackId = sessionStorage.getItem('generating_story_id');
+      if (fallbackId) {
+        queryClient.invalidateQueries({ queryKey: ['stories'] });
+        navigate(`/read/${fallbackId}`);
+      } else {
+        setCurrentScreen("entry");
+      }
     }
   };
 
@@ -1134,7 +1160,12 @@ const CreateStoryPage = () => {
           console.error("Save error (final):", saveError.message, saveError.code, saveError.details, saveError.hint);
           toast.error(`${t.toastSaveError}: ${saveError.message}`);
           stopGenerating();
-          setCurrentScreen("entry");
+          if (placeholderStoryIdFiction) {
+            queryClient.invalidateQueries({ queryKey: ['stories'] });
+            navigate(`/read/${placeholderStoryIdFiction}`);
+          } else {
+            setCurrentScreen("entry");
+          }
           return;
         }
 
@@ -1205,13 +1236,24 @@ const CreateStoryPage = () => {
       } else {
         toast.error(t.toastGenerationError);
         stopGenerating();
-        setCurrentScreen("entry");
+        if (placeholderStoryIdFiction) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryIdFiction}`);
+        } else {
+          setCurrentScreen("entry");
+        }
       }
     } catch (err) {
       console.error("Error:", err);
       toast.error(t.toastGenerationError);
       stopGenerating();
-      setCurrentScreen("entry");
+      const fallbackId = sessionStorage.getItem('generating_story_id');
+      if (fallbackId) {
+        queryClient.invalidateQueries({ queryKey: ['stories'] });
+        navigate(`/read/${fallbackId}`);
+      } else {
+        setCurrentScreen("entry");
+      }
     }
   };
 
