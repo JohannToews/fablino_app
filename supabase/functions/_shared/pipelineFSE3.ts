@@ -895,22 +895,7 @@ async function runTextBranch(
   timing.pass4_ms = Date.now() - t4;
   console.log(`[FSE3-P4] Done in ${timing.pass4_ms}ms`);
 
-  let finalJSON: { title: string; content: string; questions: any[]; vocabulary: any[] };
-  try {
-    finalJSON = parseFinalJSON(pass4Raw);
-  } catch (p4Err) {
-    // FALLBACK: If Pass 4 JSON parsing fails entirely, use Pass 3 output as content
-    console.error(`[FSE3-P4] Parse failed, using Pass 3 fallback: ${(p4Err as Error).message}`);
-    const fallbackTitle = ctx.storyTitle || 'Untitled Story';
-    // Pass 3 output is the polished story text — use it directly
-    const fallbackContent = (ctx.pass3Output || ctx.pass2Output || ctx.pass1Output || '').trim();
-    finalJSON = {
-      title: fallbackTitle,
-      content: fallbackContent,
-      questions: [],
-      vocabulary: [],
-    };
-  }
+  const finalJSON = parseFinalJSON(pass4Raw);
 
   // Normalize spacing (fix "berührte.Das" → "berührte. Das")
   finalJSON.content = normalizeSpacing(finalJSON.content);
