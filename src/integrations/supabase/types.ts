@@ -782,6 +782,113 @@ export type Database = {
         }
         Relationships: []
       }
+      fse3_language_config: {
+        Row: {
+          additional_rules: string | null
+          adjective_limit: number
+          avg_sentence_length: number
+          dialogue_example_spoken: string
+          dialogue_example_thought: string
+          dialogue_format: string
+          id: string
+          language_code: string
+          level: number
+          max_sentence_length: number
+          rhythm_example_right: string
+          rhythm_example_wrong: string
+          scenic_example_right: string
+          scenic_example_wrong: string
+          tense_example: string
+          tense_rules: string
+          updated_at: string | null
+          vocabulary_guidance: string
+        }
+        Insert: {
+          additional_rules?: string | null
+          adjective_limit?: number
+          avg_sentence_length: number
+          dialogue_example_spoken: string
+          dialogue_example_thought: string
+          dialogue_format: string
+          id?: string
+          language_code: string
+          level: number
+          max_sentence_length: number
+          rhythm_example_right: string
+          rhythm_example_wrong: string
+          scenic_example_right: string
+          scenic_example_wrong: string
+          tense_example: string
+          tense_rules: string
+          updated_at?: string | null
+          vocabulary_guidance: string
+        }
+        Update: {
+          additional_rules?: string | null
+          adjective_limit?: number
+          avg_sentence_length?: number
+          dialogue_example_spoken?: string
+          dialogue_example_thought?: string
+          dialogue_format?: string
+          id?: string
+          language_code?: string
+          level?: number
+          max_sentence_length?: number
+          rhythm_example_right?: string
+          rhythm_example_wrong?: string
+          scenic_example_right?: string
+          scenic_example_wrong?: string
+          tense_example?: string
+          tense_rules?: string
+          updated_at?: string | null
+          vocabulary_guidance?: string
+        }
+        Relationships: []
+      }
+      fse3_prompt_templates: {
+        Row: {
+          description: string | null
+          id: string
+          is_active: boolean
+          pass_name: string
+          prompt_template: string
+          system_prompt_key: string
+          updated_at: string | null
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          pass_name: string
+          prompt_template: string
+          system_prompt_key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          pass_name?: string
+          prompt_template?: string
+          system_prompt_key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fse3_prompt_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fun_facts: {
         Row: {
           category: string
@@ -1677,6 +1784,9 @@ export type Database = {
           ending_type: Database["public"]["Enums"]["ending_type"] | null
           episode_number: number | null
           episode_summary: string | null
+          fse3_chosen_variant: Json | null
+          fse3_interpreter_result: Json | null
+          fse3_pass_timing: Json | null
           generation_status: string | null
           generation_time_ms: number | null
           humor_level: number | null
@@ -1752,6 +1862,9 @@ export type Database = {
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
           episode_summary?: string | null
+          fse3_chosen_variant?: Json | null
+          fse3_interpreter_result?: Json | null
+          fse3_pass_timing?: Json | null
           generation_status?: string | null
           generation_time_ms?: number | null
           humor_level?: number | null
@@ -1827,6 +1940,9 @@ export type Database = {
           ending_type?: Database["public"]["Enums"]["ending_type"] | null
           episode_number?: number | null
           episode_summary?: string | null
+          fse3_chosen_variant?: Json | null
+          fse3_interpreter_result?: Json | null
+          fse3_pass_timing?: Json | null
           generation_status?: string | null
           generation_time_ms?: number | null
           humor_level?: number | null
@@ -2957,6 +3073,9 @@ export type Database = {
           ending_type: Database["public"]["Enums"]["ending_type"] | null
           episode_number: number | null
           episode_summary: string | null
+          fse3_chosen_variant: Json | null
+          fse3_interpreter_result: Json | null
+          fse3_pass_timing: Json | null
           generation_status: string | null
           generation_time_ms: number | null
           humor_level: number | null
