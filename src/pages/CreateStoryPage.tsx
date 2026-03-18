@@ -973,14 +973,25 @@ const CreateStoryPage = () => {
         console.error("Generation error:", error);
         toast.error(t.toastGenerationError);
         stopGenerating();
-        setCurrentScreen("entry");
+        // If placeholder exists, navigate to read page (story may still complete in background)
+        if (placeholderStoryIdFiction) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryIdFiction}`);
+        } else {
+          setCurrentScreen("entry");
+        }
         return;
       }
 
       if (data?.error) {
         toast.error(data.error);
         stopGenerating();
-        setCurrentScreen("entry");
+        if (placeholderStoryIdFiction) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+          navigate(`/read/${placeholderStoryIdFiction}`);
+        } else {
+          setCurrentScreen("entry");
+        }
         return;
       }
 
