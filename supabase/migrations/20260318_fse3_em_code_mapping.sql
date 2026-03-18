@@ -1,0 +1,2 @@
+-- EM-Code Mapping already seeded in Migration 3 (fse3_feature_flags.sql) as app_settings entry.
+-- This file exists for documentation/ordering purposes only.
