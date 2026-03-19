@@ -533,8 +533,9 @@ async function loadFSE3Context(
   // 9. Story length → word count target, paragraph count
   //    Uses text_levels.base_paragraphs + (lengthLevel - 1) formula
   //    storyLength from wizard overrides length_level from kid_language_settings
-  // short/medium = base paragraphs (length_level 1), long = base + 2 (length_level 3)
-  const effectiveLengthLevel = storyLength === 'long' ? 3 : 1;
+  // Use lengthLevel from kid_language_settings (loaded above, default 1).
+  // Wizard storyLength override: 'long' forces at least level 3.
+  const effectiveLengthLevel = storyLength === 'long' ? Math.max(lengthLevel, 3) : lengthLevel;
   const { data: textLevelData } = await supabase
     .from('text_levels')
     .select('base_paragraphs, words_per_paragraph')
@@ -781,7 +782,19 @@ function parseBlueprint(raw: string): FSE3Blueprint {
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('[FSE3] Blueprint: no valid JSON found');
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (e1) {
+    console.warn(`[FSE3-P0] Blueprint JSON.parse failed, attempting repair: ${(e1 as Error).message}`);
+    try {
+      const repaired = repairJSON(jsonMatch[0]);
+      parsed = JSON.parse(repaired);
+      console.log('[FSE3-P0] Blueprint JSON repair succeeded');
+    } catch (e2) {
+      throw new Error(`[FSE3] Blueprint JSON parse failed: ${(e1 as Error).message}`);
+    }
+  }
 
   return {
     path_code: parsed.path_code || '',
@@ -808,10 +821,11 @@ function parseBlueprint(raw: string): FSE3Blueprint {
 
 function repairJSON(raw: string): string {
   let s = raw;
+  // Fix doubled quotes: "" → " (from prompt template artifacts copied by LLM)
+  s = s.replace(/""/g, '"');
   // Fix unquoted property names: { title: → { "title":
   s = s.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
   // Fix single-quoted strings → double-quoted
-  // Only replace single quotes that are likely string delimiters (after : or in arrays)
   s = s.replace(/:\s*'([^']*)'/g, ': "$1"');
   // Fix trailing commas before } or ]
   s = s.replace(/,\s*([}\]])/g, '$1');
@@ -944,11 +958,21 @@ async function runTextBranch(
   const pass4Prompt = buildFSE3Prompt('pass_4', ctx);
   if (debugPrompts) debugPrompts['pass_4'] = { systemPrompt: pass4Prompt.systemPrompt, userPrompt: pass4Prompt.userPrompt };
   console.log(`[FSE3-P4] Calling ${model4}...`);
-  const pass4Raw = await callGeminiVertex(pass4Prompt.systemPrompt, pass4Prompt.userPrompt, model4, 0.3, 3, getThinkingBudget('pass_4'));
+  let pass4Raw = await callGeminiVertex(pass4Prompt.systemPrompt, pass4Prompt.userPrompt, model4, 0.3, 3, getThinkingBudget('pass_4'));
   timing.pass4_ms = Date.now() - t4;
   console.log(`[FSE3-P4] Done in ${timing.pass4_ms}ms`);
 
-  const finalJSON = parseFinalJSON(pass4Raw);
+  let finalJSON: { title: string; content: string; questions: any[]; vocabulary: any[] };
+  try {
+    finalJSON = parseFinalJSON(pass4Raw);
+  } catch (parseErr) {
+    console.warn(`[FSE3-P4] JSON parse failed, retrying Pass 4: ${(parseErr as Error).message}`);
+    const t4b = Date.now();
+    pass4Raw = await callGeminiVertex(pass4Prompt.systemPrompt, pass4Prompt.userPrompt, model4, 0.2, 2, getThinkingBudget('pass_4'));
+    timing.pass4_ms = (timing.pass4_ms || 0) + (Date.now() - t4b);
+    finalJSON = parseFinalJSON(pass4Raw);
+    console.log(`[FSE3-P4] Retry succeeded`);
+  }
 
   // Normalize spacing (fix "berührte.Das" → "berührte. Das")
   finalJSON.content = normalizeSpacing(finalJSON.content);
@@ -1151,8 +1175,18 @@ async function executePipeline(
     timing.pass0_ms = Date.now() - t0;
     console.log(`[FSE3-P0] Done in ${timing.pass0_ms}ms`);
 
-    // Parse blueprint
-    ctx.blueprint = parseBlueprint(blueprintRaw);
+    // Parse blueprint — retry once if JSON is invalid
+    let blueprint: FSE3Blueprint;
+    try {
+      blueprint = parseBlueprint(blueprintRaw);
+    } catch (parseErr) {
+      console.warn(`[FSE3-P0] Blueprint JSON parse failed, retrying Pass 0: ${(parseErr as Error).message}`);
+      const blueprintRaw2 = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 2, getThinkingBudget('pass_0'));
+      blueprint = parseBlueprint(blueprintRaw2);
+      timing.pass0_ms = Date.now() - t0;
+      console.log(`[FSE3-P0] Retry succeeded, total pass0 time: ${timing.pass0_ms}ms`);
+    }
+    ctx.blueprint = blueprint;
     ctx.worldRule = ctx.blueprint.world_rule;
 
     // Translate blueprint codes → plaintext for Pass 1
@@ -1277,10 +1311,11 @@ async function executePipeline(
 
     timing.total_ms = Date.now() - startTime;
 
-    // Update DB with error
+    // Update DB with error — INCLUDE debug_log so we can diagnose
     await supabase.from('stories').update({
       generation_status: 'error',
       fse3_pass_timing: { ...timing, error: msg },
+      debug_log: { fse3_prompts: debugPrompts },
     }).eq('id', storyId);
   }
 }

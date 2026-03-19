@@ -47,10 +47,7 @@ export function buildFSE3Prompt(
     prompt = prompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value || '');
   }
 
-  // 4. Clean up double-escaped quotes (from DB storage or JSON serialization)
-  prompt = prompt.replace(/""/g, '"');
-
-  // 5. Load system prompt
+  // 4. Load system prompt
   const systemPromptKey =
     ctx.promptTemplates[passName + '_system_key'] || 'system_prompt_core_v3';
   const systemPrompt = ctx.systemPrompts[systemPromptKey] || '';
