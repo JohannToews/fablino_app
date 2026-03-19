@@ -389,13 +389,18 @@ async function loadFSE3Context(
     characters: rawChars = [],
     storyType = 'surprise',
     description = '',
-    specialAbilities = [],
+    specialAbilities,
+    specialAttributes,
+    additionalDescription,
     storyLength = 'medium',
     includeSelf = true,
     imageStyleKey = '',
     fse3_chosen_variant,
     fse3_interpreter_result,
   } = body;
+
+  // Frontend sends specialAttributes, legacy callers may send specialAbilities
+  const effectsArray: string[] = specialAttributes || specialAbilities || [];
 
   // 1. Kid profile
   const { data: kidProfile } = await supabase
@@ -589,12 +594,14 @@ async function loadFSE3Context(
   // 12. Villain from body
   const villain = body.villain || null;
 
-  // 13. Special effects
-  const specialEffects = specialAbilities.includes('superpowers')
+  // 13. Special effects (frontend sends specialAttributes, legacy: specialAbilities)
+  const specialEffects = effectsArray.includes('superpowers')
     ? 'superpowers'
-    : specialAbilities.length > 0
-      ? specialAbilities[0]
-      : 'none';
+    : effectsArray.includes('magic')
+      ? 'magic'
+      : effectsArray.length > 0
+        ? effectsArray[0]
+        : 'none';
 
   const ctx: FSE3PipelineContext & Record<string, any> = {
     kidProfileId,
@@ -603,7 +610,9 @@ async function loadFSE3Context(
     theme: themeKey,
     characters: enrichedCharacters,
     villain,
-    freeText: description,
+    freeText: additionalDescription?.trim()
+      || fse3_chosen_variant?.routing?.one_line_summary
+      || 'none',
     specialEffects,
     storyLength,
     includeSelf,
