@@ -1153,6 +1153,8 @@ async function executePipeline(
 ): Promise<void> {
   const startTime = Date.now();
   const timing: Partial<FSE3PassTiming> = {};
+  // Collect prompts for debug_log (declared outside try so catch can access it)
+  const debugPrompts: Record<string, { systemPrompt: string; userPrompt: string }> = {};
 
   try {
     // 1. Load context
@@ -1161,9 +1163,6 @@ async function executePipeline(
 
     // 2. Update status → generating
     await supabase.from('stories').update({ generation_status: 'generating' }).eq('id', storyId);
-
-    // Collect prompts for debug_log
-    const debugPrompts: Record<string, { systemPrompt: string; userPrompt: string }> = {};
 
     // 3. Pass 0 — Blueprint
     const t0 = Date.now();
