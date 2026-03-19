@@ -158,7 +158,7 @@ function buildReplacements(
     AGE_GROUP: inferAgeGroup(ctx.kidAge),
     CHARACTERS_SUMMARY: formatCharactersSummary(ctx),
     VILLAIN_DESCRIPTION: ctx.villain
-      ? (ctx.villain.description
+      ? (ctx.villain.description && ctx.villain.description !== 'undefined'
           ? `${ctx.villain.name}: ${ctx.villain.description}`
           : ctx.villain.name)
       : '',
@@ -296,10 +296,11 @@ export function formatCharactersContext(
     (ctx.kidAppearanceAnchor ? ` — Appearance: ${ctx.kidAppearanceAnchor}` : ''),
   );
 
-  // Other characters
+  // Other characters (deduplicate protagonist by type, role, or name match)
+  const kidNameLower = (ctx.kidName || '').trim().toLowerCase();
   if (ctx.characters) {
     for (const c of ctx.characters) {
-      if (c.type === 'self' || c.type === 'me' || c.name === ctx.kidName) continue; // protagonist already listed
+      if (c.type === 'self' || c.type === 'me' || c.role === 'protagonist' || (c.name || '').trim().toLowerCase() === kidNameLower) continue;
       const parts: string[] = [c.name];
       const details: string[] = [];
       if (c.role) details.push(c.role);
@@ -536,8 +537,17 @@ function resolveEmCode(
   mapping: Record<string, { label: string; description: string }> | undefined,
 ): string {
   if (!code) return '';
-  const entry = mapping?.[code];
-  return entry ? `${entry.label} — ${entry.description}` : code;
+  // Try exact match first
+  let entry = mapping?.[code];
+  if (entry) return `${entry.label} — ${entry.description}`;
+  // LLM may output "EM-T Thrill" instead of just "EM-T" — extract the EM-X prefix
+  const emMatch = code.match(/^(EM-[A-Z])/);
+  if (emMatch) {
+    entry = mapping?.[emMatch[1]];
+    if (entry) return `${entry.label} — ${entry.description}`;
+  }
+  // Fallback: strip EM-X prefix if present (e.g. "EM-T Thrill" → "Thrill")
+  return code.replace(/^EM-[A-Z]\s*/, '');
 }
 
 /**
@@ -545,7 +555,10 @@ function resolveEmCode(
  * Fixes: „Text!\"" → „Text!" (caused by JSON.stringify during DB seed).
  */
 function unescapeQuotes(value: string): string {
-  return value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  return value
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .replace(/""/g, '"');
 }
 
 /**

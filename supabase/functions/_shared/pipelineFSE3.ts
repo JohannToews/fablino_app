@@ -523,19 +523,28 @@ async function loadFSE3Context(
     .contains('age_groups', [ageGroup]);
   const availablePaths = pathRows || [];
 
-  // 9. Story length → word count target, paragraph count, scene count
+  // 9. Story length → word count target, paragraph count
+  //    Uses text_levels.base_paragraphs + (lengthLevel - 1) formula
   //    storyLength from wizard overrides length_level from kid_language_settings
   const effectiveLengthLevel = storyLength === 'short' ? 1 : storyLength === 'long' ? 3 : lengthLevel;
-  const { data: lengthConfig } = await supabase
-    .from('story_length_levels')
-    .select('word_approx, paragraph_count')
-    .eq('complexity_level', contentLevel)
-    .eq('length_level', effectiveLengthLevel)
+  const { data: textLevelData } = await supabase
+    .from('text_levels')
+    .select('base_paragraphs, words_per_paragraph')
+    .eq('level', readingLevel)
     .maybeSingle();
 
-  const wordCountTarget = lengthConfig?.word_approx ?? 400;
-  const paragraphCount = lengthConfig?.paragraph_count ?? 7;
-  const sceneCount = 3; // scene_count not stored in story_length_levels
+  let wordCountTarget: number;
+  let paragraphCount: number;
+  if (textLevelData) {
+    paragraphCount = textLevelData.base_paragraphs + (effectiveLengthLevel - 1);
+    wordCountTarget = paragraphCount * textLevelData.words_per_paragraph;
+  } else {
+    // Fallback: Level 2 defaults
+    paragraphCount = 6;
+    wordCountTarget = 360;
+  }
+  const sceneCount = 3;
+  console.log(`[FSE3-CTX] readingLevel=${readingLevel}, lengthLevel=${effectiveLengthLevel}, paragraphs=${paragraphCount}, wordTarget=${wordCountTarget}`);
 
   // 10. Generation config (optional)
   const { data: genConfig } = await supabase
@@ -1123,9 +1132,7 @@ async function executePipeline(
     ctx.blueprintPlaintext = [
       `Arc: ${translated.arc}`,
       `Emotion: ${translated.emotion}`,
-      `Setup Objects:\n${translated.setupObjects}`,
       `Plot Skeleton:\n${translated.skeleton}`,
-      `Forbidden:\n${translated.forbidden}`,
     ].join('\n\n');
     ctx.setupObjectsList = translated.setupObjects;
     ctx.forbiddenList = translated.forbidden;
