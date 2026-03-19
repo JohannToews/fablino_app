@@ -516,17 +516,25 @@ async function loadFSE3Context(
 
   // 8. Available story paths
   const ageGroup = kidAge <= 7 ? '6-7' : kidAge <= 9 ? '8-9' : '10-11';
+  // Map age group to eligible min_age_group values (French school levels)
+  const eligibleAgeGroups: Record<string, string[]> = {
+    '6-7': ['CE1'],
+    '8-9': ['CE1', 'CE2', 'CM1'],
+    '10-11': ['CE1', 'CE2', 'CM1', 'CM2'],
+  };
   const { data: pathRows } = await supabase
     .from('story_paths')
-    .select('*')
+    .select('code, label, writing_instructions')
     .eq('is_active', true)
-    .contains('age_groups', [ageGroup]);
+    .in('min_age_group', eligibleAgeGroups[ageGroup] || ['CE1', 'CE2', 'CM1', 'CM2']);
   const availablePaths = pathRows || [];
+  console.log(`[FSE3-CTX] Loaded ${availablePaths.length} story paths for age group ${ageGroup}`);
 
   // 9. Story length → word count target, paragraph count
   //    Uses text_levels.base_paragraphs + (lengthLevel - 1) formula
   //    storyLength from wizard overrides length_level from kid_language_settings
-  const effectiveLengthLevel = Math.min(3, Math.max(1, storyLength === 'short' ? 1 : storyLength === 'long' ? 3 : lengthLevel));
+  // short/medium = base paragraphs (length_level 1), long = base + 2 (length_level 3)
+  const effectiveLengthLevel = storyLength === 'long' ? 3 : 1;
   const { data: textLevelData } = await supabase
     .from('text_levels')
     .select('base_paragraphs, words_per_paragraph')
@@ -544,7 +552,23 @@ async function loadFSE3Context(
     wordCountTarget = 360;
   }
   const sceneCount = 3;
-  console.log(`[FSE3-CTX] readingLevel=${readingLevel}, lengthLevel=${effectiveLengthLevel}, paragraphs=${paragraphCount}, wordTarget=${wordCountTarget}`);
+
+  // Computed values for Pass 0 constraints
+  let maxSetupObjects: number;
+  if (readingLevel === 1) {
+    maxSetupObjects = 1;
+  } else if (readingLevel === 2) {
+    maxSetupObjects = 2;
+  } else {
+    maxSetupObjects = paragraphCount >= 8 ? 3 : 2;
+  }
+  const setupDeadline = paragraphCount <= 6 ? 2 : 3;
+  const resolutionParagraph = paragraphCount - 1;
+  const maxCharacters = readingLevel === 1 ? 2 : readingLevel === 2 ? 3 : 4;
+  const maxPlotTwists = readingLevel <= 2 ? 1 : 2;
+  const plotComplexity = readingLevel === 1 ? 'simple' : 'medium';
+
+  console.log(`[FSE3-CTX] readingLevel=${readingLevel}, lengthLevel=${effectiveLengthLevel}, paragraphs=${paragraphCount}, wordTarget=${wordCountTarget}, setupObjects=${maxSetupObjects}, setupDeadline=P${setupDeadline}`);
 
   // 10. Generation config (optional)
   const { data: genConfig } = await supabase
@@ -595,6 +619,12 @@ async function loadFSE3Context(
     wordCountTarget,
     paragraphCount,
     sceneCount,
+    maxSetupObjects,
+    setupDeadline,
+    resolutionParagraph,
+    maxCharacters,
+    maxPlotTwists,
+    plotComplexity,
     generationConfig,
     promptTemplates,
     systemPrompts,

@@ -47,7 +47,10 @@ export function buildFSE3Prompt(
     prompt = prompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value || '');
   }
 
-  // 4. Load system prompt
+  // 4. Clean up double-escaped quotes (from DB storage or JSON serialization)
+  prompt = prompt.replace(/""/g, '"');
+
+  // 5. Load system prompt
   const systemPromptKey =
     ctx.promptTemplates[passName + '_system_key'] || 'system_prompt_core_v3';
   const systemPrompt = ctx.systemPrompts[systemPromptKey] || '';
@@ -92,6 +95,10 @@ function buildConditions(ctx: FSE3PipelineContext & Record<string, any>): Record
       ctx.specialEffects !== '' &&
       ctx.specialEffects !== undefined,
     SPECIAL_EFFECTS_SUPERPOWERS: ctx.specialEffects === 'superpowers',
+    NO_SPECIAL_EFFECTS:
+      ctx.specialEffects === 'none' ||
+      ctx.specialEffects === '' ||
+      ctx.specialEffects === undefined,
     SIDEKICK: ctx.characters.length > 1,
     SIDEKICK_WITH_TRAIT:
       sidekick !== undefined &&
@@ -141,6 +148,14 @@ function buildReplacements(
     WORDS_PER_PARAGRAPH: ctx.paragraphCount
       ? String(Math.round((ctx.wordCountTarget || 0) / ctx.paragraphCount))
       : '',
+
+    // --- Pass 0 complexity constraints ---
+    MAX_SETUP_OBJECTS: String(ctx.maxSetupObjects ?? 2),
+    SETUP_DEADLINE: String(ctx.setupDeadline ?? 3),
+    RESOLUTION_PARAGRAPH: String(ctx.resolutionParagraph ?? 6),
+    MAX_CHARACTERS: String(ctx.maxCharacters ?? 3),
+    MAX_PLOT_TWISTS: String(ctx.maxPlotTwists ?? 1),
+    PLOT_COMPLEXITY: ctx.plotComplexity || 'medium',
 
     // --- Interpreter-specific ---
     CHARACTERS_JSON: safeStringify(ctx.characters),
@@ -253,9 +268,9 @@ export function formatSubtypes(subtypes: any[]): string {
  * Format paths as a list: "code: label — writing_instructions"
  */
 export function formatPaths(paths: any[]): string {
-  if (!paths || paths.length === 0) return '';
+  if (!paths || paths.length === 0) return 'Use a standard 3-act structure: setup → escalation → resolution';
   return paths
-    .map((p) => `${p.code || p.path_code}: ${p.label} — ${p.writing_instructions || ''}`)
+    .map((p) => `- ${p.code || p.path_code} "${p.label}": ${p.writing_instructions || ''}`)
     .join('\n');
 }
 
@@ -490,18 +505,10 @@ export function translateBlueprint(
     ? `${pathRow.label}: ${pathRow.writing_instructions || ''}`
     : blueprint.path_code;
 
-  // EM-codes → plaintext from app_settings
-  const emMapping = ctx.emCodeMapping || {};
-  const primary = emMapping[blueprint.emotional_coloring];
-  const secondary = emMapping[blueprint.emotional_secondary];
-  const emotion = [
-    primary
-      ? `Primary: ${primary.label} — ${primary.description}`
-      : `Primary: ${blueprint.emotional_coloring}`,
-    secondary
-      ? `Secondary: ${secondary.label} — ${secondary.description}`
-      : `Secondary: ${blueprint.emotional_secondary}`,
-  ].join('. ') + '.';
+  // EM-codes → plaintext from app_settings (uses resolveEmCode for robust prefix stripping)
+  const primaryText = resolveEmCode(blueprint.emotional_coloring, ctx.emCodeMapping);
+  const secondaryText = resolveEmCode(blueprint.emotional_secondary, ctx.emCodeMapping);
+  const emotion = `Primary: ${primaryText}. Secondary: ${secondaryText}.`;
 
   // Setup objects → numbered list with introduced/payoff info from self_check
   const payoffMap = blueprint.self_check?.setup_payoff_map || [];
