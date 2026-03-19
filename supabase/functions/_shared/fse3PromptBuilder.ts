@@ -121,6 +121,10 @@ function buildReplacements(
   const bp = ctx.blueprint;
   const cv = ctx.chosenVariant;
 
+  // Dynamic values for Pass 0 JSON examples
+  const paragraphCount = ctx.paragraphCount ?? 7;
+  const setupObjectCount = paragraphCount <= 6 ? 2 : 3;
+
   // Determine PREVIOUS_PASS_OUTPUT based on pass
   let previousPassOutput = '';
   if (passName === 'pass_2') previousPassOutput = ctx.pass1Output || '';
@@ -149,10 +153,22 @@ function buildReplacements(
     // --- Pass 0 complexity constraints ---
     MAX_SETUP_OBJECTS: String(ctx.maxSetupObjects ?? 2),
     SETUP_DEADLINE: String(ctx.setupDeadline ?? 3),
-    RESOLUTION_PARAGRAPH: String(ctx.resolutionParagraph ?? 6),
+    RESOLUTION_PARAGRAPH: String(ctx.resolutionParagraph ?? (paragraphCount - 1)),
     MAX_CHARACTERS: String(ctx.maxCharacters ?? 3),
     MAX_PLOT_TWISTS: String(ctx.maxPlotTwists ?? 1),
     PLOT_COMPLEXITY: ctx.plotComplexity || 'medium',
+
+    // --- Pass 0 dynamic JSON examples (match paragraphCount) ---
+    SETUP_OBJECT_COUNT: String(setupObjectCount),
+    SETUP_OBJECTS_EXAMPLE: Array(setupObjectCount).fill('"..."').join(', '),
+    SKELETON_EXAMPLE: Array.from(
+      { length: paragraphCount },
+      (_, i) => `"P${i + 1}: ..."`,
+    ).join(', '),
+    STATE_TRACKING_EXAMPLE: Array.from(
+      { length: paragraphCount - 1 },
+      (_, i) => `"after_P${i + 1}": { "...": "..." }`,
+    ).join(',\n    '),
 
     // --- Interpreter-specific ---
     CHARACTERS_JSON: safeStringify(ctx.characters),
