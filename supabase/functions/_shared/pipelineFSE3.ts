@@ -930,7 +930,7 @@ async function runTextBranch(
   ctx: FSE3PipelineContext & Record<string, any>,
   supabase: any,
   timing: Partial<FSE3PassTiming>,
-  debugPrompts?: Record<string, { systemPrompt: string; userPrompt: string }>,
+  debugPrompts?: Record<string, { systemPrompt: string; userPrompt: string; response?: string }>,
 ): Promise<{ title: string; content: string; questions: any[]; vocabulary: any[] }> {
   // Pass 2 — Language Editor
   const t2 = Date.now();
@@ -941,6 +941,7 @@ async function runTextBranch(
   ctx.pass2Output = await callGeminiVertex(pass2Prompt.systemPrompt, pass2Prompt.userPrompt, model2, 0.5, 3, getThinkingBudget('pass_2'));
   timing.pass2_ms = Date.now() - t2;
   console.log(`[FSE3-P2] Done in ${timing.pass2_ms}ms (${ctx.pass2Output.length} chars)`);
+  if (debugPrompts?.['pass_2']) debugPrompts['pass_2'].response = ctx.pass2Output.length > 5000 ? ctx.pass2Output.substring(0, 5000) + '... [TRUNCATED]' : ctx.pass2Output;
 
   // Pass 3 — Style Editor
   const t3 = Date.now();
@@ -951,6 +952,7 @@ async function runTextBranch(
   ctx.pass3Output = await callGeminiVertex(pass3Prompt.systemPrompt, pass3Prompt.userPrompt, model3, 0.6, 3, getThinkingBudget('pass_3'));
   timing.pass3_ms = Date.now() - t3;
   console.log(`[FSE3-P3] Done in ${timing.pass3_ms}ms (${ctx.pass3Output.length} chars)`);
+  if (debugPrompts?.['pass_3']) debugPrompts['pass_3'].response = ctx.pass3Output.length > 5000 ? ctx.pass3Output.substring(0, 5000) + '... [TRUNCATED]' : ctx.pass3Output;
 
   // Pass 4 — JSON Wrapper
   const t4 = Date.now();
@@ -973,6 +975,7 @@ async function runTextBranch(
     finalJSON = parseFinalJSON(pass4Raw);
     console.log(`[FSE3-P4] Retry succeeded`);
   }
+  if (debugPrompts?.['pass_4']) debugPrompts['pass_4'].response = pass4Raw.length > 5000 ? pass4Raw.substring(0, 5000) + '... [TRUNCATED]' : pass4Raw;
 
   // Normalize spacing (fix "berührte.Das" → "berührte. Das")
   finalJSON.content = normalizeSpacing(finalJSON.content);
@@ -1153,8 +1156,11 @@ async function executePipeline(
 ): Promise<void> {
   const startTime = Date.now();
   const timing: Partial<FSE3PassTiming> = {};
-  // Collect prompts for debug_log (declared outside try so catch can access it)
-  const debugPrompts: Record<string, { systemPrompt: string; userPrompt: string }> = {};
+  // Collect prompts + responses for debug_log (declared outside try so catch can access)
+  const debugPrompts: Record<string, { systemPrompt: string; userPrompt: string; response?: string }> = {};
+  const truncate = (s: string) => s.length > 5000 ? s.substring(0, 5000) + '... [TRUNCATED]' : s;
+  let fse3Context: Record<string, any> = {};
+  let fse3BlueprintParsed: Record<string, any> = {};
 
   try {
     // 1. Load context
@@ -1164,15 +1170,30 @@ async function executePipeline(
     // 2. Update status → generating
     await supabase.from('stories').update({ generation_status: 'generating' }).eq('id', storyId);
 
-    // 3. Pass 0 — Blueprint
+    // 3. Log Pass 0 input context for diagnostics
+    fse3Context = {
+      chosen_variant: ctx.chosenVariant ?? null,
+      child_wish: ctx.freeText ?? null,
+      special_effects: ctx.specialEffects ?? null,
+      paragraph_count: ctx.paragraphCount ?? null,
+      reading_level: ctx.readingLevel ?? null,
+      length_level: ctx.storyLength ?? null,
+      language: ctx.storyLanguage ?? null,
+      villain: ctx.villain ?? null,
+      characters: ctx.characters ?? [],
+      theme: ctx.theme ?? null,
+    };
+
+    // 4. Pass 0 — Blueprint
     const t0 = Date.now();
     const model0 = await getModel('pass0', supabase);
     const pass0Prompt = buildFSE3Prompt('pass_0', ctx);
     debugPrompts['pass_0'] = { systemPrompt: pass0Prompt.systemPrompt, userPrompt: pass0Prompt.userPrompt };
     console.log(`[FSE3-P0] Calling ${model0}...`);
-    const blueprintRaw = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 3, getThinkingBudget('pass_0'));
+    let blueprintRaw = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 3, getThinkingBudget('pass_0'));
     timing.pass0_ms = Date.now() - t0;
     console.log(`[FSE3-P0] Done in ${timing.pass0_ms}ms`);
+    debugPrompts['pass_0'].response = truncate(blueprintRaw);
 
     // Parse blueprint — retry once if JSON is invalid
     let blueprint: FSE3Blueprint;
@@ -1180,13 +1201,25 @@ async function executePipeline(
       blueprint = parseBlueprint(blueprintRaw);
     } catch (parseErr) {
       console.warn(`[FSE3-P0] Blueprint JSON parse failed, retrying Pass 0: ${(parseErr as Error).message}`);
-      const blueprintRaw2 = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 2, getThinkingBudget('pass_0'));
-      blueprint = parseBlueprint(blueprintRaw2);
+      blueprintRaw = await callGeminiVertex(pass0Prompt.systemPrompt, pass0Prompt.userPrompt, model0, 0.7, 2, getThinkingBudget('pass_0'));
+      blueprint = parseBlueprint(blueprintRaw);
       timing.pass0_ms = Date.now() - t0;
+      debugPrompts['pass_0'].response = truncate(blueprintRaw);
       console.log(`[FSE3-P0] Retry succeeded, total pass0 time: ${timing.pass0_ms}ms`);
     }
     ctx.blueprint = blueprint;
     ctx.worldRule = ctx.blueprint.world_rule;
+
+    // Log parsed blueprint for diagnostics
+    fse3BlueprintParsed = {
+      path_code: blueprint.path_code ?? null,
+      world_rule: blueprint.world_rule ?? null,
+      setup_objects: blueprint.setup_objects ?? [],
+      plot_skeleton: blueprint.plot_skeleton ?? [],
+      emotional_coloring: blueprint.emotional_coloring ?? null,
+      emotional_secondary: blueprint.emotional_secondary ?? null,
+      forbidden_in_writer: blueprint.forbidden_in_writer ?? [],
+    };
 
     // Translate blueprint codes → plaintext for Pass 1
     const translated = translateBlueprint(ctx.blueprint, ctx);
@@ -1209,6 +1242,7 @@ async function executePipeline(
     ctx.pass1Output = await callGeminiVertex(pass1Prompt.systemPrompt, pass1Prompt.userPrompt, model1, 0.8, 3, getThinkingBudget('pass_1'));
     timing.pass1_ms = Date.now() - t1;
     console.log(`[FSE3-P1] Done in ${timing.pass1_ms}ms (${ctx.pass1Output.length} chars)`);
+    debugPrompts['pass_1'].response = truncate(ctx.pass1Output);
 
     // Extract title from Pass 1 output for VD
     ctx.storyTitle = extractTitleFromPass1(ctx.pass1Output);
@@ -1258,7 +1292,13 @@ async function executePipeline(
       fse3_pass_timing: timing,
       story_path_code: ctx.blueprint?.path_code || null,
       emotional_coloring: ctx.blueprint?.emotional_coloring || null,
-      debug_log: { fse3_prompts: debugPrompts },
+      fse3_interpreter_result: ctx.interpreterResult ?? null,
+      fse3_chosen_variant: ctx.chosenVariant ?? null,
+      debug_log: {
+        fse3_prompts: debugPrompts,
+        fse3_context: fse3Context,
+        fse3_blueprint_parsed: fse3BlueprintParsed,
+      },
     };
 
     const { error: updateErr } = await supabase
@@ -1314,7 +1354,11 @@ async function executePipeline(
     await supabase.from('stories').update({
       generation_status: 'error',
       fse3_pass_timing: { ...timing, error: msg },
-      debug_log: { fse3_prompts: debugPrompts },
+      debug_log: {
+        fse3_prompts: debugPrompts,
+        fse3_context: fse3Context,
+        fse3_blueprint_parsed: fse3BlueprintParsed,
+      },
     }).eq('id', storyId);
   }
 }
