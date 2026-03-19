@@ -1182,6 +1182,7 @@ async function executePipeline(
     // NOTE: stories table does NOT have 'questions', 'vocabulary', 'emotional_secondary',
     // or 'used_fse3' columns. Questions go into 'comprehension_questions' table (like FSE2).
     // The column is 'story_images' (not 'story_image_urls').
+    const totalImageCount = (imageResult.coverImageUrl ? 1 : 0) + imageResult.storyImageUrls.length;
     const updatePayload: Record<string, any> = {
       generation_status: finalStatus,
       title: storyTitle,
@@ -1190,6 +1191,7 @@ async function executePipeline(
       story_images: imageResult.storyImageUrls.length > 0
         ? imageResult.storyImageUrls
         : [],
+      image_count: totalImageCount,
       fse3_pass_timing: timing,
       story_path_code: ctx.blueprint?.path_code || null,
       emotional_coloring: ctx.blueprint?.emotional_coloring || null,
