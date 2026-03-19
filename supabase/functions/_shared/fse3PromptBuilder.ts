@@ -318,7 +318,7 @@ export function formatCharactersContext(
     }
   }
 
-  return lines.join('\n');
+  return lines.join('\n- ');
 }
 
 /**

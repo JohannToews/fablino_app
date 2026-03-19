@@ -418,7 +418,7 @@ async function loadFSE3Context(
   // 2. Kid language settings → reading level, content level, length level
   let readingLevel = 2; // default fluent reader
   let contentLevel = 4; // default complexity level for story_length_levels
-  let lengthLevel = 2;  // default medium
+  let lengthLevel = 1;  // default standard
   if (kidProfileId) {
     const { data: langSettings } = await supabase
       .from('kid_language_settings')
@@ -526,7 +526,7 @@ async function loadFSE3Context(
   // 9. Story length → word count target, paragraph count
   //    Uses text_levels.base_paragraphs + (lengthLevel - 1) formula
   //    storyLength from wizard overrides length_level from kid_language_settings
-  const effectiveLengthLevel = storyLength === 'short' ? 1 : storyLength === 'long' ? 3 : lengthLevel;
+  const effectiveLengthLevel = Math.min(3, Math.max(1, storyLength === 'short' ? 1 : storyLength === 'long' ? 3 : lengthLevel));
   const { data: textLevelData } = await supabase
     .from('text_levels')
     .select('base_paragraphs, words_per_paragraph')
