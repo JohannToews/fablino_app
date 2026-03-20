@@ -584,20 +584,21 @@ async function loadFSE3Context(
   }
   const sceneCount = 3;
 
-  // Computed values for Pass 0 constraints
-  let maxSetupObjects: number;
-  if (readingLevel === 1) {
-    maxSetupObjects = 1;
-  } else if (readingLevel === 2) {
-    maxSetupObjects = 2;
-  } else {
-    maxSetupObjects = paragraphCount >= 8 ? 3 : 2;
-  }
+  // Complexity constraints based on reading level
+  const complexityByLevel: Record<number, {
+    maxCharacters: number;
+    maxPlotTwists: number;
+    maxSetupObjects: number;
+    plotComplexity: string;
+  }> = {
+    1: { maxCharacters: 2, maxPlotTwists: 0, maxSetupObjects: 1, plotComplexity: 'simple' },
+    2: { maxCharacters: 3, maxPlotTwists: 1, maxSetupObjects: 2, plotComplexity: 'medium' },
+    3: { maxCharacters: 4, maxPlotTwists: 1, maxSetupObjects: 3, plotComplexity: 'medium' },
+  };
+  const complexity = complexityByLevel[readingLevel] || complexityByLevel[2];
+  const { maxCharacters, maxPlotTwists, maxSetupObjects, plotComplexity } = complexity;
   const setupDeadline = paragraphCount <= 6 ? 2 : 3;
   const resolutionParagraph = paragraphCount - 1;
-  const maxCharacters = readingLevel === 1 ? 2 : readingLevel === 2 ? 3 : 4;
-  const maxPlotTwists = readingLevel <= 2 ? 1 : 2;
-  const plotComplexity = readingLevel === 1 ? 'simple' : 'medium';
 
   console.log(`[FSE3-CTX] readingLevel=${readingLevel}, lengthLevel=${effectiveLengthLevel}, paragraphs=${paragraphCount}, wordTarget=${wordCountTarget}, setupObjects=${maxSetupObjects}, setupDeadline=P${setupDeadline}`);
 
@@ -1220,6 +1221,10 @@ async function executePipeline(
       villain: ctx.villain ?? null,
       characters: ctx.characters ?? [],
       theme: ctx.theme ?? null,
+      max_characters: ctx.maxCharacters ?? null,
+      max_plot_twists: ctx.maxPlotTwists ?? null,
+      max_setup_objects: ctx.maxSetupObjects ?? null,
+      plot_complexity: ctx.plotComplexity ?? null,
     };
 
     // 4. Pass 0 — Blueprint
