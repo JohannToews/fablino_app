@@ -376,6 +376,23 @@ async function uploadImageToStorage(
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps school grade level (1-6) to reading complexity level (1-3).
+ * Matches FSE1 promptBuilder.ts gradeToReadingLevel().
+ * 1-2 (Klasse 1-2) → 1 (Erstleser / Ende Klasse 2)
+ * 3   (Klasse 3)   → 2 (Flüssig / Ende Klasse 3)
+ * 4+  (Klasse 4+)  → 3 (Sicher / Ende Klasse 4+)
+ */
+function gradeToReadingLevel(grade: number): number {
+  if (grade <= 2) return 1;
+  if (grade <= 3) return 2;
+  return 3;
+}
+
+// ---------------------------------------------------------------------------
 // Context Loading
 // ---------------------------------------------------------------------------
 
@@ -393,6 +410,7 @@ async function loadFSE3Context(
     specialAttributes,
     additionalDescription,
     storyLength = 'medium',
+    length_level: wizardLengthLevel,
     includeSelf = true,
     imageStyleKey = '',
     fse3_chosen_variant,
@@ -422,6 +440,7 @@ async function loadFSE3Context(
 
   // 2. Kid language settings → reading level, content level, length level
   let readingLevel = 2; // default fluent reader
+  let languageLevelRaw: number | null = null; // raw DB value for debug logging
   let contentLevel = 4; // default complexity level for story_length_levels
   let lengthLevel = 1;  // default standard
   if (kidProfileId) {
@@ -432,7 +451,8 @@ async function loadFSE3Context(
       .eq('language', language)
       .maybeSingle();
     if (langSettings?.language_level) {
-      readingLevel = langSettings.language_level;
+      languageLevelRaw = langSettings.language_level;
+      readingLevel = gradeToReadingLevel(langSettings.language_level);
     }
     if (langSettings?.content_level) {
       contentLevel = langSettings.content_level;
@@ -440,6 +460,11 @@ async function loadFSE3Context(
     if (langSettings?.length_level) {
       lengthLevel = langSettings.length_level;
     }
+  }
+
+  // Wizard-Override has priority over DB value (already includes profileLengthLevel + lengthBonus)
+  if (wizardLengthLevel && typeof wizardLengthLevel === 'number' && wizardLengthLevel >= 1 && wizardLengthLevel <= 5) {
+    lengthLevel = wizardLengthLevel;
   }
 
   // 3. FSE3 Language Config
@@ -639,6 +664,9 @@ async function loadFSE3Context(
     promptTemplates,
     systemPrompts,
     emCodeMapping,
+
+    lengthLevel,
+    languageLevelRaw,
 
     chosenVariant: fse3_chosen_variant as FSE3Variant,
     interpreterResult: fse3_interpreter_result as FSE3InterpreterResult,
@@ -1186,7 +1214,8 @@ async function executePipeline(
       special_effects: ctx.specialEffects ?? null,
       paragraph_count: ctx.paragraphCount ?? null,
       reading_level: ctx.readingLevel ?? null,
-      length_level: ctx.storyLength ?? null,
+      language_level_raw: ctx.languageLevelRaw ?? null,
+      length_level: ctx.lengthLevel ?? null,
       language: ctx.storyLanguage ?? null,
       villain: ctx.villain ?? null,
       characters: ctx.characters ?? [],
