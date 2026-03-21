@@ -194,6 +194,7 @@ function buildReplacements(
     SIDEKICK_NAME_LOWER: (getSidekickName(ctx) || '').toLowerCase(),
 
     // --- Pass 1-specific (set by pipeline code via spread) ---
+    WRITING_STYLE_CONSTRAINTS: getWritingStyleConstraints(ctx.readingLevel),
     STORY_ARC_PLAINTEXT: ctx.storyArcPlaintext || '',
     EMOTIONAL_TONE_PLAINTEXT: ctx.emotionalTonePlaintext || '',
     EMOTIONAL_COLORING: resolveEmCode(bp?.emotional_coloring, ctx.emCodeMapping),
@@ -435,6 +436,39 @@ export function formatLanguageConstraints(config: FSE3LanguageConfig): string {
     lines.push(`Additional rules: ${config.additional_rules}`);
   }
   return lines.join('\n');
+}
+
+/**
+ * Get writing style constraints for Pass 1 based on reading level.
+ */
+function getWritingStyleConstraints(readingLevel: number): string {
+  const styles: Record<number, string> = {
+    1: `WRITING STYLE — EARLY READER (CRITICAL):
+Write for a child who just learned to read. Every sentence describes ONE action.
+- Subject-verb-object. No subordinate clauses. No descriptions of feelings.
+- Show through ACTIONS only. BAD: "Mateo was amazed." GOOD: "Mateo's eyes went wide."
+- No atmosphere sentences. No inner monologue. No metaphors.
+- Max 8 words per sentence. Only words a 7-year-old speaks daily.
+- Dialogue: short, 3-5 words. "Da bist du!" not "Ich kann es kaum glauben, dass du hier bist!"
+- Every paragraph: 3-4 sentences, each a concrete action.`,
+    2: `WRITING STYLE — FLUENT READER:
+Write for a confident young reader. Vary sentence length between short and medium.
+- Mix action sentences with occasional short descriptions.
+- Inner thoughts allowed but brief: "Das war seltsam, dachte Mia."
+- Simple subordinate clauses okay (weil, dass, wenn). No nested clauses.
+- Max 12 words per sentence. Vocabulary a 9-year-old knows.
+- Dialogue: natural, 5-10 words. Can express feelings briefly.
+- Every paragraph: 4-5 sentences, mostly action-driven.`,
+    3: `WRITING STYLE — ADVANCED READER:
+Write with literary quality. Vary rhythm — short punchy sentences next to longer flowing ones.
+- Rich descriptions allowed but earned: each must reveal character or advance tension.
+- Inner monologue and atmosphere are tools — use deliberately, not as filler.
+- Complex sentences okay but one idea per sentence. No run-ons.
+- Max 18 words per sentence. Extended vocabulary including abstract concepts.
+- Dialogue: natural, can be longer, with subtext.
+- Every paragraph: 4-6 sentences, balanced between action, dialogue, and description.`,
+  };
+  return styles[readingLevel] || styles[2];
 }
 
 /**
