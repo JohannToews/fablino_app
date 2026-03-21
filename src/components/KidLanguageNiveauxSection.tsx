@@ -285,7 +285,7 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
                 )}
               </div>
 
-              {/* Row 2: Niveau + Longueur */}
+              {/* Row 2: Niveau */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <label className="text-[10px] text-[#2D1810]/50 mb-0.5 block">{l.niveau}</label>
@@ -298,33 +298,6 @@ const KidLanguageNiveauxSection = ({ kidProfileId, kidAge, schoolClass, language
                     </SelectTrigger>
                     <SelectContent>
                       {getNiveauOptions(row.language).map(opt => (
-                        <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <label className="text-[10px] text-[#2D1810]/50 mb-0.5 flex items-center gap-1">
-                    {l.longueur}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3 w-3 text-[#2D1810]/30 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[200px] text-xs">
-                        {l.tooltipLength}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Select
-                    value={String(row.length_level ?? 1)}
-                    onValueChange={(val) => updateRow(row.language, { length_level: parseInt(val) })}
-                  >
-                    <SelectTrigger className="h-9 border-orange-200 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LENGTH_OPTIONS.map(opt => (
                         <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
                       ))}
                     </SelectContent>

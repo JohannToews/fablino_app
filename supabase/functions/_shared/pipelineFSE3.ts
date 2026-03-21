@@ -458,12 +458,9 @@ async function loadFSE3Context(
     if (langSettings?.content_level) {
       contentLevel = langSettings.content_level;
     }
-    if (langSettings?.length_level) {
-      lengthLevel = langSettings.length_level;
-    }
   }
 
-  // Wizard-Override has priority over DB value (already includes profileLengthLevel + lengthBonus)
+  // length_level comes ONLY from wizard (Standard + bonus), not from profile
   if (wizardLengthLevel && typeof wizardLengthLevel === 'number' && wizardLengthLevel >= 1 && wizardLengthLevel <= 5) {
     lengthLevel = wizardLengthLevel;
   }

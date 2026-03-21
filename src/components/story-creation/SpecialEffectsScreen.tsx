@@ -455,21 +455,6 @@ const SpecialEffectsScreen = ({
   const [isSeries, setIsSeries] = useState(false);
   const [seriesMode, setSeriesMode] = useState<'normal' | 'interactive'>('normal');
 
-  // FSE1: Load length_level from kid_language_settings for the selected story language
-  const [profileLengthLevel, setProfileLengthLevel] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    if (!selectedProfile?.id || !storyLanguage) return;
-    (supabase as any)
-      .from('kid_language_settings')
-      .select('length_level')
-      .eq('kid_profile_id', selectedProfile.id)
-      .eq('language', storyLanguage)
-      .maybeSingle()
-      .then(({ data }: any) => {
-        setProfileLengthLevel(data?.length_level ?? undefined);
-      });
-  }, [selectedProfile?.id, storyLanguage]);
-
   // Prefer kid's profile language (uk/ru) so we never show German when school language is Russian/Ukrainian; else use story dropdown language
   const uiLang =
     kidAppLanguage === 'uk' || kidAppLanguage === 'ru'
@@ -593,7 +578,7 @@ const SpecialEffectsScreen = ({
     // Map length bonus to old StoryLength for backward compat
     const bonusToLength: Record<number, StoryLength> = { 0: 'medium', 1: 'long', 2: 'extra_long', 3: 'extra_long' };
     const effectiveLength = bonusToLength[lengthBonus] || 'medium';
-    const effectiveLengthLevel = (profileLengthLevel ?? 1) + lengthBonus;
+    const effectiveLengthLevel = 1 + lengthBonus;
 
     onComplete(selectedAttributes, additionalDescription.trim(), {
       length: effectiveLength,
