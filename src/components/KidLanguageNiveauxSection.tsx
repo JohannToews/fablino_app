@@ -61,30 +61,22 @@ function getNiveauOptions(lang: string) {
   return system.classes.slice(0, 6).map((label, i) => ({ value: i + 1, label }));
 }
 
-const LENGTH_OPTIONS = [
-  { value: 1, label: "Standard" },
-  { value: 2, label: "Standard +1" },
-  { value: 3, label: "Standard +2" },
-  { value: 4, label: "Standard +3" },
-  { value: 5, label: "Standard +4" },
-];
-
 const TYPE_OPTIONS = [
   { value: 1, labelKey: "schoolLang" },
   { value: 2, labelKey: "familyLang" },
 ];
 
-const LABELS: Record<string, { title: string; langue: string; type: string; niveau: string; longueur: string; add: string; schoolLang: string; familyLang: string; tooltipLength: string }> = {
-  de: { title: "Sprachen & Niveaus", langue: "Sprache", type: "Typ", niveau: "Niveau", longueur: "Länge", add: "+ Sprache hinzufügen", schoolLang: "Schulsprache", familyLang: "Familiensprache", tooltipLength: "+1 = ein Absatz mehr" },
-  en: { title: "Languages & Levels", langue: "Language", type: "Type", niveau: "Level", longueur: "Length", add: "+ Add language", schoolLang: "School language", familyLang: "Home language", tooltipLength: "+1 = one extra paragraph" },
-  fr: { title: "Langues & Niveaux", langue: "Langue", type: "Type", niveau: "Niveau", longueur: "Longueur", add: "+ Ajouter une langue", schoolLang: "Langue scolaire", familyLang: "Langue familiale", tooltipLength: "+1 = un paragraphe supplémentaire" },
-  es: { title: "Idiomas & Niveles", langue: "Idioma", type: "Tipo", niveau: "Nivel", longueur: "Longitud", add: "+ Añadir idioma", schoolLang: "Idioma escolar", familyLang: "Idioma familiar", tooltipLength: "+1 = un párrafo más" },
-  nl: { title: "Talen & Niveaus", langue: "Taal", type: "Type", niveau: "Niveau", longueur: "Lengte", add: "+ Taal toevoegen", schoolLang: "Schooltaal", familyLang: "Thuistaal", tooltipLength: "+1 = één extra paragraaf" },
-  it: { title: "Lingue & Livelli", langue: "Lingua", type: "Tipo", niveau: "Livello", longueur: "Lunghezza", add: "+ Aggiungi lingua", schoolLang: "Lingua scolastica", familyLang: "Lingua familiare", tooltipLength: "+1 = un paragrafo in più" },
-  tr: { title: "Diller & Seviyeler", langue: "Dil", type: "Tür", niveau: "Seviye", longueur: "Uzunluk", add: "+ Dil ekle", schoolLang: "Okul dili", familyLang: "Aile dili", tooltipLength: "+1 = bir paragraf daha" },
-  pt: { title: "Línguas & Níveis", langue: "Língua", type: "Tipo", niveau: "Nível", longueur: "Comprimento", add: "+ Adicionar língua", schoolLang: "Língua escolar", familyLang: "Língua familiar", tooltipLength: "+1 = mais um parágrafo" },
-  ru: { title: "Языки и уровни", langue: "Язык", type: "Тип", niveau: "Уровень", longueur: "Длина", add: "+ Добавить язык", schoolLang: "Школьный язык", familyLang: "Домашний язык", tooltipLength: "+1 = ещё один абзац" },
-  uk: { title: "Мови та рівні", langue: "Мова", type: "Тип", niveau: "Рівень", longueur: "Довжина", add: "+ Додати мову", schoolLang: "Шкільна мова", familyLang: "Домашня мова", tooltipLength: "+1 = ще один абзац" },
+const LABELS: Record<string, { title: string; langue: string; type: string; niveau: string; add: string; schoolLang: string; familyLang: string }> = {
+  de: { title: "Sprachen & Niveaus", langue: "Sprache", type: "Typ", niveau: "Niveau", add: "+ Sprache hinzufügen", schoolLang: "Schulsprache", familyLang: "Familiensprache" },
+  en: { title: "Languages & Levels", langue: "Language", type: "Type", niveau: "Level", add: "+ Add language", schoolLang: "School language", familyLang: "Home language" },
+  fr: { title: "Langues & Niveaux", langue: "Langue", type: "Type", niveau: "Niveau", add: "+ Ajouter une langue", schoolLang: "Langue scolaire", familyLang: "Langue familiale" },
+  es: { title: "Idiomas & Niveles", langue: "Idioma", type: "Tipo", niveau: "Nivel", add: "+ Añadir idioma", schoolLang: "Idioma escolar", familyLang: "Idioma familiar" },
+  nl: { title: "Talen & Niveaus", langue: "Taal", type: "Type", niveau: "Niveau", add: "+ Taal toevoegen", schoolLang: "Schooltaal", familyLang: "Thuistaal" },
+  it: { title: "Lingue & Livelli", langue: "Lingua", type: "Tipo", niveau: "Livello", add: "+ Aggiungi lingua", schoolLang: "Lingua scolastica", familyLang: "Lingua familiare" },
+  tr: { title: "Diller & Seviyeler", langue: "Dil", type: "Tür", niveau: "Seviye", add: "+ Dil ekle", schoolLang: "Okul dili", familyLang: "Aile dili" },
+  pt: { title: "Línguas & Níveis", langue: "Língua", type: "Tipo", niveau: "Nível", add: "+ Adicionar língua", schoolLang: "Língua escolar", familyLang: "Língua familiar" },
+  ru: { title: "Языки и уровни", langue: "Язык", type: "Тип", niveau: "Уровень", add: "+ Добавить язык", schoolLang: "Школьный язык", familyLang: "Домашний язык" },
+  uk: { title: "Мови та рівні", langue: "Мова", type: "Тип", niveau: "Рівень", add: "+ Додати мову", schoolLang: "Шкільна мова", familyLang: "Домашня мова" },
 };
 
 const getL = (lang: string) => LABELS[lang] || LABELS.fr;
