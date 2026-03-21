@@ -411,6 +411,7 @@ async function loadFSE3Context(
     additionalDescription,
     storyLength = 'medium',
     length_level: wizardLengthLevel,
+    difficulty: wizardDifficulty,
     includeSelf = true,
     imageStyleKey = '',
     fse3_chosen_variant,
@@ -465,6 +466,13 @@ async function loadFSE3Context(
   // Wizard-Override has priority over DB value (already includes profileLengthLevel + lengthBonus)
   if (wizardLengthLevel && typeof wizardLengthLevel === 'number' && wizardLengthLevel >= 1 && wizardLengthLevel <= 5) {
     lengthLevel = wizardLengthLevel;
+  }
+
+  // Wizard reading level override: difficulty easy=1, medium=2, hard=3
+  const difficultyToReadingLevel: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+  const wizardReadingLevel = wizardDifficulty ? difficultyToReadingLevel[wizardDifficulty] : undefined;
+  if (wizardReadingLevel && wizardReadingLevel >= 1 && wizardReadingLevel <= 3) {
+    readingLevel = wizardReadingLevel;
   }
 
   // 3. FSE3 Language Config
@@ -668,6 +676,7 @@ async function loadFSE3Context(
 
     lengthLevel,
     languageLevelRaw,
+    readingLevelSource: wizardReadingLevel ? 'wizard_override' : 'profile',
 
     chosenVariant: fse3_chosen_variant as FSE3Variant,
     interpreterResult: fse3_interpreter_result as FSE3InterpreterResult,
@@ -1215,6 +1224,7 @@ async function executePipeline(
       special_effects: ctx.specialEffects ?? null,
       paragraph_count: ctx.paragraphCount ?? null,
       reading_level: ctx.readingLevel ?? null,
+      reading_level_source: ctx.readingLevelSource ?? null,
       language_level_raw: ctx.languageLevelRaw ?? null,
       length_level: ctx.lengthLevel ?? null,
       language: ctx.storyLanguage ?? null,
