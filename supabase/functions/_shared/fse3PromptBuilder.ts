@@ -200,7 +200,7 @@ function buildReplacements(
 
     // --- Pass 0: fixed emotional coloring from em_driver config ---
     EMOTIONAL_COLORING_OPTIONS: (ctx.fixedEmotionalColoring && ctx.fixedEmotionalColoring.length > 0)
-      ? ctx.fixedEmotionalColoring.join(' or ')
+      ? formatEmCodesWithDescription(ctx.fixedEmotionalColoring, ctx.emCodeMapping)
       : 'EM-H, EM-T, EM-J, EM-W, EM-D, EM-C',
 
     // --- Pass 1-specific (set by pipeline code via spread) ---
@@ -296,6 +296,24 @@ export function formatPaths(paths: any[]): string {
   return paths
     .map((p) => `- ${p.code || p.path_code} "${p.label}": ${p.writing_instructions || ''}`)
     .join('\n');
+}
+
+/**
+ * Format EM-codes with their English label and description from emCodeMapping.
+ * Example: "EM-T (Thrill — Ticking clock, mounting dread, false leads.)"
+ */
+export function formatEmCodesWithDescription(
+  emCodes: string[],
+  emCodeMapping: Record<string, { label: string; description: string }>,
+): string {
+  if (!emCodes || emCodes.length === 0) return '';
+  return emCodes.map(code => {
+    const entry = emCodeMapping[code];
+    if (entry) {
+      return `${code} (${entry.label} — ${entry.description})`;
+    }
+    return code;
+  }).join(' or ');
 }
 
 /**
