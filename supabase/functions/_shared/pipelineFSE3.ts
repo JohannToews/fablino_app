@@ -557,13 +557,30 @@ async function loadFSE3Context(
     '8-9': ['CE1', 'CE2', 'CM1'],
     '10-11': ['CE1', 'CE2', 'CM1', 'CM2'],
   };
-  const { data: pathRows } = await supabase
+  // Map primary_driver → em_driver column value for path filtering
+  const driverToEmDriver: Record<string, string> = {
+    'suspense': 'spannung',
+    'humor': 'humor',
+    'empathy': 'gefühl',
+    'adventure': 'spannung',
+  };
+
+  const chosenDriver = (fse3_chosen_variant as FSE3Variant | undefined)?.routing?.primary_driver;
+  const emDriver = chosenDriver ? driverToEmDriver[chosenDriver] ?? null : null;
+
+  let pathQuery = supabase
     .from('story_paths')
-    .select('code, label, writing_instructions')
+    .select('code, label, writing_instructions, em_driver')
     .eq('is_active', true)
     .in('min_age_group', eligibleAgeGroups[ageGroup] || ['CE1', 'CE2', 'CM1', 'CM2']);
+
+  if (emDriver) {
+    pathQuery = pathQuery.eq('em_driver', emDriver);
+  }
+
+  const { data: pathRows } = await pathQuery;
   const availablePaths = pathRows || [];
-  console.log(`[FSE3-CTX] Loaded ${availablePaths.length} story paths for age group ${ageGroup}`);
+  console.log(`[FSE3-CTX] Loaded ${availablePaths.length} story paths for age group ${ageGroup}, em_driver_filter=${emDriver || 'none'}`);
 
   // 9. Story length → word count target, paragraph count
   //    Uses text_levels.base_paragraphs + (lengthLevel - 1) formula
@@ -657,6 +674,7 @@ async function loadFSE3Context(
     languageConfig,
     availableSubtypes,
     availablePaths,
+    emDriverFilter: emDriver || 'none',
     wordCountTarget,
     paragraphCount,
     sceneCount,
@@ -1232,6 +1250,8 @@ async function executePipeline(
       max_plot_twists: ctx.maxPlotTwists ?? null,
       max_setup_objects: ctx.maxSetupObjects ?? null,
       plot_complexity: ctx.plotComplexity ?? null,
+      em_driver_filter: ctx.emDriverFilter ?? 'none',
+      paths_count: ctx.availablePaths?.length ?? 0,
     };
 
     // 4. Pass 0 — Blueprint
