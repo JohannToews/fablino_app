@@ -176,6 +176,11 @@ function buildReplacements(
     FREE_TEXT: ctx.freeText || '',
     SPECIAL_EFFECTS: ctx.specialEffects || '',
     AVAILABLE_SUBTYPES: formatSubtypes(ctx.availableSubtypes),
+    AVAILABLE_EM_DRIVERS: formatAvailableEmDrivers(
+      ctx.allowedEmDrivers || [],
+      ctx.emDriverConfig || {},
+      ctx.storyLanguage,
+    ),
     CHILD_ELEMENTS_SUMMARY: buildChildElementsSummary(ctx),
     SIDEKICK_NAME: getSidekickName(ctx) || '',
     SIDEKICK_TRAIT: getSidekickTrait(ctx) || '',
@@ -192,6 +197,11 @@ function buildReplacements(
       : '',
     PROTAGONIST_NAME_LOWER: (ctx.kidName || '').toLowerCase(),
     SIDEKICK_NAME_LOWER: (getSidekickName(ctx) || '').toLowerCase(),
+
+    // --- Pass 0: fixed emotional coloring from em_driver config ---
+    EMOTIONAL_COLORING_OPTIONS: (ctx.fixedEmotionalColoring && ctx.fixedEmotionalColoring.length > 0)
+      ? ctx.fixedEmotionalColoring.join(' or ')
+      : 'EM-H, EM-T, EM-J, EM-W, EM-D, EM-C',
 
     // --- Pass 1-specific (set by pipeline code via spread) ---
     WRITING_STYLE_CONSTRAINTS: getWritingStyleConstraints(ctx.readingLevel),
@@ -286,6 +296,24 @@ export function formatPaths(paths: any[]): string {
   return paths
     .map((p) => `- ${p.code || p.path_code} "${p.label}": ${p.writing_instructions || ''}`)
     .join('\n');
+}
+
+/**
+ * Format available emotional drivers as a numbered list for the interpreter prompt.
+ * Example: "1. ⚡ Spannend (em_driver: "spannung", primary_driver: "suspense") — Nervenkitzel, Gefahr, Zeitdruck"
+ */
+export function formatAvailableEmDrivers(
+  allowedDrivers: string[],
+  emDriverConfig: Record<string, any>,
+  storyLanguage: string,
+): string {
+  if (!allowedDrivers || allowedDrivers.length === 0) return '';
+  return allowedDrivers.map((driver, i) => {
+    const config = emDriverConfig[driver];
+    if (!config) return '';
+    const label = config.labels?.[storyLanguage] || config.labels?.['en'] || driver;
+    return `${i + 1}. ${config.emoji} ${label} (em_driver: "${driver}", primary_driver: "${config.primary_driver}") — ${config.description}`;
+  }).filter(Boolean).join('\n');
 }
 
 /**

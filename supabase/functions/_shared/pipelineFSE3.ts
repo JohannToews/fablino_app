@@ -545,9 +545,27 @@ async function loadFSE3Context(
     }
   }
 
+  // 6b. Theme → em_driver mapping + em_driver config
+  const { data: themeDriversData } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'fse3_theme_em_drivers')
+    .maybeSingle();
+  const themeEmDrivers = themeDriversData?.value ? JSON.parse(themeDriversData.value) : {};
+
+  const { data: driverConfigData } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'fse3_em_driver_config')
+    .maybeSingle();
+  const emDriverConfig = driverConfigData?.value ? JSON.parse(driverConfigData.value) : {};
+
   // 7. Available subtypes for Interpreter/Pass 0
   const themeKey = storyType || 'surprise';
   const availableSubtypes = await listAvailableSubtypes(themeKey, supabase);
+
+  // Derive allowed em_drivers for this theme
+  const allowedEmDrivers: string[] = themeEmDrivers[themeKey] || ['spannung', 'humor', 'gefühl', 'staunen'];
 
   // 8. Available story paths
   const ageGroup = kidAge <= 7 ? '6-7' : kidAge <= 9 ? '8-9' : '10-11';
@@ -557,7 +575,7 @@ async function loadFSE3Context(
     '8-9': ['CE1', 'CE2', 'CM1'],
     '10-11': ['CE1', 'CE2', 'CM1', 'CM2'],
   };
-  // Map primary_driver → em_driver column value for path filtering
+  // Map primary_driver → em_driver column value for path filtering (fallback for old variants without em_driver)
   const driverToEmDriver: Record<string, string> = {
     'suspense': 'spannung',
     'humor': 'humor',
@@ -565,8 +583,16 @@ async function loadFSE3Context(
     'adventure': 'spannung',
   };
 
+  // Prefer routing.em_driver directly, fallback to primary_driver mapping
+  const chosenEmDriver = (fse3_chosen_variant as FSE3Variant | undefined)?.routing?.em_driver;
   const chosenDriver = (fse3_chosen_variant as FSE3Variant | undefined)?.routing?.primary_driver;
-  const emDriver = chosenDriver ? driverToEmDriver[chosenDriver] ?? null : null;
+  const emDriver = chosenEmDriver || (chosenDriver ? driverToEmDriver[chosenDriver] ?? null : null);
+
+  // Derive fixed emotional coloring from em_driver config
+  let fixedEmotionalColoring: string[] = [];
+  if (emDriver && emDriverConfig[emDriver]) {
+    fixedEmotionalColoring = emDriverConfig[emDriver].em_codes || [];
+  }
 
   let pathQuery = supabase
     .from('story_paths')
@@ -688,6 +714,12 @@ async function loadFSE3Context(
     promptTemplates,
     systemPrompts,
     emCodeMapping,
+
+    // em_driver config
+    themeEmDrivers,
+    emDriverConfig,
+    allowedEmDrivers,
+    fixedEmotionalColoring,
 
     lengthLevel,
     languageLevelRaw,
@@ -962,9 +994,10 @@ function extractTitleFromPass1(pass1Output: string): string {
 function getThinkingBudget(passName: string): number {
   switch (passName) {
     case 'interpreter':
-    case 'pass_0':
     case 'pass_1':
       return -1; // dynamic (full reasoning)
+    case 'pass_0':
+      return 8192; // fixed budget for blueprint generation
     case 'pass_2':
     case 'pass_3':
       return 4096; // moderate reasoning
@@ -1252,6 +1285,9 @@ async function executePipeline(
       plot_complexity: ctx.plotComplexity ?? null,
       em_driver_filter: ctx.emDriverFilter ?? 'none',
       paths_count: ctx.availablePaths?.length ?? 0,
+      allowed_em_drivers: ctx.allowedEmDrivers ?? [],
+      fixed_emotional_coloring: ctx.fixedEmotionalColoring ?? [],
+      thinking_budget_pass0: 8192,
     };
 
     // 4. Pass 0 — Blueprint

@@ -40,6 +40,7 @@ export interface FSE3Variant {
     teaser: string;
   };
   routing: {
+    em_driver: string; // "spannung" | "humor" | "gefühl" | "staunen"
     primary_driver: "humor" | "suspense" | "empathy" | "adventure";
     subtype_key: string;
     conflict_type: string;

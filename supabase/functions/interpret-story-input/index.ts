@@ -209,10 +209,7 @@ async function callGeminiVertex(
 // Variant C Tone Descriptions
 // ---------------------------------------------------------------------------
 
-const VARIANT_C_TONE_DESCRIPTIONS: Record<string, string> = {
-  empathy: 'Emotional, touching — friendship, courage, inner growth',
-  wonder: 'Wondrous, mysterious — discovery, magic, the unexpected',
-};
+// VARIANT_C_TONE_DESCRIPTIONS removed — replaced by dynamic em_driver system
 
 // ---------------------------------------------------------------------------
 // Parse Variants from LLM Response
@@ -262,6 +259,7 @@ function parseVariants(raw: string): FSE3Variant[] {
         teaser: v.visible?.teaser || '',
       },
       routing: {
+        em_driver: v.routing?.em_driver || '',
         primary_driver: v.routing?.primary_driver || 'adventure',
         subtype_key: v.routing?.subtype_key || '',
         conflict_type: v.routing?.conflict_type || '',
@@ -347,6 +345,24 @@ Deno.serve(async (req: Request) => {
     const availableSubtypes = await listAvailableSubtypes(storyType, supabase);
     console.log(`[FSE3-INTERP] Loaded ${availableSubtypes.length} subtypes for theme=${storyType}`);
 
+    // 5b. Load theme → em_driver mapping + em_driver config
+    const { data: themeDriversData } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'fse3_theme_em_drivers')
+      .maybeSingle();
+    const themeEmDrivers = themeDriversData?.value ? JSON.parse(themeDriversData.value) : {};
+
+    const { data: driverConfigData } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'fse3_em_driver_config')
+      .maybeSingle();
+    const emDriverConfig = driverConfigData?.value ? JSON.parse(driverConfigData.value) : {};
+
+    const allowedEmDrivers: string[] = themeEmDrivers[storyType] || ['spannung', 'humor', 'gefühl', 'staunen'];
+    console.log(`[FSE3-INTERP] Allowed em_drivers for theme=${storyType}:`, allowedEmDrivers);
+
     // 6. Build a minimal pipeline context for the prompt builder
     const promptTemplates: Record<string, string> = {
       interpreter: templateRow.prompt_template,
@@ -413,18 +429,17 @@ Deno.serve(async (req: Request) => {
       systemPrompts,
       emCodeMapping: {},
 
+      // em_driver config (for interpreter variant generation)
+      allowedEmDrivers,
+      emDriverConfig,
+
       // Not applicable for interpreter
       chosenVariant: {} as FSE3Variant,
       interpreterResult: { variants: [] },
     };
 
-    // 7. Build prompt
-    const { systemPrompt: builtSystemPrompt, userPrompt } = buildFSE3Prompt('interpreter', ctx);
-
-    // 8. Replace {{VARIANT_C_TONE}} manually (not in the prompt builder)
-    const toneDescription = VARIANT_C_TONE_DESCRIPTIONS[variantCTone || 'empathy']
-      || VARIANT_C_TONE_DESCRIPTIONS['empathy'];
-    const finalUserPrompt = userPrompt.replace(/\{\{VARIANT_C_TONE\}\}/g, toneDescription);
+    // 7. Build prompt ({{AVAILABLE_EM_DRIVERS}} is replaced by the PromptBuilder)
+    const { systemPrompt: builtSystemPrompt, userPrompt: finalUserPrompt } = buildFSE3Prompt('interpreter', ctx);
 
     console.log(`[FSE3-INTERP] Prompt built. System prompt: ${builtSystemPrompt.length} chars, User prompt: ${finalUserPrompt.length} chars`);
 
