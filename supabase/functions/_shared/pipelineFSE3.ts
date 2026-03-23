@@ -1350,8 +1350,8 @@ async function executePipeline(
     console.log(`[FSE3-P1] Done in ${timing.pass1_ms}ms (${ctx.pass1Output.length} chars)`);
     debugPrompts['pass_1'].response = truncate(ctx.pass1Output);
 
-    // Extract title from Pass 1 output for VD
-    ctx.storyTitle = extractTitleFromPass1(ctx.pass1Output);
+    // Extract title: prefer interpreter variant title, fallback to Pass 1 extraction
+    ctx.storyTitle = ctx.chosenVariant?.visible?.title || extractTitleFromPass1(ctx.pass1Output) || 'Untitled Story';
 
     // 5. FORK — Text Branch + Image Branch in parallel
     console.log('[FSE3] Starting parallel branches (Text + Image)...');
