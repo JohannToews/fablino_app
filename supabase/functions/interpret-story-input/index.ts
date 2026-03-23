@@ -16,7 +16,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getAuthenticatedUser } from '../_shared/auth.ts';
 import { getCorsHeaders, handleCorsOptions } from '../_shared/cors.ts';
-import { buildFSE3Prompt } from '../_shared/fse3PromptBuilder.ts';
+import { buildFSE3Prompt, getPathLabelsForInterpreter } from '../_shared/fse3PromptBuilder.ts';
 import { getModel } from '../_shared/fse3FeatureFlag.ts';
 import { listAvailableSubtypes } from '../_shared/storySubtypeSelector.ts';
 import type { FSE3Variant, FSE3InterpreterResult, FSE3PipelineContext } from '../_shared/fse3Types.ts';
@@ -437,6 +437,18 @@ Deno.serve(async (req: Request) => {
       chosenVariant: {} as FSE3Variant,
       interpreterResult: { variants: [] },
     };
+
+    // 6b. Load path labels per em_driver for interpreter (filtered by age)
+    const interpreterPathLabels = await getPathLabelsForInterpreter(supabase, kidAge ?? 7, allowedEmDrivers);
+    ctx.interpreterPathLabels = interpreterPathLabels;
+    console.log('[FSE3-INTERP] Path labels for interpreter:', {
+      spannung: interpreterPathLabels['spannung'],
+      humor: interpreterPathLabels['humor'],
+      surprise: interpreterPathLabels[(allowedEmDrivers || []).find((d: string) => d !== 'spannung' && d !== 'humor') || 'staunen'],
+      kidAge: kidAge ?? 7,
+      theme: storyType,
+      allowedEmDrivers,
+    });
 
     // 7. Build prompt ({{AVAILABLE_EM_DRIVERS}} is replaced by the PromptBuilder)
     const { systemPrompt: builtSystemPrompt, userPrompt: finalUserPrompt } = buildFSE3Prompt('interpreter', ctx);

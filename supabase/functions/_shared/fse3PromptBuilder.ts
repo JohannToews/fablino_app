@@ -185,6 +185,14 @@ function buildReplacements(
     SIDEKICK_NAME: getSidekickName(ctx) || '',
     SIDEKICK_TRAIT: getSidekickTrait(ctx) || '',
 
+    // --- Interpreter: path labels per em_driver (set by pipeline before call) ---
+    SPANNUNG_PATH_LABELS: ctx.interpreterPathLabels?.['spannung'] || '- (keine verfügbar)',
+    HUMOR_PATH_LABELS: ctx.interpreterPathLabels?.['humor'] || '- (keine verfügbar)',
+    SURPRISE_PATH_LABELS: ctx.interpreterPathLabels?.[
+      // surprise = the third driver (not spannung, not humor)
+      (ctx.allowedEmDrivers || []).find((d: string) => d !== 'spannung' && d !== 'humor') || 'staunen'
+    ] || '- (keine verfügbar)',
+
     // --- Pass 0-specific ---
     CHOSEN_VARIANT_ROUTING: cv?.routing ? safeStringify(cv.routing) : '',
     AVAILABLE_PATHS: formatPaths(ctx.availablePaths),
@@ -332,6 +340,57 @@ export function formatAvailableEmDrivers(
     const label = config.labels?.[storyLanguage] || config.labels?.['en'] || driver;
     return `${i + 1}. ${config.emoji} ${label} (em_driver: "${driver}", primary_driver: "${config.primary_driver}") — ${config.description}`;
   }).filter(Boolean).join('\n');
+}
+
+/**
+ * Load path labels grouped by em_driver for the interpreter prompt.
+ * Only loads labels (no writing_instructions) filtered by eligible age groups.
+ *
+ * @param supabase - Supabase client
+ * @param kidAge - Child's age (number)
+ * @param allowedEmDrivers - The allowed em_drivers for the current theme (e.g. ['spannung', 'humor', 'staunen'])
+ * @returns Record with keys from allowedEmDrivers, values are formatted label lists
+ */
+export async function getPathLabelsForInterpreter(
+  supabase: any,
+  kidAge: number,
+  allowedEmDrivers: string[],
+): Promise<Record<string, string>> {
+  const ageGroup = kidAge <= 7 ? '6-7' : kidAge <= 9 ? '8-9' : '10-11';
+  const eligibleAgeGroups: Record<string, string[]> = {
+    '6-7': ['CE1'],
+    '8-9': ['CE1', 'CE2', 'CM1'],
+    '10-11': ['CE1', 'CE2', 'CM1', 'CM2'],
+  };
+
+  const { data: pathRows } = await supabase
+    .from('story_paths')
+    .select('label, em_driver')
+    .eq('is_active', true)
+    .in('min_age_group', eligibleAgeGroups[ageGroup] || ['CE1', 'CE2', 'CM1', 'CM2'])
+    .in('em_driver', allowedEmDrivers);
+
+  // Group by em_driver
+  const grouped: Record<string, string[]> = {};
+  for (const driver of allowedEmDrivers) {
+    grouped[driver] = [];
+  }
+  for (const row of (pathRows || [])) {
+    if (row.em_driver && grouped[row.em_driver]) {
+      grouped[row.em_driver].push(row.label);
+    }
+  }
+
+  // Format as "- Label\n- Label" per driver
+  const result: Record<string, string> = {};
+  for (const driver of allowedEmDrivers) {
+    const labels = grouped[driver] || [];
+    result[driver] = labels.length > 0
+      ? labels.map(l => `- ${l}`).join('\n')
+      : '- (keine verfügbar)';
+  }
+
+  return result;
 }
 
 /**
